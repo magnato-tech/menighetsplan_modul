@@ -4,7 +4,6 @@ import {
   useLeaderGatheringDetail,
   formatNorwegianDateTime,
 } from "../hooks/useAppHooks";
-import { UserQuickSwitcherBar } from "../components/UserSwitcher";
 import { useTimedMessage } from "../hooks/useTimedMessage";
 import { studioTabUrl } from "../pages/admin/studio";
 import { buildRunSheet } from "../utils/runSheet";
@@ -144,7 +143,6 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
   if (!gathering || !hasAccess) {
     return (
       <div className="w-full max-w-md mx-auto bg-slate-50 min-h-screen shadow-md sm:my-4 sm:rounded-3xl sm:border sm:border-slate-200/80 overflow-hidden">
-        <UserQuickSwitcherBar />
         <div className="p-8 text-center space-y-4">
           <div className="w-14 h-14 bg-amber-50 rounded-2xl flex items-center justify-center mx-auto text-amber-600 border border-amber-200">
             <AlertTriangle className="w-7 h-7" />
@@ -218,11 +216,6 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
 
   return (
     <div className="w-full max-w-2xl mx-auto bg-slate-50 min-h-screen shadow-md sm:my-4 sm:rounded-3xl sm:border sm:border-slate-200/80 overflow-hidden flex flex-col print:max-w-none print:shadow-none print:my-0 print:border-none print:bg-white">
-      {/* User Switcher bar - hidden in print */}
-      <div className="print:hidden">
-        <UserQuickSwitcherBar />
-      </div>
-
       {/* Toast feedback banner */}
       {toastMessage && (
         <div className="bg-emerald-600 text-white text-xs font-semibold px-4 py-2.5 text-center flex items-center justify-center gap-2 shadow-xs transition-all animate-fadeIn print:hidden">

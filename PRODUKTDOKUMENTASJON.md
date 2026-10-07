@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.5 · **Sist oppdatert:** 2026-10-07
+> **Dokumentversjon:** 4.6 · **Sist oppdatert:** 2026-10-07
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -103,7 +103,7 @@ Adminpanelet ligger på `/admin` og har én meny med to deler. Hver fane har sin
 * Panelet er responsivt: fast meny på PC, uttrekksmeny på mobil.
 * En handling bekreftes med en melding som forsvinner av seg selv. En lagring som feiler, vises i et rødt banner og blir ikke stående som om den var lagret.
 * **Moduler** (under System & Database) viser hvilke moduler produktet har, og slår delene av dem av og på for hele menigheten (kapittel 2.6).
-* **Planlagt:** innlogging. I dag er `/admin` åpen, og aktiv bruker velges i en testbryter (kapittel 10).
+* **Innlogging.** `/admin` er bare for administratorer. Den som ikke er logget inn, sendes til innloggingssiden, og et medlem får beskjed om at det kreves administrator (kapittel 10.1). Nederst i menyen står hvem som er logget inn, og «Logg ut».
 
 ### 2.4 Analysebord
 
@@ -215,7 +215,7 @@ Regnskap er ikke en egen modul. Givertjeneste og Utleie skal registrere inntekte
 | Kalender | – | Valgfri modul med felles kalender | Planlagt: modulen kan slås på, men har ingen side |
 | **Min kalender** | – | Personlig oversikt på Min side | Mulig funksjon, ikke prioritert. Se under |
 
-Et medlem ser bare det som gjelder egne grupper. Løsningen kan installeres på mobilen som app (PWA).
+Min side ligger bak innlogging (kapittel 10.1). Øverst står hvem som er logget inn, rollen og «Logg ut». Et medlem ser bare det som gjelder egne grupper. Løsningen kan installeres på mobilen som app (PWA).
 
 ### Mulig funksjon: Min kalender
 
@@ -561,14 +561,37 @@ Kontrakten står i `INTEGRASJON-MENIGHETSPLAN.md`. Det eksterne CMS-et (`menighe
 
 | Område | Mål | I dag |
 |:---|:---|:---|
-| Innlogging | Medlemmer logger inn med Google-konto. Rollen styrer hva man ser og kan gjøre | **Planlagt.** Ingen innlogging. Aktiv bruker velges i en testbryter, og `/admin` er åpen |
-| Regler i databasen | Besøkende leser bare offentlige data. Et medlem endrer bare sitt eget. Bare administrator endrer offentlige profilfelt og samtykke | **Planlagt.** Reglene slipper gjennom lesing av alt, og skriving uten innlogging |
+| Innlogging | Medlemmer logger inn med Google-konto eller en lenke på e-post. Rollen styrer hva man ser og kan gjøre | **Levert 7. oktober** for skjermene: Min side krever at man står i personregisteret, og admin krever administrator (kapittel 10.1) |
+| Regler i databasen | Besøkende leser bare offentlige data. Et medlem endrer bare sitt eget. Bare administrator endrer offentlige profilfelt og samtykke | **Planlagt (trinn 3).** Reglene slipper fortsatt gjennom lesing av alt, og skriving uten innlogging. Innloggingen sperrer skjermene, ikke dataene |
 | Sporbarhet | `updatedBy` er alltid den innloggede brukeren | **Delvis.** Regelen finnes, men gjelder først når noen er logget inn |
 | Personregisteret | Lastes bare for innloggede | **Delvis.** Nettsiden viser bare personer med samtykke, og laster ikke oppgaver, tildelinger eller meldinger. Hele personregisteret lastes likevel til nettleseren |
 | Samtykke | Ingen person vises uten registrert samtykke | **Levert** |
 | API | Ingen persondata ut | **Levert** |
 
-**Databasen inneholder bare demodata.** Ekte persondata skal ikke legges inn før innlogging og regler er på plass.
+**Databasen inneholder bare demodata.** Ekte persondata skal ikke legges inn før reglene i databasen er lukket (trinn 3).
+
+### 10.1 Innlogging og roller
+
+**To veier inn, ingen passord.** På `/logg-inn` velger man «Fortsett med Google» eller skriver e-postadressen sin og får en lenke som logger inn. Lenken virker én gang. Åpnes den på en annen enhet enn den ble bestilt fra, må adressen skrives inn på nytt, så en lenke på avveie ikke er nok.
+
+**Kontoen er ikke personen.** En konto er det man logger inn med. En person er en rad i menighetens personregister. De kobles med e-postadressen: kontoens bekreftede adresse må stå på nøyaktig én person i registeret. Store og små bokstaver spiller ingen rolle.
+
+| Den som logger inn | Får |
+|:---|:---|
+| Står i registeret med adressen | Min side, som den personen |
+| Står der som administrator | Min side og admin |
+| Står ikke i registeret | Beskjed om å kontakte menigheten, og «Logg ut og prøv en annen konto». Ingenting annet |
+| Har en adresse flere personer deler | Beskjed om at adressen ikke sier hvem man er, og at menigheten må rette det |
+
+**Tre roller, og de følger av personen.** *Administrator* står på personen i registeret. *Gruppeleder* er den som leder minst én gruppe, som leder eller stedfortreder. *Medlem* er alle andre i registeret. Rollen lagres ikke på kontoen, så den endres i det personen endres i registeret.
+
+**Bak innlogging.** Min side med undersidene krever at man står i registeret. Admin krever administrator. Den offentlige nettsiden er åpen. Planleggingsdataene (oppgaver, tildelinger, meldinger, oppmøte) hentes bare for den som er inne, og fjernes fra nettleseren ved utlogging.
+
+**Første administrator** legges inn utenfra, én gang, av den som setter opp installasjonen: `npm run first-admin -- e-postadresse "Navn"`. Deretter legger administratoren inn de andre i admin. Uten en administrator i registeret kommer ingen inn i admin.
+
+**Testbryteren er borte.** Det går ikke an å velge hvem man er uten å logge inn. Testverktøyet på husfellesskapssiden er fjernet. På en utviklers egen maskin, og bare der, kan man gå inn som en person fra registeret; den muligheten finnes ikke i den publiserte løsningen.
+
+**Må slås på per installasjon.** I Firebase-prosjektet må innloggingsmåtene «Google» og «E-postlenke» være slått på, og adressen installasjonen ligger på, må stå blant de godkjente domenene. Uten det sier innloggingssiden at innloggingsmåten ikke er slått på.
 
 ---
 
@@ -655,6 +678,20 @@ Trinn 1 av «Klar for flere menigheter» (kapittel 14).
 | **Faste tekster** | Setningen om tilknytning til Misjonskirken Norge, mottoet som sto fast i menyen og på Min side, og «Sprell Levende» i standardtekstene er tatt ut. Standardstedet for et arrangement uten sted er «Kirken» (før: «Misjonskirken» i appen og «Lillesand Misjonskirke» i API-et) |
 | **Vakt** | En test går gjennom koden og feiler hvis en fil utenom demodataene nevner én menighet, ett kirkesamfunn eller én database |
 
+### Innlogging og roller (7. oktober 2026)
+
+Trinn 2 av «Klar for flere menigheter» (kapittel 14).
+
+| Område | Levert |
+|:---|:---|
+| **Innlogging** | Google-konto eller lenke på e-post, på `/logg-inn`. Ingen passord. Feil sies på norsk, uten koder |
+| **Konto og person** | Kontoens bekreftede e-postadresse peker ut personen i registeret. Den som ikke står der, eller deler adresse med en annen, kommer ikke inn og får vite hvorfor |
+| **Roller** | Administrator står på personen. Gruppeleder følger av gruppene. Medlem er alle andre i registeret |
+| **Sperren** | Min side krever at man står i registeret, og admin krever administrator. Planleggingsdataene hentes bare for den som er inne, og fjernes ved utlogging |
+| **Testbryteren** | Fjernet fra menyen på nettsiden, Min side og alle undersidene. Testverktøyet på husfellesskapssiden og den gamle innstillingssiden er fjernet |
+| **Første administrator** | Legges inn med `npm run first-admin` av den som setter opp installasjonen |
+| **Ikke levert her** | Reglene i databasen er fortsatt åpne (trinn 3). Selve innloggingen mot Google og e-post er ikke prøvd i drift: innloggingsmåtene må først slås på i Firebase-prosjektet |
+
 ---
 
 
@@ -664,9 +701,9 @@ Sortert etter hvor mye de betyr for en menighet som skal ta løsningen i bruk.
 
 | # | Mangel | Løses i |
 |:---:|:---|:---|
-| 1 | Ingen innlogging, og databasereglene er åpne | Fase 1 |
+| 1 | Databasereglene er åpne. Innloggingen sperrer skjermene, men den som kjenner databasen, kan fortsatt lese og skrive utenom | Trinn 3 |
 | 2 | Personregisteret og kladder leveres til alle nettlesere | Fase 1 |
-| 3 | Testbryter og testverktøy vises i løsningen | Fase 1 |
+| 3 | To personer som deler e-postadresse, kan ikke logge inn før adressen står på bare én av dem. Første administrator må legges inn med et skript | Trinn 6 for skriptet |
 | 4 | Forsidens tekster og menighetens navn står delvis i koden | Fase 2 |
 | 5 | Bilder lagres inne i sidedokumentene, og kan da ikke brukes som delebilde | Fase 2 |
 | 6 | To kilder for stab og lederskap, den ene uten samtykke | Fase 2 |
@@ -701,8 +738,8 @@ Trinnene tas i rekkefølge. Et trinn er ferdig når det er prøvd, testene er gr
 | Trinn | Hva | Status |
 |:---|:---|:---|
 | 1 | **Nøytral og flyttbar app.** Databasen leses fra installasjonens innstillinger. Ingenting om én menighet står i koden | **Levert 7. oktober** (kapittel 12) |
-| 2 | **Innlogging og roller:** administrator, gruppeleder og medlem. Testbryteren fjernes, og admin legges bak innlogging | Neste |
-| 3 | **Lukkede databaseregler** for appens egne data. Nettsiden slutter å laste personregisteret | |
+| 2 | **Innlogging og roller:** administrator, gruppeleder og medlem. Testbryteren fjernes, og admin legges bak innlogging | **Levert 7. oktober** (kapittel 10.1 og 12) |
+| 3 | **Lukkede databaseregler** for appens egne data. Nettsiden slutter å laste personregisteret | Neste |
 | 4 | **Tilgang.** Appen leser `/system/entitlements`. Siden Moduler viser «ikke inkludert», «av» og «på». Reglene sperrer det menigheten ikke har | |
 | 5 | **Skillet mellom Nivå 1 og Nivå 2** i meny, arrangementsside, Min side, grupper på nettsiden og oversikten | |
 | 6 | **Oppsett av ny menighet:** skript og sjekkliste for database, regler, tilgang, første administrator, startinnhold og adresse | |
@@ -752,7 +789,7 @@ Hver endring typesjekkes, testes og bygges før den regnes som ferdig. Regler fl
 | Valg | Alternativer | Anbefaling |
 |:---|:---|:---|
 | Varslingskanal | Bare pushvarsler i appen, eller push pluss SMS ved akutt forfall og påminnelse dagen før | Push pluss SMS. De som trenger varselet mest, har ofte ikke appen åpen |
-| Innloggingsmåter | Bare Google, eller Google pluss Vipps og passord | Start med Google. Legg til Vipps når menigheten ber om det |
+| Innloggingsmåter | Bare Google, eller Google pluss andre måter | Avgjort 7. oktober 2026: Google-konto og lenke på e-post, uten passord (kapittel 10.1). Vipps kan legges til når en menighet ber om det |
 | Bildelagring | Firebase Storage, eller en ekstern bildetjeneste | Firebase Storage. Samme prosjekt, samme regler |
 | Hvem teller oppmøtet | Administrator i etterkant, eller en egen rolle «Teller» på gudstjenesten som registrerer fra Min side | Start med administrator. Legg til rollen når tellingen skal gjøres samme dag av den som står i døra |
 | Hvem er «barn» i tellingen | Under konfirmasjonsalder, under 18, eller egen telling for barnekirken | Under konfirmasjonsalder (det står i registreringsvinduet). Bestemmes før tallene brukes i årsmeldingen |

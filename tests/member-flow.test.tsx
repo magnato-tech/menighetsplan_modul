@@ -6,9 +6,12 @@ import { MemoryRouter } from "react-router-dom";
 import { COLLECTIONS } from "../src/data/collections";
 import type { Assignment, Gathering, Group, Person, Task } from "../src/types";
 import { clearCollections, offline, seed, stored } from "./support/offlineFirestore";
+import { resetSession, startAsPerson } from "./support/session";
 
 // What a volunteer sees and can do, run through the real provider and the real Firestore client (offline)
 vi.mock("../src/firebase", async () => (await import("./support/offlineFirestore")).firebaseModuleMock);
+// Who is signed in is what the test says (see support/session.ts)
+vi.mock("../src/services/auth", async () => (await import("./support/session")).authModuleMock);
 
 import { FirebaseDataProvider, useFirebase } from "../src/context/FirebaseDataContext";
 import { useTaskDetail } from "../src/hooks/memberHooks";
@@ -58,6 +61,7 @@ const assignments: Assignment[] = [
 beforeEach(async () => {
   await offline;
   await clearCollections(Object.values(COLLECTIONS));
+  resetSession();
   seed(COLLECTIONS.PERSONS, persons);
   seed(COLLECTIONS.GROUPS, groups);
   seed(COLLECTIONS.GATHERINGS, gatherings);
@@ -75,15 +79,16 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
 
 /** Mounts the hooks as the given person, once the data has arrived. */
 async function mountAs<T>(personId: string, useView: () => T) {
+  // The planning data is only followed for someone in the register, so the person is there from the start
+  startAsPerson(personId);
   const { result } = renderHook(() => ({ data: useFirebase(), view: useView() }), { wrapper });
   await waitFor(() => {
+    expect(result.current.data.currentUser.id).toBe(personId);
     expect(result.current.data.allPersons).toHaveLength(persons.length);
     expect(result.current.data.gatherings).toHaveLength(gatherings.length);
     expect(result.current.data.tasks).toHaveLength(tasks.length);
     expect(result.current.data.assignments).toHaveLength(assignments.length);
   });
-  result.current.data.setCurrentUserId(personId);
-  await waitFor(() => expect(result.current.data.currentUser.id).toBe(personId));
   return result;
 }
 

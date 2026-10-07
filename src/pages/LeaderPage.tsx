@@ -5,7 +5,6 @@ import {
   formatNorwegianDateTime,
   formatCompactGatheringSubtitle,
 } from "../hooks/useAppHooks";
-import { UserQuickSwitcherBar } from "../components/UserSwitcher";
 import {
   ShieldAlert,
   Clock,
@@ -70,7 +69,6 @@ export const LeaderPage: React.FC = () => {
   if (!isLeader) {
     return (
       <div className="w-full max-w-md mx-auto bg-slate-50 min-h-screen shadow-md sm:my-4 sm:rounded-3xl sm:border sm:border-slate-200/80 overflow-hidden">
-        <UserQuickSwitcherBar />
         <div className="p-8 text-center space-y-4">
           <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto text-slate-400">
             <ShieldAlert className="w-7 h-7" />
@@ -98,9 +96,6 @@ export const LeaderPage: React.FC = () => {
 
   return (
     <div className="w-full max-w-md mx-auto bg-slate-50 min-h-screen shadow-md sm:my-4 sm:rounded-3xl sm:border sm:border-slate-200/80 overflow-hidden">
-      {/* Quick Mock User Switcher Bar */}
-      <UserQuickSwitcherBar />
-
       {/* Subheader & Tabs */}
       <div className="bg-white px-5 pt-3 pb-3 border-b border-slate-100 space-y-3">
         <div className="flex items-center justify-between">

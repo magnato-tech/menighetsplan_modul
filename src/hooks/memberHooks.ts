@@ -6,7 +6,7 @@ import { countSlots, holdsSlot } from "../utils/staffing";
 
 // 1. Hook: useCurrentUser
 export function useCurrentUser() {
-  const { currentUser, allPersons, currentUserId, setCurrentUserId, getUserGroups } = useFirebase();
+  const { currentUser, allPersons, getUserGroups } = useFirebase();
   const userGroups = useMemo(
     () => (currentUser?.id && getUserGroups ? getUserGroups(currentUser.id) : []),
     [getUserGroups, currentUser?.id]
@@ -15,8 +15,6 @@ export function useCurrentUser() {
   return {
     currentUser,
     allPersons,
-    currentUserId,
-    setCurrentUserId,
     userGroups,
   };
 }

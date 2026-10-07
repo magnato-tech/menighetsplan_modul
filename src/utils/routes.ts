@@ -9,11 +9,18 @@ const isUnder = (pathname: string, section: string) => pathname === section || p
 
 export { isAdminStudioPath } from "./adminStudioRoutes";
 
+/** The page where one signs in. It is not part of the website visitors read, and not behind sign-in itself. */
+export const SIGN_IN_PATH = "/logg-inn";
+
+export function isSignInPath(pathname: string): boolean {
+  return isUnder(pathname, SIGN_IN_PATH);
+}
+
 export function isMinSidePath(pathname: string): boolean {
   return MIN_SIDE_SECTIONS.some((section) => isUnder(pathname, section));
 }
 
 /** Whether the address is part of the website visitors see, and not of Min side, admin or the API. */
 export function isPublicPath(pathname: string): boolean {
-  return !isMinSidePath(pathname) && !isUnder(pathname, "/admin") && !isUnder(pathname, "/api");
+  return !isMinSidePath(pathname) && !isSignInPath(pathname) && !isUnder(pathname, "/admin") && !isUnder(pathname, "/api");
 }

@@ -12,8 +12,11 @@ import { buildInitialVolunteerRoles } from "../src/data/defaultVolunteerRoles";
 import type { Gathering, Person, ProgramItem, Task } from "../src/types";
 import { buildRunSheet } from "../src/utils/runSheet";
 import { clearCollections, offline, seed, stored, storedIds } from "./support/offlineFirestore";
+import { resetSession } from "./support/session";
 
 vi.mock("../src/firebase", async () => (await import("./support/offlineFirestore")).firebaseModuleMock);
+// Who is signed in is what the test says (see support/session.ts)
+vi.mock("../src/services/auth", async () => (await import("./support/session")).authModuleMock);
 
 import { FirebaseDataProvider, useFirebase } from "../src/context/FirebaseDataContext";
 import { useLeaderGatheringDetail } from "../src/hooks/leaderHooks";
@@ -37,7 +40,7 @@ async function mountProvider() {
 }
 
 async function switchUser(hook: Awaited<ReturnType<typeof mountProvider>>, personId: string) {
-  hook.result.current.setCurrentUserId(personId);
+  hook.result.current.standInAs!(personId);
   await waitFor(() => expect(hook.result.current.currentUser.id).toBe(personId));
 }
 
@@ -63,6 +66,8 @@ async function buildScenario(hook: ProviderHook): Promise<Scenario> {
   const ola = hook.result.current.addPerson({ name: "Ola Hansen" }).person!;
   const per = hook.result.current.addPerson({ name: "Per Olsen" }).person!;
   await waitFor(() => expect(hook.result.current.allPersons).toHaveLength(3));
+  hook.result.current.standInAs!(leader.id);
+  await waitFor(() => expect(hook.result.current.currentUser.id).toBe(leader.id));
 
   const group = hook.result.current
     .createGroup({
@@ -164,6 +169,7 @@ async function buildScenario(hook: ProviderHook): Promise<Scenario> {
 beforeEach(async () => {
   await offline;
   await clearCollections(Object.values(COLLECTIONS));
+  resetSession();
   // Omit undefined groupId — Firestore rejects undefined field values in seed writes.
   seed(
     COLLECTIONS.VOLUNTEER_ROLES,
@@ -215,7 +221,7 @@ describe("Gruppeleder bemanner programposter", () => {
       { wrapper }
     );
     await waitFor(() => expect(screen.result.current.data.gatherings.length).toBeGreaterThanOrEqual(2));
-    screen.result.current.data.setCurrentUserId(scenario.leader.id);
+    screen.result.current.data.standInAs!(scenario.leader.id);
     await waitFor(() => {
       expect(screen.result.current.leader.hasAccess).toBe(true);
       expect(screen.result.current.leader.isLeader).toBe(true);
@@ -257,7 +263,7 @@ describe("Medlem svarer på forespørsel", () => {
       { wrapper }
     );
     await waitFor(() => expect(ola.result.current.data.allPersons).toHaveLength(3));
-    ola.result.current.data.setCurrentUserId(scenario.ola.id);
+    ola.result.current.data.standInAs!(scenario.ola.id);
     await waitFor(() => expect(ola.result.current.task.isAskedOfMe).toBe(true));
 
     expect(ola.result.current.task.answerRequest(true).success).toBe(true);
@@ -273,7 +279,7 @@ describe("Medlem svarer på forespørsel", () => {
 
     const ola = renderHook(() => ({ data: useFirebase(), page: useMyPage() }), { wrapper });
     await waitFor(() => expect(ola.result.current.data.allPersons).toHaveLength(3));
-    ola.result.current.data.setCurrentUserId(scenario.ola.id);
+    ola.result.current.data.standInAs!(scenario.ola.id);
 
     await waitFor(() => {
       const titles = ola.result.current.page.attentionItems
@@ -302,7 +308,7 @@ describe("Avslag og ny forespørsel på programposter", () => {
       { wrapper }
     );
     await waitFor(() => expect(ola.result.current.data.allPersons).toHaveLength(3));
-    ola.result.current.data.setCurrentUserId(scenario.ola.id);
+    ola.result.current.data.standInAs!(scenario.ola.id);
     await waitFor(() => expect(ola.result.current.task.isAskedOfMe).toBe(true));
     ola.result.current.task.answerRequest(false);
     await waitFor(() => expect(ola.result.current.task.task?.status).toBe("open"));
@@ -320,7 +326,7 @@ describe("Avslag og ny forespørsel på programposter", () => {
       { wrapper }
     );
     await waitFor(() => expect(per.result.current.data.allPersons).toHaveLength(3));
-    per.result.current.data.setCurrentUserId(scenario.per.id);
+    per.result.current.data.standInAs!(scenario.per.id);
     await waitFor(() => expect(per.result.current.task.isAskedOfMe).toBe(true));
     per.result.current.task.answerRequest(true);
     await waitFor(() => expect(per.result.current.task.isAssignedToMe).toBe(true));
@@ -334,7 +340,7 @@ describe("Avslag og ny forespørsel på programposter", () => {
 
     const ola = renderHook(() => ({ data: useFirebase(), page: useMyPage() }), { wrapper });
     await waitFor(() => expect(ola.result.current.data.allPersons).toHaveLength(3));
-    ola.result.current.data.setCurrentUserId(scenario.ola.id);
+    ola.result.current.data.standInAs!(scenario.ola.id);
     await waitFor(() => expect(ola.result.current.page.attentionItems.some((i) => i.title === "Lydtekniker")).toBe(true));
 
     const request = ola.result.current.page.attentionItems.find((i) => i.title === "Lydtekniker")!;
@@ -356,7 +362,7 @@ describe("Avslag og ny forespørsel på programposter", () => {
 
     const ola = renderHook(() => ({ data: useFirebase(), page: useMyPage() }), { wrapper });
     await waitFor(() => expect(ola.result.current.data.allPersons).toHaveLength(3));
-    ola.result.current.data.setCurrentUserId(scenario.ola.id);
+    ola.result.current.data.standInAs!(scenario.ola.id);
     await waitFor(() => expect(ola.result.current.page.attentionItems.some((i) => i.title === "Lydtekniker")).toBe(true));
 
     const request = ola.result.current.page.attentionItems.find((i) => i.title === "Lydtekniker")!;
@@ -381,7 +387,7 @@ describe("Forfall og vikarbehov", () => {
       { wrapper }
     );
     await waitFor(() => expect(ola.result.current.data.allPersons).toHaveLength(3));
-    ola.result.current.data.setCurrentUserId(scenario.ola.id);
+    ola.result.current.data.standInAs!(scenario.ola.id);
     await waitFor(() => expect(ola.result.current.task.canReportAbsence).toBe(true));
 
     ola.result.current.task.reportAbsence();
@@ -402,7 +408,7 @@ describe("Forfall og vikarbehov", () => {
 
     const ola = renderHook(() => ({ data: useFirebase(), page: useMyPage() }), { wrapper });
     await waitFor(() => expect(ola.result.current.data.allPersons).toHaveLength(3));
-    ola.result.current.data.setCurrentUserId(scenario.per.id);
+    ola.result.current.data.standInAs!(scenario.per.id);
     await waitFor(() => {
       const item = ola.result.current.page.attentionItems.find((i) => i.title === "Lydtekniker akutt");
       expect(item).toMatchObject({ type: "open_task", needsSubstitute: true });
@@ -424,7 +430,7 @@ describe("Forfall og vikarbehov", () => {
       { wrapper }
     );
     await waitFor(() => expect(perTask.result.current.data.allPersons).toHaveLength(3));
-    perTask.result.current.data.setCurrentUserId(scenario.per.id);
+    perTask.result.current.data.standInAs!(scenario.per.id);
     await waitFor(() => expect(perTask.result.current.task.isAskedOfMe).toBe(true));
     perTask.result.current.task.answerRequest(true);
     await waitFor(() => expect(admin.result.current.getTaskById(scenario.taskSoon.id)?.status).toBe("confirmed"));

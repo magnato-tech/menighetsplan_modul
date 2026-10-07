@@ -1,6 +1,6 @@
 import type { Group } from "../types";
 
-type GroupRoles = Pick<Group, "memberIds" | "leaderIds" | "deputyLeaderIds">;
+export type GroupRoles = Pick<Group, "memberIds" | "leaderIds" | "deputyLeaderIds">;
 
 /** Whether the person belongs to the group in any role: member, leader or deputy leader. */
 export function isInGroup(group: GroupRoles, personId: string): boolean {

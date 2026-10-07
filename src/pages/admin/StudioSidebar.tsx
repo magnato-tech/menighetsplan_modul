@@ -24,6 +24,7 @@ import {
   Images,
   CircleHelp,
   Puzzle,
+  LogOut,
 } from "lucide-react";
 import { countAddonsOn } from "../../utils/addons";
 import { STUDIO_ADDONS, addonMenuSections } from "./addons";
@@ -502,6 +503,15 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({ studio, activeTab,
             <span>Innlogget som:</span>
             <strong className="text-[var(--studio-text)] truncate max-w-[120px]">{currentUser.name}</strong>
           </div>
+
+          <button
+            type="button"
+            onClick={() => void studio.signOut()}
+            className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--studio-border)] text-[11px] font-bold text-[var(--studio-muted)] hover:text-[var(--studio-text)] hover:bg-[var(--studio-bg)] cursor-pointer"
+          >
+            <LogOut className="w-3.5 h-3.5" aria-hidden="true" />
+            Logg ut
+          </button>
         </div>
       </aside>
     </>

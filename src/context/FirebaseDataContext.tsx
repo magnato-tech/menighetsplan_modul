@@ -10,7 +10,6 @@ import {
   GatheringHeadcount,
   VolunteerRole,
 } from "../types";
-import { initialPersons } from "../data/mockData";
 import { CMS_COLLECTIONS, COLLECTIONS } from "../data/collections";
 import {
   NewPersonInput,
@@ -43,7 +42,9 @@ import {
   saveAssignmentChange,
   setAnalyticsModuleHidden as storeAnalyticsModuleHidden,
 } from "../services/firestore";
+import { signOut as signOutOfAccount, subscribeAccount } from "../services/auth";
 import { isInGroup } from "../utils/groups";
+import { sessionOf, standInSession, type AccountState, type Session } from "../utils/session";
 import type { HeadcountInput } from "../utils/headcount";
 import { AssignmentChange, applyAssignmentChange, holdsSlot, isAcuteForfall, taskStatusFor } from "../utils/staffing";
 
@@ -64,10 +65,18 @@ export interface ActionResult {
 export interface FirebaseDataContextType {
   // State
   isFirestoreConnected: boolean;
+  /** Who is using the app: signed out, signed in without being in the register, or a person in it (see utils/session.ts). */
+  session: Session;
+  /**
+   * The person using the app. It is someone only while `session` is a member, which it always is
+   * on the pages behind sign-in (see SessionGate). Elsewhere it is nobody: no name, no id, and
+   * no role beyond a member's.
+   */
   currentUser: Person;
+  signOut: () => Promise<void>;
+  /** On a developer's own machine only: go in as a person without signing in. Absent in the published app. */
+  standInAs?: (personId: string) => void;
   allPersons: Person[];
-  currentUserId: string;
-  setCurrentUserId: (id: string) => void;
   groups: Group[];
   gatherings: Gathering[];
   tasks: Task[];
@@ -164,6 +173,34 @@ interface FirebaseDataProviderProps {
   internal?: boolean;
 }
 
+/** Stands where a person is asked for and nobody is signed in. */
+const NOBODY: Person = { id: "", name: "", globalRole: "member" };
+
+// A developer's own machine has no sign-in set up, so there a person from the register can be
+// stood in for (see SignInPage). The published app is built without this: nobody gets in
+// without signing in. The choice lasts for the browser tab.
+const CAN_STAND_IN = import.meta.env.DEV;
+const STAND_IN_KEY = "menighetsplan_utvikler_som";
+
+function storedStandIn(): string | null {
+  if (!CAN_STAND_IN) return null;
+  try {
+    return sessionStorage.getItem(STAND_IN_KEY);
+  } catch {
+    // Blocked storage only means the stand-in is not remembered when the page is loaded again
+    return null;
+  }
+}
+
+function storeStandIn(personId: string | null): void {
+  try {
+    if (personId === null) sessionStorage.removeItem(STAND_IN_KEY);
+    else sessionStorage.setItem(STAND_IN_KEY, personId);
+  } catch {
+    // See storedStandIn
+  }
+}
+
 export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ children, internal = true }) => {
   // Firestore is the only source of data. Everything is empty until the first snapshot
   // arrives, and no action changes these lists by hand: a write reaches them through
@@ -178,7 +215,12 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
   const [headcounts, setHeadcounts] = useState<GatheringHeadcount[]>([]);
   const [volunteerRoles, setVolunteerRoles] = useState<VolunteerRole[]>([]);
   const [isFirestoreConnected, setIsFirestoreConnected] = useState<boolean>(false);
-  const [currentUserId, setCurrentUserId] = useState<string>("person-1");
+  const [accountState, setAccountState] = useState<AccountState>({ status: "loading" });
+  // Whether the register has been received. Until then nobody can be said to be missing from it.
+  const [registerReady, setRegisterReady] = useState(false);
+  const [standInId, setStandInId] = useState<string | null>(storedStandIn);
+
+  useEffect(() => subscribeAccount(setAccountState), []);
 
   const [moduleConfig, setModuleConfig] = useState<ModuleConfig>(() => {
     try {
@@ -204,16 +246,36 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
   // Listen in real-time to Firestore collections
   useEffect(() => {
     const unsubscribers = [
-      subscribeCollection<Person>(COLLECTIONS.PERSONS, setPersons),
+      subscribeCollection<Person>(COLLECTIONS.PERSONS, (list) => {
+        setPersons(list);
+        setRegisterReady(true);
+      }),
       subscribeCollection<Group>(COLLECTIONS.GROUPS, setGroups),
       subscribeCollection<Gathering>(COLLECTIONS.GATHERINGS, setGatherings),
     ];
     return () => unsubscribers.forEach((unsubscribe) => unsubscribe());
   }, []);
 
-  // Planning data, only behind the public website
+  // Who is using the app. The register decides who an account is; the stand-in is only on a developer's machine.
+  const session = useMemo<Session>(() => {
+    const real = sessionOf(accountState, persons, registerReady);
+    if (real.status === "signedOut" && standInId !== null) return standInSession(standInId, persons, registerReady);
+    return real;
+  }, [accountState, persons, registerReady, standInId]);
+  const isMember = session.status === "member";
+
+  // Planning data, only behind the public website, and only for someone who is in the register
   useEffect(() => {
-    if (!internal) return;
+    if (!internal || !isMember) {
+      // Nothing of it is kept in the browser of someone who has signed out, or on the public website
+      setTasks([]);
+      setAssignments([]);
+      setGroupMessages([]);
+      setAttendances([]);
+      setHeadcounts([]);
+      setVolunteerRoles([]);
+      return;
+    }
     const unsubscribers = [
       subscribeCollection<Task>(COLLECTIONS.TASKS, setTasks),
       subscribeCollection<Assignment>(COLLECTIONS.ASSIGNMENTS, setAssignments),
@@ -223,13 +285,26 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
       subscribeVolunteerRoles(setVolunteerRoles),
     ];
     return () => unsubscribers.forEach((unsubscribe) => unsubscribe());
-  }, [internal]);
+  }, [internal, isMember]);
 
-  // Until real sign-in exists, the mock admin stands in when the database has no persons,
-  // so the admin pages stay reachable on an empty database.
-  const currentUser = useMemo(() => {
-    return persons.find((p) => p.id === currentUserId) || persons[0] || initialPersons[0];
-  }, [persons, currentUserId]);
+  const currentUser = session.status === "member" ? session.person : NOBODY;
+
+  const signOut = useCallback(async () => {
+    storeStandIn(null);
+    setStandInId(null);
+    await signOutOfAccount();
+  }, []);
+
+  const standInAs = useMemo(
+    () =>
+      CAN_STAND_IN
+        ? (personId: string) => {
+            storeStandIn(personId);
+            setStandInId(personId);
+          }
+        : undefined,
+    []
+  );
 
   const setModuleStatus = useCallback((moduleName: keyof ModuleConfig, status: "on" | "off") => {
     setModuleConfig((prev) => {
@@ -267,12 +342,12 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
         const group = groups.find((g) => g.id === groupId);
         return group !== undefined && isInGroup(group, personId);
       },
-      getGroupNotificationsEnabled: (groupId: string, personId: string = currentUserId) => {
+      getGroupNotificationsEnabled: (groupId: string, personId: string = currentUser.id) => {
         const group = groups.find((g) => g.id === groupId);
         return group?.notificationPreferences?.[personId] !== false;
       },
     }),
-    [groups, currentUserId]
+    [groups, currentUser.id]
   );
 
   const gatheringLookups = useMemo(
@@ -505,21 +580,22 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
 
   const { getGroupNotificationsEnabled } = groupLookups;
   const toggleGroupNotifications = useCallback(
-    (groupId: string, personId: string = currentUserId, forceState?: boolean) => {
+    (groupId: string, personId: string = currentUser.id, forceState?: boolean) => {
       const enabled = forceState ?? !getGroupNotificationsEnabled(groupId, personId);
       save("lagre varslingsvalget", () => setGroupNotifications(groupId, personId, enabled));
       return { success: true, enabled };
     },
-    [getGroupNotificationsEnabled, currentUserId]
+    [getGroupNotificationsEnabled, currentUser.id]
   );
 
   const contextValue: FirebaseDataContextType = useMemo(
     () => ({
       isFirestoreConnected,
+      session,
       currentUser,
+      signOut,
+      standInAs,
       allPersons: persons,
-      currentUserId,
-      setCurrentUserId,
       groups,
       gatherings,
       tasks,
@@ -547,9 +623,11 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
     }),
     [
       isFirestoreConnected,
+      session,
       currentUser,
+      signOut,
+      standInAs,
       persons,
-      currentUserId,
       groups,
       gatherings,
       tasks,

@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { UserQuickSwitcherBar } from "../components/UserSwitcher";
 import { useMyPage } from "./myPage/useMyPage";
 import { AttentionSection } from "./myPage/AttentionSection";
 import { MyGroupsSection } from "./myPage/MyGroupsSection";
@@ -32,9 +31,6 @@ export const MyPage: React.FC = () => {
 
   return (
     <div className="w-full max-w-md mx-auto bg-slate-50 min-h-screen shadow-md sm:my-4 sm:rounded-3xl sm:border sm:border-slate-200/80 overflow-hidden pb-20 sm:pb-8">
-      {/* Quick Mock User Switcher Bar */}
-      <UserQuickSwitcherBar />
-
       <div className="p-4 sm:p-6 space-y-5">
         {/* Floating Feedback Notification */}
         {feedbackMessage && (

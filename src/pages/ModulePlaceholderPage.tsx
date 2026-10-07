@@ -2,7 +2,6 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Calendar, MessageSquare, ArrowLeft, ToggleLeft } from "lucide-react";
 import { useModuleConfig } from "../hooks/useAppHooks";
-import { UserQuickSwitcherBar } from "../components/UserSwitcher";
 
 interface Props {
   module: "kalender" | "meldinger";
@@ -21,8 +20,6 @@ export const ModulePlaceholderPage: React.FC<Props> = ({ module }) => {
 
   return (
     <div className="w-full max-w-md mx-auto bg-slate-50 min-h-screen shadow-md sm:my-4 sm:rounded-3xl sm:border sm:border-slate-200/80 overflow-hidden">
-      <UserQuickSwitcherBar />
-
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between border-b border-slate-200/70 pb-3">
           <div className="flex items-center gap-2">

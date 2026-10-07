@@ -44,6 +44,7 @@ export interface AdminTaskItem {
 export function useAdminDashboard() {
   const {
     currentUser,
+    signOut,
     allPersons,
     groups,
     gatherings,
@@ -179,6 +180,7 @@ export function useAdminDashboard() {
   return {
     isAdmin,
     currentUser,
+    signOut,
     allPersons,
     adminPersons,
     adminVolunteerRoles,

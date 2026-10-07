@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { UserSwitcher } from "./UserSwitcher";
+import { AccountMenu } from "./AccountMenu";
 import { useCms } from "../context/CmsContext";
 import { useLeaderDashboard } from "../hooks/useAppHooks";
 import { ArrowLeft, Shield } from "lucide-react";
@@ -49,8 +49,8 @@ export const Header: React.FC = () => {
             <p className="text-[11px] text-slate-500 font-medium">{settings.churchName}</p>
           </Link>
 
-          {/* User Switcher Dropdown */}
-          <UserSwitcher />
+          {/* Who is signed in, and the way out */}
+          <AccountMenu />
         </div>
 
         {/* Navigation Tabs (Min side / Gruppeleder / Admin Studio) */}

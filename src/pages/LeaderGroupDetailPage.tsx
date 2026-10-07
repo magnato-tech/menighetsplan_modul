@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useLeaderGroupDetail } from "../hooks/useAppHooks";
-import { UserQuickSwitcherBar } from "../components/UserSwitcher";
 import { useTimedMessage } from "../hooks/useTimedMessage";
 import { HusfellesskapView } from "../components/HusfellesskapView";
 import { GroupChat } from "../components/GroupChat";
@@ -47,7 +46,6 @@ export const LeaderGroupDetailPage: React.FC = () => {
   if (!group || !hasAccess) {
     return (
       <div className="w-full max-w-md mx-auto bg-slate-50 min-h-screen shadow-md sm:my-4 sm:rounded-3xl sm:border sm:border-slate-200/80 overflow-hidden">
-        <UserQuickSwitcherBar />
         <div className="p-8 text-center space-y-4">
           <div className="w-14 h-14 bg-amber-50 rounded-2xl flex items-center justify-center mx-auto text-amber-600 border border-amber-200">
             <AlertTriangle className="w-7 h-7" />
@@ -80,9 +78,6 @@ export const LeaderGroupDetailPage: React.FC = () => {
   if (group.category === "husgruppe") {
     return (
       <div className="w-full max-w-md mx-auto bg-slate-50 min-h-screen shadow-md sm:my-4 sm:rounded-3xl sm:border sm:border-slate-200/80 overflow-hidden">
-        {/* Quick Switcher Bar */}
-        <UserQuickSwitcherBar />
-
         {/* Header & Breadcrumb */}
         <div className="bg-white px-5 pt-4 pb-3 border-b border-slate-100 space-y-2">
           <GroupRoleBar detail={detail} />
@@ -97,9 +92,6 @@ export const LeaderGroupDetailPage: React.FC = () => {
 
   return (
     <div className="w-full max-w-md mx-auto bg-slate-50 min-h-screen shadow-md sm:my-4 sm:rounded-3xl sm:border sm:border-slate-200/80 overflow-hidden">
-      {/* Quick Switcher Bar */}
-      <UserQuickSwitcherBar />
-
       {/* Header & Breadcrumb */}
       <div className="bg-white px-5 pt-4 pb-3 border-b border-slate-100 space-y-2">
         <GroupRoleBar detail={detail} />

@@ -6,10 +6,13 @@ import { CMS_COLLECTIONS, COLLECTIONS } from "../src/data/collections";
 import { clearWriteError, getWriteError } from "../src/services/writeErrors";
 import type { Assignment, Gathering, Group, GroupMessage, Person, Task } from "../src/types";
 import { clearCollections, offline, seed, stored, storedIds } from "./support/offlineFirestore";
+import { nobodySignedIn, resetSession, signInStatePending, signInWith, startAsPerson } from "./support/session";
 
 // The provider runs against the real Firestore client, kept offline. What a test sees in
 // the provider's state is therefore what the client holds after the write, not a guess at it.
 vi.mock("../src/firebase", async () => (await import("./support/offlineFirestore")).firebaseModuleMock);
+// Who is signed in is what the test says (see support/session.ts)
+vi.mock("../src/services/auth", async () => (await import("./support/session")).authModuleMock);
 
 import { FirebaseDataProvider, useFirebase } from "../src/context/FirebaseDataContext";
 
@@ -68,6 +71,9 @@ const messages: GroupMessage[] = [
 beforeEach(async () => {
   await offline;
   await clearCollections(Object.values(COLLECTIONS));
+  // Unless a test says otherwise, the one using the app is the first person in the register
+  resetSession();
+  startAsPerson("person-1");
   seed(COLLECTIONS.PERSONS, persons);
   seed(COLLECTIONS.GROUPS, groups);
   seed(COLLECTIONS.GATHERINGS, gatherings);
@@ -133,10 +139,12 @@ describe("Lesing", () => {
     expect(data.current.headcounts).toEqual([]);
   });
 
-  test("Aktiv bruker er personen som er valgt", async () => {
+  test("På egen maskin kan en utvikler gå inn som en person, og bytte til en annen", async () => {
     const data = await mountProvider();
     expect(data.current.currentUser.id).toBe("person-1");
-    data.current.setCurrentUserId("person-2");
+    expect(data.current.session).toMatchObject({ status: "member", account: null });
+
+    data.current.standInAs!("person-2");
     await waitFor(() => expect(data.current.currentUser.name).toBe("Ola Hansen"));
   });
 });
@@ -529,5 +537,80 @@ describe("Feil", () => {
     await waitFor(() => expect(getWriteError()?.action).toBe("lagre endringene i samlingen"));
     await waitFor(() => expect(data.current.getGatheringById("gathering-1")?.theme).toBe("Nåde"));
     expect((await stored(COLLECTIONS.GATHERINGS, "gathering-1"))?.theme).toBe("Nåde");
+  });
+});
+
+describe("Hvem som bruker appen", () => {
+  const eva: Person = { id: "person-eva", name: "Eva Epost", email: "Eva@Eksempel.no", globalRole: "member" };
+
+  // Nobody is stood in for here: who is in, is decided by the account and the register
+  beforeEach(() => {
+    resetSession();
+    seed(COLLECTIONS.PERSONS, [eva]);
+  });
+
+  async function mount() {
+    const { result } = renderHook(() => useFirebase(), {
+      wrapper: ({ children }: { children: React.ReactNode }) => <FirebaseDataProvider>{children}</FirebaseDataProvider>,
+    });
+    await waitFor(() => expect(result.current.allPersons).toHaveLength(persons.length + 1));
+    return result;
+  }
+
+  test("Den som logger inn med adressen sin fra registeret, er den personen, og får planleggingsdataene", async () => {
+    signInWith("eva@eksempel.no");
+    const data = await mount();
+
+    await waitFor(() => expect(data.current.session).toMatchObject({ status: "member", person: { id: "person-eva" } }));
+    expect(data.current.currentUser.name).toBe("Eva Epost");
+    await waitFor(() => expect(data.current.tasks).toHaveLength(tasks.length));
+    await waitFor(() => expect(data.current.assignments).toHaveLength(assignments.length));
+  });
+
+  test("Den som ikke er logget inn, er ingen, og planleggingsdataene hentes ikke", async () => {
+    nobodySignedIn();
+    const data = await mount();
+    await pause(150);
+
+    expect(data.current.session).toEqual({ status: "signedOut" });
+    expect(data.current.currentUser).toMatchObject({ id: "", name: "", globalRole: "member" });
+    expect(data.current.tasks).toEqual([]);
+    expect(data.current.assignments).toEqual([]);
+    expect(data.current.groupMessages).toEqual([]);
+  });
+
+  test("En konto som ikke står i registeret, er logget inn uten å være noen her", async () => {
+    signInWith("fremmed@eksempel.no");
+    const data = await mount();
+    await pause(150);
+
+    expect(data.current.session).toMatchObject({ status: "notInRegister", reason: "noMatch" });
+    expect(data.current.currentUser.id).toBe("");
+    expect(data.current.tasks).toEqual([]);
+  });
+
+  test("Før innloggingen er kjent, er ingenting avgjort", async () => {
+    signInStatePending();
+    const data = await mount();
+    expect(data.current.session).toEqual({ status: "loading" });
+    expect(data.current.tasks).toEqual([]);
+
+    signInWith("eva@eksempel.no");
+    await waitFor(() => expect(data.current.session.status).toBe("member"));
+  });
+
+  test("Den som logger ut, er ingen igjen, og planleggingsdataene blir ikke liggende i nettleseren", async () => {
+    signInWith("eva@eksempel.no");
+    const data = await mount();
+    await waitFor(() => expect(data.current.tasks).toHaveLength(tasks.length));
+
+    await data.current.signOut();
+
+    await waitFor(() => expect(data.current.session).toEqual({ status: "signedOut" }));
+    await waitFor(() => expect(data.current.tasks).toEqual([]));
+    expect(data.current.assignments).toEqual([]);
+    expect(data.current.groupMessages).toEqual([]);
+    // What the public website also reads, is still there
+    expect(data.current.gatherings).toHaveLength(gatherings.length);
   });
 });

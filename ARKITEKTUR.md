@@ -30,6 +30,16 @@ Appen installeres én gang per menighet: eget Firebase-prosjekt, egen database o
 - **Ingenting om én menighet i koden.** Før en menighet har egne innstillinger, gjelder `emptyCmsSettings` (`src/data/cmsData.ts`): navnet «Menigheten» og ellers ingenting. Nettsiden tegner ikke felt som er tomme. Eksempelmenigheten i demodataene (`demoCmsSettings`, `mockData.ts`) vises bare når demodataene er lagt i databasen. `tests/neutral-code.test.ts` går gjennom koden og feiler hvis noe annet nevner én menighet, ett kirkesamfunn eller én database.
 - **Salgssiden** menighetsplan.no er en egen kodebase. Det den og appen er enige om, står i kapittel 14 i `PRODUKTDOKUMENTASJON.md`.
 
+## Innlogging og roller
+- **To ord.** En *konto* er det noen logger inn med. En *person* er en rad i registeret. `src/utils/session.ts` er reglene for hvordan de henger sammen, som rene funksjoner: `sessionOf` gjør kontoen og registeret om til en økt (`loading`, `signedOut`, `notInRegister` med grunn, eller `member` med personen), og `roleOf` sier om personen er administrator, gruppeleder eller medlem. Kontoens bekreftede e-postadresse må stå på nøyaktig én person.
+- **`src/services/auth.ts`** er eneste sted Firebase Auth brukes: Google-konto og lenke på e-post, og `describeSignInError` som gjør feilkodene om til norsk. Adressen en lenke ble sendt til, huskes på enheten den ble bestilt fra.
+- **`FirebaseDataProvider`** følger kontoen og gir `session`, `currentUser` og `signOut` til alle flater. `currentUser` er personen bare mens økten er `member`; ellers er den ingen (uten navn og id). Planleggingsdataene følges bare på interne ruter *og* for et medlem, og tømmes når noen logger ut.
+- **Sperren** er `SessionGate` (`src/components/SessionGate.tsx`), lagt rundt Min side og admin i `src/App.tsx`. Den som ikke er medlem, sendes til `/logg-inn?neste=…`. Admin krever i tillegg administrator. Innloggingssiden (`src/pages/SignInPage.tsx`) er verken en del av nettsiden eller bak innlogging (`isSignInPath` i `src/utils/routes.ts`), og fører bare videre til adresser i appen (`destinationAfterSignIn`).
+- **Ingen vei inn utenom.** Testbryteren er fjernet. På en utviklers egen maskin (`import.meta.env.DEV`) kan en person fra registeret stå inn for en innlogget, valgt på innloggingssiden. Den publiserte appen bygges uten: der er `standInAs` udefinert, og et lagret valg leses ikke.
+- **Første administrator** legges inn utenfra med `scripts/first-admin.ts`, som skriver det `planFirstAdmin` (`src/utils/firstAdmin.ts`) sier må skrives.
+- **I tester** står `tests/support/session.ts` inn for `src/services/auth`: testen sier hvem som er logget inn.
+- **Det som gjenstår til reglene (trinn 3).** Koblingen fra konto til person gjøres i dag i nettleseren, av det den har lest. Reglene i databasen trenger sin egen, pålitelige kobling fra kontoens id til personen før rollen kan håndheves der.
+
 ## Bygg og lasting
 Vite bygger klienten med `manualChunks` for `firebase` og `react-vendor`. Offentlige sider importeres statisk i `src/App.tsx`; admin, Min side og admin-detaljsider lastes med `React.lazy` og `Suspense` bare på de grenene. Hver admin-fane har sin egen lazy-import i `src/pages/admin/studioTabLoaders.ts`, med forhåndshent ved hover, fokus og touch fra `StudioSidebar.tsx`.
 
@@ -149,7 +159,7 @@ Tre regler avgjør hva en besøkende ser, og hver av dem ligger ett sted:
 
 | Område | Mål | I dag |
 |---|---|---|
-| Innlogging | Brukere logger inn; roller styrer tilgang | Ingen innlogging. Aktiv bruker velges i en testbryter, og `/admin` er åpen |
+| Innlogging | Brukere logger inn; roller styrer tilgang | Levert for skjermene (se Innlogging og roller). Rollen håndheves ikke i databasen før reglene lukkes, og reglene har ennå ingen pålitelig kobling fra konto til person |
 | Sikkerhetsregler | Bare admin endrer offentlige profilfelt; medlemmer endrer bare sitt eget | Reglene tillater lesing av alt og skriving uten innlogging |
 | Regler i drift | Reglene i `firestore.rules` er de som gjelder | Reglene i drift er eldre og avviser nye samlinger (prøvd 5. oktober: `volunteer_roles` og `gatheringHeadcounts`). Tjenesteroller og oppmøtetall lagres i `cms_settings` til reglene er publisert. Da endres bare `volunteerRoles.ts` og `headcounts.ts` |
 | Besøkstall | En egen samling der en besøkende bare kan legge til i dagens summer, og bare administratorer kan lese og slette | Dagene ligger i `cms_settings`, der reglene tillater skriving for alle. Tallene kan derfor endres og slettes av hvem som helst, som alt annet. Når innlogging og strammere regler kommer, må de flyttes: da endres bare `src/services/siteTraffic.ts` |

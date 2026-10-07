@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import { FirebaseDataProvider } from "./context/FirebaseDataContext";
 import { CmsProvider, useCms } from "./context/CmsContext";
 import { SITE_THEME_CLASS, getThemeCssVariables } from "./utils/themeUtils";
-import { isAdminStudioPath, isMinSidePath, isPublicPath } from "./utils/routes";
+import { isAdminStudioPath, isMinSidePath, isPublicPath, isSignInPath } from "./utils/routes";
 import { PreviewQueryPersist } from "./components/public/PreviewQueryPersist";
 import { useSiteTraffic } from "./hooks/useSiteTraffic";
 import { EmbeddedPreviewGuard } from "./components/public/EmbeddedPreviewGuard";
@@ -17,6 +17,7 @@ import { PublicNavbar } from "./components/public/PublicNavbar";
 import { PublicFooter } from "./components/public/PublicFooter";
 import { PublicHashScroll } from "./components/public/PublicHashScroll";
 import { ChunkErrorBoundary } from "./components/ChunkErrorBoundary";
+import { SessionGate } from "./components/SessionGate";
 
 // Public pages stay static so they never suspend on first paint.
 import { PublicHomePage } from "./pages/public/PublicHomePage";
@@ -46,6 +47,7 @@ const HusfellesskapPage = lazy(() =>
 const ModulePlaceholderPage = lazy(() =>
   import("./pages/ModulePlaceholderPage").then((m) => ({ default: m.ModulePlaceholderPage }))
 );
+const SignInPage = lazy(() => import("./pages/SignInPage").then((m) => ({ default: m.SignInPage })));
 function LazyRouteFallback() {
   return <p className="p-6 text-sm text-slate-500">Laster…</p>;
 }
@@ -81,20 +83,33 @@ function AppContent() {
     return <IframeInternalRouteBlock />;
   }
 
-  if (isAdminStudio) {
+  if (isSignInPath(location.pathname)) {
     return (
       <ChunkErrorBoundary>
         <Suspense fallback={<LazyRouteFallback />}>
-          <Routes>
-            <Route path="/admin/*" element={<AdminStudio />} />
-          </Routes>
+          <SignInPage />
         </Suspense>
       </ChunkErrorBoundary>
     );
   }
 
+  // The admin is for administrators, and Min side for everyone in the register. Nobody else gets past the gate.
+  if (isAdminStudio) {
+    return (
+      <SessionGate requireAdmin>
+        <ChunkErrorBoundary>
+          <Suspense fallback={<LazyRouteFallback />}>
+            <Routes>
+              <Route path="/admin/*" element={<AdminStudio />} />
+            </Routes>
+          </Suspense>
+        </ChunkErrorBoundary>
+      </SessionGate>
+    );
+  }
   if (isMinSideRoute) {
     return (
+      <SessionGate>
       <div className="min-h-screen flex flex-col bg-slate-100 text-slate-800">
         <Header />
         <main className="flex-1 pb-12">
@@ -125,6 +140,7 @@ function AppContent() {
           </div>
         </footer>
       </div>
+      </SessionGate>
     );
   }
 

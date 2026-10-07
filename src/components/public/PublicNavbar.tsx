@@ -2,7 +2,6 @@ import React, { useEffect, useState, useMemo } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useCms } from "../../context/CmsContext";
 import { useFirebase } from "../../context/FirebaseDataContext";
-import { UserSwitcher } from "../UserSwitcher";
 import { buildPublicMenu, pageUrl } from "../../utils/menu";
 import {
   Menu,
@@ -161,10 +160,7 @@ export const PublicNavbar: React.FC = () => {
 
           {/* Right Action buttons: Min Side & Admin Studio */}
           <div className="hidden sm:flex items-center gap-2.5">
-            {/* User switcher for quick testing */}
-            <div className="scale-90 origin-right">
-              <UserSwitcher />
-            </div>
+            
 
             {/* Min Side Link */}
             <Link
@@ -297,10 +293,7 @@ export const PublicNavbar: React.FC = () => {
               </Link>
             )}
 
-            <div className="pt-2">
-              <span className="text-xs font-semibold text-stone-500 block mb-1">Bytt aktiv bruker:</span>
-              <UserSwitcher />
-            </div>
+            
           </div>
         </div>
       )}
