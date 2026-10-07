@@ -21,7 +21,7 @@ import {
   CmsStaffMember,
   CmsSettings,
   CmsMedia,
-  initialCmsSettings,
+  emptyCmsSettings,
 } from "../data/cmsData";
 import { buildCmsMedia } from "../data/newDocuments";
 import { buildMediaVariantBlobs } from "../utils/imageVariants";
@@ -155,10 +155,10 @@ function useCmsCollection<T>(
   return [items, answered];
 }
 
-/** The site settings. The built-in defaults apply for as long as no settings document exists. */
+/** The site settings. Until a settings document exists they are empty: nothing about any congregation is shown. */
 function useCmsSettings(): CmsSettings {
   const [settings, setSettings] = useState<CmsSettings>(
-    () => readCache<CmsSettings>(STORAGE_KEYS.settings) ?? initialCmsSettings
+    () => readCache<CmsSettings>(STORAGE_KEYS.settings) ?? emptyCmsSettings
   );
 
   useEffect(
@@ -172,7 +172,7 @@ function useCmsSettings(): CmsSettings {
             writeCache(STORAGE_KEYS.settings, data);
           } else if (!snapshot.metadata.fromCache) {
             // Only the server can say the document is gone; without a connection it is merely not fetched yet
-            setSettings(initialCmsSettings);
+            setSettings(emptyCmsSettings);
             writeCache(STORAGE_KEYS.settings, null);
           }
         },

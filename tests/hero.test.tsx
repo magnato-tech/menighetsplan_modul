@@ -7,7 +7,7 @@ import { PublicNavbar } from "../src/components/public/PublicNavbar";
 import { PublicHomePage } from "../src/pages/public/PublicHomePage";
 import { PageEditModal } from "../src/pages/admin/tabs/pages/PageEditModal";
 import { CMS_PREVIEW_TARGET_HERO } from "../src/utils/cmsBlocks";
-import { initialCmsSettings, type CmsPage } from "../src/data/cmsData";
+import { demoCmsSettings, type CmsPage } from "../src/data/cmsData";
 
 const { home } = vi.hoisted(() => ({
   home: {
@@ -29,7 +29,7 @@ const omOss: CmsPage = { id: "page-om-oss", slug: "om-oss", title: "Om oss", sum
 
 vi.mock("../src/context/CmsContext", () => ({
   useCms: () => ({
-    settings: { ...initialCmsSettings, churchName: "Søgne Misjonskirke" },
+    settings: { ...demoCmsSettings, churchName: "Søgne Misjonskirke" },
     pages: [home, omOss],
     media: [],
     news: [],

@@ -105,6 +105,11 @@ export const PublicStaticPage: React.FC<PublicStaticPageProps> = ({
   });
   const isAboutPage = currentSlug.includes("om-oss");
   const isContactPage = currentSlug.includes("kontakt");
+  // Made of what the congregation has filled in. With nothing filled in, the line is not shown.
+  const givingLine = [settings.vippsNumber && `Vipps: ${settings.vippsNumber}`, settings.bankAccount && `Konto: ${settings.bankAccount}`]
+    .filter(Boolean)
+    .join(" · ");
+  const contactLine = [settings.email, settings.phone && `Tlf ${settings.phone}`].filter(Boolean).join(" · ");
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 space-y-10">
@@ -277,9 +282,7 @@ export const PublicStaticPage: React.FC<PublicStaticPageProps> = ({
             <p className="text-xs text-primary-900/80 leading-relaxed">
               Vi setter stor pris på alle faste givere og enkeltgaver. Gaver over 500 kr i året rapporteres til Skatteetaten for fradrag dersom du oppgir fødselsnummer.
             </p>
-            <div className="pt-2 text-xs font-bold text-primary-950">
-              Vipps: {settings.vippsNumber} · Konto: {settings.bankAccount}
-            </div>
+            {givingLine && <div className="pt-2 text-xs font-bold text-primary-950">{givingLine}</div>}
           </div>
 
           <div className="bg-stone-100 border border-stone-200 rounded-2xl p-6 space-y-3">
@@ -290,9 +293,7 @@ export const PublicStaticPage: React.FC<PublicStaticPageProps> = ({
             <p className="text-xs text-stone-600 leading-relaxed">
               Pastoren og menighetens ledere er tilgjengelige for personlige samtaler, sjelesorg, bønn eller praktiske spørsmål. Ta kontakt via e-post eller telefon.
             </p>
-            <div className="pt-2 text-xs font-bold text-stone-800">
-              {settings.email} · Tlf {settings.phone}
-            </div>
+            {contactLine && <div className="pt-2 text-xs font-bold text-stone-800">{contactLine}</div>}
           </div>
         </div>
       )}

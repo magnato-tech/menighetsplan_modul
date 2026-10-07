@@ -89,9 +89,11 @@ export const PublicNavbar: React.FC = () => {
                   {settings.churchName}
                 </span>
               </div>
-              <p className={`text-xs hidden sm:block font-medium ${overlay ? "text-stone-200" : "text-stone-500"}`}>
-                {settings.tagline || "Varmt fellesskap. Enkel tjeneste."}
-              </p>
+              {settings.tagline && (
+                <p className={`text-xs hidden sm:block font-medium ${overlay ? "text-stone-200" : "text-stone-500"}`}>
+                  {settings.tagline}
+                </p>
+              )}
             </div>
           </Link>
 

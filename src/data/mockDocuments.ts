@@ -14,7 +14,7 @@ import {
   initialCmsNews,
   initialCmsSermons,
   initialCmsStaff,
-  initialCmsSettings,
+  demoCmsSettings,
 } from "./cmsData";
 import { Person, Group } from "../types";
 import { buildInitialVolunteerRoles } from "./defaultVolunteerRoles";
@@ -188,7 +188,7 @@ export function getCustomMockDocuments(counts?: CustomMockCounts): MockDocument[
   const documents: MockDocument[] = sets.flatMap(([collection, items]) =>
     items.map((item) => ({ collection, id: item.id, data: item }))
   );
-  documents.push({ collection: CMS_COLLECTIONS.SETTINGS, id: CMS_SETTINGS_DOC_ID, data: initialCmsSettings });
+  documents.push({ collection: CMS_COLLECTIONS.SETTINGS, id: CMS_SETTINGS_DOC_ID, data: demoCmsSettings });
   return documents;
 }
 

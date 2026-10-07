@@ -1,5 +1,5 @@
-# Prosjektdokument: Menighetsplan med innebygd CMS (Lillesand Misjonskirke)
-*Sist oppdatert: 2026-10-05*
+# Prosjektdokument: Menighetsplan-appen
+*Sist oppdatert: 2026-10-07*
 
 > **Ny økt? Start her.** Produktet, hva som er levert og planen videre står i `PRODUKTDOKUMENTASJON.md`. Oppbygningen står i `ARKITEKTUR.md`.
 
@@ -10,18 +10,22 @@ Ett adminpanel som styrer en webapp og en nettside i samme format. Det er én Re
 
 1. **Adminpanelet (Admin Studio)** på `/admin`: planlegging (samlinger, oppgaver, grupper, personer) og CMS (sider, nyheter, taler, stab, design, innstillinger).
 2. **Webappen (Min side)** for frivillige og gruppeledere (`/minside`, `/leder`, `/husfellesskap`, `/oppgave/:id` …).
-3. **Nettsiden** for Lillesand Misjonskirke (`/`, `/hva-skjer`, `/taler`, `/fellesskap`, `/om-oss` …).
+3. **Nettsiden** til menigheten (`/`, `/hva-skjer`, `/taler`, `/fellesskap`, `/om-oss` …).
 
 I tillegg serverer `server.ts` et offentlig JSON-API (`/api/offentlig/arrangementer` og `/api/public/*`) som eksterne nettsider kan lese. Kontrakten står i `INTEGRASJON-MENIGHETSPLAN.md`.
 
-Appen utvikles og kjøres i Google AI Studio (Cloud Run). Det finnes også et eget, eksternt CMS-repo (`magnato-tech/menighetsplan_ClaudeCMS`) som leser API-et. Koden der hører ikke hjemme her.
+**Én installasjon per menighet.** Appen selges til flere menigheter, og hver får sin egen installasjon: eget Firebase-prosjekt, egen database og egen adresse. Koden er den samme for alle, og hvilken database en installasjon hører til, står i innstillingene dens (`.env.example`), aldri i koden.
+
+**Dette repoet er selve appen.** Salgssiden menighetsplan.no (presentasjon, priser, påmelding, senere kundeportal) bygges for seg i Google AI Studio. Ikke bygg salgsside, kundeportal eller betalingsløsning her. Det appen og salgssiden er enige om, og planen «Klar for flere menigheter» med trinnene i rekkefølge, står i kapittel 14 i `PRODUKTDOKUMENTASJON.md`. Følg trinnene uten å utvide dem.
+
+Det finnes også et eldre, eksternt CMS-repo (`magnato-tech/menighetsplan_ClaudeCMS`) som leser API-et. Koden der hører ikke hjemme her.
 
 ---
 
 ## 2. Kommandoer
 | Kommando | Gjør |
 |---|---|
-| `npm run dev` | Starter Express + Vite på port 3000 |
+| `npm run dev` | Starter Express + Vite på port 3000. Krever `.env.local` med installasjonens innstillinger (kopier `.env.example`) |
 | `npm run build` | Bygger klienten til `dist/` |
 | `npm run lint` | Typesjekk (`tsc --noEmit`) |
 | `npm test` | Kjører testene i `tests/` med Vitest (`npx vitest` følger med mens du jobber) |
@@ -58,6 +62,7 @@ Kjør `npm run lint` og `npm test` før en endring regnes som ferdig.
 | `src/pages/admin/tabs/SiteTrafficTab.tsx` med delene i `tabs/traffic/`, `src/hooks/useSiteTrafficBoard.ts`, `src/data/simulatedSiteTraffic.ts` | Bordet «Besøk på nettsiden» (del av modulen Analyse), det bordet henter og kan gjøre, og eksempeltallene for demonstrasjon |
 | `src/utils/addons.ts`, `src/services/addons.ts`, `src/pages/admin/addons.ts`, `src/pages/admin/AddonGate.tsx`, `src/pages/admin/tabs/AddonsTab.tsx` med delene i `tabs/addons/` | Moduler: hvilke tillegg som finnes og om ett er på (`utils/addons.ts`), lagringen av valget, listen over produktmodulene og hva hvert tillegg legger i menyen, sperren foran en fane, og siden «Moduler» |
 | `src/pages/admin/` | Admin Studio: `AdminStudio.tsx` er skallet, `StudioSidebar.tsx` menyen, og `tabs/` har én fil per fane |
+| `src/installation.ts`, `.env.example`, `src/components/NotConfiguredNotice.tsx` | Hvilken database installasjonen hører til: innstillingene den leses fra, og meldingen som vises når de mangler |
 | `src/pages/myPage/` | Min side: `useMyPage.ts` regner ut alt som vises, resten er én fil per seksjon |
 | `src/pages/leaderGroup/` | Delene av gruppesiden (`LeaderGroupDetailPage.tsx`) |
 | `src/components/gathering/` | Dialogene i samlingsvisningen (`GatheringDetailView.tsx`) |
@@ -75,6 +80,7 @@ Kjør `npm run lint` og `npm test` før en endring regnes som ferdig.
 - **Ikke les før du skriver.** Lister og kart i et dokument endres med `arrayUnion`, `arrayRemove` eller feltsti, og det som hører sammen skrives i én `writeBatch`. Se `src/services/firestore.ts`.
 - **`undefined` før skriving.** Firestore avviser `undefined`. Et nytt dokument går gjennom `sanitizeForFirestore`, som fjerner slike felt. En oppdatering går gjennom `forUpdate`, som sletter feltet i databasen. Bruker du `sanitizeForFirestore` på en oppdatering, blir et tømt felt stående med gammel verdi.
 - **Nye samlinger** legges inn i `src/data/collections.ts` og får en regel i `firestore.rules`. En test feiler hvis regelen mangler. **Reglene i drift er eldre enn filen** og avviser nye samlinger til de publiseres. Prøv en skriving mot databasen før en funksjon bygges på en ny samling; tjenesteroller, oppmøtetall og besøkstall ligger derfor i `cms_settings` med `recordType`. En lytter på `cms_settings` spør etter sitt eget merke, aldri etter hele samlingen: besøkstallene der endres ved hvert besøk.
+- **Ingenting om én menighet i koden.** Ikke et navn, en adresse, et kirkesamfunn eller en database. Det en menighet er og har, kommer fra innstillingene (`cms_settings`) eller fra installasjonens innstillinger (`src/installation.ts`), og et felt som er tomt, tegnes ikke. Eksempelmenigheten hører hjemme i demodataene (`src/data/cmsData.ts`, `src/data/mockData.ts`) og ingen andre steder. `tests/neutral-code.test.ts` feiler ellers.
 - **Analysebordet anslår aldri.** Et tall uten grunnlag er `null` og vises som strek. Et svar («Kommer») er ikke oppmøte. Nye tall legges i `src/utils/churchAnalytics.ts` med test, og datagrunnlaget sier hva de bygger på.
 - **Besøk telles anonymt.** Tellingen lagrer ingenting i den besøkendes nettleser, og lagrer ingenting om den besøkende eller utstyret: ikke henviser, skjermstørrelse eller nettleser. Nettleserens navn ses bare på for å kjenne igjen roboter, og sendes ikke videre. Et nytt tall må kunne telles av det nettsiden selv vet (hvilken side, når, hvor lenge, hvilken knapp). Alt annet krever samtykke fra den besøkende (ekomloven § 3-15) og bygges ikke uten at det er bestemt. En adresse er en side når `seoForPath` sier det.
 - **En modul slås på, den er ikke der fra før.** En del av admin som ikke alle menigheter skal ha, er et tillegg: navngi det i `src/utils/addons.ts`, beskriv det i `src/pages/admin/addons.ts`, og gi fanen plass som andre faner. Menyen, siden Moduler og sperren foran fanen følger listen. Spør alltid `isAddonOn`, og la det som er av, verken lese eller telle. Valget er ikke innhold, og følger ikke med i et datasett.
@@ -101,7 +107,7 @@ Kjør `npm run lint` og `npm test` før en endring regnes som ferdig.
 Disse er ikke løst ennå. Rekkefølgen de skal løses i står i kapittel 14 i `PRODUKTDOKUMENTASJON.md`, og detaljene i `ARKITEKTUR.md`.
 
 - Opplastede bilder lagres som tekst inne i sidedokumentene, og kan derfor ikke brukes som delebilde.
-- Forsidens faste tekster står i koden.
+- Forsidens faste tekster står i koden, og standardtekstene i innholdsmodulene passer ikke alle menigheter.
 - Stab vises fra to kilder: personregisteret med samtykke, og `cms_staff` uten.
 - Det finnes ingen innlogging. Aktiv bruker velges i en testbryter.
 - `firestore.rules` slipper gjennom lesing og skriving uten innlogging.

@@ -5,12 +5,12 @@ import { MemoryRouter } from "react-router-dom";
 import { PageEditModal, scrollPreviewToTarget } from "../src/pages/admin/tabs/pages/PageEditModal";
 import { PublicHomePage } from "../src/pages/public/PublicHomePage";
 import { CMS_PREVIEW_TARGET_HERO } from "../src/utils/cmsBlocks";
-import { initialCmsSettings } from "../src/data/cmsData";
+import { demoCmsSettings } from "../src/data/cmsData";
 
 vi.mock("../src/context/CmsContext", () => ({
   useCms: () => ({
     settings: {
-      ...initialCmsSettings,
+      ...demoCmsSettings,
       churchName: "Lillesand Misjonskirke",
       welcomeHeadline: "Velkommen",
       welcomeSubtext: "Ingress",

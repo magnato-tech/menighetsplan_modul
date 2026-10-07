@@ -588,7 +588,7 @@ export function getDefaultForsideBlocks(): VisualBlock[] {
       type: "text",
       title: "Velkommen til menighetens fellesskap",
       isDynamic: false,
-      rawContent: "## Velkommen til Lillesand Misjonskirke\nEt åpent hjem for alle generasjoner. Vi samles til gudstjeneste, bønn og nære fellesskap der tro og hverdag møtes.",
+      rawContent: "## Velkommen til menighetens fellesskap\nEt åpent hjem for alle generasjoner. Vi samles til gudstjeneste, bønn og nære fellesskap der tro og hverdag møtes.",
     },
     {
       id: "forside-calendar",

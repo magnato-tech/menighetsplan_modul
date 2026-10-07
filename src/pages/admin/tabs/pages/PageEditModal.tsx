@@ -157,7 +157,7 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
   const [previewDevice, setPreviewDevice] = useState<"desktop" | "tablet" | "mobile">("desktop");
 
   // Search and share card preview values
-  const siteHost = typeof window !== "undefined" ? window.location.host : "lillesand.misjonskirke.no";
+  const siteHost = window.location.host;
   const previewTitle = `${editingPage.title || "Sidetittel"} – ${settings.churchName}`;
   const previewDescription =
     editingPage.metaDescription?.trim() ||

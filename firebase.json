@@ -1,8 +1,5 @@
 {
-  "firestore": [
-    {
-      "database": "ai-studio-menighetsplan20-ea550243-0a45-4d48-8d8e-b0849c858e7b",
-      "rules": "firestore.rules"
-    }
-  ]
+  "firestore": {
+    "rules": "firestore.rules"
+  }
 }

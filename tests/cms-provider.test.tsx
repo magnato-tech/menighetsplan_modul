@@ -3,7 +3,7 @@ import React from "react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { cleanup, renderHook, waitFor } from "@testing-library/react";
 import { CMS_COLLECTIONS, CMS_SETTINGS_DOC_ID } from "../src/data/collections";
-import { initialCmsSettings, type CmsNewsArticle, type CmsPage, type CmsSermon } from "../src/data/cmsData";
+import { demoCmsSettings, emptyCmsSettings, type CmsNewsArticle, type CmsPage, type CmsSermon } from "../src/data/cmsData";
 import { clearWriteError, getWriteError } from "../src/services/writeErrors";
 import { clearCollections, offline, seed, stored, storedIds } from "./support/offlineFirestore";
 
@@ -83,9 +83,9 @@ describe("Lesing", () => {
 
   test("Standardinnstillingene gjelder til noen er lagret", async () => {
     const cms = mountProvider();
-    expect(cms.current.settings).toEqual(initialCmsSettings);
+    expect(cms.current.settings).toEqual(emptyCmsSettings);
 
-    seed(CMS_COLLECTIONS.SETTINGS, [{ id: CMS_SETTINGS_DOC_ID, ...initialCmsSettings, churchName: "Testkirken" }]);
+    seed(CMS_COLLECTIONS.SETTINGS, [{ id: CMS_SETTINGS_DOC_ID, ...demoCmsSettings, churchName: "Testkirken" }]);
     await waitFor(() => expect(cms.current.settings.churchName).toBe("Testkirken"));
   });
 
@@ -212,7 +212,7 @@ describe("Nyheter, taler og stab", () => {
 
 describe("Innstillinger", () => {
   test("Lagring endrer bare feltene som er oppgitt", async () => {
-    seed(CMS_COLLECTIONS.SETTINGS, [{ id: CMS_SETTINGS_DOC_ID, ...initialCmsSettings, churchName: "Testkirken" }]);
+    seed(CMS_COLLECTIONS.SETTINGS, [{ id: CMS_SETTINGS_DOC_ID, ...demoCmsSettings, churchName: "Testkirken" }]);
     const cms = mountProvider();
     await waitFor(() => expect(cms.current.settings.churchName).toBe("Testkirken"));
 

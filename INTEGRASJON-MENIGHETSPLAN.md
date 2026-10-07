@@ -76,7 +76,7 @@ Kontrakt v1 over er uendret.
 | `tittel` | string | Navn på samlingen |
 | `start` | string (ISO) | Starttidspunkt med norsk offset (`+01:00`/`+02:00`) |
 | `slutt` | string (ISO) | Sluttidspunkt med norsk offset |
-| `sted` | string | Lokasjon (standard: "Lillesand Misjonskirke") |
+| `sted` | string | Lokasjon (standard: "Kirken") |
 | `status` | `"planlagt"` \| `"avlyst"` | Avlyste arrangementer vises med rød avlyst-merking |
 | `tagger` | string[] | Kategorier (`gudstjeneste`, `ungdom`, `fellesskap`, etc.) |
 | `heldag` | boolean | Sann hvis arrangementet varer hele dagen |

@@ -332,7 +332,33 @@ export const initialLeadershipDecisions = [
   },
 ];
 
-export const initialCmsSettings: CmsSettings = {
+/**
+ * What an installation shows before its own settings exist: nothing about any congregation.
+ * Setting up a new congregation writes the real ones (name, contact, giving). Until then the
+ * website leaves out every line that has nothing to say, rather than showing someone else's.
+ */
+export const emptyCmsSettings: CmsSettings = {
+  churchName: "Menigheten",
+  appName: "Menighetsplan",
+  tagline: "",
+  welcomeHeadline: "",
+  welcomeSubtext: "",
+  address: "",
+  phone: "",
+  email: "",
+  officeHours: "",
+  vippsNumber: "",
+  vippsDescription: "",
+  bankAccount: "",
+  orgNumber: "",
+  theme: defaultCmsDesignTheme,
+};
+
+/**
+ * The settings of the example congregation in the demo data (see mockDocuments.ts). Made up,
+ * and never shown unless the demo data has been put in the database.
+ */
+export const demoCmsSettings: CmsSettings = {
   churchName: "Lillesand Misjonskirke",
   appName: "Menighetsplan",
   tagline: "Varmt fellesskap. Tydelig tro. Enkel tjeneste.",

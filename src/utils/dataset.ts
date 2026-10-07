@@ -90,7 +90,7 @@ export function buildDataset(
 /** The text of the file. Indented, so the file can be read and compared by eye. */
 export const serializeDataset = (dataset: Dataset): string => JSON.stringify(dataset, null, 2) + "\n";
 
-/** A file name from the dataset name and the day it was made, e.g. `lillesand-misjonskirke-2026-10-06.json`. */
+/** A file name from the dataset name and the day it was made, e.g. `menigheten-2026-10-06.json`. */
 export function datasetFileName(dataset: Pick<Dataset, "name" | "createdAt">): string {
   const base = dataset.name
     .toLowerCase()

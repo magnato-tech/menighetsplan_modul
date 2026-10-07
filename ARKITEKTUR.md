@@ -1,4 +1,4 @@
-# Arkitektur – Menighetsplan med innebygd CMS (Lillesand Misjonskirke)
+# Arkitektur – Menighetsplan-appen
 *Sist oppdatert: 2026-10-05 – beskriver koden slik den faktisk er i dette repoet.*
 
 ## Kort fortalt
@@ -18,8 +18,17 @@ Menighetsplan er ett adminpanel som styrer to ting i samme kodebase: webappen fo
 | Klient | React 19, TypeScript, Vite 6, Tailwind CSS 4, React Router 7 |
 | Data | Cloud Firestore via Firebase klient-SDK, sanntidslyttere |
 | Server | Express (`server.ts`), kjøres med `tsx` |
-| Hosting | Google AI Studio / Cloud Run, port 3000 |
+| Hosting | Én installasjon per menighet (se Installasjonen). Lokalt: Express + Vite på port 3000 |
 | PWA | `public/sw.js` og `public/manifest.webmanifest` |
+
+## Installasjonen
+Appen installeres én gang per menighet: eget Firebase-prosjekt, egen database og egen adresse. Koden er den samme for alle.
+
+- **Hvilken database** en installasjon hører til, står i innstillingene dens, aldri i koden: `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID` og `VITE_FIREBASE_APP_ID` må være med, og `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_FIREBASE_DATABASE_ID` og `VITE_TENANT_ID` kan være med. `src/installation.ts` er eneste sted de leses, og nettleseren (`src/firebase.ts`), serveren (`server.ts`) og skriptene går gjennom den. Lokalt ligger de i `.env.local`, som ikke er med i repoet (`.env.example` viser navnene).
+- **Mangler en innstilling**, tegnes ikke appen. `src/main.tsx` viser `NotConfiguredNotice` med navnene som mangler, og ingen database leses. Serveren starter ikke. Det finnes ingen reserve: en installasjon som ikke er satt opp, kobler seg aldri til en annen menighets database.
+- **Databasenavnet.** Et nytt prosjekt bruker standarddatabasen, og `firebase.json` peker på den. Den første databasen, fra Google AI Studio, har et eget navn og oppgis med `VITE_FIREBASE_DATABASE_ID`.
+- **Ingenting om én menighet i koden.** Før en menighet har egne innstillinger, gjelder `emptyCmsSettings` (`src/data/cmsData.ts`): navnet «Menigheten» og ellers ingenting. Nettsiden tegner ikke felt som er tomme. Eksempelmenigheten i demodataene (`demoCmsSettings`, `mockData.ts`) vises bare når demodataene er lagt i databasen. `tests/neutral-code.test.ts` går gjennom koden og feiler hvis noe annet nevner én menighet, ett kirkesamfunn eller én database.
+- **Salgssiden** menighetsplan.no er en egen kodebase. Det den og appen er enige om, står i kapittel 14 i `PRODUKTDOKUMENTASJON.md`.
 
 ## Bygg og lasting
 Vite bygger klienten med `manualChunks` for `firebase` og `react-vendor`. Offentlige sider importeres statisk i `src/App.tsx`; admin, Min side og admin-detaljsider lastes med `React.lazy` og `Suspense` bare på de grenene. Hver admin-fane har sin egen lazy-import i `src/pages/admin/studioTabLoaders.ts`, med forhåndshent ved hover, fokus og touch fra `StudioSidebar.tsx`.
@@ -150,7 +159,7 @@ Tre regler avgjør hva en besøkende ser, og hver av dem ligger ett sted:
 | Bilder | Bilder ligger i en bildelagring | Et opplastet bilde lagres som tekst i sidedokumentet. Alle sider lastes til alle besøkende, og kopien i `localStorage` (ca. 5 MB) rekker bare til et titalls bilder |
 | Kladder | Bare administratorer får kladder og planlagte sider | Alle sider leveres til nettleseren, og skjules i visningen |
 | Stab | Én kilde for mennesker som vises utad | `/lederskap` bruker personregisteret med samtykke. `/om-oss` viser `cms_staff`, en egen liste uten samtykkelogg |
-| Forsiden | Alt innhold kommer fra CMS-et | Tre infobokser, fellesskapsseksjonen og gaveteksten står i `PublicHomePage.tsx`, og menighetens navn står skrevet flere steder i koden |
+| Forsiden | Alt innhold kommer fra CMS-et | Tre infobokser, fellesskapsseksjonen og gaveteksten står i `PublicHomePage.tsx`, og standardtekstene i innholdsmodulene (`src/utils/modulePresentation.ts`) passer ikke alle menigheter |
 | Forfall med grunn | Medlemmet skriver en grunn, lederen ser den | Datalaget lagrer `withdrawalReason`, men ingen skjerm skriver eller viser den |
 | Filstørrelse | Én komponent per fane/modal | Gjort for alle sidene over 1 000 linjer. Størst nå er redigeringsskjemaet for sider (`PageEditModal.tsx`, ca. 750 linjer) og gruppekortet i admin (`AdminGroupDetailPage.tsx`, ca. 650) |
 | Lasting | Admin og CMS lastes først når de åpnes | Offentlige ruter er statiske; admin, Min side og faner lastes ved behov. Firebase-klienten lastes på alle besøk (~710 KB) |

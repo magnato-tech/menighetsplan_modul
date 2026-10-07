@@ -199,7 +199,7 @@ export const CONTENT_BLOCKS: ContentBlockDefinition[] = [
     isDynamic: false,
     description: "Tekst og overskrift til venstre, bilde til høyre for en variert og dynamisk sidelayout.",
     icon: <Image className="w-5 h-5 text-sky-400" />,
-    template: `:::media-right[https://images.unsplash.com/photo-1438232992991-995b7058bbb3?auto=format&fit=crop&w=800&q=80]\n### Søndagssamlinger og gudstjenester\nHver søndag feirer vi gudstjeneste kl. 11:00 med sang, inspirerende forkynnelse og Sprell Levende barnekirke.\n:::`,
+    template: `:::media-right[https://images.unsplash.com/photo-1438232992991-995b7058bbb3?auto=format&fit=crop&w=800&q=80]\n### Søndagssamlinger og gudstjenester\nHver søndag feirer vi gudstjeneste med sang, forkynnelse og eget opplegg for barna.\n:::`,
     previewNode: (
       <div className="flex items-center gap-2.5 text-[10px] w-full p-2 rounded-lg bg-stone-100 border border-stone-300">
         <div className="flex-1 space-y-1">

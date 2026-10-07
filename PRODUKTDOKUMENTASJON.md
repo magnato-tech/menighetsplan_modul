@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.4 · **Sist oppdatert:** 2026-10-07
+> **Dokumentversjon:** 4.5 · **Sist oppdatert:** 2026-10-07
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -536,7 +536,6 @@ Nettstedets adresse leses av forespørselen. Den kan settes fast med miljøvaria
 | Design | Skriftvalget står mellom skriftene maskinen alt har | Menigheten kan ikke velge en egen skrift eller laste opp logo |
 | Kladder | Skjules i visningen, men leveres til nettleseren | En kladd er ikke hemmelig. Løses sammen med innlogging |
 | Forside | Tre infobokser, fellesskaps- og gaveteksten står i koden | Kan ikke endres uten en utvikler |
-| Menighetens navn | «Lillesand Misjonskirke» står skrevet i koden flere steder | Navnet i innstillingene slår ikke gjennom overalt |
 | Stab | «Lederskap & stab» er en egen liste | To kilder for de samme menneskene, og listen har ingen samtykkelogg |
 | Nyheter | Ingen arkivside, ingen utløpsdato, ingen kobling til samling | Eldre artikler er bare tilgjengelige via direkte lenke |
 
@@ -643,6 +642,19 @@ De tre flatene, Firestore-databasen, bemanningsmotoren, husfellesskap, gruppemel
 | **Analyse som modul** | Analysebord og Besøk på nettsiden er av til de slås på. Menyseksjonen heter Analyse (før: Innsikt) og vises bare når noe under den er på. Nettsiden teller besøk bare mens delen er på |
 | **Lagring** | Valget lagres for hele menigheten, ett felt per del, og er ikke en del av et datasett |
 
+### Nøytral og flyttbar app (7. oktober 2026)
+
+Trinn 1 av «Klar for flere menigheter» (kapittel 14).
+
+| Område | Levert |
+|:---|:---|
+| **Databasen** | Appen, serveren og skriptene leser hvilken database de hører til, fra installasjonens innstillinger (`VITE_FIREBASE_*`, se `.env.example`). Fila med én fast database er fjernet |
+| **Ikke satt opp** | En installasjon uten innstillinger viser én melding om hva som mangler, og leser ingen database. Den kobler seg aldri til en annen menighets |
+| **Ingen menighets opplysninger** | Før en menighet har lagt inn sine egne innstillinger, vises navnet «Menigheten» og ingenting annet. De oppdiktede opplysningene (adresse, telefon, Vipps, konto, organisasjonsnummer) vises bare når demodataene er lagt inn |
+| **Tomme felt** | Bunnen av nettsiden, gaveblokken og kontaktsiden viser bare det som er fylt inn. En tom rad eller en lenke til ingenting tegnes ikke |
+| **Faste tekster** | Setningen om tilknytning til Misjonskirken Norge, mottoet som sto fast i menyen og på Min side, og «Sprell Levende» i standardtekstene er tatt ut. Standardstedet for et arrangement uten sted er «Kirken» (før: «Misjonskirken» i appen og «Lillesand Misjonskirke» i API-et) |
+| **Vakt** | En test går gjennom koden og feiler hvis en fil utenom demodataene nevner én menighet, ett kirkesamfunn eller én database |
+
 ---
 
 
@@ -668,14 +680,38 @@ Sortert etter hvor mye de betyr for en menighet som skal ta løsningen i bruk.
 | 14 | Reglene i databasen i drift er eldre enn `firestore.rules`, og avviser nye samlinger (prøvd 5. oktober: `volunteer_roles` og `gatheringHeadcounts`). Tjenesteroller og oppmøtetall lagres derfor i `cms_settings`, merket med `recordType` | Fase 1 |
 | 15 | Besøkstallene kan endres og slettes av hvem som helst så lenge databasereglene er åpne, og de ligger i `cms_settings` til reglene er publisert. Med innlogging trenger de en egen samling der en besøkende bare kan legge til i dagens summer | Fase 1 |
 | 16 | Moduler kan slås av og på av hvem som helst med adgang til admin, og det finnes ikke noe skille mellom hva en menighet har fått tilgang til og hva den har slått på. Kalender og Meldinger husker valget bare i nettleseren | Fase 1 |
+| 17 | Noen faste tekster passer ikke alle menigheter: standardtekstene i innholdsmodulene (søndagsskole, kirkekaffe, husfellesskap annenhver uke), de tre infoboksene på forsiden, og setningen om skattefradrag i bunnen av nettsiden. Demodataene (eksempelmenigheten) kan fortsatt legges inn fra Database i enhver installasjon | Fase 2, og trinn 2 for demodataene |
 
 ---
 
 ## 14. Veien videre
 
-Rekkefølgen innen hver fase er prioritert. Fase 1 er forutsetningen for ekte data, og er **satt på vent av produkteier**. Arbeidet fortsetter derfor i fase 2–4 til den åpnes.
+### Klar for flere menigheter *(avtalt 7. oktober 2026, pågår)*
 
-### Fase 1 – Trygg i drift *(på vent)*
+Menighetsplan skal selges til 10–20 menigheter. Hver menighet får sin egen installasjon av denne appen: sin egen database og sin egen adresse. Salgssiden menighetsplan.no, med presentasjon, priser, påmelding og senere kundeportal, bygges for seg og hører ikke hjemme i dette repoet. Det gjør heller ikke betaling.
+
+Avtalen mellom salgssiden og appen:
+
+* **Tilgang.** Nivå og moduler står i dokumentet `/system/entitlements` i menighetens database. Bare leverandøren kan skrive det. Appen leser det.
+* **Innstillinger.** Appen finner databasen sin fra `VITE_FIREBASE_*` og `VITE_TENANT_ID`.
+* **Eierskap.** Databasereglene, oppsettet av en ny menighet og utrullingen av regler eies av appen, fordi det er appen som kjenner dataene.
+
+Trinnene tas i rekkefølge. Et trinn er ferdig når det er prøvd, testene er grønne og det er sendt inn.
+
+| Trinn | Hva | Status |
+|:---|:---|:---|
+| 1 | **Nøytral og flyttbar app.** Databasen leses fra installasjonens innstillinger. Ingenting om én menighet står i koden | **Levert 7. oktober** (kapittel 12) |
+| 2 | **Innlogging og roller:** administrator, gruppeleder og medlem. Testbryteren fjernes, og admin legges bak innlogging | Neste |
+| 3 | **Lukkede databaseregler** for appens egne data. Nettsiden slutter å laste personregisteret | |
+| 4 | **Tilgang.** Appen leser `/system/entitlements`. Siden Moduler viser «ikke inkludert», «av» og «på». Reglene sperrer det menigheten ikke har | |
+| 5 | **Skillet mellom Nivå 1 og Nivå 2** i meny, arrangementsside, Min side, grupper på nettsiden og oversikten | |
+| 6 | **Oppsett av ny menighet:** skript og sjekkliste for database, regler, tilgang, første administrator, startinnhold og adresse | |
+| 7 | **Demo-installasjon** med egen database, demosett og nullstilling | |
+| 8 | **Drift:** utrulling av regler til alle, sikkerhetskopi, eksport og sletting ved opphør | |
+
+Trinn 2 og 3 er det samme som fase 1 under, som dermed ikke lenger er på vent. Fase 2–4 fortsetter som før når trinnene er på plass.
+
+### Fase 1 – Trygg i drift *(trinn 2 og 3 over)*
 1. Innlogging med Google-konto. Første administrator er produkteierens konto.
 2. Roller: administrator, gruppeleder (avledet av gruppene) og medlem.
 3. Databaseregler etter rolle: besøkende leser bare offentlige data, og kladder leveres ikke ut.

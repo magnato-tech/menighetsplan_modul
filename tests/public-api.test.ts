@@ -131,7 +131,7 @@ describe("Det offentlige API-et", () => {
   assert(contract.type === "gudstjeneste" && contract.status === "planlagt", "Kontrakt v1: type og status");
   assert(contract.start === "2026-11-01T11:00:00+01:00" && contract.slutt === "2026-11-01T12:30:00+01:00", "Kontrakt v1: start og slutt i norsk tid");
   assert(contract.tagger.join() === "gudstjeneste,fellesskap", "Kontrakt v1: tagger fra flagg og tittel");
-  assert(contract.sted === "Lillesand Misjonskirke", "Kontrakt v1: standard sted når location mangler");
+  assert(contract.sted === "Kirken", "Kontrakt v1: standard sted når location mangler");
   assert(contract.sistEndret === now.toISOString(), "Kontrakt v1: sistEndret faller tilbake til genereringstidspunktet");
 
   const [noEnd] = toPublicGatherings([{ ...base, endsAt: undefined }]);

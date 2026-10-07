@@ -4,7 +4,7 @@ import { cleanup, render } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { PageEditModal } from "../src/pages/admin/tabs/pages/PageEditModal";
 import { PublicHomePage } from "../src/pages/public/PublicHomePage";
-import { initialCmsSettings, type CmsPage } from "../src/data/cmsData";
+import { demoCmsSettings, type CmsPage } from "../src/data/cmsData";
 import { serializeVisualBlocksToContent, type VisualBlock } from "../src/utils/cmsBlocks";
 
 const { home, omOss } = vi.hoisted(() => ({
@@ -41,7 +41,7 @@ const { home, omOss } = vi.hoisted(() => ({
 vi.mock("../src/context/CmsContext", () => ({
   useCms: () => ({
     settings: {
-      ...initialCmsSettings,
+      ...demoCmsSettings,
       churchName: "Lillesand Misjonskirke",
       welcomeHeadline: "Velkommen til Lillesand Misjonskirke",
       welcomeSubtext: "Et åpent hjem for alle generasjoner.",

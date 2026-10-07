@@ -1,13 +1,14 @@
 import type { Gathering, Group } from "../src/types";
 import { validateEvent } from "../src/utils/validation";
 import { isGroupPublic, isPubliclyVisible, visibilityOf } from "../src/utils/visibility";
-import { isWorshipService } from "../src/utils/gatherings";
+import { DEFAULT_LOCATION, isWorshipService } from "../src/utils/gatherings";
 
 // Firestore documents are untyped at runtime, so every field is optional until validated.
 export type GatheringDoc = Partial<Gathering>;
 export type GroupDoc = Partial<Group>;
 
-export const DEFAULT_LOCATION = "Lillesand Misjonskirke";
+// Where an event is held when no place is given: the same word as in the app
+export { DEFAULT_LOCATION };
 const DEFAULT_DURATION_MS = 90 * 60 * 1000;
 
 // ============================================================================

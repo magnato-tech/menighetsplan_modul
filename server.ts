@@ -1,10 +1,9 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import express, { Request, Response } from 'express';
-import { createServer as createViteServer } from 'vite';
+import { createServer as createViteServer, loadEnv } from 'vite';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, doc, getDoc, getDocs } from 'firebase/firestore';
-import firebaseConfig from './firebase-applet-config.json' with { type: 'json' };
 import {
   type GatheringDoc,
   type GroupDoc,
@@ -16,7 +15,8 @@ import {
 } from './server/publicApi';
 import { markAsPrivate, renderSeoIntoHtml } from './server/pageMeta';
 import { CMS_COLLECTIONS, CMS_SETTINGS_DOC_ID } from './src/data/collections';
-import { type CmsMedia, type CmsNewsArticle, type CmsPage, type CmsSettings, initialCmsSettings } from './src/data/cmsData';
+import { type CmsMedia, type CmsNewsArticle, type CmsPage, type CmsSettings, emptyCmsSettings } from './src/data/cmsData';
+import { firebaseOptionsOf, missingInstallationSettings, readInstallationConfig } from './src/installation';
 import { isPublicPath } from './src/utils/routes';
 import { type SiteContent, resolvePageSeo, seoForPath } from './src/utils/siteSeo';
 import { toIcalendar } from './src/utils/calendarFeed';
@@ -26,9 +26,25 @@ import type { Gathering } from './src/types';
 const app = express();
 const port = 3000;
 
+// The server belongs to the same installation as the app, and reads the same settings: the
+// hosting's own, or the .env files Vite reads on a developer's machine (see src/installation.ts)
+const installationEnv = {
+  ...loadEnv(process.env.NODE_ENV === 'production' ? 'production' : 'development', process.cwd(), 'VITE_'),
+  ...process.env,
+};
+const installation = readInstallationConfig(installationEnv);
+if (!installation) {
+  console.error(
+    `Serveren startes ikke: installasjonen mangler ${missingInstallationSettings(installationEnv).join(', ')}. Se .env.example.`
+  );
+  process.exit(1);
+}
+
 // Initialize Firebase for server-side API proxy
-const firebaseApp = initializeApp(firebaseConfig);
-const db = getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId);
+const firebaseApp = initializeApp(firebaseOptionsOf(installation));
+const db = installation.firestoreDatabaseId
+  ? getFirestore(firebaseApp, installation.firestoreDatabaseId)
+  : getFirestore(firebaseApp);
 
 // CORS for ClaudeCMS and external clients
 app.use((req, res, next) => {
@@ -252,7 +268,7 @@ async function readSiteContent(): Promise<SiteContent> {
     pages: pages.docs.map((d) => d.data() as CmsPage),
     news: news.docs.map((d) => d.data() as CmsNewsArticle),
     media: media?.docs.map((d) => d.data() as CmsMedia) ?? [],
-    settings: settings?.exists() ? (settings.data() as CmsSettings) : initialCmsSettings,
+    settings: settings?.exists() ? (settings.data() as CmsSettings) : emptyCmsSettings,
   };
 }
 

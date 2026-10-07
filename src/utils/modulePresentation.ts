@@ -33,7 +33,7 @@ export const MODULE_PRESENTATION_DEFAULTS: Record<DynamicModuleType, ModulePrese
     badge: "",
     linkLabel: "Se detaljer",
     linkUrl: "section:@home:hva-skjer",
-    info1Title: "Sprell Levende Søndagsskole",
+    info1Title: "Søndagsskole",
     info1Body:
       "Eget tilrettelagt opplegg for småbarn, barn og tweens under gudstjenesten.",
     info2Title: "Kirkekaffe & Drøs",

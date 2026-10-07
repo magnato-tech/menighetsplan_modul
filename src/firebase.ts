@@ -2,10 +2,15 @@ import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
-import firebaseConfig from '../firebase-applet-config.json';
+import { UNCONFIGURED, firebaseOptionsOf, readInstallationConfig } from './installation';
 
-const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+// Which project this installation belongs to comes from its settings (see installation.ts).
+// Without them the app is not drawn (see main.tsx); the stand-in only lets this file be loaded.
+const installation = readInstallationConfig(import.meta.env);
+const config = installation ?? UNCONFIGURED;
+
+const app = initializeApp(firebaseOptionsOf(config));
+export const db = config.firestoreDatabaseId ? getFirestore(app, config.firestoreDatabaseId) : getFirestore(app);
 export const auth = getAuth(app);
 export const storage = getStorage(app);
 
@@ -59,7 +64,7 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
 export async function testConnection(): Promise<boolean> {
   try {
     await getDocFromServer(doc(db, 'test', 'connection'));
-    console.log('Successfully connected to Firestore database:', firebaseConfig.firestoreDatabaseId);
+    console.log('Successfully connected to Firestore database:', config.firestoreDatabaseId ?? '(default)');
     return true;
   } catch (error) {
     if (error instanceof Error && error.message.includes('the client is offline')) {
@@ -71,5 +76,5 @@ export async function testConnection(): Promise<boolean> {
   }
 }
 
-// Run connection test on init
-testConnection();
+// Run connection test on init, when there is a database to reach
+if (installation) testConnection();

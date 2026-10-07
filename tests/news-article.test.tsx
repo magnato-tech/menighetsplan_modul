@@ -5,7 +5,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { NewsModule } from "../src/components/cms/modules/NewsModule";
 import { PublicArticlePage } from "../src/pages/public/PublicArticlePage";
 import { parseCmsContent } from "../src/components/cms/CmsContentRenderer";
-import { initialCmsSettings, type CmsNewsArticle } from "../src/data/cmsData";
+import { demoCmsSettings, type CmsNewsArticle } from "../src/data/cmsData";
 
 const { news } = vi.hoisted(() => ({
   news: [
@@ -37,7 +37,7 @@ const { news } = vi.hoisted(() => ({
 
 vi.mock("../src/context/CmsContext", () => ({
   useCms: () => ({
-    settings: { ...initialCmsSettings, churchName: "Lillesand Misjonskirke" },
+    settings: { ...demoCmsSettings, churchName: "Lillesand Misjonskirke" },
     // A button is only drawn when it leads to a page that exists
     pages: [
       { id: "page-alphakurs", slug: "alphakurs", title: "Alpha Youth", summary: "", content: "", isPublished: true, inNavMenu: true, updatedAt: "2026-10-06T12:00:00.000Z" },

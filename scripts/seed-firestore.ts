@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, doc, setDoc, getDocs } from 'firebase/firestore';
-import firebaseConfig from '../firebase-applet-config.json';
+import { loadEnv } from 'vite';
+import { firebaseOptionsOf, missingInstallationSettings, readInstallationConfig } from '../src/installation';
 import {
   initialPersons,
   initialGroups,
@@ -41,9 +42,15 @@ const COLLECTIONS = {
 } as const;
 
 async function runSeed() {
-  console.log('Initializing Firebase app with config:', firebaseConfig.projectId, 'db:', firebaseConfig.firestoreDatabaseId);
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+  // The script writes to the installation named in .env.local (see src/installation.ts), and to no other
+  const env = { ...loadEnv('development', process.cwd(), 'VITE_'), ...process.env };
+  const installation = readInstallationConfig(env);
+  if (!installation) {
+    throw new Error(`Installasjonen mangler ${missingInstallationSettings(env).join(', ')}. Se .env.example.`);
+  }
+  console.log('Initializing Firebase app with config:', installation.projectId, 'db:', installation.firestoreDatabaseId ?? '(default)');
+  const app = initializeApp(firebaseOptionsOf(installation));
+  const db = installation.firestoreDatabaseId ? getFirestore(app, installation.firestoreDatabaseId) : getFirestore(app);
 
   console.log('Seeding persons...');
   for (const person of initialPersons) {

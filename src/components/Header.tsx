@@ -1,10 +1,12 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { UserSwitcher } from "./UserSwitcher";
+import { useCms } from "../context/CmsContext";
 import { useLeaderDashboard } from "../hooks/useAppHooks";
 import { ArrowLeft, Shield } from "lucide-react";
 
 export const Header: React.FC = () => {
+  const { settings } = useCms();
   const location = useLocation();
   const { isLeader, urgentGatherings, currentUser } = useLeaderDashboard();
 
@@ -44,9 +46,7 @@ export const Header: React.FC = () => {
                 Min Side
               </span>
             </h1>
-            <p className="text-[11px] text-slate-500 font-medium">
-              Varmt fellesskap. Enkel tjeneste.
-            </p>
+            <p className="text-[11px] text-slate-500 font-medium">{settings.churchName}</p>
           </Link>
 
           {/* User Switcher Dropdown */}

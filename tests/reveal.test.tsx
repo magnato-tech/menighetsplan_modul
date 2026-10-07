@@ -7,7 +7,7 @@ import { MemoryRouter } from "react-router-dom";
 import { useRevealChildren } from "../src/hooks/useRevealChildren";
 import { NewsModule } from "../src/components/cms/modules/NewsModule";
 import { CalendarModule } from "../src/components/cms/modules/CalendarModule";
-import { initialCmsSettings, type CmsNewsArticle } from "../src/data/cmsData";
+import { demoCmsSettings, type CmsNewsArticle } from "../src/data/cmsData";
 import type { Gathering } from "../src/types";
 
 const news: CmsNewsArticle[] = ["Første", "Andre", "Tredje"].map((title, i) => ({
@@ -19,7 +19,7 @@ const gatherings: Gathering[] = [1, 2].map((n) => ({
 }));
 
 vi.mock("../src/context/CmsContext", () => ({
-  useCms: () => ({ settings: { ...initialCmsSettings }, pages: [], media: [], news, sermons: [], staff: [] }),
+  useCms: () => ({ settings: { ...demoCmsSettings }, pages: [], media: [], news, sermons: [], staff: [] }),
 }));
 vi.mock("../src/context/FirebaseDataContext", () => ({ useFirebase: () => ({ gatherings, groups: [], allPersons: [] }) }));
 

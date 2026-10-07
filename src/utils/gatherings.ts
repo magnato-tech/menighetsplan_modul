@@ -14,7 +14,7 @@ export function isWorshipService(g: Pick<Partial<Gathering>, "title" | "isGudstj
 }
 
 /** Where a gathering is held when nothing else is said (PRODUKTDOKUMENTASJON.md 2.1). */
-export const DEFAULT_LOCATION = "Misjonskirken";
+export const DEFAULT_LOCATION = "Kirken";
 
 export function locationOf(g: Pick<Gathering, "location">): string {
   return g.location?.trim() || DEFAULT_LOCATION;

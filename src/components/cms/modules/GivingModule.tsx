@@ -26,6 +26,8 @@ export const GivingModule: React.FC<GivingModuleProps> = ({
   const body = presentationText(config, "body", defaults.body);
 
   if (variant === "vipps") {
+    // Without a number there is nothing to give to, so the block is not drawn
+    if (!settings.vippsNumber) return null;
     return (
       <PresentationSection
         config={config}
@@ -63,21 +65,28 @@ export const GivingModule: React.FC<GivingModuleProps> = ({
         {body}
       </p>
 
-      <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
-        <div className="px-6 py-4 rounded-2xl bg-white border border-stone-200/90 shadow-sm flex items-center gap-4 w-full sm:w-auto justify-center">
-          <div className="text-left">
-            <div className="text-xs text-stone-500 font-medium">Vipps til nummer</div>
-            <div className="text-xl font-black text-accent-700">{settings.vippsNumber}</div>
-          </div>
-        </div>
+      {/* Only the ways of giving the congregation has filled in */}
+      {(settings.vippsNumber || settings.bankAccount) && (
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
+          {settings.vippsNumber && (
+            <div className="px-6 py-4 rounded-2xl bg-white border border-stone-200/90 shadow-sm flex items-center gap-4 w-full sm:w-auto justify-center">
+              <div className="text-left">
+                <div className="text-xs text-stone-500 font-medium">Vipps til nummer</div>
+                <div className="text-xl font-black text-accent-700">{settings.vippsNumber}</div>
+              </div>
+            </div>
+          )}
 
-        <div className="px-6 py-4 rounded-2xl bg-white border border-stone-200/90 shadow-sm flex items-center gap-4 w-full sm:w-auto justify-center">
-          <div className="text-left">
-            <div className="text-xs text-stone-500 font-medium">Bankkonto for gaver</div>
-            <div className="text-base font-mono font-bold text-stone-800">{settings.bankAccount}</div>
-          </div>
+          {settings.bankAccount && (
+            <div className="px-6 py-4 rounded-2xl bg-white border border-stone-200/90 shadow-sm flex items-center gap-4 w-full sm:w-auto justify-center">
+              <div className="text-left">
+                <div className="text-xs text-stone-500 font-medium">Bankkonto for gaver</div>
+                <div className="text-base font-mono font-bold text-stone-800">{settings.bankAccount}</div>
+              </div>
+            </div>
+          )}
         </div>
-      </div>
+      )}
     </PresentationSection>
   );
 };
