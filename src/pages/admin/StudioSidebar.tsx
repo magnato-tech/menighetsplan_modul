@@ -27,6 +27,8 @@ import {
   LogOut,
 } from "lucide-react";
 import { countAddonsOn } from "../../utils/addons";
+import { hasPlanner } from "../../utils/level";
+import { useLevel } from "../../hooks/useLevel";
 import { STUDIO_ADDONS, addonMenuSections } from "./addons";
 import { StudioData, StudioTab, countUrgentTasks } from "./studio";
 import { prefetchStudioTab } from "./studioTabLoaders";
@@ -53,6 +55,8 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({ studio, activeTab,
   const { currentUser, adminPersons, adminGroups, adminGatherings, adminTasks } = studio;
   const { pages, media, news, sermons, staff, settings, addons } = useCms();
   const urgentTasksCount = countUrgentTasks(adminTasks);
+  // The planner beyond the calendar is only in the menu at the level that has it (see levelTabs.ts)
+  const level = useLevel();
   const { sidebarTheme, toggleSidebarTheme } = useStudioAppearance();
   // The media library shows the images that come with the app next to the uploaded ones
   const mediaCount = media.filter((item) => item.status === "ready").length + useStockImageCount();
@@ -82,7 +86,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({ studio, activeTab,
       {/* ========================================================= */}
       <aside
         data-studio-theme={sidebarTheme}
-        className={`fixed md:static inset-y-0 left-0 z-40 w-64 bg-[var(--studio-panel-bg)] border-r border-[var(--studio-border)] text-[var(--studio-text)] flex flex-col justify-between transition-transform duration-200 ${
+        className={`fixed md:static top-[var(--demo-strip,0px)] bottom-0 left-0 z-40 w-64 bg-[var(--studio-panel-bg)] border-r border-[var(--studio-border)] text-[var(--studio-text)] flex flex-col justify-between transition-transform duration-200 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         }`}
       >
@@ -313,7 +317,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({ studio, activeTab,
           {/* Nav Section: Menighetsplanlegger */}
           <div className="space-y-1">
             <div className="text-[10px] font-black uppercase tracking-wider text-[var(--studio-muted)] px-3 py-1">
-              Arrangementer & Bemanning
+              {hasPlanner(level) ? "Arrangementer & Bemanning" : "Arrangementer & Personer"}
             </div>
 
             <button
@@ -335,6 +339,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({ studio, activeTab,
               </span>
             </button>
 
+            {hasPlanner(level) && (
             <button
               type="button"
               {...tabPrefetchHandlers("planlegger-oppgaver")}
@@ -359,7 +364,9 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({ studio, activeTab,
                 </span>
               )}
             </button>
+            )}
 
+            {hasPlanner(level) && (
             <button
               type="button"
               {...tabPrefetchHandlers("planlegger-grupper")}
@@ -378,6 +385,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({ studio, activeTab,
                 {adminGroups.length}
               </span>
             </button>
+            )}
 
             <button
               type="button"
@@ -398,6 +406,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({ studio, activeTab,
               </span>
             </button>
 
+            {hasPlanner(level) && (
             <button
               type="button"
               {...tabPrefetchHandlers("planlegger-roller")}
@@ -416,6 +425,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({ studio, activeTab,
                 {studio.adminVolunteerRoles.length}
               </span>
             </button>
+            )}
           </div>
 
           {/* Nav Section: System & Database */}

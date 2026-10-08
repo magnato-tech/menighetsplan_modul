@@ -1,5 +1,5 @@
 # Prosjektdokument: Menighetsplan-appen
-*Sist oppdatert: 2026-10-07*
+*Sist oppdatert: 2026-10-08*
 
 > **Ny økt? Start her.** Produktet, hva som er levert og planen videre står i `PRODUKTDOKUMENTASJON.md`. Oppbygningen står i `ARKITEKTUR.md`.
 
@@ -65,6 +65,8 @@ Kjør `npm run lint` og `npm test` før en endring regnes som ferdig.
 | `src/pages/admin/` | Admin Studio: `AdminStudio.tsx` er skallet, `StudioSidebar.tsx` menyen, og `tabs/` har én fil per fane |
 | `src/installation.ts`, `.env.example`, `src/components/NotConfiguredNotice.tsx` | Hvilken database installasjonen hører til: innstillingene den leses fra, og meldingen som vises når de mangler |
 | `src/utils/session.ts`, `src/services/auth.ts`, `src/components/SessionGate.tsx`, `src/pages/SignInPage.tsx`, `src/components/AccountMenu.tsx`, `src/utils/firstAdmin.ts` | Innlogging og roller: hvem en konto er i registeret og hvilken rolle personen har (`session.ts`), de to innloggingsmåtene, sperren foran Min side og admin, innloggingssiden, hvem som er logget inn, og første administrator |
+| `src/utils/level.ts`, `src/hooks/useLevel.ts`, `src/pages/admin/levelTabs.ts`, `src/pages/admin/LevelGate.tsx` | De to nivåene, Menighetsplattform og Menighetsplan: hva de heter og om et nivå har planleggeren, hvilket nivå som gjelder, hvilke faner i admin et nivå har, og sperren foran en fane |
+| `src/demo.ts`, `src/services/demoLevel.ts`, `src/components/DemoStrip.tsx` | Demoen: om installasjonen er demoen (`DEMO`, fra `VITE_DEMO`), nivået den besøkende har valgt, og stripen øverst |
 | `src/pages/myPage/` | Min side: `useMyPage.ts` regner ut alt som vises, resten er én fil per seksjon |
 | `src/pages/leaderGroup/` | Delene av gruppesiden (`LeaderGroupDetailPage.tsx`) |
 | `src/components/gathering/` | Dialogene i samlingsvisningen (`GatheringDetailView.tsx`) |
@@ -87,6 +89,8 @@ Kjør `npm run lint` og `npm test` før en endring regnes som ferdig.
 - **Analysebordet anslår aldri.** Et tall uten grunnlag er `null` og vises som strek. Et svar («Kommer») er ikke oppmøte. Nye tall legges i `src/utils/churchAnalytics.ts` med test, og datagrunnlaget sier hva de bygger på.
 - **Besøk telles anonymt.** Tellingen lagrer ingenting i den besøkendes nettleser, og lagrer ingenting om den besøkende eller utstyret: ikke henviser, skjermstørrelse eller nettleser. Nettleserens navn ses bare på for å kjenne igjen roboter, og sendes ikke videre. Et nytt tall må kunne telles av det nettsiden selv vet (hvilken side, når, hvor lenge, hvilken knapp). Alt annet krever samtykke fra den besøkende (ekomloven § 3-15) og bygges ikke uten at det er bestemt. En adresse er en side når `seoForPath` sier det.
 - **En modul slås på, den er ikke der fra før.** En del av admin som ikke alle menigheter skal ha, er et tillegg: navngi det i `src/utils/addons.ts`, beskriv det i `src/pages/admin/addons.ts`, og gi fanen plass som andre faner. Menyen, siden Moduler og sperren foran fanen følger listen. Spør alltid `isAddonOn`, og la det som er av, verken lese eller telle. Valget er ikke innhold, og følger ikke med i et datasett.
+- **Nivået spørres ett sted.** En skjerm som er ulik på de to nivåene, spør `useLevel()` og `hasPlanner(level)`. Les aldri valget i nettleseren direkte: det gjelder bare i demoen. Det som finnes på begge nivå, spør ikke.
+- **Demoen er en innstilling, ikke egen kode.** Det som bare finnes i demoen, spør `DEMO` fra `src/demo.ts` og tegnes ikke når den er `null`. Ingenting om demoen lagres i databasen. Noe som festes øverst på skjermen, festes med `top-[var(--demo-strip,0px)]`, så det står under stripen i demoen.
 - **De planlagte modulene er bare navn.** Givertjeneste, Utleie, Arrangement, Kommunikasjon, Skjemaer og AI-assistent står i modullisten uten innhold, og Analyse utvides ikke. Ingen funksjon bygges i dem før produkteier ber om det uttrykkelig (beskjed 7. oktober 2026). Regnskap er ikke en egen modul.
 - **`visibility` er eneste bryter** for om en samling er offentlig. Les med `isPubliclyVisible` og skriv med `visibilityFields` fra `src/utils/visibility.ts`. `isPublic` lagres bare som et speil. Hva som er kommende, hva som er en gudstjeneste og hva forsiden løfter fram, hentes fra `src/utils/gatherings.ts`.
 - **En gruppe vises utad bare når `isGroupPublic` sier det.** Det gjelder nettsiden og `server/publicApi.ts`.
@@ -119,5 +123,6 @@ Disse er ikke løst ennå. Rekkefølgen de skal løses i står i kapittel 14 i `
 - Innmeldingsdato i en gruppe lagres, men eldre meldinger skjules ikke for nye medlemmer.
 - De to bryterne fra før modulene (kalender, meldinger) lagres bare i nettleseren til den som endrer dem, og styrer ikke noe innhold.
 - Moduler kan slås av og på av hvem som helst i admin. Tildeling av moduler per menighet finnes ikke.
+- Nivået styrer bare menyen og fanene i admin. Min side, arrangementssiden, oversikten og gruppene på nettsiden er like på begge nivå (trinn 3c), og hos en menighet kan nivået ikke settes (trinn 4).
 - Reglene i databasen i drift er eldre enn `firestore.rules`. Nye samlinger avvises der til reglene publiseres.
 - Besøkstallene kan endres og slettes av hvem som helst så lenge reglene er åpne. Med innlogging trenger de en egen samling der en besøkende bare kan legge til i summene.

@@ -33,6 +33,23 @@ export const OPTIONAL_SETTINGS = {
   tenantId: "VITE_TENANT_ID",
 } as const;
 
+/**
+ * Settings only the demo has: the installation the product is shown with, before a congregation
+ * has one of its own.
+ */
+export const DEMO_SETTINGS = {
+  demo: "VITE_DEMO",
+  signUpUrl: "VITE_DEMO_SIGNUP_URL",
+  salesSiteUrl: "VITE_DEMO_SALES_URL",
+} as const;
+
+export interface DemoInstallation {
+  /** Where a visitor signs up for the product. Left out, the demo has no such link. */
+  signUpUrl?: string;
+  /** The website that presents the product, which the visitor came from. */
+  salesSiteUrl?: string;
+}
+
 /** Settings as they are given: `import.meta.env` in the browser, `process.env` on the server. */
 export type InstallationEnv = Record<string, unknown>;
 
@@ -60,6 +77,27 @@ export function readInstallationConfig(env: InstallationEnv): InstallationConfig
     if (value !== undefined) config[key] = value;
   }
   return config;
+}
+
+// A link in the demo leads out of the app, so only an ordinary web address is taken as one
+const webAddressOf = (env: InstallationEnv, name: string): string | undefined => {
+  const value = valueOf(env, name);
+  return value !== undefined && /^https:\/\/[^\s/]+\.[^\s]+$/.test(value) ? value : undefined;
+};
+
+/**
+ * What makes the installation the demo, or null for a congregation's own. Only the word "true"
+ * turns it on, so a setting that is misspelt or left behind never makes a congregation's
+ * installation a demo.
+ */
+export function readDemoInstallation(env: InstallationEnv): DemoInstallation | null {
+  if (valueOf(env, DEMO_SETTINGS.demo) !== "true") return null;
+  const demo: DemoInstallation = {};
+  const signUpUrl = webAddressOf(env, DEMO_SETTINGS.signUpUrl);
+  const salesSiteUrl = webAddressOf(env, DEMO_SETTINGS.salesSiteUrl);
+  if (signUpUrl !== undefined) demo.signUpUrl = signUpUrl;
+  if (salesSiteUrl !== undefined) demo.salesSiteUrl = salesSiteUrl;
+  return demo;
 }
 
 /** What Firebase itself is started with: the settings without the ones that are ours. */

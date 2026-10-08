@@ -14,6 +14,8 @@ import { StudioSidebar } from "./StudioSidebar";
 
 import { AddonGate } from "./AddonGate";
 
+import { LevelGate } from "./LevelGate";
+
 import { StudioTabErrorBoundary } from "../../components/StudioTabErrorBoundary";
 
 import { parseAdminDetailRoute } from "../../utils/adminStudioRoutes";
@@ -129,9 +131,13 @@ function StudioTabPanel({ tab, activeTab, visited, children }: StudioTabPanelPro
 
         <Suspense fallback={<TabLoadingPlaceholder />}>
 
-          {/* A tab that belongs to an add-on is only drawn while the add-on is on */}
+          {/* A tab is only drawn when the level has it, and one that belongs to an add-on only while the add-on is on */}
 
-          <AddonGate tab={tab}>{children}</AddonGate>
+          <LevelGate tab={tab}>
+
+            <AddonGate tab={tab}>{children}</AddonGate>
+
+          </LevelGate>
 
         </Suspense>
 
@@ -271,7 +277,7 @@ function AdminStudioContent() {
 
   return (
 
-    <div className="min-h-screen flex flex-col md:flex-row font-sans">
+    <div className="min-h-[calc(100vh-var(--demo-strip,0px))] flex flex-col md:flex-row font-sans">
 
       {feedback && (
 
@@ -345,7 +351,11 @@ function AdminStudioContent() {
 
         {detailRoute ? (
 
-          <AdminStudioDetail kind={detailRoute.kind} />
+          <LevelGate tab={detailRoute.backTab}>
+
+            <AdminStudioDetail kind={detailRoute.kind} />
+
+          </LevelGate>
 
         ) : (
 

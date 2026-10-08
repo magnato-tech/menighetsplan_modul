@@ -67,6 +67,34 @@ En gruppeleder er den som står som leder eller nestleder i en gruppe. Administr
 * **Mobil først, og lesbart for alle.** Status formidles alltid med ikon og tekst, aldri med farge alene (WCAG AA).
 * **Bemanning hører hjemme i samlingen**, supplert med oversikten «Trenger oppfølging» over akutte forfall og ubesatte oppgaver.
 
+### 1.3 To nivåer
+
+Produktet selges på to nivåer. Det høyeste inneholder det laveste.
+
+| Nivå | Inneholder |
+|---|---|
+| **Menighetsplattform** | Nettsiden med CMS-et, kalenderen med arrangementene, personregisteret og en enkel Min side |
+| **Menighetsplan** | Alt i Menighetsplattform, og planleggeren: grupper, oppgaver, tjenesteroller, bemanning og hele Min side |
+
+* **Personregisteret er med på begge nivå.** Innloggingen bygger på det (kapittel 10.1), så også en menighet som bare har nettsiden, må kunne si hvem som er administratorer og hvem som kan logge inn.
+* **Tilleggsmodulene er noe annet** (kapittel 2.6). De slås på én og én, oppå et nivå.
+* **Hvem bestemmer nivået.** Hos en menighet er det leverandøren. *Planlagt (trinn 4):* til det er bygget, har en menighets installasjon alt. I demoen velger den besøkende selv (kapittel 1.4).
+
+| Det nivået styrer | Status |
+|---|---|
+| Menyen i admin. «Trenger oppfølging», «Grupper & Husfellesskap» og «Roller» står bare på Menighetsplan. Åpnes en slik fane, eller et gruppe- eller oppgavekort, på Menighetsplattform, sier siden at det hører til Menighetsplan | **Levert 8. oktober** |
+| Min side, arrangementssiden, oversikten i admin og gruppene på nettsiden | **Planlagt** (trinn 3c) |
+
+### 1.4 Demoen
+
+Demoen er appen installert én gang til, med egen database og egen adresse, og med en innstilling som sier at den er demoen. Den er ikke egen kode og har ikke eget repo. Det samme gjelder hver menighet: samme kode, egen database, egen adresse.
+
+* **Stripen øverst** *(levert 8. oktober)* står på alle skjermer i demoen, og blir stående når man ruller. Den sier at dette er en demo, har velgeren mellom de to nivåene, og lenker til påmeldingen og tilbake til nettsiden som presenterer produktet. En lenke vises bare når adressen er lagt inn i demoens innstillinger.
+* **Nivåvelgeren** *(levert 8. oktober)* har to valg. Valget gjelder med en gang på alle skjermer, og huskes i nettleseren til den som ser på. Én besøkendes valg endrer ikke hva en annen ser. Før noe er valgt, vises Menighetsplan.
+* **Bare i demoen.** En menighets installasjon tegner aldri stripen, og spør aldri nettleseren om nivået.
+* **Forhåndsvisningen i admin** viser nettsiden uten stripe.
+* *Planlagt (trinn 3b–3e):* vei inn uten innlogging, sperre mot tømming av databasen, demodata med datoer regnet fra i dag, og selve utleggingen med nullstilling hver natt.
+
 ---
 
 ## 2. Adminpanelet (Admin Studio)
@@ -196,7 +224,7 @@ Regnskap er ikke en egen modul. Givertjeneste og Utleie skal registrere inntekte
 
 **Ikke bygget ennå**
 
-* **Tilgang.** Siden skiller ikke mellom hva en menighet *har fått* og hva den *har slått på*: alle delene som finnes, kan slås på av den som er i admin. Tildeling av moduler per menighet, og nivåene under «Åpne produktvalg» (kapittel 14), krever innlogging og publiserte databaseregler.
+* **Tilgang.** Siden skiller ikke mellom hva en menighet *har fått* og hva den *har slått på*: alle delene som finnes, kan slås på av den som er i admin. Tildeling av moduler og nivå per menighet er trinn 4 (kapittel 14), og krever publiserte databaseregler. Nivåene selv står i kapittel 1.3.
 * **Flatene.** Moduler styrer i dag faner i admin og tellingen på nettsiden. Min side og den offentlige nettsiden har ingen deler som styres av en modul.
 
 ---
@@ -692,6 +720,18 @@ Trinn 2 av «Klar for flere menigheter» (kapittel 14).
 | **Første administrator** | Legges inn med `npm run first-admin` av den som setter opp installasjonen |
 | **Ikke levert her** | Reglene i databasen er fortsatt åpne (trinn 4). Selve innloggingen mot Google og e-post er ikke prøvd i drift: innloggingsmåtene må først slås på i Firebase-prosjektet |
 
+### Nivåene og stripen i demoen (8. oktober 2026)
+
+Trinn 3a av «Klar for flere menigheter» (kapittel 14).
+
+| Område | Levert |
+|:---|:---|
+| **Demo-innstillingen** | En installasjon er demoen når `VITE_DEMO` er `true`. Adressen til påmeldingen og til nettsiden som presenterer produktet legges inn samme sted (`.env.example`). Uten innstillingen er alt som før |
+| **Stripen** | Står øverst på nettsiden, Min side, admin og innloggingssiden i demoen, også når man ruller, på mobil og PC. Menyene som var festet øverst, står under den |
+| **Nivåvelgeren** | To valg, Menighetsplattform og Menighetsplan. Valget ligger i nettleseren til den som ser på, og følges mellom faner |
+| **Admin følger nivået** | På Menighetsplattform er «Trenger oppfølging», «Grupper & Husfellesskap» og «Roller» ute av menyen, og overskriften heter «Arrangementer & Personer». Fanene og gruppe- og oppgavekortene tegnes ikke, og siden sier hvor de hører til |
+| **Ikke levert her** | Min side, arrangementssiden, oversikten og gruppene på nettsiden er like på begge nivå (3c). Ingen kommer inn i demoen uten innlogging (3b). Demoen er ikke lagt ut (3e) |
+
 ---
 
 
@@ -718,6 +758,8 @@ Sortert etter hvor mye de betyr for en menighet som skal ta løsningen i bruk.
 | 15 | Besøkstallene kan endres og slettes av hvem som helst så lenge databasereglene er åpne, og de ligger i `cms_settings` til reglene er publisert. Med innlogging trenger de en egen samling der en besøkende bare kan legge til i dagens summer | Fase 1 |
 | 16 | Moduler kan slås av og på av hvem som helst med adgang til admin, og det finnes ikke noe skille mellom hva en menighet har fått tilgang til og hva den har slått på. Kalender og Meldinger husker valget bare i nettleseren | Fase 1 |
 | 17 | Noen faste tekster passer ikke alle menigheter: standardtekstene i innholdsmodulene (søndagsskole, kirkekaffe, husfellesskap annenhver uke), de tre infoboksene på forsiden, og setningen om skattefradrag i bunnen av nettsiden. Demodataene (eksempelmenigheten) kan fortsatt legges inn fra Database i enhver installasjon | Fase 2, og trinn 2 for demodataene |
+| 18 | På Menighetsplattform er bare menyen og fanene i admin tilpasset. Min side, arrangementssiden, oversikten og gruppene på nettsiden viser fortsatt alt | Trinn 3c |
+| 19 | Hos en menighet kan nivået ikke settes: alle har Menighetsplan | Trinn 4 |
 
 ---
 
@@ -752,8 +794,8 @@ Trinnene tas i rekkefølge. Et trinn er ferdig når det er prøvd, testene er gr
 
 | Del | Hva | Status |
 |:---|:---|:---|
-| 3a | **Demo-installasjonen og nivåvelgeren.** En installasjon kan settes opp som demo. Da står en stripe øverst med velgeren mellom Menighetsplattform og Menighetsplan, og menyen i admin følger valget | Neste |
-| 3b | **Vei inn uten innlogging** i demoen, som administrator, gruppeleder og frivillig. Det som tømmer databasen, er ikke med i demoen | |
+| 3a | **Demo-installasjonen og nivåvelgeren.** En installasjon kan settes opp som demo. Da står en stripe øverst med velgeren mellom Menighetsplattform og Menighetsplan, og menyen i admin følger valget | **Levert 8. oktober** (kapittel 1.3, 1.4 og 12) |
+| 3b | **Vei inn uten innlogging** i demoen, som administrator, gruppeleder og frivillig. Det som tømmer databasen, er ikke med i demoen | Neste |
 | 3c | **Nivåskillet i resten av appen:** Min side, arrangementssiden, oversikten og gruppene på nettsiden | |
 | 3d | **Demodata som lever:** datoene regnes fra i dag, og demomenigheten får navn og innhold | |
 | 3e | **Demoen legges ut** med egen database, og nullstilles hver natt. Krever et eget Firebase-prosjekt, som produkteier oppretter | |

@@ -18,6 +18,7 @@ import { PublicFooter } from "./components/public/PublicFooter";
 import { PublicHashScroll } from "./components/public/PublicHashScroll";
 import { ChunkErrorBoundary } from "./components/ChunkErrorBoundary";
 import { SessionGate } from "./components/SessionGate";
+import { DemoFrame } from "./components/DemoStrip";
 
 // Public pages stay static so they never suspend on first paint.
 import { PublicHomePage } from "./pages/public/PublicHomePage";
@@ -110,7 +111,7 @@ function AppContent() {
   if (isMinSideRoute) {
     return (
       <SessionGate>
-      <div className="min-h-screen flex flex-col bg-slate-100 text-slate-800">
+      <div className="min-h-[calc(100vh-var(--demo-strip,0px))] flex flex-col bg-slate-100 text-slate-800">
         <Header />
         <main className="flex-1 pb-12">
           <ChunkErrorBoundary>
@@ -145,7 +146,7 @@ function AppContent() {
   }
 
   return (
-    <div style={themeVariables} className={`${SITE_THEME_CLASS} min-h-screen flex flex-col bg-page text-stone-900`}>
+    <div style={themeVariables} className={`${SITE_THEME_CLASS} min-h-[calc(100vh-var(--demo-strip,0px))] flex flex-col bg-page text-stone-900`}>
       <PreviewQueryPersist />
       <EmbeddedPreviewGuard />
       <PreviewBridgeNotifier />
@@ -197,7 +198,10 @@ export default function App() {
   return (
     <BrowserRouter>
       <DataProviders>
-        <AppContent />
+        {/* In the demo installation a strip stands above everything. Elsewhere this adds nothing. */}
+        <DemoFrame>
+          <AppContent />
+        </DemoFrame>
         <WriteErrorBanner />
       </DataProviders>
     </BrowserRouter>

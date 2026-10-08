@@ -66,7 +66,7 @@ export const PublicNavbar: React.FC = () => {
   return (
     <header
       data-menu-on-hero={overlay ? "true" : undefined}
-      className={`${onHero ? "fixed inset-x-0" : "sticky"} top-0 z-50 border-b transition-colors duration-300 ${
+      className={`${onHero ? "fixed inset-x-0" : "sticky"} top-[var(--demo-strip,0px)] z-50 border-b transition-colors duration-300 ${
         overlay
           ? "bg-gradient-to-b from-stone-950/75 to-transparent border-transparent"
           : "bg-white/95 backdrop-blur-md border-stone-200/80 shadow-xs"

@@ -1,5 +1,5 @@
 # Arkitektur – Menighetsplan-appen
-*Sist oppdatert: 2026-10-05 – beskriver koden slik den faktisk er i dette repoet.*
+*Sist oppdatert: 2026-10-08 – beskriver koden slik den faktisk er i dette repoet.*
 
 ## Kort fortalt
 Menighetsplan er ett adminpanel som styrer to ting i samme kodebase: webappen for frivillige og ledere, og den offentlige nettsiden. Alt leser og skriver til samme Firestore-database. En liten Express-server leverer appen og et offentlig JSON-API for eksterne nettsider. Hva produktet skal være, og hva som er levert og planlagt, står i `PRODUKTDOKUMENTASJON.md`.
@@ -39,6 +39,15 @@ Appen installeres én gang per menighet: eget Firebase-prosjekt, egen database o
 - **Første administrator** legges inn utenfra med `scripts/first-admin.ts`, som skriver det `planFirstAdmin` (`src/utils/firstAdmin.ts`) sier må skrives.
 - **I tester** står `tests/support/session.ts` inn for `src/services/auth`: testen sier hvem som er logget inn.
 - **Det som gjenstår til reglene (trinn 4).** Koblingen fra konto til person gjøres i dag i nettleseren, av det den har lest. Reglene i databasen trenger sin egen, pålitelige kobling fra kontoens id til personen før rollen kan håndheves der.
+
+## Nivåer og demoen
+- **To nivåer** står i `src/utils/level.ts`: `plattform` (Menighetsplattform) og `plan` (Menighetsplan). Det høyeste inneholder det laveste, så koden stiller ett spørsmål: `hasPlanner(level)`.
+- **Ett sted å spørre.** `useLevel()` (`src/hooks/useLevel.ts`) gir nivået til alle skjermer. `installationLevel` avgjør det: i demoen det den besøkende har valgt, ellers hele produktet. Når tildelingen fra leverandøren leses (trinn 4), er det den funksjonen som får den.
+- **Demoen er en innstilling, ikke egen kode.** `readDemoInstallation` (`src/installation.ts`) leser `VITE_DEMO`, der bare ordet `true` slår den på, og de to lenkene, som må være vanlige `https`-adresser. `src/demo.ts` holder svaret for nettleseren: `DEMO`, som er `null` hos en menighet. Det leses fra innstillingene appen ble bygget med, og kan ikke slås på fra en nettleser.
+- **Valget i demoen** ligger i `src/services/demoLevel.ts`: i nettleserens lager, med en kopi i fanen for nettlesere som stenger lageret, og fulgt mellom faner.
+- **Stripen** (`src/components/DemoStrip.tsx`) legges over appen av `DemoFrame` i `src/App.tsx`, og står fast øverst. Høyden er CSS-variabelen `--demo-strip` (`src/index.css`). Alt annet som er festet øverst, festes under den med `top-[var(--demo-strip,0px)]`, og sidene er `min-h-[calc(100vh-var(--demo-strip,0px))]` høye. Utenfor demoen er variabelen ikke satt, og ingenting flytter seg. En side som vises inni en annen, som forhåndsvisningen i admin, får ingen stripe.
+- **Admin** spør `isTabInLevel` (`src/pages/admin/levelTabs.ts`): menyen (`StudioSidebar.tsx`), og sperren `LevelGate.tsx`, som ligger utenpå `AddonGate` rundt hver fane og rundt detaljkortene. Personregisteret er med på begge nivå, fordi innloggingen bygger på det.
+- **I tester** står `vi.mock("../src/demo", …)` med en getter inn for innstillingene, så en test kan si at installasjonen er demoen (se `tests/demo-strip.test.tsx`).
 
 ## Bygg og lasting
 Vite bygger klienten med `manualChunks` for `firebase` og `react-vendor`. Offentlige sider importeres statisk i `src/App.tsx`; admin, Min side og admin-detaljsider lastes med `React.lazy` og `Suspense` bare på de grenene. Hver admin-fane har sin egen lazy-import i `src/pages/admin/studioTabLoaders.ts`, med forhåndshent ved hover, fokus og touch fra `StudioSidebar.tsx`.
@@ -174,4 +183,5 @@ Tre regler avgjør hva en besøkende ser, og hver av dem ligger ett sted:
 | Filstørrelse | Én komponent per fane/modal | Gjort for alle sidene over 1 000 linjer. Størst nå er redigeringsskjemaet for sider (`PageEditModal.tsx`, ca. 750 linjer) og gruppekortet i admin (`AdminGroupDetailPage.tsx`, ca. 650) |
 | Lasting | Admin og CMS lastes først når de åpnes | Offentlige ruter er statiske; admin, Min side og faner lastes ved behov. Firebase-klienten lastes på alle besøk (~710 KB) |
 | Gruppemeldinger | Testverktøyet på husfellesskapssiden sier at et nytt medlem ikke skal se eldre meldinger | Innmeldingsdato lagres (`memberJoinedAt`), men brukes ikke: et medlem ser alle meldingene i gruppen |
+| Nivåer | Hvert nivå viser bare sitt på alle flater, og leverandøren setter nivået for en menighet | Bare menyen og fanene i admin følger nivået. Hos en menighet er nivået alltid Menighetsplan, og bare demoen kan vise Menighetsplattform |
 | Modulbrytere | Kalender og meldinger slås av og på for hele menigheten | Valget lagres bare i nettleseren til den som endrer det |

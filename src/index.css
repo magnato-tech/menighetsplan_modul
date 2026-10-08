@@ -34,6 +34,20 @@
   --color-page: #fafaf9;
 }
 
+/*
+ * The demo installation has a strip at the top of the screen (components/DemoStrip.tsx). This
+ * is its height. What else is pinned to the top is pinned below it, with
+ * top-[var(--demo-strip,0px)]. Outside the demo the variable is not set, and nothing moves.
+ */
+.demo-frame {
+  --demo-strip: 4.25rem;
+}
+@media (min-width: 768px) {
+  .demo-frame {
+    --demo-strip: 2.5rem;
+  }
+}
+
 /* Inside a themed element, body text and headings use the theme's fonts */
 @layer base {
   .site-theme {

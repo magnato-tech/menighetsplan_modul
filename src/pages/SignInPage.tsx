@@ -77,7 +77,7 @@ export const SignInPage: React.FC = () => {
   };
 
   return (
-    <main className="min-h-screen bg-slate-100 px-4 py-10 sm:py-16">
+    <main className="min-h-[calc(100vh-var(--demo-strip,0px))] bg-slate-100 px-4 py-10 sm:py-16">
       <div className={card}>
         <div className="space-y-1">
           <p className="text-xs font-bold uppercase tracking-wider text-indigo-700">{settings.churchName}</p>

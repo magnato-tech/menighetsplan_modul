@@ -17,7 +17,7 @@ export const Header: React.FC = () => {
   const isMyPagePath = location.pathname === "/minside" || location.pathname === "/";
 
   return (
-    <header className="sticky top-0 z-40 bg-white border-b border-slate-200/80 shadow-xs">
+    <header className="sticky top-[var(--demo-strip,0px)] z-40 bg-white border-b border-slate-200/80 shadow-xs">
       {/* Top Banner with link back to public website */}
       <div className="bg-slate-900 text-slate-300 px-4 py-1.5 text-xs flex items-center justify-between">
         <Link
