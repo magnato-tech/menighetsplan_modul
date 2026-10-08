@@ -25,6 +25,7 @@ vi.mock("../src/demo", () => ({
   },
 }));
 
+import { DemoGate } from "../src/pages/admin/DemoGate";
 import { LevelGate } from "../src/pages/admin/LevelGate";
 import { StudioSidebar } from "../src/pages/admin/StudioSidebar";
 import type { StudioData, StudioTab } from "../src/pages/admin/studio";
@@ -52,7 +53,8 @@ const renderMenu = () => {
 };
 
 const PLANNER_ITEMS = [/Trenger oppfølging/, /Grupper & Husfellesskap/, /^Roller/];
-const IN_BOTH = [/Sider & Innhold/, /Nyheter/, /Design/, /^Arrangementer/, /^Personer/, /Moduler/];
+const IN_BOTH = [/Sider & Innhold/, /Nyheter/, /Design/, /^Arrangementer/, /^Personer/];
+const NOT_IN_DEMO = [/Database/, /Moduler/];
 
 const started = vi.fn();
 const stopped = vi.fn();
@@ -80,8 +82,9 @@ afterEach(() => {
 describe("Menyen i admin følger nivået", () => {
   test("hos en menighet står hele planleggeren i menyen", () => {
     const menu = renderMenu();
-    for (const name of [...PLANNER_ITEMS, ...IN_BOTH]) expect(menu.getByRole("button", { name })).toBeTruthy();
+    for (const name of [...PLANNER_ITEMS, ...IN_BOTH, ...NOT_IN_DEMO]) expect(menu.getByRole("button", { name })).toBeTruthy();
     expect(menu.getByText("Arrangementer & Bemanning")).toBeTruthy();
+    expect(menu.getByText("System & Database")).toBeTruthy();
   });
 
   test("i demoen, med Menighetsplan valgt, står hele planleggeren i menyen", () => {
@@ -113,6 +116,55 @@ describe("Menyen i admin følger nivået", () => {
 
     act(() => chooseDemoLevel("plan"));
     expect(menu.getByRole("button", { name: /Trenger oppfølging/ })).toBeTruthy();
+  });
+});
+
+describe("Admin i demoen", () => {
+  test("menyen har verken databaseverktøyene eller modulene, heller ikke en modul som er slått på i databasen", () => {
+    installation.demo = {};
+    (cms as { addons: Record<string, boolean> }).addons = { analysebord: true, nettsidebesok: true };
+    const menu = renderMenu();
+
+    for (const name of NOT_IN_DEMO) expect(menu.queryByRole("button", { name })).toBeNull();
+    expect(menu.queryByText("System & Database")).toBeNull();
+    expect(menu.queryByRole("button", { name: "Analysebord" })).toBeNull();
+    expect(menu.queryByText("Analyse")).toBeNull();
+    for (const name of [...PLANNER_ITEMS, ...IN_BOTH]) expect(menu.getByRole("button", { name })).toBeTruthy();
+    cms.addons = {};
+  });
+
+  test("en fane som ikke er med, tegnes ikke når adressen skrives inn, og siden sier hvorfor", () => {
+    installation.demo = {};
+    for (const tab of ["database-admin", "moduler", "analyse", "nettsidebesok"] as const) {
+      render(
+        <DemoGate tab={tab}>
+          <Tab />
+        </DemoGate>
+      );
+      expect(screen.queryByText("Innholdet på fanen")).toBeNull();
+      expect(screen.getByRole("heading", { name: "Ikke med i demoen" })).toBeTruthy();
+      cleanup();
+    }
+    expect(started).not.toHaveBeenCalled();
+  });
+
+  test("resten av fanene tegnes i demoen, og hos en menighet tegnes alle", () => {
+    installation.demo = {};
+    render(
+      <DemoGate tab="planlegger-samlinger">
+        <Tab />
+      </DemoGate>
+    );
+    expect(screen.getByText("Innholdet på fanen")).toBeTruthy();
+    cleanup();
+
+    installation.demo = null;
+    render(
+      <DemoGate tab="database-admin">
+        <Tab />
+      </DemoGate>
+    );
+    expect(screen.getByText("Innholdet på fanen")).toBeTruthy();
   });
 });
 

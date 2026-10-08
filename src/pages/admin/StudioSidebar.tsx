@@ -29,6 +29,7 @@ import {
 import { countAddonsOn } from "../../utils/addons";
 import { hasPlanner } from "../../utils/level";
 import { useLevel } from "../../hooks/useLevel";
+import { DEMO } from "../../demo";
 import { STUDIO_ADDONS, addonMenuSections } from "./addons";
 import { StudioData, StudioTab, countUrgentTasks } from "./studio";
 import { prefetchStudioTab } from "./studioTabLoaders";
@@ -57,6 +58,8 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({ studio, activeTab,
   const urgentTasksCount = countUrgentTasks(adminTasks);
   // The planner beyond the calendar is only in the menu at the level that has it (see levelTabs.ts)
   const level = useLevel();
+  // The demo is without the database tools and the add-on modules (see demoTabs.ts)
+  const inDemo = DEMO !== null;
   const { sidebarTheme, toggleSidebarTheme } = useStudioAppearance();
   // The media library shows the images that come with the app next to the uploaded ones
   const mediaCount = media.filter((item) => item.status === "ready").length + useStockImageCount();
@@ -429,6 +432,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({ studio, activeTab,
           </div>
 
           {/* Nav Section: System & Database */}
+          {!inDemo && (
           <div className="space-y-1">
             <div className="text-[10px] font-black uppercase tracking-wider text-[var(--studio-muted)] px-3 py-1">
               System & Database
@@ -472,9 +476,10 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({ studio, activeTab,
               </span>
             </button>
           </div>
+          )}
 
         {/* Nav sections from the add-ons that are on (see addons.ts). An add-on that is off is not in the menu. */}
-          {addonMenuSections(addons).map((section) => (
+          {(inDemo ? [] : addonMenuSections(addons)).map((section) => (
             <div key={section.heading} className="space-y-1">
               <div className="text-[10px] font-black uppercase tracking-wider text-[var(--studio-muted)] px-3 py-1">
                 {section.heading}

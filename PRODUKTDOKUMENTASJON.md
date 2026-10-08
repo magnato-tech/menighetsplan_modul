@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.7 · **Sist oppdatert:** 2026-10-08
+> **Dokumentversjon:** 4.8 · **Sist oppdatert:** 2026-10-09
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -89,11 +89,14 @@ Produktet selges på to nivåer. Det høyeste inneholder det laveste.
 
 Demoen er appen installert én gang til, med egen database og egen adresse, og med en innstilling som sier at den er demoen. Den er ikke egen kode og har ikke eget repo. Det samme gjelder hver menighet: samme kode, egen database, egen adresse.
 
-* **Stripen øverst** *(levert 8. oktober)* står på alle skjermer i demoen, og blir stående når man ruller. Den sier at dette er en demo, har velgeren mellom de to nivåene, og lenker til påmeldingen og tilbake til nettsiden som presenterer produktet. En lenke vises bare når adressen er lagt inn i demoens innstillinger.
+* **Stripen øverst** *(levert 8. oktober)* står på alle skjermer i demoen, og blir stående når man ruller. Den sier at dette er en demo, har velgeren mellom de to nivåene, viser veien inn til den som ikke er inne, og lenker til påmeldingen og tilbake til nettsiden som presenterer produktet. En lenke ut av demoen vises bare når adressen er lagt inn i demoens innstillinger.
+* **Veien inn** *(levert 9. oktober)*. Ingen logger inn i demoen. «Gå inn» i stripen, og «Min Side» på nettsiden, fører til en side med tre valg: frivillig, gruppeleder og administrator. Den besøkende går inn som en person fra demoens register som har den rollen, og siden sier hvem. Frivillig starter på Min side, gruppeleder på gruppeledersiden og administrator i admin. «Logg ut» fører tilbake til valget, så man kan bytte rolle.
+* **Hvem man går inn som**, følger av registeret: av dem som har rollen, den som er med i flest grupper. Innholdet i demoen kan dermed byttes uten at noe annet må endres.
+* **Det demoen er uten** *(levert 9. oktober)*. «Database og Testdata» og «Moduler» står ikke i menyen, og tilleggsmodulene vises ikke, heller ikke om en skulle være slått på i databasen. Skrives adressen til en slik fane inn, sier siden at den ikke er med i demoen. Alt som tømmer databasen, nekter i demoen, uansett hvor det kalles fra.
 * **Nivåvelgeren** *(levert 8. oktober)* har to valg. Valget gjelder med en gang på alle skjermer, og huskes i nettleseren til den som ser på. Én besøkendes valg endrer ikke hva en annen ser. Før noe er valgt, vises Menighetsplan.
 * **Bare i demoen.** En menighets installasjon tegner aldri stripen, og spør aldri nettleseren om nivået.
 * **Forhåndsvisningen i admin** viser nettsiden uten stripe.
-* *Planlagt (trinn 3b–3e):* vei inn uten innlogging, sperre mot tømming av databasen, demodata med datoer regnet fra i dag, og selve utleggingen med nullstilling hver natt.
+* *Planlagt (trinn 3c–3e):* nivåskillet i resten av appen, demodata med datoer regnet fra i dag, og selve utleggingen med nullstilling hver natt.
 
 ---
 
@@ -617,7 +620,7 @@ Kontrakten står i `INTEGRASJON-MENIGHETSPLAN.md`. Det eksterne CMS-et (`menighe
 
 **Første administrator** legges inn utenfra, én gang, av den som setter opp installasjonen: `npm run first-admin -- e-postadresse "Navn"`. Deretter legger administratoren inn de andre i admin. Uten en administrator i registeret kommer ingen inn i admin.
 
-**Testbryteren er borte.** Det går ikke an å velge hvem man er uten å logge inn. Testverktøyet på husfellesskapssiden er fjernet. På en utviklers egen maskin, og bare der, kan man gå inn som en person fra registeret; den muligheten finnes ikke i den publiserte løsningen.
+**Testbryteren er borte.** Det går ikke an å velge hvem man er uten å logge inn. Testverktøyet på husfellesskapssiden er fjernet. På en utviklers egen maskin, og bare der, kan man gå inn som en person fra registeret; den muligheten finnes ikke i en menighets publiserte løsning. Demoen er eneste unntak: der går alle inn uten innlogging (kapittel 1.4), og den har bare eksempeldata.
 
 **Må slås på per installasjon.** I Firebase-prosjektet må innloggingsmåtene «Google» og «E-postlenke» være slått på, og adressen installasjonen ligger på, må stå blant de godkjente domenene. Uten det sier innloggingssiden at innloggingsmåten ikke er slått på.
 
@@ -732,6 +735,19 @@ Trinn 3a av «Klar for flere menigheter» (kapittel 14).
 | **Admin følger nivået** | På Menighetsplattform er «Trenger oppfølging», «Grupper & Husfellesskap» og «Roller» ute av menyen, og overskriften heter «Arrangementer & Personer». Fanene og gruppe- og oppgavekortene tegnes ikke, og siden sier hvor de hører til |
 | **Ikke levert her** | Min side, arrangementssiden, oversikten og gruppene på nettsiden er like på begge nivå (3c). Ingen kommer inn i demoen uten innlogging (3b). Demoen er ikke lagt ut (3e) |
 
+### Veien inn i demoen (9. oktober 2026)
+
+Trinn 3b av «Klar for flere menigheter» (kapittel 14).
+
+| Område | Levert |
+|:---|:---|
+| **Veien inn** | I demoen er innloggingssiden byttet ut med tre valg: frivillig, gruppeleder og administrator. Stripen har «Gå inn» for den som ikke er inne |
+| **Hvem man er** | En person fra demoens register med rollen, valgt av registeret selv. Min side og admin viser navnet som for en innlogget |
+| **Uten databaseverktøy og moduler** | «Database og Testdata», «Moduler» og tilleggsmodulene er ute av menyen i demoen, og fanene tegnes ikke |
+| **Sperre mot tømming** | Alt som tømmer databasen, nekter i demoen. Demoens database fylles og nullstilles utenfra |
+| **Prøvd som publisert** | Appen er bygget både som demo og som en menighets installasjon og åpnet i nettleseren: demoen har stripen og veien inn, menighetens har bare innlogging |
+| **Ikke levert her** | Min side og de andre skjermene er like på begge nivå (3c). Demodataene har faste datoer (3d). Demoen er ikke lagt ut, og nullstilles ikke (3e) |
+
 ---
 
 
@@ -795,8 +811,8 @@ Trinnene tas i rekkefølge. Et trinn er ferdig når det er prøvd, testene er gr
 | Del | Hva | Status |
 |:---|:---|:---|
 | 3a | **Demo-installasjonen og nivåvelgeren.** En installasjon kan settes opp som demo. Da står en stripe øverst med velgeren mellom Menighetsplattform og Menighetsplan, og menyen i admin følger valget | **Levert 8. oktober** (kapittel 1.3, 1.4 og 12) |
-| 3b | **Vei inn uten innlogging** i demoen, som administrator, gruppeleder og frivillig. Det som tømmer databasen, er ikke med i demoen | Neste |
-| 3c | **Nivåskillet i resten av appen:** Min side, arrangementssiden, oversikten og gruppene på nettsiden | |
+| 3b | **Vei inn uten innlogging** i demoen, som administrator, gruppeleder og frivillig. Det som tømmer databasen, er ikke med i demoen | **Levert 9. oktober** (kapittel 1.4 og 12) |
+| 3c | **Nivåskillet i resten av appen:** Min side, arrangementssiden, oversikten og gruppene på nettsiden | Neste |
 | 3d | **Demodata som lever:** datoene regnes fra i dag, og demomenigheten får navn og innhold | |
 | 3e | **Demoen legges ut** med egen database, og nullstilles hver natt. Krever et eget Firebase-prosjekt, som produkteier oppretter | |
 

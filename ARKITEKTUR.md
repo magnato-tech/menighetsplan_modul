@@ -1,5 +1,5 @@
 # Arkitektur – Menighetsplan-appen
-*Sist oppdatert: 2026-10-08 – beskriver koden slik den faktisk er i dette repoet.*
+*Sist oppdatert: 2026-10-09 – beskriver koden slik den faktisk er i dette repoet.*
 
 ## Kort fortalt
 Menighetsplan er ett adminpanel som styrer to ting i samme kodebase: webappen for frivillige og ledere, og den offentlige nettsiden. Alt leser og skriver til samme Firestore-database. En liten Express-server leverer appen og et offentlig JSON-API for eksterne nettsider. Hva produktet skal være, og hva som er levert og planlagt, står i `PRODUKTDOKUMENTASJON.md`.
@@ -35,7 +35,7 @@ Appen installeres én gang per menighet: eget Firebase-prosjekt, egen database o
 - **`src/services/auth.ts`** er eneste sted Firebase Auth brukes: Google-konto og lenke på e-post, og `describeSignInError` som gjør feilkodene om til norsk. Adressen en lenke ble sendt til, huskes på enheten den ble bestilt fra.
 - **`FirebaseDataProvider`** følger kontoen og gir `session`, `currentUser` og `signOut` til alle flater. `currentUser` er personen bare mens økten er `member`; ellers er den ingen (uten navn og id). Planleggingsdataene følges bare på interne ruter *og* for et medlem, og tømmes når noen logger ut.
 - **Sperren** er `SessionGate` (`src/components/SessionGate.tsx`), lagt rundt Min side og admin i `src/App.tsx`. Den som ikke er medlem, sendes til `/logg-inn?neste=…`. Admin krever i tillegg administrator. Innloggingssiden (`src/pages/SignInPage.tsx`) er verken en del av nettsiden eller bak innlogging (`isSignInPath` i `src/utils/routes.ts`), og fører bare videre til adresser i appen (`destinationAfterSignIn`).
-- **Ingen vei inn utenom.** Testbryteren er fjernet. På en utviklers egen maskin (`import.meta.env.DEV`) kan en person fra registeret stå inn for en innlogget, valgt på innloggingssiden. Den publiserte appen bygges uten: der er `standInAs` udefinert, og et lagret valg leses ikke.
+- **Ingen vei inn utenom.** Testbryteren er fjernet. På en utviklers egen maskin (`import.meta.env.DEV`) kan en person fra registeret stå inn for en innlogget, valgt på innloggingssiden. En menighets publiserte app bygges uten: der er `standInAs` udefinert, og et lagret valg leses ikke. Demoen er eneste unntak (se Nivåer og demoen), og `mayStandIn` i `src/utils/session.ts` er regelen for begge.
 - **Første administrator** legges inn utenfra med `scripts/first-admin.ts`, som skriver det `planFirstAdmin` (`src/utils/firstAdmin.ts`) sier må skrives.
 - **I tester** står `tests/support/session.ts` inn for `src/services/auth`: testen sier hvem som er logget inn.
 - **Det som gjenstår til reglene (trinn 4).** Koblingen fra konto til person gjøres i dag i nettleseren, av det den har lest. Reglene i databasen trenger sin egen, pålitelige kobling fra kontoens id til personen før rollen kan håndheves der.
@@ -47,6 +47,8 @@ Appen installeres én gang per menighet: eget Firebase-prosjekt, egen database o
 - **Valget i demoen** ligger i `src/services/demoLevel.ts`: i nettleserens lager, med en kopi i fanen for nettlesere som stenger lageret, og fulgt mellom faner.
 - **Stripen** (`src/components/DemoStrip.tsx`) legges over appen av `DemoFrame` i `src/App.tsx`, og står fast øverst. Høyden er CSS-variabelen `--demo-strip` (`src/index.css`). Alt annet som er festet øverst, festes under den med `top-[var(--demo-strip,0px)]`, og sidene er `min-h-[calc(100vh-var(--demo-strip,0px))]` høye. Utenfor demoen er variabelen ikke satt, og ingenting flytter seg. En side som vises inni en annen, som forhåndsvisningen i admin, får ingen stripe.
 - **Admin** spør `isTabInLevel` (`src/pages/admin/levelTabs.ts`): menyen (`StudioSidebar.tsx`), og sperren `LevelGate.tsx`, som ligger utenpå `AddonGate` rundt hver fane og rundt detaljkortene. Personregisteret er med på begge nivå, fordi innloggingen bygger på det.
+- **Veien inn i demoen.** Ingen logger inn der. `SignInPage.tsx` viser `DemoDoor` (`src/pages/DemoDoor.tsx`) i stedet for innloggingen, og et valg kaller `standInAs`, samme mekanisme som på en utviklers maskin. `demoDoors` (`src/utils/demoDoor.ts`) velger personen for hver rolle fra registeret: av dem med rollen, den som er med i flest grupper, så navnet. Økten har da `account: null`.
+- **Det demoen er uten** står i `src/pages/admin/demoTabs.ts`: databaseverktøyene, Moduler og fanene til alle tillegg. Menyen utelater dem, og `DemoGate.tsx` ligger ytterst rundt hver fane. `ensureDeletionAllowed` (`src/services/operatingMode.ts`) nekter alltid i demoen, så ingen funksjon som tømmer databasen, virker der. Demoens database fylles og nullstilles utenfra.
 - **I tester** står `vi.mock("../src/demo", …)` med en getter inn for innstillingene, så en test kan si at installasjonen er demoen (se `tests/demo-strip.test.tsx`).
 
 ## Bygg og lasting

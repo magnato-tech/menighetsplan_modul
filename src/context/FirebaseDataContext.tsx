@@ -44,7 +44,8 @@ import {
 } from "../services/firestore";
 import { signOut as signOutOfAccount, subscribeAccount } from "../services/auth";
 import { isInGroup } from "../utils/groups";
-import { sessionOf, standInSession, type AccountState, type Session } from "../utils/session";
+import { mayStandIn, sessionOf, standInSession, type AccountState, type Session } from "../utils/session";
+import { DEMO } from "../demo";
 import type { HeadcountInput } from "../utils/headcount";
 import { AssignmentChange, applyAssignmentChange, holdsSlot, isAcuteForfall, taskStatusFor } from "../utils/staffing";
 
@@ -74,8 +75,13 @@ export interface FirebaseDataContextType {
    */
   currentUser: Person;
   signOut: () => Promise<void>;
-  /** On a developer's own machine only: go in as a person without signing in. Absent in the published app. */
+  /**
+   * Go in as a person without signing in. Only on a developer's own machine and in the demo
+   * installation: a congregation's published app is without it.
+   */
   standInAs?: (personId: string) => void;
+  /** Whether the person register has arrived. Until then nobody can be said to be missing from it. */
+  registerReady: boolean;
   allPersons: Person[];
   groups: Group[];
   gatherings: Gathering[];
@@ -177,9 +183,10 @@ interface FirebaseDataProviderProps {
 const NOBODY: Person = { id: "", name: "", globalRole: "member" };
 
 // A developer's own machine has no sign-in set up, so there a person from the register can be
-// stood in for (see SignInPage). The published app is built without this: nobody gets in
-// without signing in. The choice lasts for the browser tab.
-const CAN_STAND_IN = import.meta.env.DEV;
+// stood in for (see SignInPage). The demo lets every visitor in the same way (see DemoDoor). A
+// congregation's published app is built without this: nobody gets in without signing in. The
+// choice lasts for the browser tab.
+const CAN_STAND_IN = mayStandIn({ developerMachine: import.meta.env.DEV, demo: DEMO !== null });
 const STAND_IN_KEY = "menighetsplan_utvikler_som";
 
 function storedStandIn(): string | null {
@@ -595,6 +602,7 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
       currentUser,
       signOut,
       standInAs,
+      registerReady,
       allPersons: persons,
       groups,
       gatherings,
@@ -627,6 +635,7 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
       currentUser,
       signOut,
       standInAs,
+      registerReady,
       persons,
       groups,
       gatherings,

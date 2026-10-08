@@ -16,6 +16,8 @@ import { AddonGate } from "./AddonGate";
 
 import { LevelGate } from "./LevelGate";
 
+import { DemoGate } from "./DemoGate";
+
 import { StudioTabErrorBoundary } from "../../components/StudioTabErrorBoundary";
 
 import { parseAdminDetailRoute } from "../../utils/adminStudioRoutes";
@@ -131,13 +133,17 @@ function StudioTabPanel({ tab, activeTab, visited, children }: StudioTabPanelPro
 
         <Suspense fallback={<TabLoadingPlaceholder />}>
 
-          {/* A tab is only drawn when the level has it, and one that belongs to an add-on only while the add-on is on */}
+          {/* A tab is only drawn when the demo and the level have it, and one that belongs to an add-on only while the add-on is on */}
 
-          <LevelGate tab={tab}>
+          <DemoGate tab={tab}>
 
-            <AddonGate tab={tab}>{children}</AddonGate>
+            <LevelGate tab={tab}>
 
-          </LevelGate>
+              <AddonGate tab={tab}>{children}</AddonGate>
+
+            </LevelGate>
+
+          </DemoGate>
 
         </Suspense>
 

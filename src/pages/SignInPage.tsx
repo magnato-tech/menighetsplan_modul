@@ -5,6 +5,9 @@ import { useCms } from "../context/CmsContext";
 import { useFirebase } from "../context/FirebaseDataContext";
 import { completeSignInLink, describeSignInError, isSignInLink, sendSignInLink, signInWithGoogle } from "../services/auth";
 import { destinationAfterSignIn, signInUrl, type NotInRegisterReason } from "../utils/session";
+import { DEMO } from "../demo";
+import { DEMO_DOOR_START } from "../utils/demoDoor";
+import { DemoDoor } from "./DemoDoor";
 
 const card = "w-full max-w-sm mx-auto bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-5";
 const primaryButton =
@@ -24,6 +27,8 @@ const NOT_IN_REGISTER: Record<NotInRegisterReason, string> = {
  * The way in to Min side and the admin: a Google account, or a link sent to an e-mail address.
  * Who gets in is decided by the register (see utils/session.ts), so the page also says so to
  * someone who is signed in without being in it.
+ *
+ * In the demo installation nobody signs in: the page is the way in, with a role to choose.
  */
 export const SignInPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -37,6 +42,10 @@ export const SignInPage: React.FC = () => {
   const [sentTo, setSentTo] = useState<string | null>(null);
   // The page was opened from a link in an e-mail, on a device that does not know which address it was sent to
   const [linkNeedsEmail, setLinkNeedsEmail] = useState(false);
+  // In the demo: where the chosen role starts, when no address was asked for
+  const [doorStart, setDoorStart] = useState<string | null>(null);
+  const atDemoDoor = DEMO !== null && standInAs !== undefined;
+  const signedOut = session.status === "signedOut";
 
   const attempt = async (signIn: () => Promise<unknown>) => {
     setWorking(true);
@@ -58,7 +67,9 @@ export const SignInPage: React.FC = () => {
     });
   }, []);
 
-  if (session.status === "member") return <Navigate to={destination} replace />;
+  if (session.status === "member") {
+    return <Navigate to={searchParams.has("neste") || doorStart === null ? destination : doorStart} replace />;
+  }
 
   const sendLink = (event: React.FormEvent) => {
     event.preventDefault();
@@ -81,7 +92,7 @@ export const SignInPage: React.FC = () => {
       <div className={card}>
         <div className="space-y-1">
           <p className="text-xs font-bold uppercase tracking-wider text-indigo-700">{settings.churchName}</p>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Logg inn</h1>
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight">{atDemoDoor ? "Gå inn i demoen" : "Logg inn"}</h1>
         </div>
 
         {session.status === "loading" && <p className="text-sm text-slate-500">Laster …</p>}
@@ -99,7 +110,16 @@ export const SignInPage: React.FC = () => {
           </div>
         )}
 
-        {session.status === "signedOut" && linkNeedsEmail && (
+        {signedOut && atDemoDoor && (
+          <DemoDoor
+            onEnter={(door) => {
+              setDoorStart(DEMO_DOOR_START[door.role]);
+              standInAs(door.person.id);
+            }}
+          />
+        )}
+
+        {signedOut && !atDemoDoor && linkNeedsEmail && (
           <form onSubmit={confirmLink} className="space-y-3">
             <p className="text-sm text-slate-700">
               Lenken er åpnet på en annen enhet enn den ble bestilt fra. Skriv e-postadressen den ble sendt til, så logges du inn.
@@ -114,7 +134,7 @@ export const SignInPage: React.FC = () => {
           </form>
         )}
 
-        {session.status === "signedOut" && !linkNeedsEmail && sentTo && (
+        {signedOut && !atDemoDoor && !linkNeedsEmail && sentTo && (
           <div className="space-y-3">
             <p className="text-sm text-slate-700">
               Vi har sendt en lenke til <strong>{sentTo}</strong>. Åpne e-posten og trykk på lenken for å logge inn.
@@ -126,7 +146,7 @@ export const SignInPage: React.FC = () => {
           </div>
         )}
 
-        {session.status === "signedOut" && !linkNeedsEmail && !sentTo && (
+        {signedOut && !atDemoDoor && !linkNeedsEmail && !sentTo && (
           <div className="space-y-4">
             <p className="text-sm text-slate-600">Min side og administrasjonen er for dem som står i menighetens personregister.</p>
             <button type="button" disabled={working} onClick={() => void attempt(signInWithGoogle)} className={secondaryButton}>
@@ -169,7 +189,7 @@ export const SignInPage: React.FC = () => {
         )}
 
         {/* Only on a developer's own machine: the published app has no way in without signing in */}
-        {standInAs && session.status === "signedOut" && (
+        {standInAs && !atDemoDoor && signedOut && (
           <label className="block space-y-1 pt-3 border-t border-dashed border-slate-300">
             <span className="text-xs font-bold text-slate-700">På egen maskin: gå inn som en person uten å logge inn</span>
             <select defaultValue="" onChange={(e) => e.target.value && standInAs(e.target.value)} className={input}>

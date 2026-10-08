@@ -38,7 +38,7 @@ export type Session =
   | { status: "loading" }
   | { status: "signedOut" }
   | { status: "notInRegister"; account: Account; reason: NotInRegisterReason }
-  /** `account` is null only for the stand-in used on a developer's own machine (see SignInPage). */
+  /** `account` is null only for a stand-in: on a developer's own machine, or a visitor of the demo (see mayStandIn). */
   | { status: "member"; person: Person; account: Account | null };
 
 export type SessionRole = "administrator" | "gruppeleder" | "medlem";
@@ -72,6 +72,13 @@ export function standInSession(personId: string, persons: Person[], registerRead
   const person = persons.find((candidate) => candidate.id === personId);
   return person ? { status: "member", person, account: null } : { status: "signedOut" };
 }
+
+/**
+ * Whether someone can go in as a person from the register without signing in: on a developer's
+ * own machine, and in the demo, where every visitor is let in (see utils/demoDoor.ts). Never in
+ * a congregation's published installation.
+ */
+export const mayStandIn = (where: { developerMachine: boolean; demo: boolean }): boolean => where.developerMachine || where.demo;
 
 export const isAdministrator = (person: Pick<Person, "globalRole">): boolean => person.globalRole === "admin";
 

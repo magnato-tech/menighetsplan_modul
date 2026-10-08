@@ -2,16 +2,20 @@
 import React from "react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import type { Session } from "../src/utils/session";
 
 // The settings the app was built with: a congregation's own installation until a test says demo
-const { installation } = vi.hoisted(() => ({
+const { installation, app } = vi.hoisted(() => ({
   installation: { demo: null as null | { signUpUrl?: string; salesSiteUrl?: string } },
+  app: { session: { status: "signedOut" } as Session },
 }));
 vi.mock("../src/demo", () => ({
   get DEMO() {
     return installation.demo;
   },
 }));
+vi.mock("../src/context/FirebaseDataContext", () => ({ useFirebase: () => app }));
 
 import { DemoFrame, DemoStrip } from "../src/components/DemoStrip";
 import { useLevel } from "../src/hooks/useLevel";
@@ -20,6 +24,22 @@ import { chooseDemoLevel, forgetDemoLevel, readDemoLevel } from "../src/services
 /** Stands in for any screen that differs between the levels. */
 const Screen: React.FC = () => <p>Nivået er {useLevel()}</p>;
 
+/** The app as it is put together: the strip, when there is one, above a screen. */
+const openApp = () =>
+  render(
+    <MemoryRouter>
+      <DemoFrame>
+        <Screen />
+      </DemoFrame>
+    </MemoryRouter>
+  );
+const openStrip = () =>
+  render(
+    <MemoryRouter>
+      <DemoStrip />
+    </MemoryRouter>
+  );
+
 const levelButton = (name: string) => screen.getByRole("radio", { name });
 
 afterEach(() => {
@@ -27,29 +47,23 @@ afterEach(() => {
   vi.restoreAllMocks();
   forgetDemoLevel();
   installation.demo = null;
+  app.session = { status: "signedOut" };
 });
 
 describe("Stripen øverst i demoen", () => {
   test("finnes ikke hos en menighet, og der er nivået hele produktet uansett hva nettleseren har lagret", () => {
     chooseDemoLevel("plattform");
-    render(
-      <DemoFrame>
-        <Screen />
-      </DemoFrame>
-    );
+    openApp();
 
     expect(screen.queryByRole("complementary", { name: "Demo" })).toBeNull();
     expect(screen.queryByRole("radiogroup")).toBeNull();
+    expect(screen.queryByRole("link")).toBeNull();
     expect(screen.getByText("Nivået er plan")).toBeTruthy();
   });
 
   test("sier at dette er en demo, og viser hele produktet til noe er valgt", () => {
     installation.demo = {};
-    render(
-      <DemoFrame>
-        <Screen />
-      </DemoFrame>
-    );
+    openApp();
 
     const strip = within(screen.getByRole("complementary", { name: "Demo" }));
     expect(strip.getByText("Demo")).toBeTruthy();
@@ -61,11 +75,7 @@ describe("Stripen øverst i demoen", () => {
 
   test("velgeren har to valg, og et valg endrer skjermen under med en gang", () => {
     installation.demo = {};
-    render(
-      <DemoFrame>
-        <Screen />
-      </DemoFrame>
-    );
+    openApp();
     expect(screen.getAllByRole("radio")).toHaveLength(2);
 
     fireEvent.click(levelButton("Menighetsplattform"));
@@ -79,15 +89,11 @@ describe("Stripen øverst i demoen", () => {
 
   test("valget huskes i nettleseren til den som ser på", () => {
     installation.demo = {};
-    render(<DemoStrip />);
+    openStrip();
     fireEvent.click(levelButton("Menighetsplattform"));
     cleanup();
 
-    render(
-      <DemoFrame>
-        <Screen />
-      </DemoFrame>
-    );
+    openApp();
     expect(screen.getByText("Nivået er plattform")).toBeTruthy();
   });
 
@@ -99,11 +105,7 @@ describe("Stripen øverst i demoen", () => {
     vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
       throw new Error("Lagring er stengt");
     });
-    render(
-      <DemoFrame>
-        <Screen />
-      </DemoFrame>
-    );
+    openApp();
     expect(screen.getByText("Nivået er plan")).toBeTruthy();
 
     fireEvent.click(levelButton("Menighetsplattform"));
@@ -113,11 +115,7 @@ describe("Stripen øverst i demoen", () => {
 
   test("et valg gjort i en annen fane i samme nettleser følges", () => {
     installation.demo = {};
-    render(
-      <DemoFrame>
-        <Screen />
-      </DemoFrame>
-    );
+    openApp();
     fireEvent.click(levelButton("Menighetsplan"));
 
     window.localStorage.setItem("menighetsplan_demo_nivaa", "plattform");
@@ -125,15 +123,28 @@ describe("Stripen øverst i demoen", () => {
     expect(screen.getByText("Nivået er plattform")).toBeTruthy();
   });
 
-  test("uten adresser i innstillingene har stripen ingen lenker", () => {
+  test("den som ikke er inne, får veien inn til Min side og admin", () => {
     installation.demo = {};
-    render(<DemoStrip />);
-    expect(screen.queryAllByRole("link")).toHaveLength(0);
+    openStrip();
+    expect(screen.getByRole("link", { name: "Gå inn på Min side og admin" }).getAttribute("href")).toBe("/logg-inn");
+  });
+
+  test("den som er inne, har ingen vei inn i stripen", () => {
+    installation.demo = {};
+    app.session = { status: "member", person: { id: "p1", name: "Kari Nordmann", globalRole: "member" }, account: null };
+    openStrip();
+    expect(screen.queryByRole("link", { name: /^Gå inn/ })).toBeNull();
+  });
+
+  test("uten adresser i innstillingene har stripen ingen lenker ut av demoen", () => {
+    installation.demo = {};
+    openStrip();
+    expect(screen.getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/logg-inn"]);
   });
 
   test("lenkene går til påmeldingen og tilbake til nettsiden som presenterer produktet", () => {
     installation.demo = { signUpUrl: "https://www.eksempel.no/kom-i-gang", salesSiteUrl: "https://www.eksempel.no" };
-    render(<DemoStrip />);
+    openStrip();
 
     expect(screen.getByRole("link", { name: "Kom i gang" }).getAttribute("href")).toBe("https://www.eksempel.no/kom-i-gang");
     expect(screen.getByRole("link", { name: "Tilbake til eksempel.no" }).getAttribute("href")).toBe("https://www.eksempel.no");
@@ -142,11 +153,7 @@ describe("Stripen øverst i demoen", () => {
   test("en side som vises inni en annen, som forhåndsvisningen i admin, har ingen stripe", () => {
     installation.demo = {};
     const parent = vi.spyOn(window, "parent", "get").mockReturnValue({} as Window);
-    render(
-      <DemoFrame>
-        <Screen />
-      </DemoFrame>
-    );
+    openApp();
     expect(screen.queryByRole("complementary", { name: "Demo" })).toBeNull();
     expect(screen.getByText("Nivået er plan")).toBeTruthy();
     parent.mockRestore();

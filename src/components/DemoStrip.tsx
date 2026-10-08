@@ -1,5 +1,8 @@
 import React from "react";
+import { Link } from "react-router-dom";
+import { useFirebase } from "../context/FirebaseDataContext";
 import { DEMO } from "../demo";
+import { SIGN_IN_PATH } from "../utils/routes";
 import { useLevel } from "../hooks/useLevel";
 import { chooseDemoLevel } from "../services/demoLevel";
 import { LEVELS, LEVEL_NAMES, LEVEL_SUMMARIES } from "../utils/level";
@@ -11,14 +14,16 @@ const siteName = (url: string): string => new URL(url).hostname.replace(/^www\./
 
 /**
  * The strip at the top of the demo installation: it says that this is a demo, lets the visitor
- * choose which of the two levels to look at, and leads to the sign-up and back to the website
- * that presents the product. A congregation's own installation never draws it.
+ * choose which of the two levels to look at, shows the way in to Min side and the admin, and
+ * leads to the sign-up and back to the website that presents the product. A congregation's own
+ * installation never draws it.
  *
  * It stays at the top of the screen. Its height is set in index.css (--demo-strip), and what
  * else is pinned to the top, is pinned below it.
  */
 export const DemoStrip: React.FC = () => {
   const level = useLevel();
+  const { session } = useFirebase();
   if (!DEMO) return null;
 
   return (
@@ -54,6 +59,12 @@ export const DemoStrip: React.FC = () => {
       </div>
 
       <p className="md:flex-1 flex items-center justify-end gap-3">
+        {/* The way in (pages/DemoDoor.tsx), for a visitor who is not inside already */}
+        {session.status !== "member" && (
+          <Link to={SIGN_IN_PATH} className="px-2 py-0.5 rounded-md bg-white text-slate-950 font-bold whitespace-nowrap hover:bg-slate-200">
+            Gå inn <span className="hidden lg:inline">på Min side og admin</span>
+          </Link>
+        )}
         {DEMO.signUpUrl && (
           <a href={DEMO.signUpUrl} className={`${link} text-amber-300`}>
             Kom i gang
@@ -61,7 +72,7 @@ export const DemoStrip: React.FC = () => {
         )}
         {DEMO.salesSiteUrl && (
           <a href={DEMO.salesSiteUrl} className={link}>
-            Tilbake til {siteName(DEMO.salesSiteUrl)}
+            <span className="hidden sm:inline">Tilbake til</span> {siteName(DEMO.salesSiteUrl)}
           </a>
         )}
       </p>
