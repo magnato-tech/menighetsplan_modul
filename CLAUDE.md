@@ -112,7 +112,7 @@ Disse er ikke løst ennå. Rekkefølgen de skal løses i står i kapittel 14 i `
 - Opplastede bilder lagres som tekst inne i sidedokumentene, og kan derfor ikke brukes som delebilde.
 - Forsidens faste tekster står i koden, og standardtekstene i innholdsmodulene passer ikke alle menigheter.
 - Stab vises fra to kilder: personregisteret med samtykke, og `cms_staff` uten.
-- Innloggingen sperrer skjermene, ikke dataene. Reglene i databasen kjenner ennå ikke koblingen fra konto til person (trinn 3).
+- Innloggingen sperrer skjermene, ikke dataene. Reglene i databasen kjenner ennå ikke koblingen fra konto til person (trinn 4).
 - `firestore.rules` slipper gjennom lesing og skriving uten innlogging.
 - De offentlige sidene laster hele personregisteret til nettleseren, selv om de bare viser personer med samtykke.
 - En besøkende kan ikke melde interesse for en gruppe i appen; `/fellesskap` viser hvem man kan kontakte.

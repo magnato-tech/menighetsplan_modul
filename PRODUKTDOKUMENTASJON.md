@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.6 · **Sist oppdatert:** 2026-10-07
+> **Dokumentversjon:** 4.7 · **Sist oppdatert:** 2026-10-08
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -562,13 +562,13 @@ Kontrakten står i `INTEGRASJON-MENIGHETSPLAN.md`. Det eksterne CMS-et (`menighe
 | Område | Mål | I dag |
 |:---|:---|:---|
 | Innlogging | Medlemmer logger inn med Google-konto eller en lenke på e-post. Rollen styrer hva man ser og kan gjøre | **Levert 7. oktober** for skjermene: Min side krever at man står i personregisteret, og admin krever administrator (kapittel 10.1) |
-| Regler i databasen | Besøkende leser bare offentlige data. Et medlem endrer bare sitt eget. Bare administrator endrer offentlige profilfelt og samtykke | **Planlagt (trinn 3).** Reglene slipper fortsatt gjennom lesing av alt, og skriving uten innlogging. Innloggingen sperrer skjermene, ikke dataene |
+| Regler i databasen | Besøkende leser bare offentlige data. Et medlem endrer bare sitt eget. Bare administrator endrer offentlige profilfelt og samtykke | **Planlagt (trinn 4).** Reglene slipper fortsatt gjennom lesing av alt, og skriving uten innlogging. Innloggingen sperrer skjermene, ikke dataene |
 | Sporbarhet | `updatedBy` er alltid den innloggede brukeren | **Delvis.** Regelen finnes, men gjelder først når noen er logget inn |
 | Personregisteret | Lastes bare for innloggede | **Delvis.** Nettsiden viser bare personer med samtykke, og laster ikke oppgaver, tildelinger eller meldinger. Hele personregisteret lastes likevel til nettleseren |
 | Samtykke | Ingen person vises uten registrert samtykke | **Levert** |
 | API | Ingen persondata ut | **Levert** |
 
-**Databasen inneholder bare demodata.** Ekte persondata skal ikke legges inn før reglene i databasen er lukket (trinn 3).
+**Databasen inneholder bare demodata.** Ekte persondata skal ikke legges inn før reglene i databasen er lukket (trinn 4).
 
 ### 10.1 Innlogging og roller
 
@@ -690,7 +690,7 @@ Trinn 2 av «Klar for flere menigheter» (kapittel 14).
 | **Sperren** | Min side krever at man står i registeret, og admin krever administrator. Planleggingsdataene hentes bare for den som er inne, og fjernes ved utlogging |
 | **Testbryteren** | Fjernet fra menyen på nettsiden, Min side og alle undersidene. Testverktøyet på husfellesskapssiden og den gamle innstillingssiden er fjernet |
 | **Første administrator** | Legges inn med `npm run first-admin` av den som setter opp installasjonen |
-| **Ikke levert her** | Reglene i databasen er fortsatt åpne (trinn 3). Selve innloggingen mot Google og e-post er ikke prøvd i drift: innloggingsmåtene må først slås på i Firebase-prosjektet |
+| **Ikke levert her** | Reglene i databasen er fortsatt åpne (trinn 4). Selve innloggingen mot Google og e-post er ikke prøvd i drift: innloggingsmåtene må først slås på i Firebase-prosjektet |
 
 ---
 
@@ -701,9 +701,9 @@ Sortert etter hvor mye de betyr for en menighet som skal ta løsningen i bruk.
 
 | # | Mangel | Løses i |
 |:---:|:---|:---|
-| 1 | Databasereglene er åpne. Innloggingen sperrer skjermene, men den som kjenner databasen, kan fortsatt lese og skrive utenom | Trinn 3 |
+| 1 | Databasereglene er åpne. Innloggingen sperrer skjermene, men den som kjenner databasen, kan fortsatt lese og skrive utenom | Trinn 4 |
 | 2 | Personregisteret og kladder leveres til alle nettlesere | Fase 1 |
-| 3 | To personer som deler e-postadresse, kan ikke logge inn før adressen står på bare én av dem. Første administrator må legges inn med et skript | Trinn 6 for skriptet |
+| 3 | To personer som deler e-postadresse, kan ikke logge inn før adressen står på bare én av dem. Første administrator må legges inn med et skript | Trinn 7 for skriptet |
 | 4 | Forsidens tekster og menighetens navn står delvis i koden | Fase 2 |
 | 5 | Bilder lagres inne i sidedokumentene, og kan da ikke brukes som delebilde | Fase 2 |
 | 6 | To kilder for stab og lederskap, den ene uten samtykke | Fase 2 |
@@ -723,7 +723,7 @@ Sortert etter hvor mye de betyr for en menighet som skal ta løsningen i bruk.
 
 ## 14. Veien videre
 
-### Klar for flere menigheter *(avtalt 7. oktober 2026, pågår)*
+### Klar for flere menigheter *(avtalt 7. oktober 2026, rekkefølgen endret 8. oktober, pågår)*
 
 Menighetsplan skal selges til 10–20 menigheter. Hver menighet får sin egen installasjon av denne appen: sin egen database og sin egen adresse. Salgssiden menighetsplan.no, med presentasjon, priser, påmelding og senere kundeportal, bygges for seg og hører ikke hjemme i dette repoet. Det gjør heller ikke betaling.
 
@@ -735,20 +735,43 @@ Avtalen mellom salgssiden og appen:
 
 Trinnene tas i rekkefølge. Et trinn er ferdig når det er prøvd, testene er grønne og det er sendt inn.
 
+**Demoen først (bestemt 8. oktober 2026).** Den første planen hadde lukkede databaseregler som trinn 3 og demoen som trinn 7. Rekkefølgen er snudd. Demoen er det en menighet ser før den bestiller, og salgssiden skal sende «Se demo» til den ekte appen i stedet for å vise en etterligning av den. Demoen har bare eksempeldata, så den kan stå med åpne regler. Ingen menighet legger inn ekte personer før trinn 4 er levert.
+
 | Trinn | Hva | Status |
 |:---|:---|:---|
 | 1 | **Nøytral og flyttbar app.** Databasen leses fra installasjonens innstillinger. Ingenting om én menighet står i koden | **Levert 7. oktober** (kapittel 12) |
 | 2 | **Innlogging og roller:** administrator, gruppeleder og medlem. Testbryteren fjernes, og admin legges bak innlogging | **Levert 7. oktober** (kapittel 10.1 og 12) |
-| 3 | **Lukkede databaseregler** for appens egne data. Nettsiden slutter å laste personregisteret | Neste |
-| 4 | **Tilgang.** Appen leser `/system/entitlements`. Siden Moduler viser «ikke inkludert», «av» og «på». Reglene sperrer det menigheten ikke har | |
-| 5 | **Skillet mellom Nivå 1 og Nivå 2** i meny, arrangementsside, Min side, grupper på nettsiden og oversikten | |
-| 6 | **Oppsett av ny menighet:** skript og sjekkliste for database, regler, tilgang, første administrator, startinnhold og adresse | |
-| 7 | **Demo-installasjon** med egen database, demosett og nullstilling | |
+| 3 | **Demoen** på demo.menighetsplan.no, i delene under | Pågår |
+| 4 | **Lukkede databaseregler og tilgang per menighet.** Regler for appens egne data. Nettsiden slutter å laste personregisteret. Appen leser `/system/entitlements`, siden Moduler viser «ikke inkludert», «av» og «på», og reglene sperrer det menigheten ikke har | |
+| 5 | **Første ekte menighet**, satt opp for hånd | |
+| 6 | **Prøveperiode** for en menighet som vil prøve før den bestiller | |
+| 7 | **Oppsett av ny menighet:** skript og sjekkliste for database, regler, tilgang, første administrator, startinnhold og adresse. Bygges bare hvis oppsett for hånd blir for tungt med 10–20 menigheter | |
 | 8 | **Drift:** utrulling av regler til alle, sikkerhetskopi, eksport og sletting ved opphør | |
 
-Trinn 2 og 3 er det samme som fase 1 under, som dermed ikke lenger er på vent. Fase 2–4 fortsetter som før når trinnene er på plass.
+**Trinn 3, demoen, del for del.** Hver del prøves og sendes inn for seg.
 
-### Fase 1 – Trygg i drift *(trinn 2 og 3 over)*
+| Del | Hva | Status |
+|:---|:---|:---|
+| 3a | **Demo-installasjonen og nivåvelgeren.** En installasjon kan settes opp som demo. Da står en stripe øverst med velgeren mellom Menighetsplattform og Menighetsplan, og menyen i admin følger valget | Neste |
+| 3b | **Vei inn uten innlogging** i demoen, som administrator, gruppeleder og frivillig. Det som tømmer databasen, er ikke med i demoen | |
+| 3c | **Nivåskillet i resten av appen:** Min side, arrangementssiden, oversikten og gruppene på nettsiden | |
+| 3d | **Demodata som lever:** datoene regnes fra i dag, og demomenigheten får navn og innhold | |
+| 3e | **Demoen legges ut** med egen database, og nullstilles hver natt. Krever et eget Firebase-prosjekt, som produkteier oppretter | |
+
+**Slik er demoen bestemt**
+
+* **To nivåer, ikke tre valg.** Menighetsplan inneholder alt i Menighetsplattform. Tilleggsmodulene er ikke med i demoen.
+* **Velgeren finnes bare i demoen**, og valget ligger i nettleseren til den som ser på. Hos en menighet bestemmer leverandøren nivået (trinn 4), og ingen velger det i nettleseren.
+* **Én felles demodatabase**, i sitt eget Firebase-prosjekt. Et nei til en oppgave på telefonen synes da på lederens skjerm med en gang. Databasen nullstilles hver natt, og det som tømmer den, er stengt.
+* **Åpne regler i demoen, lukkede hos menighetene.** De to blandes aldri: demoen har sin egen database.
+* **Stripen øverst** har velgeren, en linje som sier at dette er en demo, lenke til påmelding og lenke tilbake til salgssiden.
+* **Demomenighetens navn og innhold bestemmes i appen.** Salgssiden følger.
+* **Enkel Min side** på Menighetsplattform er det salgssiden beskriver: neste i menigheten, kommende samlinger og lenker.
+* **Menighetsplattform tilbys etter invitasjon.** Det er gratis for menigheten, men oppsett og drift koster leverandøren per menighet.
+
+Trinn 2 og 4 er det samme som fase 1 under. Fase 2–4 fortsetter som før når trinnene er på plass.
+
+### Fase 1 – Trygg i drift *(trinn 2 og 4 over)*
 1. Innlogging med Google-konto. Første administrator er produkteierens konto.
 2. Roller: administrator, gruppeleder (avledet av gruppene) og medlem.
 3. Databaseregler etter rolle: besøkende leser bare offentlige data, og kladder leveres ikke ut.
@@ -794,7 +817,7 @@ Hver endring typesjekkes, testes og bygges før den regnes som ferdig. Regler fl
 | Hvem teller oppmøtet | Administrator i etterkant, eller en egen rolle «Teller» på gudstjenesten som registrerer fra Min side | Start med administrator. Legg til rollen når tellingen skal gjøres samme dag av den som står i døra |
 | Hvem er «barn» i tellingen | Under konfirmasjonsalder, under 18, eller egen telling for barnekirken | Under konfirmasjonsalder (det står i registreringsvinduet). Bestemmes før tallene brukes i årsmeldingen |
 | Nye og faste besøkende, kilde og utstyr | Måles ikke, eller spør hver besøkende om samtykke til å huske nettleseren | Måles ikke. Besøk telles anonymt (avgjort 7. oktober 2026, kapittel 2.5). En samtykkeboks på en menighets nettside koster mer tillit enn tallene er verdt |
-| Nivåer og tilleggsmoduler | To nivåer (Menighetsplattform, gratis, og Menighetsplan, betalt) og sju tilleggsmoduler som hver slås på for seg | Foreslått av produkteier 7. oktober 2026. Styringen av moduler er bygget (kapittel 2.6). Nivåene er kartlagt, men ikke besluttet og ikke bygget |
+| Nivåer og tilleggsmoduler | To nivåer (Menighetsplattform, gratis, og Menighetsplan, betalt) og sju tilleggsmoduler som hver slås på for seg | Foreslått av produkteier 7. oktober 2026. Styringen av moduler er bygget (kapittel 2.6). De to nivåene ble bestemt 8. oktober 2026 og bygges som del av demoen (trinn 3) |
 
 ---
 

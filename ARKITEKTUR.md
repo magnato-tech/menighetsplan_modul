@@ -38,7 +38,7 @@ Appen installeres én gang per menighet: eget Firebase-prosjekt, egen database o
 - **Ingen vei inn utenom.** Testbryteren er fjernet. På en utviklers egen maskin (`import.meta.env.DEV`) kan en person fra registeret stå inn for en innlogget, valgt på innloggingssiden. Den publiserte appen bygges uten: der er `standInAs` udefinert, og et lagret valg leses ikke.
 - **Første administrator** legges inn utenfra med `scripts/first-admin.ts`, som skriver det `planFirstAdmin` (`src/utils/firstAdmin.ts`) sier må skrives.
 - **I tester** står `tests/support/session.ts` inn for `src/services/auth`: testen sier hvem som er logget inn.
-- **Det som gjenstår til reglene (trinn 3).** Koblingen fra konto til person gjøres i dag i nettleseren, av det den har lest. Reglene i databasen trenger sin egen, pålitelige kobling fra kontoens id til personen før rollen kan håndheves der.
+- **Det som gjenstår til reglene (trinn 4).** Koblingen fra konto til person gjøres i dag i nettleseren, av det den har lest. Reglene i databasen trenger sin egen, pålitelige kobling fra kontoens id til personen før rollen kan håndheves der.
 
 ## Bygg og lasting
 Vite bygger klienten med `manualChunks` for `firebase` og `react-vendor`. Offentlige sider importeres statisk i `src/App.tsx`; admin, Min side og admin-detaljsider lastes med `React.lazy` og `Suspense` bare på de grenene. Hver admin-fane har sin egen lazy-import i `src/pages/admin/studioTabLoaders.ts`, med forhåndshent ved hover, fokus og touch fra `StudioSidebar.tsx`.
