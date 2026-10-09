@@ -13,7 +13,8 @@
     "file": "lmk.json",
     "source": "lillesandmisjonskirke.no",
     "fetchedAt": "2026-10-06T13:10:18.347Z",
-    "documents": 168
+    "documents": 168,
+    "listed": true
   },
   {
     "id": "salem",

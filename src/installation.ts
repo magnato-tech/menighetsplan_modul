@@ -41,6 +41,7 @@ export const DEMO_SETTINGS = {
   demo: "VITE_DEMO",
   signUpUrl: "VITE_DEMO_SIGNUP_URL",
   salesSiteUrl: "VITE_DEMO_SALES_URL",
+  ownerCodeHash: "VITE_DEMO_OWNER_CODE_HASH",
 } as const;
 
 export interface DemoInstallation {
@@ -48,6 +49,11 @@ export interface DemoInstallation {
   signUpUrl?: string;
   /** The website that presents the product, which the visitor came from. */
   salesSiteUrl?: string;
+  /**
+   * The fingerprint of the code the owner of the demo opens its setup with (see
+   * utils/demoOwner.ts). Left out, nobody can open it.
+   */
+  ownerCodeHash?: string;
 }
 
 /** Settings as they are given: `import.meta.env` in the browser, `process.env` on the server. */
@@ -97,6 +103,9 @@ export function readDemoInstallation(env: InstallationEnv): DemoInstallation | n
   const salesSiteUrl = webAddressOf(env, DEMO_SETTINGS.salesSiteUrl);
   if (signUpUrl !== undefined) demo.signUpUrl = signUpUrl;
   if (salesSiteUrl !== undefined) demo.salesSiteUrl = salesSiteUrl;
+  // Only a whole fingerprint counts: a setting that is cut short lets nobody in, rather than anybody
+  const ownerCodeHash = valueOf(env, DEMO_SETTINGS.ownerCodeHash)?.toLowerCase();
+  if (ownerCodeHash !== undefined && /^[0-9a-f]{64}$/.test(ownerCodeHash)) demo.ownerCodeHash = ownerCodeHash;
   return demo;
 }
 

@@ -37,6 +37,8 @@ import {
   LazyAnalyticsTab,
   LazySiteTrafficTab,
 
+  LazyDemoSetupTab,
+
   LazyDashboardTab,
 
   LazyDatabaseTab,
@@ -528,6 +530,14 @@ function AdminStudioContent() {
         <StudioTabPanel tab="nettsidebesok" activeTab={activeTab} visited={visitedTabs.includes("nettsidebesok")}>
 
           <LazySiteTrafficTab showFeedback={showFeedback} />
+
+        </StudioTabPanel>
+
+        {/* Only for the owner of the demo (see utils/demoOwner.ts). The tab itself asks who is looking. */}
+
+        <StudioTabPanel tab="demo-oppsett" activeTab={activeTab} visited={visitedTabs.includes("demo-oppsett")}>
+
+          <LazyDemoSetupTab showFeedback={showFeedback} />
 
         </StudioTabPanel>
 

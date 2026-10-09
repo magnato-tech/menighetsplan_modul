@@ -36,8 +36,10 @@ vi.mock("../src/services/demoSite", () => ({ chooseDemoSite: (site: string | nul
 
 import { DemoStrip } from "../src/components/DemoStrip";
 
-const floy: DemoSiteChoice = { id: "floy", name: "Flekkerøy misjonskirke", source: "fløymk.no" };
-const sogne: DemoSiteChoice = { id: "sogne", name: "Søgne Misjonskirke", source: "sognemisjonskirke.no" };
+const floy: DemoSiteChoice = { id: "floy", name: "Flekkerøy misjonskirke", source: "fløymk.no", listed: true };
+const sogne: DemoSiteChoice = { id: "sogne", name: "Søgne Misjonskirke", source: "sognemisjonskirke.no", listed: true };
+/** Lies ready in the database, but the owner has not put it in the list. */
+const salem: DemoSiteChoice = { id: "salem", name: "Kristiansand Misjonskirke Salem", source: "kmsalem.no", listed: false };
 
 const openStrip = () =>
   render(
@@ -101,6 +103,36 @@ describe("Valget av menighet i demoen", () => {
     expect(((await picker()) as HTMLSelectElement).value).toBe("sogne");
     expect(screen.getByText("Nettsiden er hentet fra sognemisjonskirke.no for å vise løsningen.")).toBeTruthy();
     expect(screen.queryByText("Alt du ser her, er eksempler.")).toBeNull();
+    expect(chooseDemoSite).not.toHaveBeenCalled();
+  });
+
+  test("en menighet eieren ikke har lagt i lista, tilbys ikke", async () => {
+    database.sites = [floy, salem];
+    openStrip();
+    const select = await picker();
+    expect(within(select).getAllByRole("option").map((option) => option.textContent)).toEqual(["Eksempelmenighet", "Flekkerøy misjonskirke"]);
+  });
+
+  test("er ingen av de klare i lista, finnes ikke lista", async () => {
+    database.sites = [salem];
+    openStrip();
+    await settled();
+    expect(screen.queryByRole("combobox")).toBeNull();
+  });
+
+  test("den som har fått lenken til en menighet utenfor lista, ser den og står i den", async () => {
+    database.sites = [floy, salem];
+    browser.site = "salem";
+    openStrip();
+
+    const select = (await picker()) as HTMLSelectElement;
+    expect(select.value).toBe("salem");
+    expect(within(select).getAllByRole("option").map((option) => option.textContent)).toEqual([
+      "Eksempelmenighet",
+      "Flekkerøy misjonskirke",
+      "Kristiansand Misjonskirke Salem",
+    ]);
+    expect(screen.getByText("Nettsiden er hentet fra kmsalem.no for å vise løsningen.")).toBeTruthy();
     expect(chooseDemoSite).not.toHaveBeenCalled();
   });
 

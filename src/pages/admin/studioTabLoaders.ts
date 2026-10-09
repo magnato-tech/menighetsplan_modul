@@ -31,6 +31,7 @@ const TAB_LOADERS: Record<StudioTab, TabLoader> = {
   moduler: namedTab(() => import("./tabs/AddonsTab"), "AddonsTab"),
   analyse: namedTab(() => import("./tabs/AnalyticsTab"), "AnalyticsTab"),
   nettsidebesok: namedTab(() => import("./tabs/SiteTrafficTab"), "SiteTrafficTab"),
+  "demo-oppsett": namedTab(() => import("./tabs/DemoSetupTab"), "DemoSetupTab"),
 };
 
 export function prefetchStudioTab(tab: StudioTab): void {
@@ -56,3 +57,4 @@ export const LazyDatabaseTab = lazy(TAB_LOADERS["database-admin"]);
 export const LazyAddonsTab = lazy(TAB_LOADERS.moduler);
 export const LazyAnalyticsTab = lazy(TAB_LOADERS.analyse);
 export const LazySiteTrafficTab = lazy(TAB_LOADERS.nettsidebesok);
+export const LazyDemoSetupTab = lazy(TAB_LOADERS["demo-oppsett"]);

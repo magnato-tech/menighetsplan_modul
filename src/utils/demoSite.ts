@@ -8,6 +8,33 @@
 //
 // A congregation is named by the id of its set ("sogne"), and the example congregation by null.
 
+/**
+ * Where the owner's choices for the demo are kept: a marked document beside the example
+ * congregation's settings, like the other marked documents there (see data/settingsRecords.ts).
+ * It is the one thing about the demo that lies in its database, and the reset leaves it.
+ */
+export const DEMO_SETUP_RECORD = "demoSetup";
+export const DEMO_SETUP_DOC_ID = "demo-setup";
+
+/** The owner's choice for each congregation of whether every visitor is offered it. */
+export type SiteListing = Record<string, boolean>;
+
+/** The choices a stored document holds. Anything else in it, and a document that is not the owner's, gives none. */
+export function parseSiteListing(data: unknown): SiteListing {
+  const stored = data as { recordType?: unknown; listed?: unknown } | null | undefined;
+  if (stored?.recordType !== DEMO_SETUP_RECORD || typeof stored.listed !== "object" || stored.listed === null) return {};
+  return Object.fromEntries(
+    Object.entries(stored.listed).filter((entry): entry is [string, boolean] => parseDemoSiteId(entry[0]) !== null && typeof entry[1] === "boolean")
+  );
+}
+
+/**
+ * Whether a congregation is in the list every visitor is offered. The owner's choice goes
+ * before what the set says for itself. A congregation is listed when it has said yes to being
+ * shown; one that is not listed can still be opened with a link.
+ */
+export const isSiteListed = (site: string, chosen: SiteListing, listedInSet: boolean): boolean => chosen[site] ?? listedInSet;
+
 /** What the address says to go straight to one congregation: demo.example/?menighet=sogne */
 export const SITE_PARAMETER = "menighet";
 /** The word for the example congregation in an address. */

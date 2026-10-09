@@ -30,6 +30,8 @@ import { countAddonsOn } from "../../utils/addons";
 import { hasPlanner } from "../../utils/level";
 import { useLevel } from "../../hooks/useLevel";
 import { DEMO } from "../../demo";
+import { SlidersHorizontal } from "lucide-react";
+import { useDemoOwner } from "../../hooks/useDemoOwner";
 import { STUDIO_ADDONS, addonMenuSections } from "./addons";
 import { StudioData, StudioTab, countUrgentTasks } from "./studio";
 import { prefetchStudioTab } from "./studioTabLoaders";
@@ -60,6 +62,8 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({ studio, activeTab,
   const level = useLevel();
   // The demo is without the database tools and the add-on modules (see demoTabs.ts)
   const inDemo = DEMO !== null;
+  // The setup of the demo is in the menu only for its owner (see utils/demoOwner.ts)
+  const demoOwner = useDemoOwner();
   const { sidebarTheme, toggleSidebarTheme } = useStudioAppearance();
   // The media library shows the images that come with the app next to the uploaded ones
   const mediaCount = media.filter((item) => item.status === "ready").length + useStockImageCount();
@@ -474,6 +478,29 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({ studio, activeTab,
               <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--studio-surface)] text-[var(--studio-muted)]">
                 {countAddonsOn(addons)} av {STUDIO_ADDONS.length} på
               </span>
+            </button>
+          </div>
+          )}
+
+          {/* Nav Section: the demo's own setup, for its owner */}
+          {inDemo && demoOwner === "owner" && (
+          <div className="space-y-1">
+            <div className="text-[10px] font-black uppercase tracking-wider text-[var(--studio-muted)] px-3 py-1">
+              Demoen
+            </div>
+
+            <button
+              type="button"
+              {...tabPrefetchHandlers("demo-oppsett")}
+              onClick={() => onTabChange("demo-oppsett")}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
+                activeTab === "demo-oppsett"
+                  ? "bg-indigo-600 text-white shadow-sm"
+                  : "text-[var(--studio-muted)] hover:text-[var(--studio-text)] hover:bg-[var(--studio-bg)]"
+              }`}
+            >
+              <SlidersHorizontal className="w-4 h-4 text-[var(--studio-icon)]" />
+              <span>Demo-oppsett</span>
             </button>
           </div>
           )}

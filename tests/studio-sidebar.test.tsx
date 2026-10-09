@@ -17,6 +17,16 @@ const { cms } = vi.hoisted(() => ({
   },
 }));
 vi.mock("../src/context/CmsContext", () => ({ useCms: () => cms }));
+// A congregation's own installation until a test says demo, and nobody is the owner of a demo
+const { installation } = vi.hoisted(() => ({
+  installation: { demo: null as null | object, owner: "locked" as "checking" | "locked" | "owner" },
+}));
+vi.mock("../src/demo", () => ({
+  get DEMO() {
+    return installation.demo;
+  },
+}));
+vi.mock("../src/hooks/useDemoOwner", () => ({ useDemoOwner: () => installation.owner }));
 vi.mock("../src/services/stockImages", () => ({ listStockImages: vi.fn() }));
 
 import { StudioSidebar } from "../src/pages/admin/StudioSidebar";
@@ -52,6 +62,38 @@ afterEach(() => {
   vi.clearAllMocks();
   vi.restoreAllMocks();
   cms.addons = {};
+  installation.demo = null;
+  installation.owner = "locked";
+});
+
+describe("Demo-oppsett i menyen", () => {
+  const setup = (menu: ReturnType<typeof renderMenu>) => menu.queryByRole("button", { name: "Demo-oppsett" });
+
+  test("står der for eieren av demoen, og fører til fanen", () => {
+    vi.mocked(listStockImages).mockResolvedValue(stockImages(0));
+    installation.demo = {};
+    installation.owner = "owner";
+    const menu = renderMenu();
+
+    fireEvent.click(setup(menu)!);
+    expect(onTabChange).toHaveBeenCalledWith("demo-oppsett");
+  });
+
+  test("står ikke der for en besøkende i demoen, heller ikke mens koden prøves", () => {
+    vi.mocked(listStockImages).mockResolvedValue(stockImages(0));
+    installation.demo = {};
+    for (const owner of ["locked", "checking"] as const) {
+      installation.owner = owner;
+      expect(setup(renderMenu())).toBeNull();
+      cleanup();
+    }
+  });
+
+  test("står aldri der hos en menighet", () => {
+    vi.mocked(listStockImages).mockResolvedValue(stockImages(0));
+    installation.owner = "owner";
+    expect(setup(renderMenu())).toBeNull();
+  });
 });
 
 describe("Menyen i admin", () => {

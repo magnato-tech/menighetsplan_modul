@@ -16,6 +16,11 @@ export interface DemoSetInfo {
   source: string;
   fetchedAt: string;
   documents: number;
+  /**
+   * Whether the congregation is in the list every visitor of the demo is offered, until the
+   * owner of the demo says otherwise (see utils/demoSite.ts). Left out, it is not.
+   */
+  listed?: boolean;
 }
 
 const isInfo = (value: unknown): value is DemoSetInfo => {
@@ -29,7 +34,8 @@ const isInfo = (value: unknown): value is DemoSetInfo => {
     /^[a-z0-9-]+\.json$/.test(info.file) &&
     typeof info.source === "string" &&
     typeof info.fetchedAt === "string" &&
-    typeof info.documents === "number"
+    typeof info.documents === "number" &&
+    (info.listed === undefined || typeof info.listed === "boolean")
   );
 };
 

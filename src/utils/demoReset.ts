@@ -119,8 +119,11 @@ export interface ResetPlan {
  *
  * A congregation's documents are stored under its own collections: the plain names with the
  * congregation's id in front, and the plain names alone for the example congregation.
+ *
+ * `left` are the places of documents that are neither content nor a visitor's: how the owner
+ * has set up the demo. They are not written and not removed.
  */
-export function planReset(sites: readonly SiteContent[], existing: readonly string[]): ResetPlan {
+export function planReset(sites: readonly SiteContent[], existing: readonly string[], left: readonly string[] = []): ResetPlan {
   const write = sites.flatMap(({ site, documents }) =>
     documents.map(storedFormOf).map((document) => ({ ...document, collection: collectionPrefixOf(site) + document.collection }))
   );
@@ -128,7 +131,10 @@ export function planReset(sites: readonly SiteContent[], existing: readonly stri
   if (kept.size !== write.length) {
     throw new Error("To av dokumentene i demoinnholdet har samme plass i databasen.");
   }
-  return { write, remove: existing.filter((path) => !kept.has(path)) };
+  if (left.some((path) => kept.has(path))) {
+    throw new Error("Et dokument i demoinnholdet ligger der oppsettet av demoen skal ligge.");
+  }
+  return { write, remove: existing.filter((path) => !kept.has(path) && !left.includes(path)) };
 }
 
 // ---------- A document as the database takes it from outside the app ----------

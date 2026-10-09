@@ -130,6 +130,21 @@ describe("Hva en nullstilling skriver og fjerner", () => {
     expect(() => planReset([{ site: null, documents: twice }], [])).toThrow(/samme plass/);
   });
 
+  test("eierens oppsett av demoen er verken innhold eller en besøkendes: det blir liggende", () => {
+    const existing = ["cms_settings/global", "cms_settings/demo-setup", "cms_settings/lagt-inn-av-en-besokende"];
+    const plan = planReset([{ site: null, documents: demo }], existing, ["cms_settings/demo-setup"]);
+
+    expect(plan.remove).toEqual(["cms_settings/lagt-inn-av-en-besokende"]);
+    expect(plan.write.map(pathOf)).not.toContain("cms_settings/demo-setup");
+    // Without being told to leave it, it goes like anything else that is not content
+    expect(planReset([{ site: null, documents: demo }], existing).remove).toContain("cms_settings/demo-setup");
+  });
+
+  test("et dokument i innholdet kan ikke ligge der oppsettet skal ligge", () => {
+    const inTheWay: MockDocument[] = [{ collection: "cms_settings", id: "demo-setup", data: {} }];
+    expect(() => planReset([{ site: null, documents: inTheWay }], [], ["cms_settings/demo-setup"])).toThrow(/oppsettet av demoen/);
+  });
+
   test("hver menighet får sine egne samlinger: de vanlige navnene med menighetens id foran", () => {
     const person: MockDocument = { collection: "persons", id: "p1", data: { name: "Kari" } };
     const role: MockDocument = { collection: COLLECTIONS.VOLUNTEER_ROLES, id: "role-1", data: { id: "role-1", name: "Lyd" } };
@@ -383,6 +398,18 @@ describe("Nullstillingen av demoen", () => {
     expect([...db.stored.keys()].filter((place) => place.startsWith("sogne-cms_pages/"))).toEqual(["sogne-cms_pages/sogne-forside"]);
     expect(db.stored.has("sogne-persons/person-1")).toBe(true);
     expect(db.stored.get("cms_settings/global")?.churchName).toEqual({ stringValue: "Fjordvik menighet" });
+  });
+
+  test("eierens valg av hvilke menigheter som vises, overlever nullstillingen", async () => {
+    const setup = { recordType: { stringValue: "demoSetup" }, listed: { mapValue: { fields: { sogne: { booleanValue: true } } } } };
+    const db = database({ "cms_settings/demo-setup": setup, "cms_settings/lagt-inn": { title: { stringValue: "Noe" } } });
+    const result = await resetDemo(TARGET, NOW, db.fetchFn);
+
+    expect(result.removed).toBe(1);
+    expect(db.stored.get("cms_settings/demo-setup")).toEqual(setup);
+    expect(db.stored.has("cms_settings/lagt-inn")).toBe(false);
+    // And a second reset finds the database as it should be, with the setup in it
+    await expect(resetDemo(TARGET, NOW, db.fetchFn)).resolves.toMatchObject({ removed: 0 });
   });
 
   test("en database som står i produksjon, røres ikke", async () => {

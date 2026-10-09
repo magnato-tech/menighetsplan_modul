@@ -18,7 +18,7 @@ import {
   type SiteContent,
   type SiteSet,
 } from '../src/utils/demoReset';
-import { collectionPrefixOf, parseDemoSiteId } from '../src/utils/demoSite';
+import { DEMO_SETUP_DOC_ID, collectionPrefixOf, parseDemoSiteId } from '../src/utils/demoSite';
 import { weeksBetween } from '../src/utils/liveDates';
 
 // Resets the demo: fills its database with the example congregation, and with one copy for each
@@ -33,6 +33,10 @@ import { weeksBetween } from '../src/utils/liveDates';
 //
 // The demo's database has open rules, so it is reached without signing in, and the script needs
 // nothing but the name of the project. A congregation's database has closed rules and refuses.
+
+// How the owner has set up the demo (which congregations every visitor is offered). Not content,
+// and not a visitor's: the reset leaves it as it is.
+const OWNERS_SETUP = [`${CMS_COLLECTIONS.SETTINGS}/${DEMO_SETUP_DOC_ID}`];
 
 // Well below what one request may hold (500 writes)
 const WRITES_PER_REQUEST = 200;
@@ -127,7 +131,7 @@ export async function resetDemo(target: ResetTarget, now: number, fetchFn: Fetch
     throw new Error('Databasen står i produksjon, og da nullstilles den ikke. Ingenting er gjort.');
   }
 
-  const plan = planReset(sites, before.map((d) => pathInDatabase(d.name)));
+  const plan = planReset(sites, before.map((d) => pathInDatabase(d.name)), OWNERS_SETUP);
   const writes = [
     ...plan.write.map((document) => ({ update: { name: nameOf(pathOf(document)), fields: firestoreFieldsOf(document.data) } })),
     ...plan.remove.map((place) => ({ delete: nameOf(place) })),
@@ -140,7 +144,7 @@ export async function resetDemo(target: ResetTarget, now: number, fetchFn: Fetch
   const wanted = new Set(plan.write.map(pathOf));
   const after = new Set((await readAll(fetchFn, target, siteIds)).map((d) => pathInDatabase(d.name)));
   const missing = [...wanted].filter((place) => !after.has(place));
-  const extra = [...after].filter((place) => !wanted.has(place));
+  const extra = [...after].filter((place) => !wanted.has(place) && !OWNERS_SETUP.includes(place));
   if (missing.length > 0 || extra.length > 0) {
     throw new Error(
       `Databasen er ikke som den skal etter nullstillingen. Mangler: ${missing.slice(0, 5).join(', ') || 'ingen'}. For mye: ${extra.slice(0, 5).join(', ') || 'ingen'}.`
@@ -184,7 +188,7 @@ async function main() {
   }
   console.log(`Skrevet: ${result.written} dokumenter. Fjernet: ${result.removed} som ikke hører til demoinnholdet.`);
   console.log(`Eksempelmenighetens datoer er flyttet ${result.weeks} uker fram fra uka innholdet er skrevet for (${DEMO_CONTENT_WEEK}).`);
-  console.log('Kontrollert: databasen har demoinnholdet og ingenting annet.');
+  console.log('Kontrollert: databasen har demoinnholdet og ingenting annet. Oppsettet av demoen er urørt.');
 }
 
 // Only when the file is run, not when a test reads resetDemo from it

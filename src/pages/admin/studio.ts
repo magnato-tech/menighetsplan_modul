@@ -22,6 +22,7 @@ export const STUDIO_TABS = [
   "moduler",
   "analyse",
   "nettsidebesok",
+  "demo-oppsett",
 ] as const;
 
 export type StudioTab = (typeof STUDIO_TABS)[number];
