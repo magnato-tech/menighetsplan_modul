@@ -16,6 +16,8 @@ vi.mock("../src/demo", () => ({
   },
 }));
 vi.mock("../src/context/FirebaseDataContext", () => ({ useFirebase: () => app }));
+// No congregation but the example lies ready (the choice between them: tests/demo-site-picker.test.tsx)
+vi.mock("../src/services/demoSiteList", () => ({ listDemoSites: async () => [] }));
 
 import { DemoFrame, DemoStrip } from "../src/components/DemoStrip";
 import { useLevel } from "../src/hooks/useLevel";

@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.9 · **Sist oppdatert:** 2026-10-09
+> **Dokumentversjon:** 4.10 · **Sist oppdatert:** 2026-10-09
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -108,7 +108,14 @@ Demoen er appen installert én gang til, med egen database og egen adresse, og m
 * **Forhåndsvisningen i admin** viser nettsiden uten stripe.
 * **Eksempelmenigheten** *(levert 9. oktober)*. Demoen viser Fjordvik menighet. Den er oppdiktet: navnet, adressen, personene og innholdet. E-postadressene ender på `.example`, som ingen kan eie. Innholdet nevner ingen årstid, høytid eller måned, for det vises hele året.
 * **Datoene regnes fra i dag** *(levert 9. oktober)*. Innholdet er skrevet for én uke, og flyttes hele uker fram når det legges i databasen. En gudstjeneste søndag kl. 11:00 står da alltid på en søndag kl. 11:00, også over skiftet mellom sommertid og vintertid. Det er alltid en gudstjeneste innen en uke, og det som er gjort (meldinger, svar, taler, nyheter og oppmøtetall), ligger alltid bak. Uka skifter natt til mandag. Det samme gjelder når demodataene legges inn fra Database hos en menighet.
-* **Nullstilling hver natt** *(bygget 9. oktober, ikke prøvd mot demoens database ennå)*. Hver natt, rundt kl. 03, fylles demoens database med eksempelmenigheten på nytt, og alt en besøkende har endret eller lagt inn, fjernes. Innholdet skrives først og det overflødige fjernes etterpå, så demoen er aldri tom. Nullstillingen gjelder bare demoen: den nekter uten demo-innstillingen, uten at navnet på databasen er skrevet, og når databasen står i produksjon. Den kan også startes for hånd: `npm run reset-demo -- <navnet på prosjektet>`.
+* **Velg menighet** *(bygget 9. oktober, ikke prøvd mot demoens database ennå)*. I stripen står en liste, «Se din menighet», der den besøkende kan velge å se løsningen med nettsiden til en ekte menighet i stedet for eksempelmenigheten. Det er menighetene det er laget sett av (`public/demosett/`): Flekkerøy misjonskirke, Kristiansand Misjonskirke Salem, Lillesand Misjonskirke og Søgne Misjonskirke.
+  * **Valget er den besøkendes eget.** Det ligger i nettleseren, som nivået. Én besøkendes valg endrer ikke hva en annen ser. «Velg menighet» under Database hos en menighet bytter derimot nettsiden i selve databasen, og brukes ikke i demoen.
+  * **Hver menighet har sin egen kopi** i demoens database: menighetens nettside (sider, nyheter, taler, stab, innstillinger og kalenderen åpen for alle) og eksempelmenighetens planlegger (personer, grupper og tjenesteroller). Det en besøkende endrer, ser de andre som ser på samme menighet, til neste nullstilling.
+  * **En lenke kan føre rett til en menighet:** `demo.menighetsplan.no/?menighet=sogne`. Navnet er settets (`floy`, `lmk`, `salem`, `sogne`), og `eksempel` gir eksempelmenigheten. Salgssiden kan bruke det i «se hvordan det ser ut for din menighet».
+  * **Bare det som ligger klart, tilbys.** En menighet står i lista når nullstillingen har lagt den i databasen. Den som har valgt en menighet demoen ikke har, tas til eksempelmenigheten.
+  * **Stripen sier hvor nettsiden er hentet fra** når en ekte menighet vises. Datoene i settet flyttes hele uker fra uka det ble hentet, så kalenderen ikke blir liggende i fortiden.
+  * **Begrensning:** bemanningen i eksempelet hører til eksempelmenighetens gudstjenester, og er derfor ikke med hos en ekte menighet. Der viser planleggeren personene, gruppene og rollene, men nesten ingen oppgaver.
+* **Nullstilling hver natt** *(bygget 9. oktober, ikke prøvd mot demoens database ennå)*. Hver natt, rundt kl. 03, fylles demoens database med eksempelmenigheten og med hver av de andre menighetene på nytt, og alt en besøkende har endret eller lagt inn, fjernes. Innholdet skrives først og det overflødige fjernes etterpå, så demoen er aldri tom. Nullstillingen gjelder bare demoen: den nekter uten demo-innstillingen, uten at navnet på databasen er skrevet, og når databasen står i produksjon. Den kan også startes for hånd: `npm run reset-demo -- <navnet på prosjektet>`.
 * **Hvor den ligger** *(delvis levert 9. oktober)*. Demoen er lagt ut på demo.menighetsplan.no, som salgssidens «Se demo» fører til. Den bygges på nytt av seg selv hver gang noe sendes inn til `main`. Demoen har sin egen database, i Firebase-prosjektet `menighetsplan-demo`, med åpne regler (`firestore.demo.rules`). **Begrensning:** den publiserte demoen leser ennå den tidligere felles databasen. Den byttes over ved at innstillingene i Vercel endres, etter at demoens database er fylt.
 * *Planlagt (trinn 3c):* nivåskillet i resten av appen.
 
@@ -777,6 +784,20 @@ Trinn 3d, og nullstillingen i trinn 3e, av «Klar for flere menigheter» (kapitt
 | **Prøvd** | Reglene, datoene og hele nullstillingen mot en etterligning av databasen: 58 nye sjekker. Skriptets avslag er prøvd på maskinen |
 | **Ikke levert her** | Nullstillingen er ikke kjørt mot demoens database, og demoen på demo.menighetsplan.no er ikke byttet over til den (resten av 3e). Nivåskillet i resten av appen (3c) |
 
+### Velg menighet i demoen (9. oktober 2026)
+
+Bestilt av produkteier samme dag: besøkende skal kunne se løsningen med nettsiden til en ekte menighet, og valget skal stå synlig øverst.
+
+| Område | Levert |
+|:---|:---|
+| **Lista i stripen** | «Se din menighet»: eksempelmenigheten og menighetene som ligger klare i demoens database. Finnes ingen, vises ikke lista |
+| **Den besøkendes eget valg** | Valget ligger i nettleseren. Hver menighet har sine egne samlinger i demoens database, og appen leser samlingene til den som er valgt. Ingen besøkende endrer hva en annen ser |
+| **Lenke rett til en menighet** | `…/?menighet=sogne` åpner demoen med den menigheten, og valget huskes |
+| **Nullstillingen** | Fyller eksempelmenigheten og én kopi per sett: settets nettside og eksempelmenighetens planlegger. I alt 1181 dokumenter med de fire settene som følger med |
+| **Sikring** | En menighet som ikke ligger i databasen, tilbys ikke. Et valg som ikke finnes, fører til eksempelmenigheten. Sperren mot tømming i demoen står som før: byttet sletter ingenting |
+| **Prøvd** | 45 nye sjekker, blant dem alle de fire settene gjennom hele nullstillingen mot en etterligning av databasen. Appen er åpnet lokalt mot en database uten menighetene: lista vises ikke, og en lenke til en menighet som mangler, fører til eksempelmenigheten |
+| **Ikke levert her** | Lista er ikke sett med innhold: menighetene ligger ikke i demoens database før nullstillingen er kjørt. Bemanning på en ekte menighets gudstjenester |
+
 ---
 
 
@@ -806,6 +827,8 @@ Sortert etter hvor mye de betyr for en menighet som skal ta løsningen i bruk.
 | 18 | På Menighetsplattform er bare menyen og fanene i admin tilpasset. Min side, arrangementssiden, oversikten og gruppene på nettsiden viser fortsatt alt | Trinn 3c |
 | 19 | Hos en menighet kan nivået ikke settes: alle har Menighetsplan | Trinn 4 |
 | 20 | Demoens nattlige nullstilling startes av GitHub, som slår av tidsplanen når repoet har stått urørt i 60 dager. Demoens database er på Firebase sin gratisplan, som har et tak på lesinger per døgn. Blir demoen mye besøkt, svarer den ikke før neste døgn | Trinn 8 |
+| 21 | Hos en ekte menighet i demoen har planleggeren nesten ingen oppgaver: bemanningen i eksempelet hører til eksempelmenighetens gudstjenester | Ikke planlagt |
+| 22 | Settene i demoen er laget av menighetenes åpne nettsider, og vises i en demo alle kan endre. Menighetene bør ha sagt ja til det | Produkteier |
 
 ---
 
@@ -844,13 +867,14 @@ Trinnene tas i rekkefølge. Et trinn er ferdig når det er prøvd, testene er gr
 | 3b | **Vei inn uten innlogging** i demoen, som administrator, gruppeleder og frivillig. Det som tømmer databasen, er ikke med i demoen | **Levert 9. oktober** (kapittel 1.4 og 12) |
 | 3c | **Nivåskillet i resten av appen:** Min side, arrangementssiden, oversikten og gruppene på nettsiden | Neste |
 | 3d | **Demodata som lever:** datoene regnes fra i dag, og demomenigheten får navn og innhold | **Levert 9. oktober** (kapittel 1.4 og 12) |
-| 3e | **Demoen legges ut** med egen database, og nullstilles hver natt. Krever et eget Firebase-prosjekt, som produkteier oppretter | **Delvis 9. oktober:** lagt ut på demo.menighetsplan.no, databasen er opprettet og nullstillingen bygget. Gjenstår: første nullstilling av demoens database, og å bytte innstillingene i Vercel så demoen leser den (kapittel 1.4) |
+| 3e | **Demoen legges ut** med egen database, og nullstilles hver natt. Krever et eget Firebase-prosjekt, som produkteier oppretter | **Delvis 9. oktober:** lagt ut på demo.menighetsplan.no, databasen er opprettet og nullstillingen bygget. «Velg menighet» er bygget samme dag. Gjenstår: første nullstilling av demoens database, og å bytte innstillingene i Vercel så demoen leser den (kapittel 1.4) |
 
 **Slik er demoen bestemt**
 
 * **To nivåer, ikke tre valg.** Menighetsplan inneholder alt i Menighetsplattform. Tilleggsmodulene er ikke med i demoen.
 * **Velgeren finnes bare i demoen**, og valget ligger i nettleseren til den som ser på. Hos en menighet bestemmer leverandøren nivået (trinn 4), og ingen velger det i nettleseren.
 * **Én felles demodatabase**, i sitt eget Firebase-prosjekt. Et nei til en oppgave på telefonen synes da på lederens skjerm med en gang. Databasen nullstilles hver natt, og det som tømmer den, er stengt.
+* **Den besøkende kan se en ekte menighets nettside** (bestemt 9. oktober 2026). Demoen har eksempelmenigheten og én kopi for hver menighet det er laget sett av. Valget er den besøkendes eget, og står øverst i stripen. Alle kopiene ligger i den ene demodatabasen, under hver sine samlinger.
 * **Åpne regler i demoen, lukkede hos menighetene.** De to blandes aldri: demoen har sin egen database.
 * **Stripen øverst** har velgeren, en linje som sier at dette er en demo, lenke til påmelding og lenke tilbake til salgssiden.
 * **Demomenigheten heter Fjordvik menighet** og er oppdiktet (bestemt 9. oktober 2026). En demo som alle kan endre, skal ikke bære navnet til en ekte menighet. Navn og innhold bestemmes i appen, og salgssiden følger.

@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
-import { resetDemo } from "../scripts/reset-demo";
-import { CMS_COLLECTIONS, CMS_SETTINGS_DOC_ID, COLLECTIONS } from "../src/data/collections";
+import path from "node:path";
+import { readDemoSets, resetDemo, type DemoSet } from "../scripts/reset-demo";
+import { CMS_COLLECTIONS, CMS_SETTINGS_DOC_ID, COLLECTIONS, PLAIN_COLLECTIONS } from "../src/data/collections";
 import { FULL_DEMO_COUNTS, getCustomMockDocuments, storedFormOf, type MockDocument } from "../src/data/mockDocuments";
 import { HEADCOUNT_RECORD, OPERATING_MODE_DOC_ID, OPERATING_MODE_RECORD, VOLUNTEER_ROLE_RECORD } from "../src/data/settingsRecords";
 import {
@@ -10,9 +11,13 @@ import {
   planReset,
   resetRefusal,
   resetTargetOf,
+  siteDocuments,
   type FirestoreValue,
   type ResetTarget,
+  type SiteSet,
 } from "../src/utils/demoReset";
+import { upcomingPublicGatherings } from "../src/utils/gatherings";
+import type { Gathering } from "../src/types";
 
 // The demo's database is reset from outside the app. Only the demo's: these are the rules for
 // which database it may be, what is written and removed, and the reset run against a stand-in
@@ -101,7 +106,7 @@ describe("Hva en nullstilling skriver og fjerner", () => {
   });
 
   test("hvert dokument i demoinnholdet skrives, på hver sin plass", () => {
-    const plan = planReset(demo, []);
+    const plan = planReset([{ site: null, documents: demo }], []);
     expect(plan.write.length).toBe(demo.length);
     expect(new Set(plan.write.map(pathOf)).size).toBe(demo.length);
     expect(plan.write.map(pathOf)).toContain(`${CMS_COLLECTIONS.SETTINGS}/${CMS_SETTINGS_DOC_ID}`);
@@ -110,7 +115,11 @@ describe("Hva en nullstilling skriver og fjerner", () => {
 
   test("det en besøkende har lagt inn, fjernes, og det som hører til innholdet, blir ikke fjernet", () => {
     const existing = ["persons/person-1", "persons/lagt-inn-av-en-besokende", "cms_pages/en-ny-side", "cms_settings/global", "cms_settings/site-traffic-2026-10"];
-    expect(planReset(demo, existing).remove).toEqual(["persons/lagt-inn-av-en-besokende", "cms_pages/en-ny-side", "cms_settings/site-traffic-2026-10"]);
+    expect(planReset([{ site: null, documents: demo }], existing).remove).toEqual([
+      "persons/lagt-inn-av-en-besokende",
+      "cms_pages/en-ny-side",
+      "cms_settings/site-traffic-2026-10",
+    ]);
   });
 
   test("to dokumenter på samme plass stopper nullstillingen før noe er gjort", () => {
@@ -118,7 +127,147 @@ describe("Hva en nullstilling skriver og fjerner", () => {
       { collection: "persons", id: "p1", data: {} },
       { collection: "persons", id: "p1", data: {} },
     ];
-    expect(() => planReset(twice, [])).toThrow(/samme plass/);
+    expect(() => planReset([{ site: null, documents: twice }], [])).toThrow(/samme plass/);
+  });
+
+  test("hver menighet får sine egne samlinger: de vanlige navnene med menighetens id foran", () => {
+    const person: MockDocument = { collection: "persons", id: "p1", data: { name: "Kari" } };
+    const role: MockDocument = { collection: COLLECTIONS.VOLUNTEER_ROLES, id: "role-1", data: { id: "role-1", name: "Lyd" } };
+    const plan = planReset(
+      [
+        { site: null, documents: [person, role] },
+        { site: "sogne", documents: [person, role] },
+      ],
+      ["persons/p1", "sogne-persons/p1", "sogne-persons/lagt-inn", "sogne-cms_settings/role-1"]
+    );
+
+    expect(plan.write.map(pathOf)).toEqual(["persons/p1", "cms_settings/role-1", "sogne-persons/p1", "sogne-cms_settings/role-1"]);
+    // The same person in two congregations is two documents, and neither is in the way of the other
+    expect(plan.remove).toEqual(["sogne-persons/lagt-inn"]);
+  });
+});
+
+// ---------- A congregation with its own website ----------
+
+const SET_FETCHED = "2026-10-06T16:00:00.000Z";
+/** A small set, shaped as the files in public/demosett/ are. */
+const sogne: SiteSet = {
+  createdAt: SET_FETCHED,
+  collections: {
+    cms_settings: [{ id: "global", churchName: "Søgne Misjonskirke", address: "Kirkeveien 1" }],
+    cms_pages: [{ id: "sogne-forside", slug: "", title: "Forside", updatedAt: "2026-10-01T10:00:00.000Z" }],
+    cms_news: [{ id: "sogne-nyhet", title: "Nytt fra Søgne", publishedAt: "2026-10-05T08:00:00.000Z", isPublished: true }],
+    groups: [{ id: "group-kalender", name: "Kalender", memberIds: [], leaderIds: [] }],
+    gatherings: [
+      {
+        id: "gathering-sogne-1",
+        groupId: "group-kalender",
+        title: "Gudstjeneste",
+        startsAt: "2026-10-11T09:00:00.000Z",
+        type: "arrangement",
+        visibility: "offentlig",
+        isPublic: true,
+        isGudstjeneste: true,
+      },
+    ],
+    // Not the website: a set is only ever the website
+    persons: [{ id: "en-ekte-person", name: "Skal ikke med" }],
+  },
+};
+
+describe("En menighet med sin egen nettside i demoen", () => {
+  const example = getCustomMockDocuments(FULL_DEMO_COUNTS, NOW);
+  const site = siteDocuments(example, sogne, NOW);
+  const rows = <T,>(documents: MockDocument[], collection: string) =>
+    documents.filter((d) => d.collection === collection).map((d) => d.data as T);
+  const ids = (documents: MockDocument[], collection: string) => documents.filter((d) => d.collection === collection).map((d) => d.id);
+
+  test("uten et sett er menigheten eksempelmenigheten slik den er", () => {
+    expect(siteDocuments(example, null, NOW)).toBe(example);
+  });
+
+  test("nettsiden er menighetens egen, og ingenting av eksempelmenighetens nettside er igjen", () => {
+    expect(ids(site, CMS_COLLECTIONS.PAGES)).toEqual(["sogne-forside"]);
+    expect(ids(site, CMS_COLLECTIONS.NEWS)).toEqual(["sogne-nyhet"]);
+    expect(ids(site, CMS_COLLECTIONS.SERMONS)).toEqual([]);
+    expect(ids(site, CMS_COLLECTIONS.STAFF)).toEqual([]);
+    // The settings are stored by their place, without an id in them
+    expect(rows(site, CMS_COLLECTIONS.SETTINGS)).toEqual([{ churchName: "Søgne Misjonskirke", address: "Kirkeveien 1" }]);
+  });
+
+  test("planleggeren er eksempelmenighetens: personer, grupper og tjenesteroller følger med", () => {
+    expect(ids(site, COLLECTIONS.PERSONS)).toEqual(ids(example, COLLECTIONS.PERSONS));
+    expect(ids(site, COLLECTIONS.VOLUNTEER_ROLES)).toEqual(ids(example, COLLECTIONS.VOLUNTEER_ROLES));
+    expect(ids(site, COLLECTIONS.GROUPS)).toEqual([...ids(example, COLLECTIONS.GROUPS), "group-kalender"]);
+    // Nobody from a congregation's own register is ever in a set that is shown
+    expect(ids(site, COLLECTIONS.PERSONS)).not.toContain("en-ekte-person");
+  });
+
+  test("kalenderen åpen for alle er menighetens egen, og de interne samlingene er eksempelmenighetens", () => {
+    const gatherings = rows<Gathering>(site, COLLECTIONS.GATHERINGS);
+    const open = gatherings.filter((g) => g.visibility !== "intern");
+    expect(open.map((g) => g.id)).toEqual(["gathering-sogne-1"]);
+    expect(gatherings.some((g) => g.id === "gathering-hus-1")).toBe(true);
+    expect(gatherings.some((g) => g.id === "gathering-1")).toBe(false);
+  });
+
+  test("ingenting peker på noe som er tatt ut: hver oppgave har samlingen sin, og hver tildeling oppgaven sin", () => {
+    const gatherings = new Set(ids(site, COLLECTIONS.GATHERINGS));
+    const tasks = new Set(ids(site, COLLECTIONS.TASKS));
+    expect(tasks.size).toBeGreaterThan(0);
+    for (const task of rows<{ gatheringId: string }>(site, COLLECTIONS.TASKS)) expect(gatherings.has(task.gatheringId)).toBe(true);
+    for (const assignment of rows<{ taskId: string }>(site, COLLECTIONS.ASSIGNMENTS)) expect(tasks.has(assignment.taskId)).toBe(true);
+    for (const answer of rows<{ gatheringId: string }>(site, COLLECTIONS.GATHERING_ATTENDANCES)) expect(gatherings.has(answer.gatheringId)).toBe(true);
+    for (const count of rows<{ gatheringId: string }>(site, COLLECTIONS.GATHERING_HEADCOUNTS)) expect(gatherings.has(count.gatheringId)).toBe(true);
+  });
+
+  test("datoene i settet flyttes hele uker fra uka det ble hentet", () => {
+    const start = (now: number) =>
+      rows<Gathering>(siteDocuments(example, sogne, now), COLLECTIONS.GATHERINGS).find((g) => g.id === "gathering-sogne-1")!.startsAt;
+    // The same week as it was fetched: as it stands. Sunday 11 October at 11:00 in Norway
+    expect(start(Date.parse("2026-10-09T10:00:00Z"))).toBe("2026-10-11T09:00:00.000Z");
+    // Four weeks on the clocks have been set back, and the service is still on a Sunday at 11:00
+    expect(start(Date.parse("2026-11-05T10:00:00Z"))).toBe("2026-11-08T10:00:00.000Z");
+  });
+});
+
+describe("Settene som følger med appen", () => {
+  const sets = readDemoSets(path.resolve(__dirname, "..", "public", "demosett"));
+  const example = getCustomMockDocuments(FULL_DEMO_COUNTS, NOW);
+
+  test("alle kan leses, og hvert har en id som kan stå foran navnet på en samling", () => {
+    expect(sets.length).toBeGreaterThan(0);
+    expect(new Set(sets.map((set) => set.id)).size).toBe(sets.length);
+    for (const set of sets) expect(set.id).toMatch(/^[a-z0-9]+$/);
+  });
+
+  test.each(sets.map((set) => [set.name, set] as const))("%s: nettsiden kan lagres, og har menighetens navn", (_name, { set }) => {
+    const site = siteDocuments(example, set, NOW);
+    const settings = site.find((d) => d.collection === CMS_COLLECTIONS.SETTINGS && d.id === CMS_SETTINGS_DOC_ID)!;
+    expect(typeof (settings.data as { churchName?: unknown }).churchName).toBe("string");
+    expect((settings.data as { churchName: string }).churchName).not.toMatch(/fjordvik/i);
+    expect(site.some((d) => d.collection === CMS_COLLECTIONS.PAGES)).toBe(true);
+    for (const document of site) expect(() => firestoreFieldsOf(storedFormOf(document).data)).not.toThrow();
+    // Every document lies in a collection the app knows, so the reset finds it again
+    for (const document of site) expect(PLAIN_COLLECTIONS).toContain(document.collection);
+  });
+
+  test("alle menighetene til sammen har hver sin plass i databasen", () => {
+    const sites = [{ site: null, documents: example }, ...sets.map(({ id, set }) => ({ site: id, documents: siteDocuments(example, set, NOW) }))];
+    const plan = planReset(sites, []);
+    expect(new Set(plan.write.map(pathOf)).size).toBe(plan.write.length);
+  });
+
+  test("uka settene ble hentet, har hver menighet noe i kalenderen", () => {
+    // Asked the day the sets were fetched: later weeks give the same picture, a week at a time
+    for (const { set } of sets) {
+      const fetched = Date.parse(set.createdAt);
+      const gatherings = rows(siteDocuments(example, set, fetched));
+      expect(upcomingPublicGatherings(gatherings, fetched).length).toBeGreaterThan(0);
+    }
+    function rows(documents: MockDocument[]): Gathering[] {
+      return documents.filter((d) => d.collection === COLLECTIONS.GATHERINGS).map((d) => d.data as Gathering);
+    }
   });
 });
 
@@ -166,13 +315,13 @@ function database(initial: Record<string, Fields> = {}, options: { pageSize?: nu
 }
 
 describe("Nullstillingen av demoen", () => {
-  const wanted = planReset(getCustomMockDocuments(FULL_DEMO_COUNTS, NOW), []).write;
+  const wanted = planReset([{ site: null, documents: getCustomMockDocuments(FULL_DEMO_COUNTS, NOW) }], []).write;
 
   test("en tom database fylles med hele demoinnholdet", async () => {
     const db = database();
     const result = await resetDemo(TARGET, NOW, db.fetchFn);
 
-    expect(result).toEqual({ weeks: 5, written: wanted.length, removed: 0 });
+    expect(result).toEqual({ weeks: 5, written: wanted.length, removed: 0, sites: [{ site: null, written: wanted.length }] });
     expect([...db.stored.keys()].sort()).toEqual(wanted.map(pathOf).sort());
     expect(db.stored.get("cms_settings/global")?.churchName).toEqual({ stringValue: "Fjordvik menighet" });
   });
@@ -218,6 +367,22 @@ describe("Nullstillingen av demoen", () => {
 
     expect(result.removed).toBe(7);
     expect([...db.stored.keys()].some((path) => path.startsWith("persons/besokende-"))).toBe(false);
+  });
+
+  test("med et sett får menigheten sine egne samlinger ved siden av eksempelmenighetens", async () => {
+    const sets: DemoSet[] = [{ id: "sogne", name: "Søgne Misjonskirke", set: sogne }];
+    const db = database({ "sogne-cms_pages/laget-av-en-besokende": { title: { stringValue: "Ny side" } } });
+    const result = await resetDemo(TARGET, NOW, db.fetchFn, sets);
+
+    expect(result.sites.map(({ site }) => site)).toEqual([null, "sogne"]);
+    expect(result.removed).toBe(1);
+    // The example congregation is where it always is, and whole
+    for (const document of wanted) expect(db.stored.has(pathOf(document))).toBe(true);
+    // Søgne has its own website, and the example congregation's persons, under its own names
+    expect(db.stored.get("sogne-cms_settings/global")?.churchName).toEqual({ stringValue: "Søgne Misjonskirke" });
+    expect([...db.stored.keys()].filter((place) => place.startsWith("sogne-cms_pages/"))).toEqual(["sogne-cms_pages/sogne-forside"]);
+    expect(db.stored.has("sogne-persons/person-1")).toBe(true);
+    expect(db.stored.get("cms_settings/global")?.churchName).toEqual({ stringValue: "Fjordvik menighet" });
   });
 
   test("en database som står i produksjon, røres ikke", async () => {

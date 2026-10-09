@@ -1,9 +1,15 @@
 import { OPTIONAL_SETTINGS, REQUIRED_SETTINGS, readDemoInstallation, type InstallationEnv } from "../installation";
 import { storedFormOf, type MockDocument } from "../data/mockDocuments";
+import { CMS_COLLECTIONS, CMS_SETTINGS_DOC_ID } from "../data/collections";
+import { documentsToDelete, keepParts } from "./dataParts";
+import type { Dataset, DatasetDocument } from "./dataset";
+import { collectionPrefixOf } from "./demoSite";
+import { weeksBetween, withLiveDates } from "./liveDates";
 
-// The rules for resetting the demo's database: which database may be reset, what is written and
-// removed, and how a document is handed to the database from outside the app. The reset itself,
-// which talks to the database, is scripts/reset-demo.ts.
+// The rules for resetting the demo's database: which database may be reset, what each
+// congregation in the demo is made of, what is written and removed, and how a document is handed
+// to the database from outside the app. The reset itself, which talks to the database, is
+// scripts/reset-demo.ts.
 //
 // The demo is the only installation that is ever reset. In the app nothing empties its database
 // (see ensureDeletionAllowed in services/operatingMode.ts), so it is done from outside, each night.
@@ -48,25 +54,74 @@ export function resetRefusal(env: InstallationEnv, confirmedProject: string | un
   return null;
 }
 
-// ---------- What is written and what is removed ----------
+// ---------- What each congregation in the demo is made of ----------
 
 /** A document's place in the database: "persons/person-1". */
 export const pathOf = (document: { collection: string; id: string }): string => `${document.collection}/${document.id}`;
 
+/** A congregation's set, as far as the reset reads it: its documents, and when they were fetched. */
+export type SiteSet = Pick<Dataset, "collections" | "createdAt">;
+
+/** The documents of one congregation in the demo: the example congregation is null (see utils/demoSite.ts). */
+export interface SiteContent {
+  site: string | null;
+  documents: MockDocument[];
+}
+
+/**
+ * The documents of a congregation whose website has been made into a set: the set's website,
+ * and the example congregation's planner. It is what «Velg menighet» under Database leaves in a
+ * database that held the example: the example's website is taken out, with what hangs on its
+ * events, and the set's website is put in. Without a set it is the example as it is.
+ *
+ * The dates in a set are moved whole weeks from the week it was fetched in, like the example's
+ * (see utils/liveDates.ts), so the calendar on the website is never all in the past.
+ */
+export function siteDocuments(example: MockDocument[], set: SiteSet | null, now: number): MockDocument[] {
+  if (!set) return example;
+
+  const exampleCollections: Record<string, DatasetDocument[]> = {};
+  for (const document of example) {
+    (exampleCollections[document.collection] ??= []).push({ ...document.data, id: document.id });
+  }
+  const gone = new Set(documentsToDelete(exampleCollections, ["website"]).map(pathOf));
+
+  const weeks = weeksBetween(set.createdAt.slice(0, 10), now);
+  const website = Object.entries(keepParts(set.collections, ["website"])).flatMap(([collection, documents]) =>
+    documents.map((document): MockDocument => {
+      // The settings document is addressed by its place, not by a field in it
+      const { id, ...withoutId } = document;
+      const isSettings = collection === CMS_COLLECTIONS.SETTINGS && id === CMS_SETTINGS_DOC_ID;
+      return { collection, id, data: withLiveDates(isSettings ? withoutId : document, weeks) };
+    })
+  );
+
+  // Should the two share a place, the congregation's own document is the one that stands
+  const fromSet = new Set(website.map(pathOf));
+  return [...example.filter((document) => !gone.has(pathOf(document)) && !fromSet.has(pathOf(document))), ...website];
+}
+
+// ---------- What is written and what is removed ----------
+
 export interface ResetPlan {
-  /** The demo documents, each in the form and the collection it is stored in. */
+  /** Every document of every congregation, in the form and the collection it is stored in. */
   write: MockDocument[];
   /** The places of the documents that are not part of the demo content, and so are removed. */
   remove: string[];
 }
 
 /**
- * What a reset does to a database that holds `existing`: every demo document is written over
- * what is there, and everything else is removed. Written first and removed after, so the demo
- * is never empty while someone looks at it.
+ * What a reset does to a database that holds `existing`: every document of every congregation
+ * is written over what is there, and everything else is removed. Written first and removed
+ * after, so the demo is never empty while someone looks at it.
+ *
+ * A congregation's documents are stored under its own collections: the plain names with the
+ * congregation's id in front, and the plain names alone for the example congregation.
  */
-export function planReset(demoDocuments: MockDocument[], existing: readonly string[]): ResetPlan {
-  const write = demoDocuments.map(storedFormOf);
+export function planReset(sites: readonly SiteContent[], existing: readonly string[]): ResetPlan {
+  const write = sites.flatMap(({ site, documents }) =>
+    documents.map(storedFormOf).map((document) => ({ ...document, collection: collectionPrefixOf(site) + document.collection }))
+  );
   const kept = new Set(write.map(pathOf));
   if (kept.size !== write.length) {
     throw new Error("To av dokumentene i demoinnholdet har samme plass i databasen.");
