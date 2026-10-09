@@ -107,7 +107,8 @@ Demoen er appen installert én gang til, med egen database og egen adresse, og m
 * **Nivåvelgeren** *(levert 8. oktober)* har to valg. Valget gjelder med en gang på alle skjermer, og huskes i nettleseren til den som ser på. Én besøkendes valg endrer ikke hva en annen ser. Før noe er valgt, vises Menighetsplan.
 * **Bare i demoen.** En menighets installasjon tegner aldri stripen, og spør aldri nettleseren om nivået.
 * **Forhåndsvisningen i admin** viser nettsiden uten stripe.
-* *Planlagt (trinn 3c–3e):* nivåskillet i resten av appen, demodata med datoer regnet fra i dag, og selve utleggingen med nullstilling hver natt.
+* **Hvor den ligger** *(delvis levert 9. oktober)*. Demoen er lagt ut på demo.menighetsplan.no, som salgssidens «Se demo» fører til. Den bygges på nytt av seg selv hver gang noe sendes inn til `main`. **Begrensning:** den har ennå ikke sin egen database. Den leser og skriver samme database som den tidligere publiserte utgaven, og nullstilles ikke, så det en besøkende endrer i admin, blir stående.
+* *Planlagt (trinn 3c–3e):* nivåskillet i resten av appen, demodata med datoer regnet fra i dag, og egen database for demoen med nullstilling hver natt.
 
 ---
 
@@ -825,7 +826,7 @@ Trinnene tas i rekkefølge. Et trinn er ferdig når det er prøvd, testene er gr
 | 3b | **Vei inn uten innlogging** i demoen, som administrator, gruppeleder og frivillig. Det som tømmer databasen, er ikke med i demoen | **Levert 9. oktober** (kapittel 1.4 og 12) |
 | 3c | **Nivåskillet i resten av appen:** Min side, arrangementssiden, oversikten og gruppene på nettsiden | Neste |
 | 3d | **Demodata som lever:** datoene regnes fra i dag, og demomenigheten får navn og innhold | |
-| 3e | **Demoen legges ut** med egen database, og nullstilles hver natt. Krever et eget Firebase-prosjekt, som produkteier oppretter | |
+| 3e | **Demoen legges ut** med egen database, og nullstilles hver natt. Krever et eget Firebase-prosjekt, som produkteier oppretter | **Delvis 9. oktober:** lagt ut på demo.menighetsplan.no. Egen database og nullstilling gjenstår (kapittel 1.4) |
 
 **Slik er demoen bestemt**
 
