@@ -259,6 +259,30 @@ describe("Demo-oppsett for eieren", () => {
     expect((await screen.findByRole("alert")).textContent).toMatch(/kunne ikke hentes/);
   });
 
+  test("eieren kan bytte eierkode: siden lager den nye linja, og sier at den gamle skal ut", async () => {
+    database.sets = [lmk];
+    openTab();
+    // Nothing about a new code is shown until the owner asks for it
+    expect(screen.queryByLabelText(/Velg en ny eierkode/)).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Bytt eierkode" }));
+    expect(screen.getByRole("heading", { name: "Bytt eierkode" })).toBeTruthy();
+    fireEvent.change(screen.getByLabelText(/Velg en ny eierkode/), { target: { value: "en-helt-ny-eierkode" } });
+
+    expect(await screen.findByText(`VITE_DEMO_OWNER_CODE_HASH=${await ownerCodeHashOf("en-helt-ny-eierkode")}`)).toBeTruthy();
+    expect(screen.getByText(/Fjern VITE_DEMO_OWNER_CODE_HASH fra innstillingene/)).toBeTruthy();
+    expect(document.body.textContent).not.toContain("en-helt-ny-eierkode");
+    // The congregations and their switches are still there
+    expect((await rowOf("Lillesand Misjonskirke")).getByRole("switch")).toBeTruthy();
+  });
+
+  test("den som ikke er eieren, kan ikke lage en ny kode der en kode er satt opp", () => {
+    browser.owner = "locked";
+    openTab();
+    expect(screen.queryByRole("button", { name: "Bytt eierkode" })).toBeNull();
+    expect(screen.queryByLabelText(/Velg en/)).toBeNull();
+  });
+
   test("eieren kan låse oppsettet igjen", () => {
     openTab();
     fireEvent.click(screen.getByRole("button", { name: "Lås" }));

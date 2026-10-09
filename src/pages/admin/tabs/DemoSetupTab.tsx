@@ -56,8 +56,16 @@ async function copy(text: string, showFeedback: ShowFeedback, done: string): Pro
 /** One click marks the whole text, for the one who copies it by hand. */
 const copyable = "select-all cursor-text";
 
-/** Shown to whoever opens the tab before an owner's code is in the demo's settings: how to make one. */
-const ChooseOwnerCode: React.FC<DemoSetupTabProps> = ({ showFeedback }) => {
+interface ChooseOwnerCodeProps extends DemoSetupTabProps {
+  /** Whether the demo has a code that is to be replaced, or none yet. */
+  replacing?: boolean;
+}
+
+/**
+ * Makes the line that goes into the demo's settings from a code the owner chooses. Shown to
+ * whoever opens the tab before the demo has a code, and to the owner who wants another.
+ */
+const ChooseOwnerCode: React.FC<ChooseOwnerCodeProps> = ({ showFeedback, replacing = false }) => {
   const [code, setCode] = useState("");
   const [line, setLine] = useState("");
   const problem = ownerCodeProblem(code);
@@ -78,19 +86,29 @@ const ChooseOwnerCode: React.FC<DemoSetupTabProps> = ({ showFeedback }) => {
 
   return (
     <div className={`${studioCard} p-5 space-y-4`}>
-      <h2 className="text-sm font-black text-[var(--studio-text)]">Eierkoden er ikke satt opp</h2>
+      <h2 className="text-sm font-black text-[var(--studio-text)]">{replacing ? "Bytt eierkode" : "Eierkoden er ikke satt opp"}</h2>
       <p className={muted}>
-        Demo-oppsettet er bare for eieren av demoen, som låser det opp med en kode. Velg en kode her. Den blir værende i nettleseren
-        din: det som skal inn i demoens innstillinger, er et fingeravtrykk av koden, ikke koden selv.
+        {replacing
+          ? "Velg en ny kode her. Den gamle virker til det nye fingeravtrykket er lagt inn i demoens innstillinger og demoen er bygget på nytt."
+          : "Demo-oppsettet er bare for eieren av demoen, som låser det opp med en kode. Velg en kode her."}{" "}
+        Koden blir værende i nettleseren din: det som skal inn i demoens innstillinger, er et fingeravtrykk av koden, ikke koden selv.
       </p>
+      <p className={muted}>Bruk en kode du ikke bruker noe annet sted, gjerne flere ord etter hverandre.</p>
       <label className="block space-y-1.5">
-        <span className="text-xs font-bold text-[var(--studio-text)]">Velg en eierkode (minst {MIN_OWNER_CODE_LENGTH} tegn)</span>
+        <span className="text-xs font-bold text-[var(--studio-text)]">
+          Velg en {replacing ? "ny " : ""}eierkode (minst {MIN_OWNER_CODE_LENGTH} tegn)
+        </span>
         <input type="password" autoComplete="new-password" value={code} onChange={(event) => setCode(event.target.value)} className={studioInputFull} />
       </label>
       {problem && <p className="text-xs text-amber-500">{problem}</p>}
       {line && (
         <div className="space-y-2">
-          <p className={muted}>Legg denne linja inn i innstillingene til demoen der den er publisert, og bygg demoen på nytt. Husk koden du valgte.</p>
+          <p className={muted}>
+            {replacing
+              ? `Fjern ${DEMO_SETTINGS.ownerCodeHash} fra innstillingene til demoen der den er publisert, legg inn denne linja i stedet, og bygg demoen på nytt. Da låser du opp med den nye koden.`
+              : "Legg denne linja inn i innstillingene til demoen der den er publisert, og bygg demoen på nytt."}{" "}
+            Husk koden du valgte.
+          </p>
           <code className={`block p-3 rounded-xl bg-[var(--studio-row)] border border-[var(--studio-border)] text-[11px] text-[var(--studio-text)] break-all ${copyable}`}>
             {line}
           </code>
@@ -235,6 +253,7 @@ const Congregations: React.FC<DemoSetupTabProps> = ({ showFeedback }) => {
  */
 export const DemoSetupTab: React.FC<DemoSetupTabProps> = ({ showFeedback }) => {
   const owner = useDemoOwner();
+  const [changingCode, setChangingCode] = useState(false);
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -263,7 +282,19 @@ export const DemoSetupTab: React.FC<DemoSetupTabProps> = ({ showFeedback }) => {
       ) : owner === "locked" ? (
         <Unlock />
       ) : (
-        <Congregations showFeedback={showFeedback} />
+        <>
+          <Congregations showFeedback={showFeedback} />
+          <section aria-label="Eierkoden" className="space-y-3 pt-2">
+            {changingCode ? (
+              <ChooseOwnerCode showFeedback={showFeedback} replacing />
+            ) : (
+              <button type="button" onClick={() => setChangingCode(true)} className={`${studioSecondaryButton} flex items-center gap-1.5`}>
+                <KeyRound className="w-3.5 h-3.5" aria-hidden="true" />
+                Bytt eierkode
+              </button>
+            )}
+          </section>
+        </>
       )}
     </div>
   );
