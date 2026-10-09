@@ -24,14 +24,37 @@ const muted = "text-xs text-[var(--studio-muted)]";
 /** The address that opens the demo with one congregation. */
 const linkTo = (site: string): string => `${window.location.origin}/?${SITE_PARAMETER}=${site}`;
 
+/** The older way of copying, for a browser that keeps the clipboard from the page: the text is marked in a field of its own and copied from there. */
+function copyFromField(text: string): boolean {
+  const field = document.createElement("textarea");
+  field.value = text;
+  field.setAttribute("readonly", "");
+  field.style.position = "fixed";
+  field.style.opacity = "0";
+  document.body.appendChild(field);
+  field.focus();
+  field.select();
+  try {
+    return document.execCommand("copy");
+  } catch {
+    return false;
+  } finally {
+    field.remove();
+  }
+}
+
 async function copy(text: string, showFeedback: ShowFeedback, done: string): Promise<void> {
   try {
     await navigator.clipboard.writeText(text);
     showFeedback(done);
   } catch {
-    showFeedback("Nettleseren lot ikke teksten kopieres. Marker den og kopier selv.", "error");
+    if (copyFromField(text)) showFeedback(done);
+    else showFeedback("Nettleseren lot ikke teksten kopieres. Klikk på teksten, så blir den merket, og trykk Ctrl+C.", "error");
   }
 }
+
+/** One click marks the whole text, for the one who copies it by hand. */
+const copyable = "select-all cursor-text";
 
 /** Shown to whoever opens the tab before an owner's code is in the demo's settings: how to make one. */
 const ChooseOwnerCode: React.FC<DemoSetupTabProps> = ({ showFeedback }) => {
@@ -68,7 +91,7 @@ const ChooseOwnerCode: React.FC<DemoSetupTabProps> = ({ showFeedback }) => {
       {line && (
         <div className="space-y-2">
           <p className={muted}>Legg denne linja inn i innstillingene til demoen der den er publisert, og bygg demoen på nytt. Husk koden du valgte.</p>
-          <code className="block p-3 rounded-xl bg-[var(--studio-row)] border border-[var(--studio-border)] text-[11px] text-[var(--studio-text)] break-all">
+          <code className={`block p-3 rounded-xl bg-[var(--studio-row)] border border-[var(--studio-border)] text-[11px] text-[var(--studio-text)] break-all ${copyable}`}>
             {line}
           </code>
           <button type="button" onClick={() => copy(line, showFeedback, "Linja er kopiert.")} className={`${studioSecondaryButton} flex items-center gap-1.5`}>
@@ -189,7 +212,7 @@ const Congregations: React.FC<DemoSetupTabProps> = ({ showFeedback }) => {
               <AddonSwitch on={set.listed} label={`${set.name} i lista for alle`} onChange={(on) => toggle(set, on)} disabled={saving === set.id} />
             </div>
             <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-[var(--studio-border)]">
-              <code className="min-w-0 flex-1 text-[11px] text-[var(--studio-muted)] truncate">{linkTo(set.id)}</code>
+              <code className={`min-w-0 flex-1 text-[11px] text-[var(--studio-muted)] truncate ${copyable}`}>{linkTo(set.id)}</code>
               <button type="button" onClick={() => copy(linkTo(set.id), showFeedback, `Lenken til ${set.name} er kopiert.`)} className={`${studioSecondaryButton} flex items-center gap-1.5`}>
                 <Copy className="w-3.5 h-3.5" aria-hidden="true" />
                 Kopier lenke

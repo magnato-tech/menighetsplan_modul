@@ -126,7 +126,8 @@ describe("Før eierkoden er satt opp", () => {
 
     fireEvent.change(screen.getByLabelText(/Velg en eierkode/), { target: { value: "min-nye-eierkode-1" } });
     const line = `VITE_DEMO_OWNER_CODE_HASH=${await ownerCodeHashOf("min-nye-eierkode-1")}`;
-    expect(await screen.findByText(line)).toBeTruthy();
+    // One click marks the whole line, for a browser that will not copy it
+    expect((await screen.findByText(line)).className).toContain("select-all");
     expect(document.body.textContent).not.toContain("min-nye-eierkode-1");
   });
 
@@ -193,6 +194,37 @@ describe("Demo-oppsett for eieren", () => {
     fireEvent.click(row.getByRole("button", { name: "Kopier lenke" }));
     await waitFor(() => expect(writeText).toHaveBeenCalledWith(link));
     await waitFor(() => expect(showFeedback).toHaveBeenCalledWith("Lenken til Søgne Misjonskirke er kopiert."));
+  });
+
+  test("sperrer nettleseren utklippstavlen, kopieres lenken på den eldre måten", async () => {
+    vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText: vi.fn(async () => Promise.reject(new Error("NotAllowedError"))) } });
+    const copied: string[] = [];
+    document.execCommand = vi.fn(() => {
+      copied.push(document.querySelector("textarea")?.value ?? "");
+      return true;
+    });
+    database.sets = [sogne];
+    openTab();
+    fireEvent.click((await rowOf("Søgne Misjonskirke")).getByRole("button", { name: "Kopier lenke" }));
+
+    await waitFor(() => expect(showFeedback).toHaveBeenCalledWith("Lenken til Søgne Misjonskirke er kopiert."));
+    expect(copied).toEqual([`${window.location.origin}/?menighet=sogne`]);
+    // The field the text was copied from is gone again
+    expect(document.querySelector("textarea")).toBeNull();
+  });
+
+  test("går ingen av måtene, sier siden hvordan teksten kopieres for hånd, og et klikk merker hele", async () => {
+    vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText: vi.fn(async () => Promise.reject(new Error("NotAllowedError"))) } });
+    document.execCommand = vi.fn(() => false);
+    database.sets = [sogne];
+    openTab();
+    const row = await rowOf("Søgne Misjonskirke");
+    fireEvent.click(row.getByRole("button", { name: "Kopier lenke" }));
+
+    await waitFor(() =>
+      expect(showFeedback).toHaveBeenCalledWith("Nettleseren lot ikke teksten kopieres. Klikk på teksten, så blir den merket, og trykk Ctrl+C.", "error")
+    );
+    expect(row.getByText(`${window.location.origin}/?menighet=sogne`).className).toContain("select-all");
   });
 
   test("eieren kan vise en menighet som ikke står i lista", async () => {
