@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.11 · **Sist oppdatert:** 2026-10-09
+> **Dokumentversjon:** 4.12 · **Sist oppdatert:** 2026-10-09
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -122,7 +122,7 @@ Demoen er appen installert én gang til, med egen database og egen adresse, og m
   * **Valgene overlever nullstillingen.** De ligger i demoens database, som det eneste der som verken er innhold eller en besøkendes.
   * **Begrensning:** koden holder skjermen unna besøkende, men beskytter ikke databasen. Demoens database har åpne regler, så den som kan nok, kan endre valgene utenom skjermen.
 * **Nullstilling hver natt** *(levert 9. oktober; første kjøring av seg selv er natt til 10. oktober)*. Hver natt, rundt kl. 03, fylles demoens database med eksempelmenigheten og med hver av de andre menighetene på nytt, og alt en besøkende har endret eller lagt inn, fjernes. Innholdet skrives først og det overflødige fjernes etterpå, så demoen er aldri tom. Nullstillingen gjelder bare demoen: den nekter uten demo-innstillingen, uten at navnet på databasen er skrevet, og når databasen står i produksjon. Den kan også startes for hånd: `npm run reset-demo -- <navnet på prosjektet>`.
-* **Hvor den ligger** *(delvis levert 9. oktober)*. Demoen er lagt ut på demo.menighetsplan.no, som salgssidens «Se demo» fører til. Den bygges på nytt av seg selv hver gang noe sendes inn til `main`. Demoen har sin egen database, i Firebase-prosjektet `menighetsplan-demo`, med åpne regler (`firestore.demo.rules`). Databasen ble fylt første gang 9. oktober. **Begrensning:** den publiserte demoen leser ennå den tidligere felles databasen. Den byttes over ved at innstillingene i Vercel endres.
+* **Hvor den ligger** *(levert 9. oktober)*. Demoen er lagt ut på demo.menighetsplan.no, som salgssidens «Se demo» fører til. Den bygges på nytt av seg selv hver gang noe sendes inn til `main`. Demoen har sin egen database, i Firebase-prosjektet `menighetsplan-demo`, med åpne regler (`firestore.demo.rules`). Databasen ble fylt første gang 9. oktober, og den publiserte demoen leser den fra samme dag: innstillingene i Vercel peker på demoens eget prosjekt, uten navn på databasen.
 * *Planlagt (trinn 3c):* nivåskillet i resten av appen.
 
 ---
@@ -805,7 +805,8 @@ Bestilt av produkteier samme dag: besøkende skal kunne se løsningen med nettsi
 | **Uten bilder av de ansatte** | Lagt til samme dag, etter at produkteier pekte på at bilder av personer ikke kan brukes i markedsføring uten samtykke. Gjelder demoen, ikke «Velg menighet» under Database. 16 sjekker, blant dem at ingen av de fire settene viser et bilde fra stab-registeret eller et bilde ved siden av navnet til en ansatt |
 | **Bryter per menighet** | Lagt til samme dag: eieren av demoen bestemmer i «Demo-oppsett» hvilke menigheter som står i lista for alle. Fanen åpnes med en eierkode. Fra starten står bare Lillesand Misjonskirke i lista. 50 sjekker. Prøvd lokalt med en prøvekode: feil kode åpner ikke, riktig kode viser de fire menighetene med brytere og lenker, og fanen kommer i menyen. Ingen bryter er trykket på lokalt, for den lokale appen bruker databasen i drift |
 | **Prøvd mot demoens database** | Produkteier kjørte nullstillingen 9. oktober: 1181 dokumenter skrevet og kontrollert, fordelt på eksempelmenigheten og de fire menighetene. Appen er så åpnet lokalt mot databasen: eksempelmenigheten vises med lista i stripen (Lillesand), Søgne åpnes med lenken sin og står da i lista for den besøkende, stripen sier hvor nettsiden er hentet fra, og Søgnes side «Ansatte» viser tolv navn uten bilder. På mobilbredde får lista og nivåvelgeren plass på samme linje |
-| **Ikke levert her** | Den publiserte demoen leser ennå den tidligere databasen, til innstillingene i Vercel er byttet. Bemanning på en ekte menighets gudstjenester |
+| **Byttet over** | Produkteier byttet innstillingene i Vercel 9. oktober, og demoen ble bygget på nytt. demo.menighetsplan.no viser nå eksempelmenigheten fra sin egen database, med gudstjenesten førstkommende søndag, lista i stripen med Lillesand, og Lillesand fra lenken sin |
+| **Ikke levert her** | Eierkoden er ikke lagt inn i Vercel ennå, så «Demo-oppsett» kan ikke låses opp på den publiserte demoen. Nullstillingen har ikke gått av seg selv ennå (første gang natt til 10. oktober). Bemanning på en ekte menighets gudstjenester |
 
 ---
 
@@ -875,9 +876,9 @@ Trinnene tas i rekkefølge. Et trinn er ferdig når det er prøvd, testene er gr
 |:---|:---|:---|
 | 3a | **Demo-installasjonen og nivåvelgeren.** En installasjon kan settes opp som demo. Da står en stripe øverst med velgeren mellom Menighetsplattform og Menighetsplan, og menyen i admin følger valget | **Levert 8. oktober** (kapittel 1.3, 1.4 og 12) |
 | 3b | **Vei inn uten innlogging** i demoen, som administrator, gruppeleder og frivillig. Det som tømmer databasen, er ikke med i demoen | **Levert 9. oktober** (kapittel 1.4 og 12) |
-| 3c | **Nivåskillet i resten av appen:** Min side, arrangementssiden, oversikten og gruppene på nettsiden | Neste |
+| 3c | **Nivåskillet i resten av appen:** Min side, arrangementssiden, oversikten og gruppene på nettsiden | Neste, og det siste som gjenstår av trinn 3 |
 | 3d | **Demodata som lever:** datoene regnes fra i dag, og demomenigheten får navn og innhold | **Levert 9. oktober** (kapittel 1.4 og 12) |
-| 3e | **Demoen legges ut** med egen database, og nullstilles hver natt. Krever et eget Firebase-prosjekt, som produkteier oppretter | **Delvis 9. oktober:** lagt ut på demo.menighetsplan.no, databasen er opprettet og nullstillingen bygget. «Velg menighet» er bygget samme dag, og demoens database er fylt. Gjenstår: å bytte innstillingene i Vercel så demoen leser den, og å se den første nullstillingen gå av seg selv (kapittel 1.4) |
+| 3e | **Demoen legges ut** med egen database, og nullstilles hver natt. Krever et eget Firebase-prosjekt, som produkteier oppretter | **Levert 9. oktober:** lagt ut på demo.menighetsplan.no med egen database, som er fylt, og med «Velg menighet». Gjenstår å se: den første nullstillingen som går av seg selv, natt til 10. oktober. Eierkoden til «Demo-oppsett» må legges inn i Vercel av produkteier (kapittel 1.4) |
 
 **Slik er demoen bestemt**
 
