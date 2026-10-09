@@ -7,10 +7,11 @@ import { roleOf, type SessionRole } from "./session";
 // follows from the register, so the demo's content can be replaced without anything here being
 // changed.
 //
-// The website's editor comes first, and by its own name. It is an administrator's work, but a
-// visitor who wants to see the CMS does not look for it under «Administrator».
+// There is one way in for each role, and no more. Editing the website is an administrator's
+// work: it is named first in what the administrator does, so a visitor who wants to see the CMS
+// finds it, but it is not a way in of its own.
 
-export type DemoWayIn = "nettside" | "administrator" | "gruppeleder" | "medlem";
+export type DemoWayIn = "administrator" | "gruppeleder" | "medlem";
 
 export interface DemoDoor {
   way: DemoWayIn;
@@ -26,17 +27,10 @@ export interface DemoDoor {
 /** In the order they are offered: what the one deciding for a congregation works in first, then what its people see. */
 const WAYS_IN: { way: DemoWayIn; role: SessionRole; name: string; does: string; start: string }[] = [
   {
-    way: "nettside",
-    role: "administrator",
-    name: "Rediger nettsiden (CMS)",
-    does: "Bygger sider og meny, skriver nyheter, legger ut taler og velger design",
-    start: "/admin?tab=cms-sider",
-  },
-  {
     way: "administrator",
     role: "administrator",
     name: "Administrator",
-    does: "Planlegger arrangementer, bemanner oppgaver og holder personregisteret",
+    does: "Redigerer nettsiden (CMS), planlegger arrangementer og holder personregisteret",
     start: "/admin",
   },
   {
