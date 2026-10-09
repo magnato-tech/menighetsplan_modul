@@ -5,7 +5,8 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import type { Group, Person } from "../src/types";
 import { mayStandIn, type Session } from "../src/utils/session";
-import { DEMO_DOOR_START, demoDoors } from "../src/utils/demoDoor";
+import { demoDoors } from "../src/utils/demoDoor";
+import { studioTabUrl } from "../src/pages/admin/studio";
 
 // The register of a made-up congregation
 const kari: Person = { id: "kari", name: "Kari Nordmann", globalRole: "admin" };
@@ -91,14 +92,23 @@ afterEach(() => {
 });
 
 describe("Hvem man går inn som i demoen", () => {
-  test("én person for hver rolle, i rekkefølgen frivillig, gruppeleder, administrator", () => {
-    expect(demoDoors(everyone, groups).map((door) => door.role)).toEqual(["medlem", "gruppeleder", "administrator"]);
+  test("fire veier inn, med redigeringen av nettsiden først og under sitt eget navn", () => {
+    const doors = demoDoors(everyone, groups);
+    expect(doors.map((door) => door.way)).toEqual(["nettside", "administrator", "gruppeleder", "medlem"]);
+    expect(doors.map((door) => door.name)).toEqual(["Rediger nettsiden (CMS)", "Administrator", "Gruppeleder", "Frivillig"]);
+  });
+
+  test("hver vei starter på sitt sted, og nettsiden rett i sideredigeringen", () => {
+    const starts = Object.fromEntries(demoDoors(everyone, groups).map((door) => [door.way, door.start]));
+    expect(starts).toEqual({ nettside: "/admin?tab=cms-sider", administrator: "/admin", gruppeleder: "/leder", medlem: "/minside" });
+    expect(starts.nettside).toBe(studioTabUrl("cms-sider"));
   });
 
   test("av dem med rollen velges den som er med i flest grupper, og navnet avgjør når det står likt", () => {
-    const doors = Object.fromEntries(demoDoors(everyone, groups).map((door) => [door.role, door.person.name]));
+    const doors = Object.fromEntries(demoDoors(everyone, groups).map((door) => [door.way, door.person.name]));
     // Silje is in two groups, Jonas in one. Ola leads two, Ingrid one. The administrators are in none.
-    expect(doors).toEqual({ medlem: "Silje Moen", gruppeleder: "Ola Hansen", administrator: "Anne Aas" });
+    // Editing the website is an administrator's work, so it is the same person.
+    expect(doors).toEqual({ nettside: "Anne Aas", administrator: "Anne Aas", gruppeleder: "Ola Hansen", medlem: "Silje Moen" });
   });
 
   test("samme register gir samme personer, uansett rekkefølgen det kommer i", () => {
@@ -107,7 +117,8 @@ describe("Hvem man går inn som i demoen", () => {
   });
 
   test("en rolle ingen har, får ingen vei inn, og et tomt register gir ingen", () => {
-    expect(demoDoors([kari, jonas], []).map((door) => door.role)).toEqual(["medlem", "administrator"]);
+    expect(demoDoors([kari, jonas], []).map((door) => door.way)).toEqual(["nettside", "administrator", "medlem"]);
+    expect(demoDoors([jonas], []).map((door) => door.way)).toEqual(["medlem"]);
     expect(demoDoors([], groups)).toEqual([]);
   });
 
@@ -119,10 +130,14 @@ describe("Hvem man går inn som i demoen", () => {
 });
 
 describe("Veien inn i demoen", () => {
-  test("siden ber ikke om innlogging: den har én knapp for hver rolle", () => {
+  test("siden ber ikke om innlogging: den har én knapp for hver vei inn, og CMS-et står først", () => {
     open();
 
     expect(screen.getByRole("heading", { name: "Gå inn i demoen" })).toBeTruthy();
+    const buttons = screen.getAllByRole("button");
+    expect(buttons).toHaveLength(4);
+    expect(buttons[0].textContent).toContain("Rediger nettsiden (CMS)");
+    expect(buttons[0].textContent).toContain("Bygger sider og meny, skriver nyheter, legger ut taler og velger design");
     expect(screen.getByRole("button", { name: /Frivillig/ }).textContent).toContain("Du går inn som Silje Moen");
     expect(screen.getByRole("button", { name: /Gruppeleder/ }).textContent).toContain("Du går inn som Ola Hansen");
     expect(screen.getByRole("button", { name: /Administrator/ }).textContent).toContain("Du går inn som Anne Aas");
@@ -133,8 +148,9 @@ describe("Veien inn i demoen", () => {
     expect(document.querySelector("select")).toBeNull();
   });
 
-  test("hver rolle starter på sitt sted", () => {
+  test("hver vei inn fører til sitt sted", () => {
     for (const [button, start] of [
+      [/Rediger nettsiden/, "/admin?tab=cms-sider"],
       [/Frivillig/, "/minside"],
       [/Gruppeleder/, "/leder"],
       [/Administrator/, "/admin"],
@@ -145,13 +161,23 @@ describe("Veien inn i demoen", () => {
       expect(screen.getByText(`Kom til: ${start}`)).toBeTruthy();
       cleanup();
     }
-    expect(DEMO_DOOR_START).toEqual({ medlem: "/minside", gruppeleder: "/leder", administrator: "/admin" });
   });
 
-  test("den som var på vei til en bestemt side, kommer dit", () => {
-    open("/logg-inn?neste=%2Foppgave%2Ftask-3");
-    fireEvent.click(screen.getByRole("button", { name: /Administrator/ }));
-    expect(screen.getByText("Kom til: /oppgave/task-3")).toBeTruthy();
+  test("valget bestemmer hvor man kommer, også for den som trykket «Min Side» på nettsiden først", () => {
+    open("/logg-inn?neste=%2Fminside");
+    fireEvent.click(screen.getByRole("button", { name: /Rediger nettsiden/ }));
+    expect(screen.getByText("Kom til: /admin?tab=cms-sider")).toBeTruthy();
+  });
+
+  test("den som er inne, kan velge på nytt: siden blir stående til noe er valgt", () => {
+    app.session = { status: "member", person: silje, account: null } satisfies Session;
+    open();
+    expect(screen.getByRole("heading", { name: "Gå inn i demoen" })).toBeTruthy();
+    expect(screen.queryByText(/Kom til/)).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: /Rediger nettsiden/ }));
+    expect(screen.getByText("Kom til: /admin?tab=cms-sider")).toBeTruthy();
+    expect((app.session as Session & { status: "member" }).person.name).toBe("Anne Aas");
   });
 
   test("til registeret har kommet, sier siden at den laster, og ikke at noen mangler", () => {

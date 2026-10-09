@@ -59,12 +59,16 @@ export const DemoStrip: React.FC = () => {
       </div>
 
       <p className="md:flex-1 flex items-center justify-end gap-3">
-        {/* The way in (pages/DemoDoor.tsx), for a visitor who is not inside already */}
-        {session.status !== "member" && (
-          <Link to={SIGN_IN_PATH} className="px-2 py-0.5 rounded-md bg-white text-slate-950 font-bold whitespace-nowrap hover:bg-slate-200">
-            Gå inn <span className="hidden lg:inline">på Min side og admin</span>
-          </Link>
-        )}
+        {/* The ways in (pages/DemoDoor.tsx). Someone who is inside goes there to choose another. */}
+        <Link to={SIGN_IN_PATH} className="px-2 py-0.5 rounded-md bg-white text-slate-950 font-bold whitespace-nowrap hover:bg-slate-200">
+          {session.status === "member" ? (
+            "Bytt rolle"
+          ) : (
+            <>
+              Gå inn <span className="hidden lg:inline">i CMS, admin og Min side</span>
+            </>
+          )}
+        </Link>
         {DEMO.signUpUrl && (
           <a href={DEMO.signUpUrl} className={`${link} text-amber-300`}>
             Kom i gang

@@ -123,17 +123,18 @@ describe("Stripen øverst i demoen", () => {
     expect(screen.getByText("Nivået er plattform")).toBeTruthy();
   });
 
-  test("den som ikke er inne, får veien inn til Min side og admin", () => {
+  test("den som ikke er inne, får veien inn til CMS, admin og Min side", () => {
     installation.demo = {};
     openStrip();
-    expect(screen.getByRole("link", { name: "Gå inn på Min side og admin" }).getAttribute("href")).toBe("/logg-inn");
+    expect(screen.getByRole("link", { name: "Gå inn i CMS, admin og Min side" }).getAttribute("href")).toBe("/logg-inn");
   });
 
-  test("den som er inne, har ingen vei inn i stripen", () => {
+  test("den som er inne, kan bytte rolle fra stripen", () => {
     installation.demo = {};
     app.session = { status: "member", person: { id: "p1", name: "Kari Nordmann", globalRole: "member" }, account: null };
     openStrip();
     expect(screen.queryByRole("link", { name: /^Gå inn/ })).toBeNull();
+    expect(screen.getByRole("link", { name: "Bytt rolle" }).getAttribute("href")).toBe("/logg-inn");
   });
 
   test("uten adresser i innstillingene har stripen ingen lenker ut av demoen", () => {

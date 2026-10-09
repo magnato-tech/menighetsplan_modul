@@ -90,7 +90,18 @@ Produktet selges på to nivåer. Det høyeste inneholder det laveste.
 Demoen er appen installert én gang til, med egen database og egen adresse, og med en innstilling som sier at den er demoen. Den er ikke egen kode og har ikke eget repo. Det samme gjelder hver menighet: samme kode, egen database, egen adresse.
 
 * **Stripen øverst** *(levert 8. oktober)* står på alle skjermer i demoen, og blir stående når man ruller. Den sier at dette er en demo, har velgeren mellom de to nivåene, viser veien inn til den som ikke er inne, og lenker til påmeldingen og tilbake til nettsiden som presenterer produktet. En lenke ut av demoen vises bare når adressen er lagt inn i demoens innstillinger.
-* **Veien inn** *(levert 9. oktober)*. Ingen logger inn i demoen. «Gå inn» i stripen, og «Min Side» på nettsiden, fører til en side med tre valg: frivillig, gruppeleder og administrator. Den besøkende går inn som en person fra demoens register som har den rollen, og siden sier hvem. Frivillig starter på Min side, gruppeleder på gruppeledersiden og administrator i admin. «Logg ut» fører tilbake til valget, så man kan bytte rolle.
+* **Veien inn** *(levert 9. oktober)*. Ingen logger inn i demoen. «Gå inn» i stripen, og «Min Side» på nettsiden, fører til en side med fire valg, i denne rekkefølgen:
+
+  | Valg | Fører til |
+  |---|---|
+  | **Rediger nettsiden (CMS)** | Sideredigeringen i admin, som administrator |
+  | **Administrator** | Oversikten i admin |
+  | **Gruppeleder** | Gruppeledersiden |
+  | **Frivillig** | Min side |
+
+  Den besøkende går inn som en person fra demoens register som har rollen, og siden sier hvem. Valget bestemmer hvor man kommer, også for den som trykket «Min Side» først.
+* **CMS-et har sin egen vei inn**, øverst og under eget navn. Det er en administrators arbeid, men den som vil se CMS-et, leter ikke etter det under «Administrator».
+* **Bytte rolle.** Den som er inne, har «Bytt rolle» i stripen, som fører til de samme fire valgene. «Logg ut» gjør det samme.
 * **Hvem man går inn som**, følger av registeret: av dem som har rollen, den som er med i flest grupper. Innholdet i demoen kan dermed byttes uten at noe annet må endres.
 * **Det demoen er uten** *(levert 9. oktober)*. «Database og Testdata» og «Moduler» står ikke i menyen, og tilleggsmodulene vises ikke, heller ikke om en skulle være slått på i databasen. Skrives adressen til en slik fane inn, sier siden at den ikke er med i demoen. Alt som tømmer databasen, nekter i demoen, uansett hvor det kalles fra.
 * **Nivåvelgeren** *(levert 8. oktober)* har to valg. Valget gjelder med en gang på alle skjermer, og huskes i nettleseren til den som ser på. Én besøkendes valg endrer ikke hva en annen ser. Før noe er valgt, vises Menighetsplan.
@@ -741,7 +752,7 @@ Trinn 3b av «Klar for flere menigheter» (kapittel 14).
 
 | Område | Levert |
 |:---|:---|
-| **Veien inn** | I demoen er innloggingssiden byttet ut med tre valg: frivillig, gruppeleder og administrator. Stripen har «Gå inn» for den som ikke er inne |
+| **Veien inn** | I demoen er innloggingssiden byttet ut med fire valg: rediger nettsiden (CMS), administrator, gruppeleder og frivillig. Stripen har «Gå inn» for den som ikke er inne, og «Bytt rolle» for den som er det. CMS-valget og «Bytt rolle» kom til samme dag, etter at produkteier gikk inn som frivillig og ikke fant CMS-et |
 | **Hvem man er** | En person fra demoens register med rollen, valgt av registeret selv. Min side og admin viser navnet som for en innlogget |
 | **Uten databaseverktøy og moduler** | «Database og Testdata», «Moduler» og tilleggsmodulene er ute av menyen i demoen, og fanene tegnes ikke |
 | **Sperre mot tømming** | Alt som tømmer databasen, nekter i demoen. Demoens database fylles og nullstilles utenfra |

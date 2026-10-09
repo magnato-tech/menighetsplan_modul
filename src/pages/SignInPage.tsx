@@ -6,7 +6,6 @@ import { useFirebase } from "../context/FirebaseDataContext";
 import { completeSignInLink, describeSignInError, isSignInLink, sendSignInLink, signInWithGoogle } from "../services/auth";
 import { destinationAfterSignIn, signInUrl, type NotInRegisterReason } from "../utils/session";
 import { DEMO } from "../demo";
-import { DEMO_DOOR_START } from "../utils/demoDoor";
 import { DemoDoor } from "./DemoDoor";
 
 const card = "w-full max-w-sm mx-auto bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-5";
@@ -28,7 +27,8 @@ const NOT_IN_REGISTER: Record<NotInRegisterReason, string> = {
  * Who gets in is decided by the register (see utils/session.ts), so the page also says so to
  * someone who is signed in without being in it.
  *
- * In the demo installation nobody signs in: the page is the way in, with a role to choose.
+ * In the demo installation nobody signs in: the page is the way in, with what to look at as the
+ * choice. Someone who is inside already comes here to choose again.
  */
 export const SignInPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -42,7 +42,7 @@ export const SignInPage: React.FC = () => {
   const [sentTo, setSentTo] = useState<string | null>(null);
   // The page was opened from a link in an e-mail, on a device that does not know which address it was sent to
   const [linkNeedsEmail, setLinkNeedsEmail] = useState(false);
-  // In the demo: where the chosen role starts, when no address was asked for
+  // In the demo: where the way in that was chosen starts. Nothing is chosen until the visitor has pressed one.
   const [doorStart, setDoorStart] = useState<string | null>(null);
   const atDemoDoor = DEMO !== null && standInAs !== undefined;
   const signedOut = session.status === "signedOut";
@@ -67,9 +67,9 @@ export const SignInPage: React.FC = () => {
     });
   }, []);
 
-  if (session.status === "member") {
-    return <Navigate to={searchParams.has("neste") || doorStart === null ? destination : doorStart} replace />;
-  }
+  // In the demo, someone who is inside stays on the page until they have chosen, and the choice decides where they go
+  const choosingAgain = atDemoDoor && session.status === "member" && doorStart === null;
+  if (session.status === "member" && !choosingAgain) return <Navigate to={doorStart ?? destination} replace />;
 
   const sendLink = (event: React.FormEvent) => {
     event.preventDefault();
@@ -110,10 +110,10 @@ export const SignInPage: React.FC = () => {
           </div>
         )}
 
-        {signedOut && atDemoDoor && (
+        {atDemoDoor && (signedOut || choosingAgain) && (
           <DemoDoor
             onEnter={(door) => {
-              setDoorStart(DEMO_DOOR_START[door.role]);
+              setDoorStart(door.start);
               standInAs(door.person.id);
             }}
           />
