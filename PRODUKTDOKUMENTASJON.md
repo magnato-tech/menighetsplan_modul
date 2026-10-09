@@ -806,7 +806,8 @@ Bestilt av produkteier samme dag: besøkende skal kunne se løsningen med nettsi
 | **Bryter per menighet** | Lagt til samme dag: eieren av demoen bestemmer i «Demo-oppsett» hvilke menigheter som står i lista for alle. Fanen åpnes med en eierkode. Fra starten står bare Lillesand Misjonskirke i lista. 50 sjekker. Prøvd lokalt med en prøvekode: feil kode åpner ikke, riktig kode viser de fire menighetene med brytere og lenker, og fanen kommer i menyen. Ingen bryter er trykket på lokalt, for den lokale appen bruker databasen i drift |
 | **Prøvd mot demoens database** | Produkteier kjørte nullstillingen 9. oktober: 1181 dokumenter skrevet og kontrollert, fordelt på eksempelmenigheten og de fire menighetene. Appen er så åpnet lokalt mot databasen: eksempelmenigheten vises med lista i stripen (Lillesand), Søgne åpnes med lenken sin og står da i lista for den besøkende, stripen sier hvor nettsiden er hentet fra, og Søgnes side «Ansatte» viser tolv navn uten bilder. På mobilbredde får lista og nivåvelgeren plass på samme linje |
 | **Byttet over** | Produkteier byttet innstillingene i Vercel 9. oktober, og demoen ble bygget på nytt. demo.menighetsplan.no viser nå eksempelmenigheten fra sin egen database, med gudstjenesten førstkommende søndag, lista i stripen med Lillesand, og Lillesand fra lenken sin |
-| **Ikke levert her** | Eierkoden er ikke lagt inn i Vercel ennå, så «Demo-oppsett» kan ikke låses opp på den publiserte demoen. Nullstillingen har ikke gått av seg selv ennå (første gang natt til 10. oktober). Bemanning på en ekte menighets gudstjenester |
+| **Eierkoden** | Produkteier valgte en eierkode og la fingeravtrykket inn i Vercel 9. oktober. Den publiserte demoen ber nå om koden i «Demo-oppsett». Kopieringsknappene der prøver en eldre måte når nettleseren sperrer utklippstavlen, og ett klikk merker hele teksten |
+| **Ikke levert her** | Nullstillingen har ikke gått av seg selv ennå (første gang natt til 10. oktober). Bemanning på en ekte menighets gudstjenester |
 
 ---
 
@@ -878,7 +879,7 @@ Trinnene tas i rekkefølge. Et trinn er ferdig når det er prøvd, testene er gr
 | 3b | **Vei inn uten innlogging** i demoen, som administrator, gruppeleder og frivillig. Det som tømmer databasen, er ikke med i demoen | **Levert 9. oktober** (kapittel 1.4 og 12) |
 | 3c | **Nivåskillet i resten av appen:** Min side, arrangementssiden, oversikten og gruppene på nettsiden | Neste, og det siste som gjenstår av trinn 3 |
 | 3d | **Demodata som lever:** datoene regnes fra i dag, og demomenigheten får navn og innhold | **Levert 9. oktober** (kapittel 1.4 og 12) |
-| 3e | **Demoen legges ut** med egen database, og nullstilles hver natt. Krever et eget Firebase-prosjekt, som produkteier oppretter | **Levert 9. oktober:** lagt ut på demo.menighetsplan.no med egen database, som er fylt, og med «Velg menighet». Gjenstår å se: den første nullstillingen som går av seg selv, natt til 10. oktober. Eierkoden til «Demo-oppsett» må legges inn i Vercel av produkteier (kapittel 1.4) |
+| 3e | **Demoen legges ut** med egen database, og nullstilles hver natt. Krever et eget Firebase-prosjekt, som produkteier oppretter | **Levert 9. oktober:** lagt ut på demo.menighetsplan.no med egen database, som er fylt, og med «Velg menighet». Eierkoden til «Demo-oppsett» er lagt inn. Gjenstår å se: den første nullstillingen som går av seg selv, natt til 10. oktober (kapittel 1.4) |
 
 **Slik er demoen bestemt**
 
