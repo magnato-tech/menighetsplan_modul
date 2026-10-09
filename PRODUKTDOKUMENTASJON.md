@@ -114,6 +114,7 @@ Demoen er appen installert én gang til, med egen database og egen adresse, og m
   * **En lenke kan føre rett til en menighet:** `demo.menighetsplan.no/?menighet=sogne`. Navnet er settets (`floy`, `lmk`, `salem`, `sogne`), og `eksempel` gir eksempelmenigheten. Salgssiden kan bruke det i «se hvordan det ser ut for din menighet».
   * **Bare det som ligger klart, tilbys.** En menighet står i lista når nullstillingen har lagt den i databasen. Den som har valgt en menighet demoen ikke har, tas til eksempelmenigheten.
   * **Stripen sier hvor nettsiden er hentet fra** når en ekte menighet vises. Datoene i settet flyttes hele uker fra uka det ble hentet, så kalenderen ikke blir liggende i fortiden.
+  * **Uten bilder av de ansatte** *(bestemt 9. oktober, produkteier)*. Demoen presenterer produktet for andre, og et bilde av en person brukes ikke til det uten at personen har sagt ja. Ingen i stab-registeret har bilde, portrettene på menighetens egen side om de ansatte er tatt ut, og et bilde som står ved siden av navnet til en ansatt, er tatt ut. Navn og tittel står, som på menighetens egen nettside. Andre bilder på nettsiden vises.
   * **Begrensning:** bemanningen i eksempelet hører til eksempelmenighetens gudstjenester, og er derfor ikke med hos en ekte menighet. Der viser planleggeren personene, gruppene og rollene, men nesten ingen oppgaver.
 * **Nullstilling hver natt** *(bygget 9. oktober, ikke prøvd mot demoens database ennå)*. Hver natt, rundt kl. 03, fylles demoens database med eksempelmenigheten og med hver av de andre menighetene på nytt, og alt en besøkende har endret eller lagt inn, fjernes. Innholdet skrives først og det overflødige fjernes etterpå, så demoen er aldri tom. Nullstillingen gjelder bare demoen: den nekter uten demo-innstillingen, uten at navnet på databasen er skrevet, og når databasen står i produksjon. Den kan også startes for hånd: `npm run reset-demo -- <navnet på prosjektet>`.
 * **Hvor den ligger** *(delvis levert 9. oktober)*. Demoen er lagt ut på demo.menighetsplan.no, som salgssidens «Se demo» fører til. Den bygges på nytt av seg selv hver gang noe sendes inn til `main`. Demoen har sin egen database, i Firebase-prosjektet `menighetsplan-demo`, med åpne regler (`firestore.demo.rules`). **Begrensning:** den publiserte demoen leser ennå den tidligere felles databasen. Den byttes over ved at innstillingene i Vercel endres, etter at demoens database er fylt.
@@ -796,6 +797,7 @@ Bestilt av produkteier samme dag: besøkende skal kunne se løsningen med nettsi
 | **Nullstillingen** | Fyller eksempelmenigheten og én kopi per sett: settets nettside og eksempelmenighetens planlegger. I alt 1181 dokumenter med de fire settene som følger med |
 | **Sikring** | En menighet som ikke ligger i databasen, tilbys ikke. Et valg som ikke finnes, fører til eksempelmenigheten. Sperren mot tømming i demoen står som før: byttet sletter ingenting |
 | **Prøvd** | 45 nye sjekker, blant dem alle de fire settene gjennom hele nullstillingen mot en etterligning av databasen. Appen er åpnet lokalt mot en database uten menighetene: lista vises ikke, og en lenke til en menighet som mangler, fører til eksempelmenigheten |
+| **Uten bilder av de ansatte** | Lagt til samme dag, etter at produkteier pekte på at bilder av personer ikke kan brukes i markedsføring uten samtykke. Gjelder demoen, ikke «Velg menighet» under Database. 16 sjekker, blant dem at ingen av de fire settene viser et bilde fra stab-registeret eller et bilde ved siden av navnet til en ansatt |
 | **Ikke levert her** | Lista er ikke sett med innhold: menighetene ligger ikke i demoens database før nullstillingen er kjørt. Bemanning på en ekte menighets gudstjenester |
 
 ---
@@ -828,7 +830,7 @@ Sortert etter hvor mye de betyr for en menighet som skal ta løsningen i bruk.
 | 19 | Hos en menighet kan nivået ikke settes: alle har Menighetsplan | Trinn 4 |
 | 20 | Demoens nattlige nullstilling startes av GitHub, som slår av tidsplanen når repoet har stått urørt i 60 dager. Demoens database er på Firebase sin gratisplan, som har et tak på lesinger per døgn. Blir demoen mye besøkt, svarer den ikke før neste døgn | Trinn 8 |
 | 21 | Hos en ekte menighet i demoen har planleggeren nesten ingen oppgaver: bemanningen i eksempelet hører til eksempelmenighetens gudstjenester | Ikke planlagt |
-| 22 | Settene i demoen er laget av menighetenes åpne nettsider, og vises i en demo alle kan endre. Menighetene bør ha sagt ja til det | Produkteier |
+| 22 | Settene i demoen er laget av menighetenes åpne nettsider, og vises i en demo alle kan endre. Bildene av de ansatte er tatt ut, men navnene deres står, og andre bilder på nettsidene kan vise personer. Hver menighet bør ha sagt ja før den vises, og det finnes ennå ingen bryter som holder en menighet ute av demoen til den har det | Produkteier |
 
 ---
 

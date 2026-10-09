@@ -3,6 +3,7 @@ import { storedFormOf, type MockDocument } from "../data/mockDocuments";
 import { CMS_COLLECTIONS, CMS_SETTINGS_DOC_ID } from "../data/collections";
 import { documentsToDelete, keepParts } from "./dataParts";
 import type { Dataset, DatasetDocument } from "./dataset";
+import { withoutStaffPictures } from "./demoPortraits";
 import { collectionPrefixOf } from "./demoSite";
 import { weeksBetween, withLiveDates } from "./liveDates";
 
@@ -75,7 +76,8 @@ export interface SiteContent {
  * events, and the set's website is put in. Without a set it is the example as it is.
  *
  * The dates in a set are moved whole weeks from the week it was fetched in, like the example's
- * (see utils/liveDates.ts), so the calendar on the website is never all in the past.
+ * (see utils/liveDates.ts), so the calendar on the website is never all in the past. The
+ * pictures of the congregation's staff are left out (see utils/demoPortraits.ts).
  */
 export function siteDocuments(example: MockDocument[], set: SiteSet | null, now: number): MockDocument[] {
   if (!set) return example;
@@ -87,7 +89,7 @@ export function siteDocuments(example: MockDocument[], set: SiteSet | null, now:
   const gone = new Set(documentsToDelete(exampleCollections, ["website"]).map(pathOf));
 
   const weeks = weeksBetween(set.createdAt.slice(0, 10), now);
-  const website = Object.entries(keepParts(set.collections, ["website"])).flatMap(([collection, documents]) =>
+  const website = Object.entries(keepParts(withoutStaffPictures(set.collections), ["website"])).flatMap(([collection, documents]) =>
     documents.map((document): MockDocument => {
       // The settings document is addressed by its place, not by a field in it
       const { id, ...withoutId } = document;
