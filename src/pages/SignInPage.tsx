@@ -7,6 +7,7 @@ import { completeSignInLink, describeSignInError, isSignInLink, sendSignInLink, 
 import { destinationAfterSignIn, signInUrl, type NotInRegisterReason } from "../utils/session";
 import { DEMO } from "../demo";
 import { DemoDoor } from "./DemoDoor";
+import { whereDoorLeads } from "../utils/demoDoor";
 
 const card = "w-full max-w-sm mx-auto bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-5";
 const primaryButton =
@@ -113,7 +114,7 @@ export const SignInPage: React.FC = () => {
         {atDemoDoor && (signedOut || choosingAgain) && (
           <DemoDoor
             onEnter={(door) => {
-              setDoorStart(door.start);
+              setDoorStart(whereDoorLeads(door, destination));
               standInAs(door.person.id);
             }}
           />

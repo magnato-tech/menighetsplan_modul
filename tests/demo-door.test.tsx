@@ -5,7 +5,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import type { Group, Person } from "../src/types";
 import { mayStandIn, type Session } from "../src/utils/session";
-import { demoDoors } from "../src/utils/demoDoor";
+import { demoDoors, whereDoorLeads } from "../src/utils/demoDoor";
 
 // The register of a made-up congregation
 const kari: Person = { id: "kari", name: "Kari Nordmann", globalRole: "admin" };
@@ -109,6 +109,18 @@ describe("Hvem man går inn som i demoen", () => {
     expect(starts).toEqual({ administrator: "/admin", gruppeleder: "/leder", medlem: "/minside" });
   });
 
+  test("adressen man var på vei til, beholdes når den ligger der veien inn fører", () => {
+    const administrator = { start: "/admin" };
+    expect(whereDoorLeads(administrator, "/admin?tab=demo-oppsett")).toBe("/admin?tab=demo-oppsett");
+    expect(whereDoorLeads(administrator, "/admin/gruppe/g1")).toBe("/admin/gruppe/g1");
+    expect(whereDoorLeads(administrator, "/admin")).toBe("/admin");
+    // Another part of the app, and an address that only begins the same way
+    expect(whereDoorLeads(administrator, "/minside")).toBe("/admin");
+    expect(whereDoorLeads(administrator, "/administrasjon")).toBe("/admin");
+    expect(whereDoorLeads({ start: "/minside" }, "/admin?tab=demo-oppsett")).toBe("/minside");
+    expect(whereDoorLeads({ start: "/leder" }, "/lederskap")).toBe("/leder");
+  });
+
   test("av dem med rollen velges den som er med i flest grupper, og navnet avgjør når det står likt", () => {
     const doors = Object.fromEntries(demoDoors(everyone, groups).map((door) => [door.way, door.person.name]));
     // Silje is in two groups, Jonas in one. Ola leads two, Ingrid one. The administrators are in none.
@@ -171,6 +183,18 @@ describe("Veien inn i demoen", () => {
     open("/logg-inn?neste=%2Fminside");
     fireEvent.click(screen.getByRole("button", { name: /Administrator/ }));
     expect(screen.getByText("Kom til: /admin")).toBeTruthy();
+  });
+
+  test("en lenke til en fane i admin åpner fanen for den som går inn som administrator, og ikke for en frivillig", () => {
+    open("/logg-inn?neste=%2Fadmin%3Ftab%3Ddemo-oppsett");
+    fireEvent.click(screen.getByRole("button", { name: /Administrator/ }));
+    expect(screen.getByText("Kom til: /admin?tab=demo-oppsett")).toBeTruthy();
+    cleanup();
+
+    app.session = { status: "signedOut" };
+    open("/logg-inn?neste=%2Fadmin%3Ftab%3Ddemo-oppsett");
+    fireEvent.click(screen.getByRole("button", { name: /Frivillig/ }));
+    expect(screen.getByText("Kom til: /minside")).toBeTruthy();
   });
 
   test("den som er inne, kan velge på nytt: siden blir stående til noe er valgt", () => {

@@ -98,7 +98,7 @@ Demoen er appen installert én gang til, med egen database og egen adresse, og m
   | **Gruppeleder** | Gruppeledersiden |
   | **Frivillig** | Min side |
 
-  Den besøkende går inn som en person fra demoens register som har rollen, og siden sier hvem. Valget bestemmer hvor man kommer, også for den som trykket «Min Side» først.
+  Den besøkende går inn som en person fra demoens register som har rollen, og siden sier hvem. Valget bestemmer hvor man kommer, også for den som trykket «Min Side» først. Den som kom fra en lenke til en fane i admin og går inn som administrator, kommer til den fanen.
 * **CMS-et står under «Administrator»**, og er nevnt først i teksten på valget: «Redigerer nettsiden (CMS), planlegger arrangementer og holder personregisteret». Det hadde sin egen vei inn 9. oktober, og den ble tatt ut samme dag: den førte til samme administrator i samme admin, bare med en annen startside.
 * **Bytte rolle.** Den som er inne, har «Bytt rolle» i stripen, som fører til de samme valgene. «Logg ut» gjør det samme.
 * **Hvem man går inn som**, følger av registeret: av dem som har rollen, den som er med i flest grupper. Innholdet i demoen kan dermed byttes uten at noe annet må endres.

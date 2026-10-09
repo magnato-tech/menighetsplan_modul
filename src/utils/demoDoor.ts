@@ -49,6 +49,20 @@ const WAYS_IN: { way: DemoWayIn; role: SessionRole; name: string; does: string; 
   },
 ];
 
+const pathOf = (address: string): string => address.split(/[?#]/)[0];
+
+/**
+ * Where a way in leads. The choice decides which part of the app the visitor comes to. The
+ * address the visitor was on the way to is kept when it lies in that part: a link to a tab in
+ * the admin opens that tab for the one who goes in as administrator, and is dropped for the one
+ * who goes in as a volunteer.
+ */
+export function whereDoorLeads(door: Pick<DemoDoor, "start">, wanted: string): string {
+  const part = pathOf(door.start);
+  const asked = pathOf(wanted);
+  return asked === part || asked.startsWith(`${part}/`) ? wanted : door.start;
+}
+
 /**
  * The ways in that the register has someone for. Of those with the role a way takes, the
  * visitor goes in as the one who is in the most groups, so the screens behind have something
