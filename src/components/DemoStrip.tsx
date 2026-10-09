@@ -55,7 +55,7 @@ export const DemoStrip: React.FC = () => {
               aria-label="Velg menighet"
               value={DEMO_SITE ?? ""}
               onChange={(event) => chooseDemoSite(event.target.value || null)}
-              className="min-w-0 w-full md:w-auto md:max-w-[13rem] rounded-md bg-slate-800 text-white font-bold px-2 py-1.5 border border-slate-600 cursor-pointer truncate"
+              className="min-w-0 w-full md:w-auto md:max-w-[13rem] rounded-md bg-slate-800 text-white font-bold px-2 py-1 border border-slate-600 cursor-pointer truncate"
             >
               <option value="">Eksempelmenighet</option>
               {sites.map((site) => (
