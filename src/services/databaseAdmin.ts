@@ -2,6 +2,7 @@ import { collection, getDocs, writeBatch } from "firebase/firestore";
 import { db } from "../firebase";
 import { ALL_COLLECTIONS } from "../data/collections";
 import { chunk } from "../utils/chunk";
+import { FULL_DEMO_COUNTS } from "../data/mockDocuments";
 import { ensureDeletionAllowed } from "./operatingMode";
 import {
   clearTestdata,
@@ -56,8 +57,6 @@ function recordFailure(result: DatabaseAdminResult, collectionName: string, erro
 // the planner (persons, groups, gatherings, tasks, roles) and the website (pages, news, sermons,
 // staff, settings). A congregation's own website can then stay while the planner gets test persons.
 
-const FULL_DEMO_PLANNER = { personCount: 32, groupCount: 14, gatheringCount: 19, taskCount: 24, roleCount: 14 };
-
 /** The demo persons, groups and roles. No gatherings, and nothing on the website. */
 export async function populateDemoPersons(): Promise<DatabaseAdminResult> {
   return generateTestdata({ personCount: 32, groupCount: 14, roleCount: 14 });
@@ -68,7 +67,7 @@ export async function populateDemoPersons(): Promise<DatabaseAdminResult> {
  * other documents are left as they are. If clearPlannerFirst is set to true, planner test data is cleared first.
  */
 export async function populateWithMockData(options?: { clearPlannerFirst?: boolean }): Promise<DatabaseAdminResult> {
-  const planner = await populateCustomMockData(FULL_DEMO_PLANNER, options);
+  const planner = await populateCustomMockData(FULL_DEMO_COUNTS, options);
   const website = await generateDemoWebsite();
   const failures = [...planner.failures, ...website.failures];
   return {
@@ -81,7 +80,7 @@ export async function populateWithMockData(options?: { clearPlannerFirst?: boole
 
 /** Fills the planner with the full demo set: persons, groups, gatherings, tasks and tjenesteroller. */
 export async function restoreFullMockDatabase(): Promise<DatabaseAdminResult> {
-  return populateCustomMockData(FULL_DEMO_PLANNER, { clearPlannerFirst: false });
+  return populateCustomMockData(FULL_DEMO_COUNTS, { clearPlannerFirst: false });
 }
 
 /**

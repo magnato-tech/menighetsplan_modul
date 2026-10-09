@@ -4,6 +4,7 @@ import { CMS_COLLECTIONS } from "../data/collections";
 import type { GatheringHeadcount } from "../types";
 import { headcountIdFor } from "../utils/headcount";
 import { deleteDocument, setDocument } from "./firestore";
+import { HEADCOUNT_RECORD, headcountFields, isHeadcountRecord } from "../data/settingsRecords";
 
 /**
  * Where headcounts (oppmøtetall) are stored. The rules deployed on the live project are
@@ -16,15 +17,7 @@ import { deleteDocument, setDocument } from "./firestore";
  * When the rules in firestore.rules are deployed, this file is the only place that
  * changes: read and write COLLECTIONS.GATHERING_HEADCOUNTS instead.
  */
-export const HEADCOUNT_RECORD = "gatheringHeadcount";
-
-export function headcountFields(count: GatheringHeadcount): GatheringHeadcount & { recordType: string } {
-  return { ...count, recordType: HEADCOUNT_RECORD };
-}
-
-export function isHeadcountRecord(data: { recordType?: unknown }): boolean {
-  return data.recordType === HEADCOUNT_RECORD;
-}
+export { HEADCOUNT_RECORD, headcountFields, isHeadcountRecord };
 
 export function subscribeHeadcounts(onChange: (counts: GatheringHeadcount[]) => void): () => void {
   return onSnapshot(

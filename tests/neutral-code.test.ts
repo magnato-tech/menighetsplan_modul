@@ -6,14 +6,15 @@ import { DEFAULT_LOCATION } from "../src/utils/gatherings";
 import { DEFAULT_LOCATION as API_DEFAULT_LOCATION } from "../server/publicApi";
 
 // The app is installed for one congregation after another, so nothing in the code may belong
-// to one of them: not a name, not a database. The one exception is the demo data, which is an
-// example congregation by design and is only shown when it has been put in the database.
+// to one of them: not a name, not a database. The demo data is an example congregation with a
+// made-up name, only shown when it has been put in the database, and its name stands nowhere else.
 
 const root = path.resolve(__dirname, "..");
 const DEMO_DATA = new Set(["src/data/cmsData.ts", "src/data/mockData.ts"]);
 const ROOT_FILES = ["server.ts", "index.html", "firebase.json", "vercel.json", "vite.config.ts", ".env.example"];
 
 const BELONGS_TO_ONE = [
+  { what: "navnet på eksempelmenigheten", pattern: /fjordvik/i, allowedIn: DEMO_DATA },
   { what: "navnet på én menighet", pattern: /lillesand/i },
   { what: "ett kirkesamfunn", pattern: /Misjonskirken/ },
   // The name of the first project. "Gudstjenesteplanleggeren" alone is an ordinary word, used in the admin.
@@ -31,17 +32,23 @@ function filesUnder(folder: string): string[] {
 }
 
 describe("Koden hører ikke til noen bestemt menighet", () => {
-  test("ingen fil utenom demodataene nevner én menighet, ett kirkesamfunn eller én database", () => {
-    const files = [...filesUnder("src"), ...filesUnder("server"), ...filesUnder("scripts"), ...ROOT_FILES].filter(
-      (file) => !DEMO_DATA.has(file)
-    );
+  test("ingen fil nevner én menighet, ett kirkesamfunn eller én database, og eksempelmenigheten står bare i demodataene", () => {
+    const files = [...filesUnder("src"), ...filesUnder("server"), ...filesUnder("scripts"), ...ROOT_FILES];
     expect(files.length).toBeGreaterThan(200);
 
     const found = files.flatMap((file) => {
       const text = readFileSync(path.join(root, file), "utf8");
-      return BELONGS_TO_ONE.filter(({ pattern }) => pattern.test(text)).map(({ what }) => `${file}: ${what}`);
+      return BELONGS_TO_ONE.filter(({ pattern, allowedIn }) => !allowedIn?.has(file) && pattern.test(text)).map(
+        ({ what }) => `${file}: ${what}`
+      );
     });
     expect(found).toEqual([]);
+  });
+
+  test("demodataene er med i gjennomgangen, og har eksempelmenighetens navn", () => {
+    for (const file of DEMO_DATA) {
+      expect(readFileSync(path.join(root, file), "utf8")).toMatch(/Fjordvik menighet/);
+    }
   });
 
   test("en installasjon uten egne innstillinger viser ingen menighets opplysninger", () => {

@@ -5,6 +5,7 @@ import { COLLECTIONS, CMS_COLLECTIONS } from "../data/collections";
 import {
   getCustomMockDocuments,
   getMockDocuments,
+  storedFormOf,
   type MockDocument,
   type CustomMockCounts,
 } from "../data/mockDocuments";
@@ -13,10 +14,9 @@ import { isSimulatedDocument } from "../data/simulatedChurchLife";
 import { chunk } from "../utils/chunk";
 import { calendarGroupIds, isWebsiteGathering } from "../utils/dataParts";
 import type { DatasetDocument } from "../utils/dataset";
-import { VOLUNTEER_ROLE_RECORD, volunteerRoleFields } from "./volunteerRoles";
-import { headcountFields, isHeadcountRecord } from "./headcounts";
+import { VOLUNTEER_ROLE_RECORD } from "./volunteerRoles";
+import { isHeadcountRecord } from "./headcounts";
 import { ensureDeletionAllowed } from "./operatingMode";
-import type { GatheringHeadcount, VolunteerRole } from "../types";
 
 // Firestore støtter maksimalt 500 operasjoner per batch write
 const BATCH_SIZE = 400;
@@ -294,19 +294,8 @@ async function writeDocuments(result: TestdataServiceResult, documents: MockDocu
       for (const piece of chunk(items, BATCH_SIZE)) {
         const batch = writeBatch(db);
         for (const item of piece) {
-          if (collectionName === COLLECTIONS.VOLUNTEER_ROLES) {
-            batch.set(
-              doc(db, CMS_COLLECTIONS.SETTINGS, item.id),
-              sanitizeForFirestore(volunteerRoleFields(item.data as VolunteerRole))
-            );
-          } else if (collectionName === COLLECTIONS.GATHERING_HEADCOUNTS) {
-            batch.set(
-              doc(db, CMS_COLLECTIONS.SETTINGS, item.id),
-              sanitizeForFirestore(headcountFields(item.data as GatheringHeadcount))
-            );
-          } else {
-            batch.set(doc(db, collectionName, item.id), sanitizeForFirestore(item.data));
-          }
+          const stored = storedFormOf(item);
+          batch.set(doc(db, stored.collection, stored.id), sanitizeForFirestore(stored.data));
         }
         await batch.commit();
       }

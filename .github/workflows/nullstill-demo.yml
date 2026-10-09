@@ -1,0 +1,39 @@
+# Nullstiller demoen hver natt: databasen fylles med eksempelmenigheten, med datoene regnet fra
+# i dag, og alt en besøkende har lagt inn eller endret, fjernes. Se scripts/reset-demo.ts.
+#
+# Innstillingene under er demoens egne, og ingen menighets. Demoens database har åpne regler,
+# så skriptet trenger bare navnet på prosjektet, og ingen nøkkel.
+#
+# Kan også startes for hånd: Actions, «Nullstill demoen», «Run workflow».
+# GitHub slår av en tidsplan når repoet har stått urørt i 60 dager. Da må den slås på igjen under Actions.
+
+name: Nullstill demoen
+
+on:
+  schedule:
+    # 01:30 UTC, som er 03:30 om sommeren og 02:30 om vinteren i Norge
+    - cron: "30 1 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: nullstill-demo
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  nullstill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      VITE_FIREBASE_PROJECT_ID: menighetsplan-demo
+      VITE_DEMO: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run reset-demo -- menighetsplan-demo

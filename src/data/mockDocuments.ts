@@ -16,9 +16,11 @@ import {
   initialCmsStaff,
   demoCmsSettings,
 } from "./cmsData";
-import { Person, Group } from "../types";
+import { Person, Group, type GatheringHeadcount, type VolunteerRole } from "../types";
 import { buildInitialVolunteerRoles } from "./defaultVolunteerRoles";
 import { enrichTasksWithVolunteerRoles } from "./mockTaskVolunteerRoles";
+import { headcountFields, volunteerRoleFields } from "./settingsRecords";
+import { weeksBetween, withLiveDates } from "../utils/liveDates";
 
 export interface MockDocument {
   collection: string;
@@ -33,6 +35,24 @@ export interface CustomMockCounts {
   taskCount?: number;
   roleCount?: number;
 }
+
+/** The whole example congregation: what the demo is filled with, and what «full demo» in admin writes. */
+export const FULL_DEMO_COUNTS: CustomMockCounts = {
+  personCount: 32,
+  groupCount: 14,
+  gatheringCount: 19,
+  taskCount: 24,
+  roleCount: 14,
+};
+
+/**
+ * The Monday of the week the demo content is written for. Every date in mockData.ts and
+ * cmsData.ts is set as if today were a day in that week: what is dated before it has happened,
+ * and what is dated in it or after it is to come. When the documents are made, the dates are
+ * moved so that week is the present one (see utils/liveDates.ts). A date added to the content
+ * must fit the same week; tests/live-demo-data.test.ts fails otherwise.
+ */
+export const DEMO_CONTENT_WEEK = "2026-08-31";
 
 const EXTRA_FIRST_NAMES = [
   "Eskil", "Ida", "Sander", "Live", "Tobias", "Emilie", "Marius", "Silje", "Simen", "Hedda",
@@ -107,8 +127,9 @@ function getExtendedGroups(count: number): Group[] {
 
 /**
  * Generates mock documents with configurable counts while maintaining relational integrity.
+ * The dates in them are counted from `now`: see DEMO_CONTENT_WEEK.
  */
-export function getCustomMockDocuments(counts?: CustomMockCounts): MockDocument[] {
+export function getCustomMockDocuments(counts?: CustomMockCounts, now: number = Date.now()): MockDocument[] {
   const pCount = counts?.personCount !== undefined ? Math.max(1, counts.personCount) : initialPersons.length;
   const gCount = counts?.groupCount !== undefined ? Math.max(1, counts.groupCount) : initialGroups.length;
   const gatCount = counts?.gatheringCount !== undefined ? Math.max(1, counts.gatheringCount) : initialGatherings.length;
@@ -189,13 +210,30 @@ export function getCustomMockDocuments(counts?: CustomMockCounts): MockDocument[
     items.map((item) => ({ collection, id: item.id, data: item }))
   );
   documents.push({ collection: CMS_COLLECTIONS.SETTINGS, id: CMS_SETTINGS_DOC_ID, data: demoCmsSettings });
-  return documents;
+
+  const weeks = weeksBetween(DEMO_CONTENT_WEEK, now);
+  return documents.map((document) => ({ ...document, data: withLiveDates(document.data, weeks) }));
 }
 
 /**
  * Every mock document, addressed by collection and document id.
  * This is demo content only and has no relation to a real congregation.
  */
-export function getMockDocuments(): MockDocument[] {
-  return getCustomMockDocuments();
+export function getMockDocuments(now: number = Date.now()): MockDocument[] {
+  return getCustomMockDocuments(undefined, now);
+}
+
+/**
+ * Where a demo document is stored, and in which form. The tjenesteroller and the headcounts are
+ * kept in cms_settings, each with its mark (see settingsRecords.ts); everything else is stored
+ * under its own collection as it is.
+ */
+export function storedFormOf(document: MockDocument): MockDocument {
+  if (document.collection === COLLECTIONS.VOLUNTEER_ROLES) {
+    return { collection: CMS_COLLECTIONS.SETTINGS, id: document.id, data: volunteerRoleFields(document.data as VolunteerRole) };
+  }
+  if (document.collection === COLLECTIONS.GATHERING_HEADCOUNTS) {
+    return { collection: CMS_COLLECTIONS.SETTINGS, id: document.id, data: headcountFields(document.data as GatheringHeadcount) };
+  }
+  return document;
 }

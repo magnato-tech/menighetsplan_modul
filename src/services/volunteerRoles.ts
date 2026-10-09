@@ -7,6 +7,7 @@ import { VolunteerRole } from "../types";
 import { createDocument, deleteDocument, updateDocument } from "./firestore";
 import { sanitizeForFirestore } from "../utils/firestoreData";
 import { chunk } from "../utils/chunk";
+import { VOLUNTEER_ROLE_RECORD, volunteerRoleFields } from "../data/settingsRecords";
 
 const BATCH_SIZE = 400;
 
@@ -15,11 +16,7 @@ const BATCH_SIZE = 400;
  * Roles are stored as documents in cms_settings, which already allows writes.
  * They are marked so they stay separate from the global settings document.
  */
-export const VOLUNTEER_ROLE_RECORD = "volunteerRole";
-
-export function volunteerRoleFields(role: VolunteerRole): VolunteerRole & { recordType: string } {
-  return { ...role, recordType: VOLUNTEER_ROLE_RECORD };
-}
+export { VOLUNTEER_ROLE_RECORD, volunteerRoleFields };
 
 export function subscribeVolunteerRoles(onChange: (roles: VolunteerRole[]) => void): () => void {
   return onSnapshot(

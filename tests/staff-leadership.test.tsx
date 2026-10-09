@@ -186,7 +186,7 @@ describe("CmsContentRenderer: Visning på nettsiden", () => {
     expect(screen.queryByText("Ingrid Berg")).toBeNull();
 
     // Offentlig kontaktinfo vises
-    expect(screen.getByText("pastor@lillesandmisjonskirke.no")).toBeDefined();
+    expect(screen.getByText("pastor@fjordvik.example")).toBeDefined();
     expect(screen.getByText("37 00 00 01")).toBeDefined();
   });
 

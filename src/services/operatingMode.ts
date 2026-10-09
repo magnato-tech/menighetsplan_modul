@@ -2,6 +2,12 @@ import { collection, doc, getDocs, onSnapshot, writeBatch } from "firebase/fires
 import { db } from "../firebase";
 import { CMS_COLLECTIONS } from "../data/collections";
 import { DEMO } from "../demo";
+import {
+  OPERATING_MODE_DOC_ID,
+  OPERATING_MODE_RECORD,
+  operatingModeOf as modeOf,
+  type OperatingMode,
+} from "../data/settingsRecords";
 
 // The app is either in demo or in production. In demo, the database can be emptied and refilled
 // from the Database tab: test data, datasets, another congregation's website. In production the
@@ -11,18 +17,12 @@ import { DEMO } from "../demo";
 // the rules deployed on a project accept that collection. A database without the document is in
 // demo. The document is not part of a dataset, and emptying a part of the database leaves it.
 
-export type OperatingMode = "demo" | "production";
-
-export const OPERATING_MODE_RECORD = "operatingMode";
-export const OPERATING_MODE_DOC_ID = "operating-mode";
+export { OPERATING_MODE_DOC_ID, OPERATING_MODE_RECORD, type OperatingMode };
 
 export const OPERATING_MODE_LABELS: Record<OperatingMode, string> = {
   demo: "Demo",
   production: "Produksjon",
 };
-
-const modeOf = (data: { recordType?: unknown; mode?: unknown } | undefined): OperatingMode =>
-  data?.recordType === OPERATING_MODE_RECORD && data.mode === "production" ? "production" : "demo";
 
 /** The mode the database is in now. Read from the database each time, never from what a screen has loaded. */
 export async function readOperatingMode(): Promise<OperatingMode> {
