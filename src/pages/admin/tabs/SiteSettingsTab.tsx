@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useCms } from "../../../context/CmsContext";
 import { CmsSettings } from "../../../data/cmsData";
@@ -9,7 +9,11 @@ import {
   Save,
   Palette,
   ArrowRight,
+  AlertCircle,
+  ImagePlus,
+  Trash2,
 } from "lucide-react";
+import { logoFileError, logoOf } from "../../../utils/logo";
 
 export const SiteSettingsTab: React.FC = () => {
   const { settings, saveSettings } = useCms();
@@ -19,6 +23,25 @@ export const SiteSettingsTab: React.FC = () => {
   useEffect(() => {
     setSettingsForm({ ...settings });
   }, [settings]);
+
+  // The logo is read from the file and kept in the form as text. It is stored with the rest when the form is saved.
+  const logoInput = useRef<HTMLInputElement>(null);
+  const [logoError, setLogoError] = useState<string | null>(null);
+  const chooseLogo = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    const error = logoFileError(file);
+    setLogoError(error);
+    if (error) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") setSettingsForm((form) => ({ ...form, logoUrl: reader.result as string }));
+    };
+    reader.onerror = () => setLogoError("Filen kunne ikke leses. Prøv igjen.");
+    reader.readAsDataURL(file);
+  };
+  const logo = logoOf(settingsForm);
 
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,6 +108,49 @@ export const SiteSettingsTab: React.FC = () => {
                 required
               />
             </div>
+          </div>
+
+          <div className="space-y-2 text-xs">
+            <p className="font-semibold text-[var(--studio-muted)]">Logo</p>
+            <p className="text-[var(--studio-muted)]">
+              Vises øverst på nettsiden og på innloggingssiden, i stedet for navnet. Bruk en liggende logo i PNG eller SVG, på lys bakgrunn.
+            </p>
+            {logo && (
+              <div className="inline-flex items-center rounded-xl bg-white border border-[var(--studio-border)] px-4 py-3">
+                <img src={logo} alt={`Logoen til ${settingsForm.churchName}`} className="h-12 w-auto max-w-full object-contain" />
+              </div>
+            )}
+            <div className="flex flex-wrap items-center gap-2">
+              <input ref={logoInput} type="file" accept="image/png,image/svg+xml,image/jpeg,image/webp" onChange={chooseLogo} aria-label="Logofil" className="sr-only" />
+              <button
+                type="button"
+                onClick={() => logoInput.current?.click()}
+                className="px-3 py-2 rounded-xl border border-[var(--studio-border)] bg-[var(--studio-input)] text-[var(--studio-text)] font-bold flex items-center gap-2 cursor-pointer"
+              >
+                <ImagePlus className="w-4 h-4" aria-hidden="true" />
+                <span>{logo ? "Bytt logo" : "Velg logo"}</span>
+              </button>
+              {logo && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLogoError(null);
+                    setSettingsForm({ ...settingsForm, logoUrl: undefined });
+                  }}
+                  className="px-3 py-2 rounded-xl border border-[var(--studio-border)] text-[var(--studio-muted)] font-bold flex items-center gap-2 cursor-pointer"
+                >
+                  <Trash2 className="w-4 h-4" aria-hidden="true" />
+                  <span>Fjern logoen</span>
+                </button>
+              )}
+            </div>
+            {logoError && (
+              <p role="alert" className="flex items-center gap-1.5 font-semibold text-rose-500">
+                <AlertCircle className="w-4 h-4 shrink-0" aria-hidden="true" />
+                <span>{logoError}</span>
+              </p>
+            )}
+            {logo !== logoOf(settings) && !logoError && <p className="text-[var(--studio-muted)]">Trykk «Lagre alle innstillinger» nederst for å ta endringen i bruk.</p>}
           </div>
 
           <div className="space-y-1 text-xs">

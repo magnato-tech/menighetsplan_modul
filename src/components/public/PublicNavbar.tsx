@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useCms } from "../../context/CmsContext";
 import { useFirebase } from "../../context/FirebaseDataContext";
 import { buildPublicMenu, pageUrl } from "../../utils/menu";
+import { logoOf } from "../../utils/logo";
 import {
   Menu,
   X,
@@ -63,6 +64,8 @@ export const PublicNavbar: React.FC = () => {
     [pages, location.pathname]
   );
 
+  const logo = logoOf(settings);
+
   return (
     <header
       data-menu-on-hero={overlay ? "true" : undefined}
@@ -75,6 +78,12 @@ export const PublicNavbar: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 sm:h-20">
           {/* Logo & Brand Name */}
+          {logo ? (
+            // The logo says the name itself. Over a picture it stands on a light plate, so it can be read.
+            <Link to="/" aria-label={`${settings.churchName}, til forsiden`} className={`flex items-center ${overlay ? "bg-white/95 rounded-xl px-3 py-1.5 shadow-sm" : ""}`}>
+              <img src={logo} alt={settings.churchName} className="h-9 sm:h-11 w-auto max-w-[60vw] object-contain" />
+            </Link>
+          ) : (
           <Link to="/" className="flex items-center gap-3 group">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-900 to-primary-700 flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform">
               <Church className="w-5 h-5 text-accent-300" />
@@ -95,6 +104,7 @@ export const PublicNavbar: React.FC = () => {
               )}
             </div>
           </Link>
+          )}
 
           {/* Desktop Navigation Links with Dropdown for Subpages */}
           <nav className="hidden lg:flex items-center space-x-1">

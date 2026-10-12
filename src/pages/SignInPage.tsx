@@ -8,6 +8,7 @@ import { destinationAfterSignIn, signInUrl, type NotInRegisterReason } from "../
 import { DEMO } from "../demo";
 import { DemoDoor } from "./DemoDoor";
 import { whereDoorLeads } from "../utils/demoDoor";
+import { logoOf } from "../utils/logo";
 
 const card = "w-full max-w-sm mx-auto bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-5";
 const primaryButton =
@@ -92,7 +93,11 @@ export const SignInPage: React.FC = () => {
     <main className="min-h-[calc(100vh-var(--demo-strip,0px))] bg-slate-100 px-4 py-10 sm:py-16">
       <div className={card}>
         <div className="space-y-1">
-          <p className="text-xs font-bold uppercase tracking-wider text-indigo-700">{settings.churchName}</p>
+          {logoOf(settings) ? (
+            <img src={logoOf(settings)} alt={settings.churchName} className="h-12 w-auto max-w-full object-contain mb-4" />
+          ) : (
+            <p className="text-xs font-bold uppercase tracking-wider text-indigo-700">{settings.churchName}</p>
+          )}
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">{atDemoDoor ? "Gå inn i demoen" : "Logg inn"}</h1>
         </div>
 

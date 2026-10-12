@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.19 · **Sist oppdatert:** 2026-10-12
+> **Dokumentversjon:** 4.20 · **Sist oppdatert:** 2026-10-12
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -955,6 +955,19 @@ Første del av trinn 4 (kapittel 14). Bestilt av produkteier for at planene fram
 | **Reglene er kjørt** | Mot Firebase sin lokale prøvedatabase, med 27 sjekker (`npm run test:rules`): hva en besøkende, en innlogget utenfor registeret, et medlem, en gruppeleder og en administrator får lese og skrive, spurt slik appen spør. Også 400 dokumenter i én sending, og opplasting til bildelageret. Sjekkene slår ut når en regel bevisst ødelegges |
 | **Ikke prøvd** | Reglene er ikke publisert i en ekte database, og innloggingen mot Google og e-post er ikke prøvd i drift |
 | **Ikke levert her** | Tilgang per menighet (nivå og moduler). En advarsel i admin når to personer deler e-postadresse: ingen av dem kan logge inn. Finere regler for hvem som kan endre tildelinger |
+
+### Menighetens logo (12. oktober 2026)
+
+Bestilt av produkteier under oppsettet av første menighet.
+
+| Område | Levert |
+|:---|:---|
+| **Innstillingene** | Under «Menighet & Merkevare» velges en logo fra fil: PNG, SVG, JPG eller WebP, opptil 200 kB. Den vises før den lagres, og kan byttes og fjernes |
+| **Nettsiden** | Logoen står øverst i stedet for symbolet, navnet og slagordet, og fører til forsiden. Over et bilde står den på en lys plate, så den kan leses |
+| **Innloggingssiden** | Logoen står over «Logg inn», i stedet for navnet |
+| **Lagring** | Logoen ligger som tekst i innstillingene, så den følger med i et datasett og trenger ikke bildelageret |
+| **Prøvd** | 9 sjekker: hva som kan være logo, visningen med og uten logo, og valg, feil fil og fjerning i innstillingene |
+| **Ikke levert her** | En egen hvit utgave for mørk bakgrunn, og logo i bunnen av nettsiden og i admin |
 
 ---
 

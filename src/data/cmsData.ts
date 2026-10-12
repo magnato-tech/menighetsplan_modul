@@ -237,6 +237,8 @@ export interface CmsSettings {
   welcomeHeadline: string;
   welcomeSubtext: string;
   heroImageUrl?: string;
+  /** The congregation's logo, kept as text in the settings (see utils/logo.ts). Shown in place of the name written out. */
+  logoUrl?: string;
   address: string;
   phone: string;
   email: string;
