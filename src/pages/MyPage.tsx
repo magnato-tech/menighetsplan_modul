@@ -9,6 +9,7 @@ import { MyTasksModal } from "./myPage/MyTasksModal";
 import { MyCalendarPanel } from "./myPage/MyCalendarPanel";
 import { AttentionModal } from "./myPage/AttentionModal";
 import { MobileBottomNav } from "./myPage/MobileBottomNav";
+import { VolunteerHelp } from "./myPage/VolunteerHelp";
 import {
   Calendar,
   CheckCircle2,
@@ -82,6 +83,8 @@ export const MyPage: React.FC = () => {
             </span>
           </div>
         </div>
+
+        <VolunteerHelp />
 
         {/* =========================================================================
             1. TRENGER DIN OPPMERKSOMHET
