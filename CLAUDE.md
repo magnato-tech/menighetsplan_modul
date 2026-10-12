@@ -93,6 +93,7 @@ Kjør `npm run lint` og `npm test` før en endring regnes som ferdig.
 
 ## 4. Regler for kodeendringer
 - **Nye dokumenter bygges ett sted.** Bruk funksjonene i `src/data/newDocuments.ts`. ID-er lages med `newId()` fra `src/utils/id.ts`, aldri med `Date.now()` alene.
+- **Hvem som er med i en gruppe, spørres det om ett sted.** Bruk `isInGroup` og `allGroupPersonIds` i `src/utils/groups.ts`, aldri `memberIds` alene: en leder og en nestleder er medlemmer, også i en gruppe der de ikke står i medlemslisten (et datasett kan ha det slik). Når en gruppe lagres med leder, skrives lederen også inn i `memberIds` (`withLeaders`).
 - **Ingen stille feil.** En skriving som feiler skal meldes med `reportWriteError` (eller `save` i `FirebaseDataContext.tsx`, `attempt` i `CmsContext.tsx`). Skriv aldri en tom `catch`.
 - **Listene endres bare av lytterne.** En handling i `FirebaseDataContext.tsx` sender skrivingen og lar lytteren vise resultatet. Legg aldri til en `setX((prev) => …)` ved siden av skrivingen; da kan skjermen vise noe som ikke er lagret.
 - **Ikke les før du skriver.** Lister og kart i et dokument endres med `arrayUnion`, `arrayRemove` eller feltsti, og det som hører sammen skrives i én `writeBatch`. Se `src/services/firestore.ts`.

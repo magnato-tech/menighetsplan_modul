@@ -59,6 +59,8 @@ export function stillToStaff<T extends Pick<StudioData["adminTasks"][number], "g
 }
 
 export function isUrgentTask(item: StudioData["adminTasks"][number]): boolean {
+  // A task that is not needed for this event has nobody on it, and is not waiting for anybody
+  if (item.task.status === "cancelled") return false;
   return item.taskStaffing.hasForfall || item.taskStaffing.color === "red" || item.task.status === "vacant";
 }
 

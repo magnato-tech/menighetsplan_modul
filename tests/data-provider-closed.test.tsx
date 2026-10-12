@@ -5,7 +5,7 @@ import { cleanup, renderHook, waitFor } from "@testing-library/react";
 import { COLLECTIONS, LOGINS_COLLECTION, PUBLIC_PROFILES_COLLECTION } from "../src/data/collections";
 import type { Gathering, Group, Person, Task } from "../src/types";
 import { publicCopiesOf } from "../src/utils/publicProfile";
-import { clearCollections, offline, seed } from "./support/offlineFirestore";
+import { clearCollections, offline, seed, stored } from "./support/offlineFirestore";
 import { nobodySignedIn, resetSession, signInWith, startAsPerson } from "./support/session";
 
 // A congregation's published installation: nobody can go in as a person without signing in, and
@@ -158,6 +158,28 @@ describe("Den som logger inn", () => {
     expect(data.current.session).toMatchObject({ status: "notInRegister", reason: "unverified" });
     await waitFor(() => expect(data.current.registerReady).toBe(true));
     expect(ids(data.current.allPersons)).toEqual(["liv"]);
+  });
+
+  test("som administrator: den som leder en gruppe uten å stå blant medlemmene, skrives inn i medlemslisten", async () => {
+    // Both groups are led by Kari, who stands in neither list of members
+    signInWith("kari@menigheten.no");
+    const { result: data } = show();
+    await waitFor(() => expect(data.current.session.status).toBe("member"));
+
+    await waitFor(async () => expect((await stored(COLLECTIONS.GROUPS, "group-apen"))?.memberIds).toEqual(["ola", "kari"]));
+    expect((await stored(COLLECTIONS.GROUPS, "group-lukket"))?.memberIds).toEqual(["liv", "kari"]);
+    expect((await stored(COLLECTIONS.GROUPS, "group-apen"))?.leaderIds).toEqual(["kari"]);
+    // A group without a leader is left as it is
+    expect((await stored(COLLECTIONS.GROUPS, "group-umerket"))?.memberIds).toEqual([]);
+  });
+
+  test("som medlem skrives ingenting i gruppene", async () => {
+    signInWith("ola@eksempel.no");
+    const { result: data } = show();
+    await waitFor(() => expect(data.current.session.status).toBe("member"));
+    await waitFor(() => expect(data.current.groups.length).toBe(3));
+
+    expect((await stored(COLLECTIONS.GROUPS, "group-apen"))?.memberIds).toEqual(["ola"]);
   });
 
   test("og logger ut igjen, sitter ikke igjen med registeret", async () => {

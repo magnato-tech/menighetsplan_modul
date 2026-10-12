@@ -34,7 +34,7 @@ export function useLeaderDashboard() {
   const leaderData: LeaderGroupData[] = useMemo(() => {
     return leaderGroups.map((group) => {
       // Find members belonging to this group
-      const groupMembers = allPersons.filter((p) => group.memberIds.includes(p.id));
+      const groupMembers = allPersons.filter((p) => isInGroup(group, p.id));
 
       // Find all tasks for this group
       const groupTasks = tasks.filter((t) => t.groupId === group.id);
@@ -168,12 +168,12 @@ export function useLeaderGroupDetail(groupId: string) {
 
   const members = useMemo(() => {
     if (!group) return [];
-    return allPersons.filter((p) => group.memberIds.includes(p.id));
+    return allPersons.filter((p) => isInGroup(group, p.id));
   }, [group, allPersons]);
 
   const availablePersonsToAdd = useMemo(() => {
     if (!group) return [];
-    return allPersons.filter((p) => !group.memberIds.includes(p.id));
+    return allPersons.filter((p) => !isInGroup(group, p.id));
   }, [group, allPersons]);
 
   const groupGatherings = useMemo(() => {
@@ -356,7 +356,7 @@ export function useLeaderGatheringDetail(gatheringId: string) {
   // Group members available for leader to assign
   const groupMembers = useMemo(() => {
     if (!group) return allPersons;
-    return allPersons.filter((p) => group.memberIds.includes(p.id));
+    return allPersons.filter((p) => isInGroup(group, p.id));
   }, [group, allPersons]);
 
   const tasksWithDetails = useMemo(() => {

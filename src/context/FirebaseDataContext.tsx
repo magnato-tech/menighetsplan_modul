@@ -48,6 +48,7 @@ import { isInGroup } from "../utils/groups";
 import { mayStandIn, sessionOf, sessionOfLogin, standInSession, type AccountState, type LoginState, type Session } from "../utils/session";
 import { readOwnLogin, subscribePublicProfiles } from "../services/registerMirror";
 import { useRegisterMirror } from "../hooks/useRegisterMirror";
+import { useLeadersAsMembers } from "../hooks/useLeadersAsMembers";
 import { DEMO } from "../demo";
 import type { HeadcountInput } from "../utils/headcount";
 import { AssignmentChange, applyAssignmentChange, holdsSlot, isAcuteForfall, taskStatusFor } from "../utils/staffing";
@@ -328,11 +329,10 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
   // An administrator's own browser keeps the logins and the public copies in step with the
   // register (see hooks/useRegisterMirror.ts). Not where anyone can stand in: there the
   // database is open, and nothing is kept beside the register.
-  useRegisterMirror(
-    persons,
-    !CAN_STAND_IN && registerWhole && session.status === "member" && session.person.globalRole === "admin",
-    signedInEmail
-  );
+  const keepsTheBooks = !CAN_STAND_IN && registerWhole && session.status === "member" && session.person.globalRole === "admin";
+  useRegisterMirror(persons, keepsTheBooks, signedInEmail);
+  // The same browser sees to it that whoever leads a group stands among its members
+  useLeadersAsMembers(groups, keepsTheBooks);
   const isMember = session.status === "member";
 
   // Planning data, only behind the public website, and only for someone who is in the register

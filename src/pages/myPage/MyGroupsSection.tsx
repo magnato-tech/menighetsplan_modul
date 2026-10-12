@@ -1,6 +1,7 @@
 import React from "react";
 import { formatChatMessageTime } from "../../utils/dates";
 import { MyPageModel } from "./useMyPage";
+import { allGroupPersonIds } from "../../utils/groups";
 import {
   ChevronRight,
   Clock,
@@ -75,8 +76,8 @@ export const MyGroupsSection: React.FC<MyGroupsSectionProps> = ({ page }) => {
                   <span className="flex items-center gap-1">
                     <Users className="w-3.5 h-3.5 text-slate-400" />
                     <span>
-                      {group.memberIds.length}{" "}
-                      {group.memberIds.length === 1 ? "medlem" : "medlemmer"}
+                      {allGroupPersonIds(group).length}{" "}
+                      {allGroupPersonIds(group).length === 1 ? "medlem" : "medlemmer"}
                     </span>
                   </span>
                   {nextActivity && (

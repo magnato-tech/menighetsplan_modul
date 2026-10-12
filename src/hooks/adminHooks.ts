@@ -5,6 +5,7 @@ import { AnalyticsPeriodId, buildChurchAnalytics } from "../utils/churchAnalytic
 import { visitCounting } from "../utils/siteTraffic";
 import { Task, Group, Gathering } from "../types";
 import { validateGathering } from "../utils/validation";
+import { isInGroup } from "../utils/groups";
 import {
   AssignedPerson,
   TaskStaffingStatus,
@@ -74,7 +75,7 @@ export function useAdminDashboard() {
 
   const adminPersons = useMemo(() => {
     return allPersons.map((person) => {
-      const personGroups = groups.filter((g) => g.memberIds.includes(person.id));
+      const personGroups = groups.filter((g) => isInGroup(g, person.id));
       const leaderInGroups = groups.filter((g) => g.leaderIds.includes(person.id));
       const deputyInGroups = groups.filter((g) => g.deputyLeaderIds?.includes(person.id));
       return {
@@ -90,7 +91,7 @@ export function useAdminDashboard() {
     return groups.map((group) => {
       const leaders = allPersons.filter((p) => group.leaderIds.includes(p.id));
       const deputyLeaders = allPersons.filter((p) => group.deputyLeaderIds?.includes(p.id));
-      const members = allPersons.filter((p) => group.memberIds.includes(p.id));
+      const members = allPersons.filter((p) => isInGroup(group, p.id));
       const groupTasks = tasks.filter((t) => t.groupId === group.id);
       return {
         group,
@@ -234,12 +235,12 @@ export function useAdminGroupDetail(groupId: string) {
 
   const members = useMemo(() => {
     if (!group) return [];
-    return allPersons.filter((p) => group.memberIds.includes(p.id));
+    return allPersons.filter((p) => isInGroup(group, p.id));
   }, [group, allPersons]);
 
   const availablePersonsToAdd = useMemo(() => {
     if (!group) return [];
-    return allPersons.filter((p) => !group.memberIds.includes(p.id));
+    return allPersons.filter((p) => !isInGroup(group, p.id));
   }, [group, allPersons]);
 
   const groupGatherings = useMemo(() => {
@@ -290,7 +291,7 @@ export function useAdminPersonDetail(personId: string) {
 
   const personGroups = useMemo(() => {
     if (!person) return [];
-    return groups.filter((g) => g.memberIds.includes(person.id));
+    return groups.filter((g) => isInGroup(g, person.id));
   }, [person, groups]);
 
   const leaderInGroups = useMemo(() => {

@@ -13,6 +13,7 @@ import { isGroupPublic } from "../utils/visibility";
 import { useTimedMessage } from "../hooks/useTimedMessage";
 import { AdminAccessRequired } from "../components/AdminAccessRequired";
 import { StudioDetailShell, StudioDetailNotFound } from "./admin/StudioDetailShell";
+import { withLeaders } from "../utils/groups";
 import {
   studioDetailCard,
   studioDetailSection,
@@ -110,6 +111,8 @@ export const AdminGroupDetailPage: React.FC = () => {
       isPublic,
       leaderIds: selectedLeaderId ? [selectedLeaderId] : [],
       deputyLeaderIds: selectedDeputyId ? [selectedDeputyId] : [],
+      // A leader is a member: the list of members is never without those who lead the group
+      memberIds: withLeaders(group.memberIds, [selectedLeaderId, selectedDeputyId]),
       meetingSchedule: hasSchedule ? { weekday, time, frequency } : undefined,
     });
 

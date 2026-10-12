@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.21 · **Sist oppdatert:** 2026-10-12
+> **Dokumentversjon:** 4.22 · **Sist oppdatert:** 2026-10-12
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -982,6 +982,21 @@ Bestilt av produkteier under oppsettet av første menighet.
 | **Ikke levert her** | Fødselsdato i skjemaet for ny person og i personlisten. Fødselsdagsliste og aldersgrupper |
 
 **Hvem som kan lese den.** Bare en administrator ser og endrer feltet i appen. Men alle som står i registeret og er logget inn, får hele registeret levert til nettleseren sin, også fødselsdatoene (kapittel 13, punkt 1). Det bør strammes inn før registeret holder mer enn kontaktopplysninger.
+
+### Leder og nestleder regnes som medlemmer (12. oktober 2026)
+
+Funnet av produkteier hos første menighet: Min side viste to i en husgruppe, mens admin viste «0 medlemmer» og «Ingen medlemmer i gruppen» i feltet for leder.
+
+| Område | Rettet |
+|:---|:---|
+| **Årsaken** | Gruppene var hentet inn fra et datasett der lederen og nestlederen sto som leder og nestleder, men ikke i medlemslisten. Min side regnet alle tre rollene som medlemmer, admin bare medlemslisten |
+| **Admin** | Gruppesiden, gruppekortene og personsiden regner nå leder og nestleder som medlemmer. Feltene «Leder» og «Nestleder» viser den som har rollen, også når personen ikke står i medlemslisten |
+| **Gruppelederens side** | Samme regel: medlemslisten har med leder og nestleder, og bare de som ikke er i gruppen i det hele tatt, kan legges til |
+| **Min side** | Antallet medlemmer på gruppekortet teller hver person én gang, uansett rolle |
+| **Når en gruppe lagres i admin** | Den som er valgt som leder eller nestleder, skrives inn i medlemslisten. En gruppe som mangler lederen der, rettes dermed første gang den lagres |
+| **Databasen rettes av seg selv** | Når en administrator har appen åpen i en menighets egen installasjon, skrives ledere og nestledere som mangler i medlemslisten til gruppen sin, inn i den. Ingenting annet i gruppen røres |
+| **Ubesatte oppgaver** | En oppgave som er satt til «trengs ikke» på et arrangement, telles ikke lenger som ubesatt i admin |
+| **Prøvd** | 9 sjekker, med en gruppe slik datasettet hadde den |
 
 ---
 

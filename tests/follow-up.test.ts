@@ -27,4 +27,7 @@ describe("Trenger oppfølging", () => {
     "En oppgave på en samling som er over, trenger ikke oppfølging; en som pågår, gjør det"
   );
   assert(countUrgentTasks(items, now) === 3, "Bare kommende og pågående samlinger telles som ubesatt");
+
+  const notNeeded = { ...item("trengs-ikke", hours(48), true), task: { id: "trengs-ikke", gatheringId: "g", title: "Kjøkken", status: "cancelled" } } as unknown as Item;
+  assert(countUrgentTasks([...items, notNeeded], now) === 3, "En oppgave som ikke trengs på arrangementet, telles ikke som ubesatt");
 });
