@@ -82,6 +82,8 @@ export interface FirebaseDataContextType {
   standInAs?: (personId: string) => void;
   /** Whether the person register has arrived. Until then nobody can be said to be missing from it. */
   registerReady: boolean;
+  /** Whether the events have arrived. Until then nothing can be said to be over, or missing. */
+  gatheringsReady: boolean;
   allPersons: Person[];
   groups: Group[];
   gatherings: Gathering[];
@@ -225,6 +227,7 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
   const [accountState, setAccountState] = useState<AccountState>({ status: "loading" });
   // Whether the register has been received. Until then nobody can be said to be missing from it.
   const [registerReady, setRegisterReady] = useState(false);
+  const [gatheringsReady, setGatheringsReady] = useState(false);
   const [standInId, setStandInId] = useState<string | null>(storedStandIn);
 
   useEffect(() => subscribeAccount(setAccountState), []);
@@ -258,7 +261,10 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
         setRegisterReady(true);
       }),
       subscribeCollection<Group>(COLLECTIONS.GROUPS, setGroups),
-      subscribeCollection<Gathering>(COLLECTIONS.GATHERINGS, setGatherings),
+      subscribeCollection<Gathering>(COLLECTIONS.GATHERINGS, (list) => {
+        setGatherings(list);
+        setGatheringsReady(true);
+      }),
     ];
     return () => unsubscribers.forEach((unsubscribe) => unsubscribe());
   }, []);
@@ -603,6 +609,7 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
       signOut,
       standInAs,
       registerReady,
+      gatheringsReady,
       allPersons: persons,
       groups,
       gatherings,
@@ -636,6 +643,7 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
       signOut,
       standInAs,
       registerReady,
+      gatheringsReady,
       persons,
       groups,
       gatherings,

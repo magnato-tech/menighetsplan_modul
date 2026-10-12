@@ -192,6 +192,19 @@ describe("Nyheter, taler og stab", () => {
     expect(cms.current.news[0]).toMatchObject({ category: "aktuelt", author: "Menigheten", isPublished: true });
   });
 
+  test("Hvor lenge en nyhet vises, lagres, og tas bort igjen når feltene tømmes", async () => {
+    const cms = mountProvider();
+    void cms.current.saveNews({ id: "news-fest", title: "Høstfest", expiresAt: "2026-10-25", gatheringRefId: "gathering-1" });
+    await waitFor(() => expect(cms.current.news[0]).toMatchObject({ expiresAt: "2026-10-25", gatheringRefId: "gathering-1" }));
+
+    void cms.current.saveNews({ ...cms.current.news[0], expiresAt: undefined, gatheringRefId: undefined });
+    await waitFor(() => expect(cms.current.news[0]).not.toHaveProperty("expiresAt"));
+    const kept = await stored(CMS_COLLECTIONS.NEWS, "news-fest");
+    expect(kept).not.toHaveProperty("expiresAt");
+    expect(kept).not.toHaveProperty("gatheringRefId");
+    expect(kept).toMatchObject({ title: "Høstfest", isPublished: true });
+  });
+
   test("Slettet innhold forsvinner", async () => {
     seed(CMS_COLLECTIONS.NEWS, [article("nyhet", "2026-09-01T10:00:00.000Z")]);
     seed(CMS_COLLECTIONS.SERMONS, [sermon("tale", "2026-08-30")]);

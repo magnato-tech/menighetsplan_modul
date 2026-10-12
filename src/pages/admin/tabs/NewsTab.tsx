@@ -9,8 +9,25 @@ import {
   ExternalLink,
   X,
   Newspaper,
+  Clock,
+  CalendarClock,
 } from "lucide-react";
 import { StudioData, ShowFeedback } from "../studio";
+import { formatNorwegianDateTime } from "../../../utils/dates";
+import { isGroupGathering } from "../../../utils/gatherings";
+import { isNewsExpired, lastDayOf, type LastDay } from "../../../utils/news";
+
+/** A day ("2026-10-11") as it is written out: «11. oktober 2026». */
+const writtenDay = (day: string): string =>
+  new Date(`${day}T12:00:00Z`).toLocaleDateString("nb-NO", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+
+/** How long an article is shown, said in a sentence. */
+const shownUntil = (last: LastDay | null): string =>
+  last === null
+    ? "Står på nettsiden til du tar den ut."
+    : last.from === "date"
+      ? `Vises til og med ${writtenDay(last.day)}.`
+      : `Vises til og med ${writtenDay(last.day)}, dagen for arrangementet.`;
 
 interface NewsTabProps {
   studio: StudioData;
@@ -21,8 +38,15 @@ interface NewsTabProps {
 }
 
 export const NewsTab: React.FC<NewsTabProps> = ({ studio, showFeedback, createRequested, onCreateHandled }) => {
-  const { currentUser } = studio;
+  const { currentUser, adminGatherings } = studio;
   const { news, saveNews, deleteNews } = useCms();
+
+  // The events an article can belong to: those open to the congregation that lie ahead, the nearest first
+  const now = Date.now();
+  const allEvents = adminGatherings.map((item) => item.gathering);
+  const comingEvents = allEvents
+    .filter((event) => !isGroupGathering(event) && new Date(event.startsAt).getTime() >= now)
+    .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
 
   const [editingNews, setEditingNews] = useState<Partial<CmsNewsArticle> | null>(null);
   const [isNewNews, setIsNewNews] = useState(false);
@@ -162,6 +186,52 @@ export const NewsTab: React.FC<NewsTabProps> = ({ studio, showFeedback, createRe
             />
           </div>
 
+          {/* How long the article is shown on the website */}
+          <div className="p-4 rounded-xl bg-[var(--studio-bg)] border border-[var(--studio-border)] space-y-3 text-xs">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label htmlFor="news-event" className="font-semibold text-[var(--studio-muted)]">
+                  Hører til arrangement (valgfritt)
+                </label>
+                <select
+                  id="news-event"
+                  value={editingNews.gatheringRefId || ""}
+                  onChange={(e) => setEditingNews({ ...editingNews, gatheringRefId: e.target.value || undefined })}
+                  className="w-full px-3 py-2 rounded-xl bg-[var(--studio-input)] border border-[var(--studio-border)] text-[var(--studio-input-text)] focus:outline-hidden"
+                >
+                  <option value="">Ikke noe arrangement</option>
+                  {/* The event the article already belongs to stays in the list when it is over */}
+                  {allEvents
+                    .filter((event) => event.id === editingNews.gatheringRefId && !comingEvents.includes(event))
+                    .concat(comingEvents)
+                    .map((event) => (
+                      <option key={event.id} value={event.id}>
+                        {formatNorwegianDateTime(event.startsAt)} · {event.title}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label htmlFor="news-last-day" className="font-semibold text-[var(--studio-muted)]">
+                  Vises til og med (valgfritt)
+                </label>
+                <input
+                  id="news-last-day"
+                  type="date"
+                  value={editingNews.expiresAt || ""}
+                  onChange={(e) => setEditingNews({ ...editingNews, expiresAt: e.target.value || undefined })}
+                  className="w-full px-3 py-2 rounded-xl bg-[var(--studio-input)] border border-[var(--studio-border)] text-[var(--studio-input-text)] focus:outline-hidden"
+                />
+              </div>
+            </div>
+            <p className="text-[var(--studio-muted)]">
+              <strong className="text-[var(--studio-text)]">{shownUntil(lastDayOf(editingNews, allEvents))}</strong> En artikkel som hører til et
+              arrangement, går ut av forsiden av seg selv dagen etter arrangementet, og følger med hvis arrangementet flyttes. En dato i feltet
+              «Vises til og med» går foran.
+            </p>
+          </div>
+
           <div className="flex items-center justify-between pt-2">
             <label className="flex items-center gap-2 text-xs text-[var(--studio-muted)] cursor-pointer">
               <input
@@ -194,7 +264,10 @@ export const NewsTab: React.FC<NewsTabProps> = ({ studio, showFeedback, createRe
 
       {/* List of News */}
       <div className="space-y-3">
-        {news.map((item) => (
+        {news.map((item) => {
+          const last = lastDayOf(item, allEvents);
+          const expired = isNewsExpired(item, allEvents, now);
+          return (
           <div
             key={item.id}
             className="p-5 rounded-2xl bg-[var(--studio-surface)] border border-[var(--studio-border)] flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-[var(--studio-border)] transition-all"
@@ -210,6 +283,20 @@ export const NewsTab: React.FC<NewsTabProps> = ({ studio, showFeedback, createRe
               <div className="text-[11px] text-[var(--studio-muted)]">
                 Av {item.author} · {new Date(item.publishedAt).toLocaleDateString("no-NO")}
               </div>
+              {/* Said with an icon and in words, never by colour alone */}
+              {expired ? (
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-300 bg-amber-950/80 border border-amber-800 px-2 py-0.5 rounded">
+                  <Clock className="w-3.5 h-3.5 text-amber-400" aria-hidden="true" />
+                  Utløpt {writtenDay(last!.day)}. Vises ikke lenger på forsiden
+                </span>
+              ) : (
+                last && (
+                  <span className="inline-flex items-center gap-1 text-[11px] text-[var(--studio-muted)]">
+                    <CalendarClock className="w-3.5 h-3.5 text-[var(--studio-icon)]" aria-hidden="true" />
+                    {shownUntil(last)}
+                  </span>
+                )
+              )}
             </div>
 
             <div className="flex items-center gap-2 text-xs">
@@ -243,7 +330,8 @@ export const NewsTab: React.FC<NewsTabProps> = ({ studio, showFeedback, createRe
               </button>
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

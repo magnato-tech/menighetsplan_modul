@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.13 · **Sist oppdatert:** 2026-10-12
+> **Dokumentversjon:** 4.14 · **Sist oppdatert:** 2026-10-12
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -151,7 +151,7 @@ Adminpanelet ligger på `/admin` og har én meny med to deler. Hver fane har sin
 | Fane | Hva administratoren gjør | Status |
 |---|---|---|
 | **Sider & innhold** | Bygger sidetreet i to nivåer med dra og slipp. Skriver innhold med ferdige innholdsblokker, laster opp hovedbilde, setter kladd, publisert eller planlagt, fyller ut søk og deling, og forhåndsviser | Levert, med begrensningene i kapittel 8.7 |
-| **Aktuelt & nyheter** | Skriver og publiserer artikler | Levert |
+| **Aktuelt & nyheter** | Skriver og publiserer artikler. En artikkel kan høre til et arrangement eller ha en siste dag, og går da ut av forsiden av seg selv (kapittel 5.8) | Levert |
 | **Taler & prekener** | Legger inn taler med lyd, Spotify, video og et bilde til talen | Levert |
 | **Lederskap & stab** | Holder listen over stab som vises på «Om oss» | Delvis: en egen liste ved siden av personregisteret, uten samtykke (kapittel 13) |
 | **Tema & designsystem** | Velger ferdig tema eller egne farger, bakgrunn, skrift og avrunding. Forhåndsvisningen er tegnet med de samme fargene nettsiden får | Levert |
@@ -425,8 +425,15 @@ Felles begrep for enhver samling: gudstjeneste, ungdomsmøte, bønnemøte, dugna
 | `publishedAt` | ISO 8601 | Ja | Publiseringstidspunkt. Nyeste vises først |
 | `isPublished` | `boolean` | Ja | Kladd eller publisert |
 | `imageUrl` | `string` | Nei | Bilde |
-| `expiresAt` | `YYYY-MM-DD` | Nei | *Planlagt:* artikkelen forsvinner fra forsiden etter datoen |
-| `gatheringRefId` | `string` | Nei | *Planlagt:* kobling til en samling |
+| `expiresAt` | `YYYY-MM-DD` | Nei | «Vises til og med»: siste dag artikkelen står i listene på nettsiden |
+| `gatheringRefId` | `string` | Nei | Arrangementet artikkelen hører til. Uten dato vises artikkelen til og med dagen arrangementet holdes |
+
+**Hvor lenge en nyhet vises** *(levert 12. oktober 2026)*. En artikkel står til den tas ut, med to unntak:
+
+* **Den hører til et arrangement.** Da vises den til og med dagen arrangementet holdes, og går ut av forsiden dagen etter. Flyttes arrangementet, følger artikkelen med. Varer arrangementet over flere dager, gjelder siste dag. Er arrangementet slettet, står artikkelen.
+* **Den har en dato i «Vises til og med».** Datoen går foran arrangementet, begge veier.
+
+Dagen er den norske, og skiftet skjer ved midnatt norsk tid. En artikkel som er utløpt, er ute av forsiden og nyhetslistene. Den kan fortsatt leses av den som har adressen, så en lenke som er delt, ikke blir død. I admin står den i listen, merket «Utløpt» med ikon og tekst, og kan gis en ny dato. Løsningen setter aldri en dato av seg selv.
 
 ### 5.9 Tale (`CmsSermon`)
 
@@ -828,6 +835,31 @@ Bestilt av produkteier samme dag: talene på lillesandmisjonskirke.no har et bil
 | **Bilder av personer** | Åtte av bildene viser den som talte. Produkteier, som er pastor i menigheten, bestemte at alle skal med. Et sett har ellers ingen talebilder før det er bestemt for settet. Et talebilde som er et bilde fra stab-registeret, tas ut i demoen som andre bilder derfra |
 | **Prøvd** | 8 nye sjekker: bildet på talesiden og på forsiden, en tale uten bilde, et bilde fra biblioteket, et bilde som er slettet, og bildet til en tale i mediebiblioteket og i demoen |
 
+### Nyheter som går ut av seg selv (12. oktober 2026)
+
+Bestilt av produkteier samme dag: en nyhet om noe som er over, skal ikke bli stående på forsiden til noen husker å ta den ut. Modulene som heter dynamiske, skal følge aktivitetsplanen.
+
+| Område | Levert |
+|:---|:---|
+| **Hører til arrangement** | En nyhet kan knyttes til et arrangement i admin. Den vises til og med dagen arrangementet holdes, og følger med når arrangementet flyttes |
+| **Vises til og med** | En nyhet kan ha en siste dag, som går foran arrangementet |
+| **Nettsiden** | Forsiden og nyhetslistene viser ikke en utløpt nyhet, og den tar ikke en av de tre plassene. Adressen til nyheten virker fortsatt |
+| **Admin** | Skjemaet sier i klartekst hvor lenge nyheten vises. Listen merker en utløpt nyhet med ikon og tekst, og den kan forlenges eller slettes |
+| **Eksempelmenigheten** | Nyheten om ungdomsmiljøet hører til ungdomsmøtet uka etter, så koblingen kan vises fram i demoen |
+| **Prøvd** | 25 nye sjekker: midnatt norsk tid sommer og vinter, arrangement som flyttes, slettes og varer flere dager, forsiden før arrangementene har kommet, skjemaet og listen i admin, og at en dato som tømmes, også tas bort i databasen |
+| **Ikke levert her** | En nyhet hentet fra et gammelt nettsted har ingen dato, og står til den gis en. Arkivside for gamle nyheter |
+
+**De dynamiske modulene og aktivitetsplanen**, slik de er etter dette:
+
+| Modul | Følger aktivitetsplanen |
+|:---|:---|
+| Neste gudstjeneste | Ja. Henter neste gudstjeneste fra arrangementene, og bytter av seg selv når den er holdt |
+| Hva skjer, og Kalender | Ja. Viser kommende arrangementer åpne for alle |
+| Nyheter og artikler | Ja, fra 12. oktober, for nyheter som er knyttet til et arrangement eller har en dato |
+| Siste tale fra søndagen | Nei. Viser den nyeste talen i talearkivet. En tale er ikke knyttet til gudstjenesten den ble holdt i *(planlagt, fase 2)* |
+| Husfellesskap & grupper | Nei. Er et banner med fast tekst og lenke til gruppesiden, og leser ikke gruppene |
+| Givertjeneste & Vipps | Nei, og skal ikke. Viser Vipps-nummer og konto fra innstillingene |
+
 ---
 
 
@@ -927,7 +959,7 @@ Trinn 2 og 4 er det samme som fase 1 under. Fase 2–4 fortsetter som før når 
 3. **Bilder i egen lagring**, med bilder også i nyheter, stab og innholdsblokker.
 4. ~~**Delingskort fra serveren:** tittel, beskrivelse og bilde ligger i siden slik den sendes ut.~~ **Levert 3. oktober.**
 5. **Én kilde for stab og lederskap:** personregisteret med samtykke. CMS-fanen bestemmer rekkefølge, bilde og omtale.
-6. **Nyheter:** arkivside, utløpsdato og kobling til samling. **Taler:** kobling til person og samling.
+6. **Nyheter:** arkivside. ~~Utløpsdato og kobling til samling.~~ **Levert 12. oktober.** **Taler:** kobling til person og samling.
 7. **Menighetens egen profil:** logo og egen skrift.
 8. Senere: visuell redigering av blokker, og historikk med angre.
 

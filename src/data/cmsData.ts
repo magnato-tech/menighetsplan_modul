@@ -505,6 +505,8 @@ Følg gjerne ungdomsarbeidet på Instagram for ferske oppdateringer og helgens p
     author: "Ingrid Berg (Ungdomsarbeider)",
     publishedAt: "2026-08-20T18:00:00.000Z",
     isPublished: true,
+    // Belongs to the youth meeting in the week after the one the content is written for, so it is always ahead
+    gatheringRefId: "gathering-2",
   },
 ];
 

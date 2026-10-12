@@ -2,6 +2,8 @@ import React, { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { CmsResolvedLink } from "../CmsResolvedLink";
 import { useCms } from "../../../context/CmsContext";
+import { useFirebase } from "../../../context/FirebaseDataContext";
+import { shownNews } from "../../../utils/news";
 import {
   MODULE_PRESENTATION_DEFAULTS,
   ModulePresentationConfig,
@@ -19,24 +21,25 @@ export interface NewsModuleProps {
   presentation?: ModulePresentationConfig;
 }
 
-/** How many news cards the module shows. The reveal follows the cards as they arrive. */
-const publishedNewsCount = (news: { isPublished?: boolean }[] | undefined, limit: number): number =>
-  Math.min(limit, (news ?? []).filter((n) => n.isPublished !== false).length);
-
 export const NewsModule: React.FC<NewsModuleProps> = ({
   variant = "grid",
   limit = 3,
   presentation,
 }) => {
   const { news } = useCms();
+  const { gatherings, gatheringsReady } = useFirebase();
   const mediaById = useMediaMap();
-  const cards = useRevealChildren<HTMLDivElement>(publishedNewsCount(news, limit));
   const config = presentation || MODULE_PRESENTATION_DEFAULTS["module-news"];
   const defaults = MODULE_PRESENTATION_DEFAULTS["module-news"];
 
-  const publishedNews = useMemo(() => {
-    return (news ?? []).filter((n) => n.isPublished !== false).slice(0, limit);
-  }, [news, limit]);
+  // What is shown is settled once, when the module is drawn: published, and not past its last day
+  const now = useMemo(() => Date.now(), []);
+  const publishedNews = useMemo(
+    () => shownNews(news ?? [], gatheringsReady ? gatherings : null, now).slice(0, limit),
+    [news, gatherings, gatheringsReady, now, limit]
+  );
+  // The reveal follows the cards as they arrive
+  const cards = useRevealChildren<HTMLDivElement>(publishedNews.length);
 
   const badge = presentationText(config, "badge", defaults.badge);
   const title = presentationText(config, "title", defaults.title);

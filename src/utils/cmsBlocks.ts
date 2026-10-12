@@ -111,8 +111,8 @@ export const DYNAMIC_MODULES_META: Record<DynamicModuleType, DynamicModuleMeta> 
   "module-news": {
     type: "module-news",
     title: "Nyheter og artikler",
-    description: "Viser de nyeste publiserte artiklene fra menighetsarbeidet.",
-    dataSource: "CMS Nyhetsdatabase",
+    description: "Viser de nyeste publiserte artiklene. En artikkel går ut av listen etter datoen den er satt til, eller når arrangementet den hører til, er holdt.",
+    dataSource: "CMS Nyhetsdatabase og arrangementskalenderen",
     supportedVariants: [
       { id: "grid", label: "3 artikkelkort" },
       { id: "compact", label: "Kompakt liste" },

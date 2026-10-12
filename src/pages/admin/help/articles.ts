@@ -138,6 +138,8 @@ const nyheter: HelpArticle = {
     "Trykk Ny artikkel.",
     "Fyll inn Tittel, velg Kategori, og kontroller Forfatter.",
     "Skriv Ingress / Sammendrag og Artikkeltekst.",
+    "Handler artikkelen om et arrangement, velg det under Hører til arrangement. Da går artikkelen ut av forsiden av seg selv dagen etter arrangementet.",
+    "Skal artikkelen stå til en bestemt dag, sett datoen i Vises til og med. Uten arrangement og uten dato står den til du tar den ut.",
     "La Publiser artikkelen direkte på nettsiden stå på, eller slå den av.",
     "Trykk Lagre artikkel. Avbryt lukker skjemaet.",
     "Senere: Rediger, eller slett etter bekreftelse «Vil du slette artikkelen [tittel]?»",
@@ -145,7 +147,7 @@ const nyheter: HelpArticle = {
   knapper:
     "Skriv ny artikkel eller «Rediger artikkel: [tittel]». Kategorier: Aktuelt, Gudstjeneste, Ungdom, Misjon, Familie. Plassholder tittel: «f.eks. Flott oppstart for høstens søndagsskole». Plassholder ingress: «En kort innledning som fanger oppmerksomheten...» Lenke ut har tittel Les artikkel.",
   etterLagring:
-    "«Nyhetsartikkelen ble lagret og publisert!» Skjemaet lukkes, og artikkelen ligger i listen med kategori, forfatter og dato. Ved sletting: «Artikkelen ble slettet». Uten tittel: «Artikkelen må ha en tittel».",
+    "«Nyhetsartikkelen ble lagret og publisert!» Skjemaet lukkes, og artikkelen ligger i listen med kategori, forfatter og dato, og med hvor lenge den vises. En artikkel som er utløpt, står i listen merket Utløpt, og kan gis en ny dato. Ved sletting: «Artikkelen ble slettet». Uten tittel: «Artikkelen må ha en tittel».",
 };
 
 const taler: HelpArticle = {
