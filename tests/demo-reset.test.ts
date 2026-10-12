@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 import path from "node:path";
 import { readDemoSets, resetDemo, type DemoSet } from "../scripts/reset-demo";
+import { demoTemplateDocument } from "../src/data/mockDocuments";
 import { CMS_COLLECTIONS, CMS_SETTINGS_DOC_ID, COLLECTIONS, PLAIN_COLLECTIONS } from "../src/data/collections";
 import { FULL_DEMO_COUNTS, getCustomMockDocuments, storedFormOf, type MockDocument } from "../src/data/mockDocuments";
 import { HEADCOUNT_RECORD, OPERATING_MODE_DOC_ID, OPERATING_MODE_RECORD, VOLUNTEER_ROLE_RECORD } from "../src/data/settingsRecords";
@@ -210,6 +211,16 @@ describe("En menighet med sin egen nettside i demoen", () => {
     expect(rows(site, CMS_COLLECTIONS.SETTINGS)).toEqual([{ churchName: "Søgne Misjonskirke", address: "Kirkeveien 1" }]);
   });
 
+  test("malene for arrangementer følger med, selv om de er lagret sammen med innstillingene", () => {
+    const template = demoTemplateDocument();
+    const withTemplate = siteDocuments([...example, template], sogne, NOW);
+
+    expect(withTemplate.filter((d) => d.collection === CMS_COLLECTIONS.SETTINGS).map((d) => d.id).sort()).toEqual([CMS_SETTINGS_DOC_ID, "mal-gudstjeneste"].sort());
+    expect(withTemplate.find((d) => d.id === "mal-gudstjeneste")?.data).toMatchObject({ recordType: "gatheringTemplate", name: "Gudstjeneste" });
+    // The settings themselves are still the congregation's own
+    expect((withTemplate.find((d) => d.id === CMS_SETTINGS_DOC_ID)?.data as { churchName: string }).churchName).toBe("Søgne Misjonskirke");
+  });
+
   test("planleggeren er eksempelmenighetens: personer, grupper og tjenesteroller følger med", () => {
     expect(ids(site, COLLECTIONS.PERSONS)).toEqual(ids(example, COLLECTIONS.PERSONS));
     expect(ids(site, COLLECTIONS.VOLUNTEER_ROLES)).toEqual(ids(example, COLLECTIONS.VOLUNTEER_ROLES));
@@ -330,7 +341,8 @@ function database(initial: Record<string, Fields> = {}, options: { pageSize?: nu
 }
 
 describe("Nullstillingen av demoen", () => {
-  const wanted = planReset([{ site: null, documents: getCustomMockDocuments(FULL_DEMO_COUNTS, NOW) }], []).write;
+  // The demo content, and the template for a worship service that the reset puts in beside it
+  const wanted = planReset([{ site: null, documents: [...getCustomMockDocuments(FULL_DEMO_COUNTS, NOW), demoTemplateDocument()] }], []).write;
 
   test("en tom database fylles med hele demoinnholdet", async () => {
     const db = database();

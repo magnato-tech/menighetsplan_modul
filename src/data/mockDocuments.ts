@@ -19,7 +19,8 @@ import {
 import { Person, Group, type GatheringHeadcount, type VolunteerRole } from "../types";
 import { buildInitialVolunteerRoles } from "./defaultVolunteerRoles";
 import { enrichTasksWithVolunteerRoles } from "./mockTaskVolunteerRoles";
-import { headcountFields, volunteerRoleFields } from "./settingsRecords";
+import { gatheringTemplateFields, headcountFields, volunteerRoleFields } from "./settingsRecords";
+import { standardServiceTemplate, type GatheringTemplate } from "../utils/gatheringTemplates";
 import { weeksBetween, withLiveDates } from "../utils/liveDates";
 
 export interface MockDocument {
@@ -213,6 +214,23 @@ export function getCustomMockDocuments(counts?: CustomMockCounts, now: number = 
 
   const weeks = weeksBetween(DEMO_CONTENT_WEEK, now);
   return documents.map((document) => ({ ...document, data: withLiveDates(document.data, weeks) }));
+}
+
+/** The standard template for a worship service, tied to the demo's roles, with the same places every time it is made. */
+export function demoServiceTemplate(): GatheringTemplate {
+  const template = standardServiceTemplate(buildInitialVolunteerRoles());
+  return { ...template, id: "mal-gudstjeneste", program: template.program.map((item, index) => ({ ...item, id: `punkt-${index + 1}` })) };
+}
+
+/**
+ * The template as a document of the demo, in the place and the form it is stored in. It is put
+ * in where the demo is filled (scripts/reset-demo.ts), so a series can be planned there without
+ * a template being made first. It is not among the mock documents: those are the two parts a
+ * congregation's own database is filled with, and a template is the congregation's own to make.
+ */
+export function demoTemplateDocument(): MockDocument {
+  const template = demoServiceTemplate();
+  return { collection: CMS_COLLECTIONS.SETTINGS, id: template.id, data: gatheringTemplateFields(template) };
 }
 
 /**

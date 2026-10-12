@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.17 · **Sist oppdatert:** 2026-10-12
+> **Dokumentversjon:** 4.18 · **Sist oppdatert:** 2026-10-12
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -139,6 +139,7 @@ Adminpanelet ligger på `/admin` og har én meny med to deler. Hver fane har sin
 |---|---|---|
 | **Oversikt** | Ser nøkkeltall og hva som haster | Levert |
 | **Arrangementer** | Oppretter, endrer og avlyser samlinger. Det raske skjemaet tar tittel, dato, klokkeslett og tema. «Flere valg» åpner det store skjemaet, som også brukes ved redigering: slutt (også en annen dag), sted, bibeltekst, ansvarlig gruppe, gudstjeneste og synlighet. «Lag neste arrangement» kopierer oppgavene til en ny dato | Levert. Mal og serie i det store skjemaet er prøveutgaver (kapittel 14) |
+| **Maler** | Holder malene for arrangementer som gjentas: tid, sted, bilde og tekst, program med roller, og oppgavene som skal bemannes. Legger inn standardmalen for gudstjeneste, og planlegger en serie fra en mal | Levert 12. oktober |
 | **Trenger oppfølging** | Ser ubesatte oppgaver og akutte forfall på tvers av samlinger. Tildeler, forespør og åpner purretekst | Levert |
 | **Grupper & husfellesskap** | Oppretter grupper, setter leder og nestleder, kategori, møteplan og om gruppen vises på nettsiden | Levert |
 | **Personer & roller** | Holder personregisteret: kontaktinfo, rolle, politiattest, perioder personen er borte, og offentlig profil med samtykke | Levert |
@@ -914,6 +915,25 @@ Resten av del A3 i «Arrangement, maler og serier» (kapittel 14).
 | **Prøvd** | 23 nye sjekker for siden, veiene dit, kalenderfilen, delingskortet, tellingen av besøk og API-et |
 | **Ikke levert her** | Merking av tid og sted for søkemotorer utover tittel og beskrivelse |
 
+### Maler og serier (12. oktober 2026)
+
+Del B og C av «Arrangement, maler og serier» (kapittel 14). Bestilt av produkteier: standard program på en gudstjeneste skal kunne fylles inn enkelt, og gjentakende arrangementer legges ut året og fram til sommeren.
+
+| Område | Levert |
+|:---|:---|
+| **Siden «Maler»** | Ny side i admin, på begge nivå. Hver mal står med tid, antall programpunkter og oppgavene den gir. «Ny mal», «Rediger», «Slett» og «Planlegg serie» |
+| **Standardmalen for gudstjeneste** | Legges inn med ett trykk: 18 programpunkter fra velkomsten ved inngangen kl. 10:45 til kirkekaffen, med rollene møtevert, lovsang, møteleder, barnekirke, taler og forbønn. Hvert punkt knyttes til rollen med samme navn i menighetens egne roller. Malen kan endres fritt etterpå |
+| **Skjemaet for en mal** | Navn, tittel, klokkeslett og varighet, sted, gruppe, synlighet, bilde og tekst. Programmet redigeres punkt for punkt: klokkeslett, minutter, tittel og rolle, med flytt opp og ned. Oppgavene følger rollene i programmet, og ekstra vakter legges til med antall |
+| **Lag mal av et arrangement** | «Lag mal» på et arrangement som alt er satt opp, gir en mal med programmet, oppgavene, bildet og teksten |
+| **Arrangement fra mal** | «Start fra en mal» i det store skjemaet fyller ut skjemaet. Arrangementet får malens program, på klokkeslettene som følger av dets egen starttid, og én oppgave per rolle |
+| **Serie** | «Gjenta som serie»: hver uke, hver 2., 3. eller 4. uke, eller én gang i måneden. Siste dato er foreslått til 30. juni. Dagene vises med hake, og en dag kan tas ut. En dag der det alt ligger et arrangement, er merket |
+| **Etter at serien er laget** | Hvert arrangement er merket «Del av serie» i listen. «Slett resten av serien» sletter fra og med arrangementet, med oppgavene, etter bekreftelse. Arrangementer noen har svart på, står |
+| **Menighetsplattform** | Maler og serier virker også uten planleggeren. Arrangementene får da ikke program og oppgaver |
+| **Demoen** | Standardmalen ligger klar hos eksempelmenigheten og hos hver av menighetene, og legges inn på nytt ved nullstillingen |
+| **Lagring** | Malene ligger sammen med innstillingene, merket som maler, slik tjenesterollene gjør. Det krever ingen endring i databasens regler |
+| **Prøvd** | 66 nye sjekker: klokka i et program, standardmalen, oppgavene en mal gir, arrangement og serie fra mal, mal av et arrangement, skjemaene og siden «Maler» |
+| **Ikke levert her** | Fast person i en mal. Dra og slipp i programmet, og redigering av programmet på et arrangement som alt er opprettet (fase 3). En endring i en mal oppdaterer ikke arrangementer som alt er laget |
+
 ---
 
 
@@ -930,7 +950,6 @@ Sortert etter hvor mye de betyr for en menighet som skal ta løsningen i bruk.
 | 5 | Bilder lagres inne i sidedokumentene, og kan da ikke brukes som delebilde | Fase 2 |
 | 6 | To kilder for stab og lederskap, den ene uten samtykke | Fase 2 |
 | 7 | Programmet i kjøreplanen kan ikke redigeres | Fase 3 |
-| 7b | Mal og serie i skjemaet for arrangementer er prøveutgaver: malen er fire faste eksempler, og en serie oppretter bare det første arrangementet | «Arrangement, maler og serier», del B og C |
 | 8 | Ingen varsling: forespørsler og forfall når ingen uten at de åpner appen | Fase 3 |
 | 9 | Modulvalg lagres bare i én nettleser | Fase 3 |
 | 10 | En besøkende kan ikke melde interesse for en gruppe i løsningen | Fase 3 |
@@ -1007,18 +1026,22 @@ Bestilt av produkteier etter en gjennomgang av skjemaet for arrangementer i eRed
 
 | Del | Hva | Status |
 |:---|:---|:---|
-| A1 | **Ett skjema i planleggeren.** Det raske skjemaet står, og «Flere valg» åpner det store, på en stor flate. Det samme skjemaet brukes ved redigering. Plass til mal og serie fra start | **Levert 12. oktober** (kapittel 12). Mal og serie er prøveutgaver |
+| A1 | **Ett skjema i planleggeren.** Det raske skjemaet står, og «Flere valg» åpner det store, på en stor flate. Det samme skjemaet brukes ved redigering | **Levert 12. oktober** (kapittel 12) |
 | A2 | **Bilde og tekst på arrangementet.** Feltene ligger i arrangementets eget skjema, i delen «På nettsiden»: bilde med bildetekst, ingress, lang tekst og lenke med knappetekst. «Forside-overstyring» i CMS-et er blitt «Arrangementer på nettsiden»: en oversikt som viser hva hvert arrangement mangler, og som åpner det samme skjemaet på delen om nettsiden | **Levert 12. oktober** (kapittel 12) |
 | A3 | **Nettsiden.** Bilde og ingress på kortene i «Neste gudstjeneste», «Hva skjer» og kalenderlisten. Egen side for hvert arrangement, som alle kort og kalenderen åpner. Bildet og ingressen følger med ved deling og i kalenderabonnementet. En nyhet som hører til et arrangement, har en faktaboks med tid og sted | **Levert 12. oktober** (kapittel 12) |
 | A4 | **«Lag neste arrangement»** kopierer også bilde, tekst og kjøreplan. I dag kopieres oppgavene, men ikke kjøreplanen | |
-| B | **Maler.** En mal har fakta, bilde og tekst, standard bemanning (roller og antall) og kjøreplanen fra arrangementet den ble laget av, med klokkeslett som følger starttiden. «Lag mal av dette arrangementet» og «Nytt arrangement fra mal» | |
-| C | **Serier.** Fra en mal: startdato, tidspunkt, siste dato og frekvens. Datoene vises før noe opprettes, enkeltdatoer kan tas bort, og det sies fra der det alt ligger et arrangement. Hvert arrangement i serien er et vanlig arrangement, merket som del av serien | Dagene i en serie regnes ut (`src/utils/series.ts`) |
+| B | **Maler.** En mal har fakta, bilde og tekst, program med rolle på hvert punkt, og oppgavene som skal bemannes. Programmet står som minutter fra start, så det følger arrangementets egen starttid. «Lag mal» på et arrangement, «Start fra en mal» i skjemaet, og siden «Maler» med standardmalen for gudstjeneste | **Levert 12. oktober** (kapittel 12) |
+| C | **Serier.** Fra skjemaet eller fra en mal: frekvens og siste dato, foreslått fram til sommeren. Dagene vises før noe opprettes, enkeltdager kan tas ut, og det sies fra der det alt ligger et arrangement. Hvert arrangement i serien er et vanlig arrangement, merket som del av serien. Resten av en serie kan slettes fra ett av arrangementene | **Levert 12. oktober** (kapittel 12) |
 
 **Slik er det bestemt**
 
-* **Prøveutgaver i skjemaet** (produkteier, 12. oktober). «Start fra en mal» og «Gjenta som serie» står i det store skjemaet før de er bygget, merket «Prøveutgave». Malen fyller inn tittel og klokkeslett fra fire faste eksempler. Serien viser dagene, men bare det første arrangementet opprettes, og skjemaet sier det. Dette er et unntak fra regelen om at et valg i admin skal virke der det står, og det gjelder til del B og C er levert.
+* **Prøveutgavene er byttet ut** (12. oktober). «Start fra en mal» og «Gjenta som serie» sto først i skjemaet som prøveutgaver, etter ønske fra produkteier. De er nå ekte: malene er menighetens egne, og en serie oppretter alle arrangementene.
+* **Et arrangement fra en mal er et vanlig arrangement.** En endring i malen gjelder arrangementene som lages etterpå, og ingenting som alt står i kalenderen.
+* **Én oppgave per rolle.** En rolle som har flere punkter i programmet, er én oppgave på arrangementet. En vakt som ikke står i programmet, eller en rolle som trenger flere enn én, legges til i malen.
+* **Siste dato foreslås fram til sommeren:** 30. juni som kommer. En serie har høyst 60 arrangementer.
+* **Resten av en serie kan slettes**, fra og med ett av arrangementene. Et arrangement noen er spurt om eller har svart på, blir stående.
 * **Ett skjema, to innganger** (produkteier, 12. oktober). Bilde og tekst fylles ut i arrangementets skjema, ikke i et eget skjema i CMS-et. Planleggeren og CMS-et åpner det samme skjemaet. Da er feltene like på begge nivå, og en mal kan senere bære dem.
-* **En fast person i en mal blir forespurt** på hvert arrangement, ikke satt opp som bekreftet.
+* **Fast person i en mal er ikke bygget.** Malen sier hvilke roller som trengs. Hvem som har dem, settes på hvert arrangement, og går da gjennom forespørsel og svar som ellers. *Planlagt:* en fast person i malen, som blir forespurt på hvert arrangement.
 * **Ingenting er påkrevd.** Malens bilde er standardbildet, og et arrangement uten mal og uten bilde vises uten.
 * **«Én gang i måneden»** er samme ukedag i samme uke i måneden. En måned uten en slik dag står over.
 * **Nivåene.** Skjema, bilde, tekst, maler og serier gjelder begge nivå. Bemanning og kjøreplan i en mal hører til Menighetsplan. På Menighetsplattform velges ingen ansvarlig gruppe: arrangementet går til gruppen som holder kalenderen.

@@ -157,6 +157,18 @@ export function gatheringUpdatesOf(values: GatheringFormValues, withGroup: boole
   };
 }
 
+const dayNumber = (day: string): number => Date.parse(`${day}T00:00:00Z`);
+
+/**
+ * The form's values for the same event on another day: one of the days of a series. An event
+ * that ends on a later day than it starts, ends as many days later here.
+ */
+export function onDay(values: GatheringFormValues, day: string): GatheringFormValues {
+  if (!values.endDate || !values.date) return { ...values, date: day };
+  const length = dayNumber(values.endDate) - dayNumber(values.date);
+  return { ...values, date: day, endDate: new Date(dayNumber(day) + length).toISOString().slice(0, 10) };
+}
+
 type GroupLike = { id: string; memberIds?: string[]; leaderIds?: string[] };
 
 /**

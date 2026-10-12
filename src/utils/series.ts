@@ -17,6 +17,32 @@ export type SeriesFrequency = (typeof SERIES_FREQUENCIES)[number]["id"];
 /** A series is never longer than this, however far apart the first and the last day are. */
 export const SERIES_LIMIT = 60;
 
+/**
+ * The last day a new series is suggested to run to: through the rest of the year and up to the
+ * summer. That is the 30th of June that comes next, this year's until it has passed.
+ */
+export function suggestedLastDay(today: string): string {
+  const year = Number(today.slice(0, 4));
+  if (!Number.isInteger(year) || today.length < 10) return "";
+  return today <= `${year}-06-30` ? `${year}-06-30` : `${year + 1}-06-30`;
+}
+
+/**
+ * What is taken away when the rest of a series is removed from one of its events on: that event
+ * and those after it. An event somebody has been asked about, or has answered for, is left
+ * standing, so nobody's answer disappears with it.
+ */
+export function restOfSeries<T extends { id: string; seriesId?: string; startsAt: string }>(
+  events: readonly T[],
+  from: Pick<T, "seriesId" | "startsAt">,
+  hasAnswers: (event: T) => boolean
+): { remove: T[]; kept: T[] } {
+  if (!from.seriesId) return { remove: [], kept: [] };
+  const start = new Date(from.startsAt).getTime();
+  const rest = events.filter((event) => event.seriesId === from.seriesId && new Date(event.startsAt).getTime() >= start);
+  return { remove: rest.filter((event) => !hasAnswers(event)), kept: rest.filter(hasAnswers) };
+}
+
 const DAY_MS = 24 * 60 * 60 * 1000;
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 const WEEKS: Record<Exclude<SeriesFrequency, "monthly">, number> = { weekly: 1, every2: 2, every3: 3, every4: 4 };

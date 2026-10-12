@@ -61,6 +61,9 @@ export interface NewGatheringInput {
   content?: string;
   linkUrl?: string;
   linkLabel?: string;
+  /** The template the event is made from, and the series it is part of. */
+  templateId?: string;
+  seriesId?: string;
 }
 
 export interface NewTaskInput {
@@ -132,6 +135,8 @@ export function buildGathering(data: NewGatheringInput): Gathering {
     content: data.content,
     linkUrl: data.linkUrl,
     linkLabel: data.linkLabel,
+    templateId: data.templateId,
+    seriesId: data.seriesId,
   };
 }
 

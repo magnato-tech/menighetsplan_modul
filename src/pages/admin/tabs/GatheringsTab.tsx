@@ -15,13 +15,17 @@ import {
   X,
   CalendarPlus,
   SlidersHorizontal,
+  Repeat,
+  Trash2,
 } from "lucide-react";
 import { StudioData, ShowFeedback } from "../studio";
 import { visibilityOf } from "../../../utils/visibility";
 import { DEFAULT_LOCATION, isWorshipService, locationOf } from "../../../utils/gatherings";
-import { GatheringFormDialog } from "../../../components/gathering/GatheringFormDialog";
+import { NewGatheringDialog } from "../NewGatheringDialog";
+import { useFirebase } from "../../../context/FirebaseDataContext";
+import { restOfSeries } from "../../../utils/series";
 import { useLevel } from "../../../hooks/useLevel";
-import { defaultGroupId, newGatheringForm, newGatheringOf, type GatheringFormValues } from "../../../utils/gatheringForm";
+import { defaultGroupId, newGatheringForm, type GatheringFormValues } from "../../../utils/gatheringForm";
 import { hasPlanner } from "../../../utils/level";
 
 interface GatheringsTabProps {
@@ -108,14 +112,33 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
         isGudstjeneste: newGatheringIsWorship,
       })
     );
-  const handleSaveFullForm = (values: GatheringFormValues) => {
-    const result = createGathering(newGatheringOf(values));
-    if (!result.success) return result;
+  const emptyQuickForm = () => {
     setNewGatheringTitle("");
     setNewGatheringDate("");
     setNewGatheringTheme("");
-    showFeedback("Nytt arrangement opprettet og lagt i kalenderen!");
-    return result;
+  };
+
+  // The rest of a series, taken away from one of its events on. An event somebody has been asked
+  // about or has answered for, stands: the series is what the admin pointed at, their answers are not.
+  const { assignments, deleteTask } = useFirebase();
+  const handleRemoveRestOfSeries = (item: AdminGatheringItem) => {
+    const taskIdsOf = (other: AdminGatheringItem) => new Set(other.tasks.map((task) => task.id));
+    const { remove, kept } = restOfSeries(
+      adminGatherings.map((other) => ({ ...other.gathering, item: other })),
+      item.gathering,
+      (event) => assignments.some((assignment) => taskIdsOf(event.item).has(assignment.taskId))
+    );
+    if (remove.length === 0) {
+      showFeedback("Ingen arrangementer i serien kan slettes: noen er spurt eller har svart på alle.", "error");
+      return;
+    }
+    const stands = kept.length > 0 ? ` ${kept.length} blir stående, fordi noen er spurt eller har svart.` : "";
+    if (!confirm(`Vil du slette ${remove.length === 1 ? "dette arrangementet" : `${remove.length} arrangementer`} i serien, fra og med ${formatNorwegianDateTime(item.gathering.startsAt)}?${stands}`)) return;
+    for (const event of remove) {
+      for (const task of event.item.tasks) deleteTask(task.id);
+      studio.deleteGathering(event.id);
+    }
+    showFeedback(`${remove.length} arrangementer i serien ble slettet`);
   };
 
   const handleCreateGathering = (e: React.FormEvent) => {
@@ -232,7 +255,7 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
               <span>Dette er en gudstjeneste</span>
             </label>
             <div className="w-full sm:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-              {/* Everything else an event can have: end, place, Bible text, who sees it, template and series */}
+              {/* Everything else an event can have: end, place, Bible text, who sees it, a template to start from and a series */}
               <button
                 type="button"
                 onClick={openFullForm}
@@ -270,6 +293,12 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
                         Gudstjeneste
                       </span>
                     )}
+                    {g.seriesId && (
+                      <span className="text-[10px] font-bold text-[var(--studio-muted)] bg-[var(--studio-bg)] border border-[var(--studio-border)] px-2 py-0.5 rounded flex items-center gap-1">
+                        <Repeat className="w-3 h-3" aria-hidden="true" />
+                        Del av serie
+                      </span>
+                    )}
 
                     {/* Staffing Status with SVG icon (WCAG AA) */}
                     {staffing.color === "green" && (
@@ -297,7 +326,18 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  {g.seriesId && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveRestOfSeries(item)}
+                      className="px-3 py-1.5 rounded-lg bg-[var(--studio-bg)] hover:bg-red-950 text-[var(--studio-muted)] hover:text-red-400 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer border border-[var(--studio-border)]"
+                      title="Sletter dette arrangementet og de som kommer etter i serien"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Slett resten av serien</span>
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => {
@@ -329,14 +369,7 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
       </div>
 
       {fullForm && (
-        <GatheringFormDialog
-          isNew
-          initial={fullForm}
-          groups={groups}
-          showGroup={withPlanner}
-          onSave={handleSaveFullForm}
-          onClose={() => setFullForm(null)}
-        />
+        <NewGatheringDialog studio={studio} showFeedback={showFeedback} initial={fullForm} onCreated={emptyQuickForm} onClose={() => setFullForm(null)} />
       )}
 
       {/* ========================================================= */}

@@ -14,6 +14,13 @@ export function volunteerRoleFields(role: VolunteerRole): VolunteerRole & { reco
   return { ...role, recordType: VOLUNTEER_ROLE_RECORD };
 }
 
+export const GATHERING_TEMPLATE_RECORD = "gatheringTemplate";
+
+/** A template for events (see utils/gatheringTemplates.ts), in the form it is stored in. */
+export function gatheringTemplateFields<T extends { id: string }>(template: T): T & { recordType: string } {
+  return { ...template, recordType: GATHERING_TEMPLATE_RECORD };
+}
+
 export const HEADCOUNT_RECORD = "gatheringHeadcount";
 
 export function headcountFields(count: GatheringHeadcount): GatheringHeadcount & { recordType: string } {

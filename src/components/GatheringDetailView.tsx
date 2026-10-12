@@ -23,6 +23,7 @@ import {
   Edit3,
   Plus,
   Printer,
+  LayoutTemplate,
 } from "lucide-react";
 import { RunSheetRowCard } from "./gathering/RunSheetRowCard";
 import { InstructionDialog } from "./gathering/InstructionDialog";
@@ -34,6 +35,8 @@ import { useFirebase } from "../context/FirebaseDataContext";
 import { useLevel } from "../hooks/useLevel";
 import { formOfGathering, gatheringUpdatesOf } from "../utils/gatheringForm";
 import { hasPlanner } from "../utils/level";
+import { saveGatheringTemplate } from "../services/gatheringTemplates";
+import { templateFromGathering } from "../utils/gatheringTemplates";
 
 interface GatheringDetailViewProps {
   gatheringId: string;
@@ -209,6 +212,16 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
     }
   };
 
+  // A template made of this event, as it stands: its programme, its tasks and how it is presented
+  const handleMakeTemplate = async () => {
+    const template = templateFromGathering(
+      gathering,
+      tasksWithDetails.map((detail) => detail.task),
+      volunteerRoles
+    );
+    if (await saveGatheringTemplate(template)) showToast(`Malen «${template.name}» er laget. Du finner den under Maler i menyen.`);
+  };
+
   // Print function
   const handlePrint = () => {
     window.print();
@@ -235,17 +248,17 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
       {/* Header Container */}
       <div className="p-4 bg-white border-b border-slate-200/80 space-y-3 print:border-b-2 print:border-slate-800 print:p-2">
         {/* Navigation Breadcrumb - hidden in print */}
-        <div className="flex items-center justify-between print:hidden">
+        <div className="flex flex-wrap items-center justify-between gap-2 print:hidden">
           <Link
             to={backLink}
             id="btn-back-to-group-or-admin"
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/80 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/80 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer whitespace-nowrap"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>{backLabel}</span>
           </Link>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2 whitespace-nowrap">
             {canAdminister && (
               <>
                 <button
@@ -266,6 +279,15 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Ny oppgave</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleMakeTemplate}
+                  className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200/90 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer shadow-2xs"
+                  title="Lager en mal av arrangementet, med programmet og oppgavene"
+                >
+                  <LayoutTemplate className="w-3.5 h-3.5 text-slate-500" />
+                  <span>Lag mal</span>
                 </button>
               </>
             )}

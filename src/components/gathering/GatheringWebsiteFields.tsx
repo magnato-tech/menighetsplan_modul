@@ -2,9 +2,12 @@ import React, { useEffect } from "react";
 import { CmsMediaPicker } from "../admin/CmsMediaPicker";
 import type { GatheringFormValues } from "../../utils/gatheringForm";
 
+/** How an event is presented on the website. An event has these fields, and so has a template. */
+type PresentationValues = Pick<GatheringFormValues, "imageUrl" | "imageAlt" | "summary" | "content" | "linkUrl" | "linkLabel">;
+
 interface GatheringWebsiteFieldsProps {
-  values: GatheringFormValues;
-  onChange: (changes: Partial<GatheringFormValues>) => void;
+  values: PresentationValues;
+  onChange: (changes: Partial<PresentationValues>) => void;
   /** Called once, when the fields have been fetched and stand in the form. */
   onReady?: () => void;
 }

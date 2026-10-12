@@ -1,13 +1,21 @@
-import React, { Suspense, lazy, useRef, useState } from "react";
-import { CalendarPlus, Edit3, EyeOff, Globe, Image as ImageIcon, LayoutTemplate, Plus, Repeat, Save, Star, X } from "lucide-react";
-import { TEMPLATE_MOCKUPS, type TemplateMockup } from "../../data/templateMockup";
+import React, { Suspense, lazy, useMemo, useRef, useState } from "react";
+import { AlertCircle, CalendarPlus, Edit3, EyeOff, Globe, Image as ImageIcon, LayoutTemplate, Plus, Repeat, Save, Star, X } from "lucide-react";
 import type { GatheringVisibility } from "../../types";
 import { gatheringFormError, hasPresentation, type GatheringFormValues } from "../../utils/gatheringForm";
+import { formValuesFromTemplate, type GatheringTemplate } from "../../utils/gatheringTemplates";
 import { DEFAULT_LOCATION } from "../../utils/gatherings";
-import { SERIES_FREQUENCIES, seriesDays, type SeriesFrequency } from "../../utils/series";
+import { SERIES_FREQUENCIES, SERIES_LIMIT, seriesDays, suggestedLastDay, type SeriesFrequency } from "../../utils/series";
 
 // The picture chooser brings the media library with it, so it is fetched when the part is opened
 const GatheringWebsiteFields = lazy(() => import("./GatheringWebsiteFields"));
+
+/** What is chosen in the form beyond the event's own fields. */
+export interface GatheringFormChoices {
+  /** The template the event is made from, or null. */
+  templateId: string | null;
+  /** The days of the series, the event's own day among them. Empty when the event is not repeated. */
+  days: string[];
+}
 
 interface GatheringFormDialogProps {
   /** A new event, or one that exists. A new one can start from a template and be repeated. */
@@ -18,8 +26,15 @@ interface GatheringFormDialogProps {
   showGroup: boolean;
   /** Set when the form is opened to fill in how the event is presented on the website: that part is then open, and in view. */
   openAt?: "website";
-  /** Stores the event. The form closes itself when it went well. */
-  onSave: (values: GatheringFormValues) => { success: boolean; error?: string };
+  /** The congregation's templates. A new event can be started from one of them. */
+  templates?: GatheringTemplate[];
+  /** The template the form is opened with, and whether it is opened to plan a series. */
+  initialTemplateId?: string;
+  initialRepeat?: boolean;
+  /** The events that already stand in the calendar, so a series can say where it meets one. */
+  existing?: { day: string; title: string }[];
+  /** Stores the event, or the events of the series. The form closes itself when it went well. */
+  onSave: (values: GatheringFormValues, choices: GatheringFormChoices) => { success: boolean; error?: string };
   onClose: () => void;
 }
 
@@ -33,38 +48,62 @@ const VISIBILITIES: { id: GatheringVisibility; label: string; says: string; icon
 const writtenDay = (day: string): string =>
   new Date(`${day}T12:00:00Z`).toLocaleDateString("nb-NO", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
 
+/** Today, as the calendar shows it to the one at the screen. */
+const today = (): string => {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+};
+
 const field = "w-full px-3 py-2.5 rounded-xl bg-white border border-slate-300 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500";
 const label = "block text-xs font-bold text-slate-700 mb-1";
 const sectionTitle = "text-sm font-black text-slate-900 flex items-center gap-2";
-const mockupMark = "text-[10px] font-bold uppercase tracking-wider text-amber-800 bg-amber-100 border border-amber-200 px-1.5 py-0.5 rounded";
 
 /**
  * The form an event is made and changed in, on a surface large enough for all of it (see
- * utils/gatheringForm.ts for what its fields hold). Starting from a template and repeating the
- * event are mock-ups until they are built: they are marked as such, and store nothing.
+ * utils/gatheringForm.ts for what its fields hold). A new event can start from one of the
+ * congregation's templates (utils/gatheringTemplates.ts), and be repeated as a series
+ * (utils/series.ts): the days are shown before anything is made, and each can be left out.
  */
-export const GatheringFormDialog: React.FC<GatheringFormDialogProps> = ({ isNew, initial, groups, showGroup, openAt, onSave, onClose }) => {
+export const GatheringFormDialog: React.FC<GatheringFormDialogProps> = ({
+  isNew,
+  initial,
+  groups,
+  showGroup,
+  openAt,
+  templates = [],
+  initialTemplateId,
+  initialRepeat = false,
+  existing = [],
+  onSave,
+  onClose,
+}) => {
   const [values, setValues] = useState<GatheringFormValues>(initial);
+  const [error, setError] = useState<string | null>(null);
+  const set = (changes: Partial<GatheringFormValues>) => setValues((current) => ({ ...current, ...changes }));
 
   // The part about the website is folded while it is empty, so the form is no longer than it has to be
   const [websiteOpen, setWebsiteOpen] = useState(openAt === "website" || hasPresentation(initial));
   // Brought into view once its fields are there: before that it is shorter than it will be
   const websiteSection = useRef<HTMLElement>(null);
   const showWebsiteSection = () => websiteSection.current?.scrollIntoView?.({ block: "start" });
-  const [error, setError] = useState<string | null>(null);
-  const set = (changes: Partial<GatheringFormValues>) => setValues((current) => ({ ...current, ...changes }));
 
-  // Mock-ups: the template the form was filled in from, and the series the event would be the first of
-  const [templateId, setTemplateId] = useState<string | null>(null);
-  const [repeats, setRepeats] = useState(false);
-  const [frequency, setFrequency] = useState<SeriesFrequency>("weekly");
-  const [lastDay, setLastDay] = useState("");
-  const days = repeats && values.date && lastDay ? seriesDays(values.date, lastDay, frequency) : [];
-
-  const startFrom = (template: TemplateMockup) => {
+  const [templateId, setTemplateId] = useState<string | null>(initialTemplateId ?? null);
+  const startFrom = (template: GatheringTemplate) => {
+    const filled = formValuesFromTemplate(template, values);
     setTemplateId(template.id);
-    set({ title: template.title, time: template.time, endTime: template.endTime, isGudstjeneste: template.isGudstjeneste });
+    setValues(filled);
+    if (hasPresentation(filled)) setWebsiteOpen(true);
   };
+
+  // The series: how often, to which day, and the days that are left out
+  const [repeats, setRepeats] = useState(initialRepeat);
+  const [frequency, setFrequency] = useState<SeriesFrequency>("weekly");
+  const [lastDay, setLastDay] = useState(() => suggestedLastDay(initial.date || today()));
+  const [leftOut, setLeftOut] = useState<string[]>([]);
+  const allDays = useMemo(() => (repeats && values.date && lastDay ? seriesDays(values.date, lastDay, frequency) : []), [repeats, values.date, lastDay, frequency]);
+  const days = allDays.filter((day) => !leftOut.includes(day));
+  const cutShort = allDays.length === SERIES_LIMIT;
+  const standingOn = (day: string): string[] => existing.filter((event) => event.day === day).map((event) => event.title);
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
@@ -73,12 +112,17 @@ export const GatheringFormDialog: React.FC<GatheringFormDialogProps> = ({ isNew,
       setError(problem);
       return;
     }
-    const result = onSave(values);
+    if (isNew && repeats && days.length === 0) {
+      setError("Serien har ingen dager. Velg en siste dato etter den første, eller slå av gjentakelsen.");
+      return;
+    }
+    const result = onSave(values, { templateId: isNew ? templateId : null, days: isNew && repeats ? days : [] });
     if (result.success) onClose();
     else setError(result.error || "Arrangementet kunne ikke lagres.");
   };
 
   const heading = isNew ? "Nytt arrangement" : "Rediger arrangement";
+  const submitLabel = !isNew ? "Lagre endringer" : repeats && days.length > 1 ? `Opprett ${days.length} arrangementer` : "Opprett arrangement";
 
   return (
     <div className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center sm:p-4 bg-slate-900/60 backdrop-blur-xs">
@@ -105,27 +149,37 @@ export const GatheringFormDialog: React.FC<GatheringFormDialogProps> = ({ isNew,
                 <h3 id="gathering-form-template" className={sectionTitle}>
                   <LayoutTemplate className="w-4 h-4 text-indigo-600" aria-hidden="true" />
                   Start fra en mal
-                  <span className={mockupMark}>Prøveutgave</span>
                 </h3>
-                <p className="text-xs text-slate-600">
-                  En mal fyller inn tittel og klokkeslett. Maler med bemanning og kjøreplan kommer senere. Disse fire er eksempler.
-                </p>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-                  {TEMPLATE_MOCKUPS.map((template) => (
-                    <button
-                      key={template.id}
-                      type="button"
-                      aria-pressed={templateId === template.id}
-                      onClick={() => startFrom(template)}
-                      className={`text-left px-3 py-2.5 rounded-xl border cursor-pointer transition-colors ${
-                        templateId === template.id ? "border-indigo-500 bg-indigo-50" : "border-slate-200 bg-white hover:border-indigo-300"
-                      }`}
-                    >
-                      <span className="block text-sm font-bold text-slate-900">{template.name}</span>
-                      <span className="block text-[11px] text-slate-500">{template.rhythm}</span>
-                    </button>
-                  ))}
-                </div>
+                {templates.length === 0 ? (
+                  <p className="text-xs text-slate-600">Ingen maler er laget ennå. En mal lages under «Maler» i menyen, eller av et arrangement som alt er satt opp.</p>
+                ) : (
+                  <>
+                    <p className="text-xs text-slate-600">Malen fyller inn skjemaet, og arrangementet får malens program og oppgaver. Alt kan endres etterpå.</p>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+                      {templates.map((template) => (
+                        <button
+                          key={template.id}
+                          type="button"
+                          aria-pressed={templateId === template.id}
+                          onClick={() => startFrom(template)}
+                          className={`text-left px-3 py-2.5 rounded-xl border cursor-pointer transition-colors ${
+                            templateId === template.id ? "border-indigo-500 bg-indigo-50" : "border-slate-200 bg-white hover:border-indigo-300"
+                          }`}
+                        >
+                          <span className="block text-sm font-bold text-slate-900">{template.name}</span>
+                          <span className="block text-[11px] text-slate-500">
+                            Kl. {template.time} · {template.program.length} programpunkter
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                    {templateId && (
+                      <button type="button" onClick={() => setTemplateId(null)} className="text-xs font-semibold text-slate-600 underline cursor-pointer">
+                        Ikke bruk mal: opprett uten program og oppgaver
+                      </button>
+                    )}
+                  </>
+                )}
               </section>
             )}
 
@@ -312,7 +366,6 @@ export const GatheringFormDialog: React.FC<GatheringFormDialogProps> = ({ isNew,
                 <h3 id="gathering-form-series" className={sectionTitle}>
                   <Repeat className="w-4 h-4 text-indigo-600" aria-hidden="true" />
                   Gjenta som serie
-                  <span className={mockupMark}>Prøveutgave</span>
                 </h3>
                 <label className="flex items-center gap-2.5 text-sm text-slate-800 cursor-pointer">
                   <input type="checkbox" checked={repeats} onChange={(e) => setRepeats(e.target.checked)} className="w-4 h-4 rounded border-slate-300" />
@@ -345,27 +398,44 @@ export const GatheringFormDialog: React.FC<GatheringFormDialogProps> = ({ isNew,
                           onChange={(e) => setLastDay(e.target.value)}
                           className={field}
                         />
+                        <p className="text-[11px] text-slate-500 mt-1">Foreslått fram til sommeren.</p>
                       </div>
                     </div>
-                    {days.length > 0 ? (
+                    {allDays.length > 0 ? (
                       <div className="space-y-2">
                         <p className="text-xs font-bold text-slate-800">
-                          Serien gir {days.length} {days.length === 1 ? "arrangement" : "arrangementer"}:
+                          {days.length === 1 ? "1 arrangement opprettes" : `${days.length} arrangementer opprettes`}. Ta bort haken på en dag som skal stå over.
                         </p>
-                        <ul className="flex flex-wrap gap-1.5">
-                          {days.map((day) => (
-                            <li key={day} className="text-[11px] font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-2 py-1 rounded-lg">
-                              {writtenDay(day)}
-                            </li>
-                          ))}
+                        <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
+                          {allDays.map((day) => {
+                            const there = standingOn(day);
+                            return (
+                              <li key={day} className="text-xs text-slate-700 bg-slate-50 border border-slate-200 px-2.5 py-1.5 rounded-lg">
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={!leftOut.includes(day)}
+                                    onChange={(e) => setLeftOut((current) => (e.target.checked ? current.filter((other) => other !== day) : [...current, day]))}
+                                    className="w-3.5 h-3.5 rounded border-slate-300"
+                                  />
+                                  <span className="font-semibold">{writtenDay(day)}</span>
+                                </label>
+                                {/* Said with an icon and in words: the day already holds something */}
+                                {there.length > 0 && (
+                                  <span className="mt-1 flex items-start gap-1 text-[11px] font-semibold text-amber-800">
+                                    <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-px" aria-hidden="true" />
+                                    Ligger allerede: {there.join(", ")}
+                                  </span>
+                                )}
+                              </li>
+                            );
+                          })}
                         </ul>
+                        {cutShort && <p className="text-[11px] text-slate-500">En serie har høyst {SERIES_LIMIT} arrangementer. Resten kan lages som en ny serie.</p>}
                       </div>
                     ) : (
                       <p className="text-xs text-slate-500">Velg dato for arrangementet og siste dato, så vises dagene i serien her.</p>
                     )}
-                    <p className="text-xs text-amber-900 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
-                      Serier er ikke bygget ennå. Når du lagrer, opprettes bare det første arrangementet.
-                    </p>
                   </>
                 )}
               </section>
@@ -385,7 +455,7 @@ export const GatheringFormDialog: React.FC<GatheringFormDialogProps> = ({ isNew,
                 className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold flex items-center gap-2 shadow-sm cursor-pointer"
               >
                 <Save className="w-4 h-4" aria-hidden="true" />
-                {isNew ? "Opprett arrangement" : "Lagre endringer"}
+                {submitLabel}
               </button>
             </div>
           </div>

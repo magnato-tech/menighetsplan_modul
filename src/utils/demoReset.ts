@@ -4,6 +4,7 @@ import { CMS_COLLECTIONS, CMS_SETTINGS_DOC_ID } from "../data/collections";
 import { documentsToDelete, keepParts } from "./dataParts";
 import type { Dataset, DatasetDocument } from "./dataset";
 import { withoutStaffPictures } from "./demoPortraits";
+import { GATHERING_TEMPLATE_RECORD } from "../data/settingsRecords";
 import { collectionPrefixOf } from "./demoSite";
 import { weeksBetween, withLiveDates } from "./liveDates";
 
@@ -105,7 +106,9 @@ export function siteDocuments(example: MockDocument[], set: SiteSet | null, now:
 
   // Should the two share a place, the congregation's own document is the one that stands
   const fromSet = new Set(website.map(pathOf));
-  return [...example.filter((document) => !gone.has(pathOf(document)) && !fromSet.has(pathOf(document))), ...website];
+  // The templates for events are stored with the settings, but belong to the planner, and stay
+  const isTemplate = (document: MockDocument) => (document.data as { recordType?: unknown }).recordType === GATHERING_TEMPLATE_RECORD;
+  return [...example.filter((document) => (!gone.has(pathOf(document)) || isTemplate(document)) && !fromSet.has(pathOf(document))), ...website];
 }
 
 // ---------- What is written and what is removed ----------

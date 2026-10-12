@@ -99,6 +99,9 @@ export interface Gathering {
   /** Where the button on the event leads, e.g. to a sign-up form, and what the button says. */
   linkUrl?: string;
   linkLabel?: string;
+  /** The template the event was made from, and the series it was made as part of (see utils/gatheringTemplates.ts and utils/series.ts). */
+  templateId?: string;
+  seriesId?: string;
   updatedBy?: string;
   updatedAt?: string;
 }

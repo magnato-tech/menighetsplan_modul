@@ -57,6 +57,8 @@ import {
 
   LazyRolesTab,
 
+  LazyTemplatesTab,
+
   LazySermonsTab,
 
   LazySiteSettingsTab,
@@ -502,6 +504,14 @@ function AdminStudioContent() {
         <StudioTabPanel tab="planlegger-roller" activeTab={activeTab} visited={visitedTabs.includes("planlegger-roller")}>
 
           <LazyRolesTab studio={studio} showFeedback={showFeedback} />
+
+        </StudioTabPanel>
+
+
+
+        <StudioTabPanel tab="planlegger-maler" activeTab={activeTab} visited={visitedTabs.includes("planlegger-maler")}>
+
+          <LazyTemplatesTab studio={studio} showFeedback={showFeedback} />
 
         </StudioTabPanel>
 

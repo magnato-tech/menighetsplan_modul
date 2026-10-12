@@ -21,6 +21,7 @@ import {
   Palette,
   Database,
   Badge,
+  LayoutTemplate,
   Images,
   CircleHelp,
   Puzzle,
@@ -411,6 +412,21 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({ studio, activeTab,
               <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--studio-surface)] text-[var(--studio-muted)]">
                 {adminPersons.length}
               </span>
+            </button>
+
+            {/* Templates are for both levels: an event is repeated with or without the planner */}
+            <button
+              type="button"
+              {...tabPrefetchHandlers("planlegger-maler")}
+              onClick={() => onTabChange("planlegger-maler")}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
+                activeTab === "planlegger-maler"
+                  ? "bg-indigo-600 text-white shadow-sm"
+                  : "text-[var(--studio-muted)] hover:text-[var(--studio-text)] hover:bg-[var(--studio-bg)]"
+              }`}
+            >
+              <LayoutTemplate className="w-4 h-4" />
+              <span>Maler</span>
             </button>
 
             {hasPlanner(level) && (
