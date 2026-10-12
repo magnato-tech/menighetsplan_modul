@@ -21,6 +21,14 @@ import {
 } from "../../../utils/personDirectory";
 import { PersonsTable } from "./persons/PersonsTable";
 import { studioSecondaryButton } from "../studioTheme";
+import { birthDateError, todayInNorway } from "../../../utils/birthDate";
+import { UserPlus } from "lucide-react";
+
+const emailError = (value: string): string | null => {
+  const trimmed = value.trim();
+  if (trimmed === "") return null;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed) ? null : "E-postadressen ser ikke riktig ut.";
+};
 
 interface PersonsTabProps {
   studio: StudioData;
@@ -28,7 +36,12 @@ interface PersonsTabProps {
 }
 
 export const PersonsTab: React.FC<PersonsTabProps> = ({ studio, showFeedback }) => {
-  const { adminPersons } = studio;
+  const { adminPersons, addPerson } = studio;
+  const [creating, setCreating] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+  const [newPhone, setNewPhone] = useState("");
+  const [newBirthDate, setNewBirthDate] = useState("");
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [isPopulating, setIsPopulating] = useState<boolean>(false);
   const [view, setView] = useState<"cards" | "table">("table");
@@ -57,6 +70,31 @@ export const PersonsTab: React.FC<PersonsTabProps> = ({ studio, showFeedback }) 
     return sortPersonRows(filtered, sortKey, sortDirection);
   }, [adminPersons, searchTerm, sortKey, sortDirection]);
 
+  const handleCreatePerson = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!newName.trim()) {
+      showFeedback?.("Personen må ha et navn", "error");
+      return;
+    }
+    const wrongEmail = emailError(newEmail);
+    const wrongBirthDate = birthDateError(newBirthDate);
+    if (wrongEmail || wrongBirthDate) return;
+    const result = addPerson({
+      name: newName.trim(),
+      email: newEmail.trim() || undefined,
+      phone: newPhone.trim() || undefined,
+      birthDate: newBirthDate || undefined,
+    });
+    if (result.success) {
+      setNewName("");
+      setNewEmail("");
+      setNewPhone("");
+      setNewBirthDate("");
+      setCreating(false);
+      showFeedback?.(`${newName.trim()} er lagt inn i registeret.`);
+    }
+  };
+
   const handleSort = (key: PersonSortKey) => {
     const next = nextSort(sortKey, sortDirection, key);
     setSortKey(next.key);
@@ -80,6 +118,14 @@ export const PersonsTab: React.FC<PersonsTabProps> = ({ studio, showFeedback }) 
 
         <button
           type="button"
+          onClick={() => setCreating((open) => !open)}
+          className="px-3.5 py-2 rounded-xl bg-[var(--studio-surface)] border border-[var(--studio-border)] text-[var(--studio-text)] text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+        >
+          <UserPlus className="w-4 h-4" />
+          <span>{creating ? "Lukk skjema" : "Ny person"}</span>
+        </button>
+        <button
+          type="button"
           onClick={handlePopulateTestData}
           disabled={isPopulating}
           className="px-3.5 py-2 rounded-xl bg-indigo-600/90 hover:bg-indigo-600 disabled:opacity-50 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer self-start sm:self-auto shrink-0"
@@ -93,6 +139,62 @@ export const PersonsTab: React.FC<PersonsTabProps> = ({ studio, showFeedback }) 
           <span>{isPopulating ? "Fyller testdata..." : "Populer testdata (32 personer)"}</span>
         </button>
       </div>
+
+      {creating && (
+        <form onSubmit={handleCreatePerson} className="p-5 rounded-2xl bg-[var(--studio-surface)] border border-[var(--studio-border)] grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <label className="space-y-1 text-xs font-semibold text-[var(--studio-muted)]">
+            Navn
+            <input
+              id="input-new-person-name"
+              value={newName}
+              onChange={(event) => setNewName(event.target.value)}
+              required
+              className="w-full px-3 py-2 rounded-xl bg-[var(--studio-input)] border border-[var(--studio-border)] text-[var(--studio-input-text)] font-normal"
+            />
+          </label>
+          <label className="space-y-1 text-xs font-semibold text-[var(--studio-muted)]">
+            E-post
+            <input
+              id="input-new-person-email"
+              type="email"
+              value={newEmail}
+              onChange={(event) => setNewEmail(event.target.value)}
+              className="w-full px-3 py-2 rounded-xl bg-[var(--studio-input)] border border-[var(--studio-border)] text-[var(--studio-input-text)] font-normal"
+            />
+            {emailError(newEmail) && <span className="block font-normal text-red-700">{emailError(newEmail)}</span>}
+          </label>
+          <label className="space-y-1 text-xs font-semibold text-[var(--studio-muted)]">
+            Telefon
+            <input
+              id="input-new-person-phone"
+              value={newPhone}
+              onChange={(event) => setNewPhone(event.target.value)}
+              className="w-full px-3 py-2 rounded-xl bg-[var(--studio-input)] border border-[var(--studio-border)] text-[var(--studio-input-text)] font-normal"
+            />
+          </label>
+          <label className="space-y-1 text-xs font-semibold text-[var(--studio-muted)]">
+            Fødselsdato
+            <input
+              id="input-new-person-birthdate"
+              type="date"
+              value={newBirthDate}
+              max={todayInNorway()}
+              onChange={(event) => setNewBirthDate(event.target.value)}
+              className="w-full px-3 py-2 rounded-xl bg-[var(--studio-input)] border border-[var(--studio-border)] text-[var(--studio-input-text)] font-normal"
+            />
+            {birthDateError(newBirthDate) ? (
+              <span className="block font-normal text-red-700">{birthDateError(newBirthDate)}</span>
+            ) : (
+              <span className="block font-normal text-[var(--studio-muted)]">Valgfritt. Vises ikke på nettsiden.</span>
+            )}
+          </label>
+          <div className="sm:col-span-2 flex justify-end">
+            <button type="submit" className="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold cursor-pointer">
+              Legg inn
+            </button>
+          </div>
+        </form>
+      )}
 
       {adminPersons.length < 5 && (
         <div className="p-4 rounded-2xl bg-[var(--studio-accent-bg)] border border-[var(--studio-accent-border)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
