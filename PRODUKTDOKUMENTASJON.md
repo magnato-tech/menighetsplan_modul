@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.18 · **Sist oppdatert:** 2026-10-12
+> **Dokumentversjon:** 4.19 · **Sist oppdatert:** 2026-10-12
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -636,13 +636,13 @@ Kontrakten står i `INTEGRASJON-MENIGHETSPLAN.md`. Det eksterne CMS-et (`menighe
 | Område | Mål | I dag |
 |:---|:---|:---|
 | Innlogging | Medlemmer logger inn med Google-konto eller en lenke på e-post. Rollen styrer hva man ser og kan gjøre | **Levert 7. oktober** for skjermene: Min side krever at man står i personregisteret, og admin krever administrator (kapittel 10.1) |
-| Regler i databasen | Besøkende leser bare offentlige data. Et medlem endrer bare sitt eget. Bare administrator endrer offentlige profilfelt og samtykke | **Planlagt (trinn 4).** Reglene slipper fortsatt gjennom lesing av alt, og skriving uten innlogging. Innloggingen sperrer skjermene, ikke dataene |
+| Regler i databasen | Besøkende leser bare offentlige data. Et medlem endrer bare sitt eget. Bare administrator endrer offentlige profilfelt og samtykke | **Skrevet 12. oktober, ikke prøvd mot en database og ikke publisert** (kapittel 12, «Lukket database»). Demoen har sine egne, åpne regler |
 | Sporbarhet | `updatedBy` er alltid den innloggede brukeren | **Delvis.** Regelen finnes, men gjelder først når noen er logget inn |
-| Personregisteret | Lastes bare for innloggede | **Delvis.** Nettsiden viser bare personer med samtykke, og laster ikke oppgaver, tildelinger eller meldinger. Hele personregisteret lastes likevel til nettleseren |
+| Personregisteret | Lastes bare for innloggede | **Levert 12. oktober** for en menighets egen installasjon: en besøkende får bare de offentlige kopiene av personer med samtykke. Demoen og utviklermaskinen laster fortsatt hele registeret, for der går hvem som helst inn som en person |
 | Samtykke | Ingen person vises uten registrert samtykke | **Levert** |
 | API | Ingen persondata ut | **Levert** |
 
-**Databasen inneholder bare demodata.** Ekte persondata skal ikke legges inn før reglene i databasen er lukket (trinn 4).
+**Databasen inneholder bare demodata.** Ekte persondata skal ikke legges inn før reglene i `firestore.rules` er prøvd og publisert i menighetens egen database. Reglene i `firestore.demo.rules` er åpne, og skal aldri publiseres i en database med ekte personer.
 
 ### 10.1 Innlogging og roller
 
@@ -934,6 +934,27 @@ Del B og C av «Arrangement, maler og serier» (kapittel 14). Bestilt av produkt
 | **Prøvd** | 66 nye sjekker: klokka i et program, standardmalen, oppgavene en mal gir, arrangement og serie fra mal, mal av et arrangement, skjemaene og siden «Maler» |
 | **Ikke levert her** | Fast person i en mal. Dra og slipp i programmet, og redigering av programmet på et arrangement som alt er opprettet (fase 3). En endring i en mal oppdaterer ikke arrangementer som alt er laget |
 
+### Lukket database (12. oktober 2026)
+
+Første del av trinn 4 (kapittel 14). Bestilt av produkteier for at planene fram til sommeren kan legges inn hos første menighet, og frivillige kan melde seg på oppgaver: da står ekte personer i databasen.
+
+| Område | Levert |
+|:---|:---|
+| **Tre slags besøkende** | Hvem som helst leser nettsiden slik den er publisert. Den som står i personregisteret og har logget inn, leser planleggingen og registeret, og svarer for seg selv. Administrator endrer alt |
+| **Innlogginger** | Databasen kan ikke lete i registeret etter en e-postadresse. For hver adresse som står på nøyaktig én person, ligger det derfor et eget dokument som sier hvem personen er, og om personen er administrator. Det er dette reglene slår opp i |
+| **Offentlige kopier** | For hver person som har samtykket til offentlig profil, ligger det en kopi med bare de offentlige feltene: navn, tittel, offentlig telefon og e-post, bilde og stabsopplysninger. Nettsiden leser kopiene. Privat telefon og e-post er ikke med |
+| **Følger registeret av seg selv** | Innloggingene og kopiene skrives fra registeret, i nettleseren til en administrator som har appen åpen. Den som legger inn en frivillig med e-postadresse, gir dermed personen adgang i samme øyeblikk. En administrator kan ikke miste sin egen innlogging på denne måten |
+| **Nettsiden** | En besøkende får bare gruppene og arrangementene som er merket offentlige, og ingenting av oppgaver, tildelinger, meldinger og oppmøte |
+| **Gruppeledere** | En leder eller nestleder endrer sin egen gruppe, arrangementene til gruppen og oppgavene på dem |
+| **Medlemmer** | Svarer på forespørsler, melder seg på og av oppgaver, svarer på om de kommer, skriver meldinger i eget navn, og slår egne varsler av og på |
+| **Besøkstall** | En besøkende kan legge til i dagens summer, og ikke noe annet |
+| **Bilder og filer** | Alle kan se dem. Bare administrator kan laste opp og slette |
+| **Første administrator** | Legges inn utenfra før reglene publiseres (`npm run first-admin`), og får da også sin innlogging |
+| **Demoen** | Uendret. Den har sin egen database og sine egne, åpne regler, og ingen logger inn der |
+| **Prøvd** | 34 nye sjekker: innloggingene et register gir, delte adresser, de offentlige kopiene, hvem en konto er, hva en besøkende og en innlogget får fra databasen, og at skrivingen fra registeret stopper når den blir avvist |
+| **Ikke prøvd** | Selve reglene er ikke kjørt mot en database. Det krever et verktøy som ikke er installert på maskinen de er skrevet på. De skal prøves før de publiseres hos en menighet |
+| **Ikke levert her** | Tilgang per menighet (nivå og moduler). En advarsel i admin når to personer deler e-postadresse: ingen av dem kan logge inn. Finere regler for hvem som kan endre tildelinger |
+
 ---
 
 
@@ -943,8 +964,8 @@ Sortert etter hvor mye de betyr for en menighet som skal ta løsningen i bruk.
 
 | # | Mangel | Løses i |
 |:---:|:---|:---|
-| 1 | Databasereglene er åpne. Innloggingen sperrer skjermene, men den som kjenner databasen, kan fortsatt lese og skrive utenom | Trinn 4 |
-| 2 | Personregisteret og kladder leveres til alle nettlesere | Fase 1 |
+| 1 | De lukkede databasereglene er skrevet, men ikke prøvd mot en database: maskinen de er skrevet på, mangler verktøyet som kjører regler lokalt. De må prøves før første menighet tas i bruk. Tre ting er bevisst grove: alle i registeret kan lese hele registeret, alle i registeret kan endre tildelinger, og en besøkende kan legge til i besøkstallene med hvilke tall som helst | Trinn 4 |
+| 2 | Kladder til nyheter, taler og stab leveres til alle nettlesere. Kladder til sider leveres bare til dem som står i registeret. I demoen leveres hele registeret til alle, som før | Fase 1 |
 | 3 | To personer som deler e-postadresse, kan ikke logge inn før adressen står på bare én av dem. Første administrator må legges inn med et skript | Trinn 7 for skriptet |
 | 4 | Forsidens tekster og menighetens navn står delvis i koden | Fase 2 |
 | 5 | Bilder lagres inne i sidedokumentene, og kan da ikke brukes som delebilde | Fase 2 |
@@ -956,8 +977,8 @@ Sortert etter hvor mye de betyr for en menighet som skal ta løsningen i bruk.
 | 11 | Et nytt gruppemedlem ser hele meldingshistorikken | Fase 3 |
 | 12 | Medlemmet kan ikke oppgi grunn for et forfall, og lederen ser den ikke | Fase 3 |
 | 13 | Firebase-klienten lastes på første nettsidebesøk (~1,3 MB JavaScript utover CSS). Admin og Min side er skilt ut, men Firestore er felles datakilde for alle flater | Fase 4 |
-| 14 | Reglene i databasen i drift er eldre enn `firestore.rules`, og avviser nye samlinger (prøvd 5. oktober: `volunteer_roles` og `gatheringHeadcounts`). Tjenesteroller og oppmøtetall lagres derfor i `cms_settings`, merket med `recordType` | Fase 1 |
-| 15 | Besøkstallene kan endres og slettes av hvem som helst så lenge databasereglene er åpne, og de ligger i `cms_settings` til reglene er publisert. Med innlogging trenger de en egen samling der en besøkende bare kan legge til i dagens summer | Fase 1 |
+| 14 | Tjenesteroller, oppmøtetall, maler og besøkstall ligger fortsatt i `cms_settings`, merket med `recordType`, slik de ble lagt da reglene i drift avviste nye samlinger. De lukkede reglene kjenner merkene | Fase 1 |
+| 15 | Med de lukkede reglene kan en besøkende bare legge til i dagens besøkstall, ikke slette. Reglene kan ikke se om det som legges til, er ett besøk eller tusen | Fase 1 |
 | 16 | Moduler kan slås av og på av hvem som helst med adgang til admin, og det finnes ikke noe skille mellom hva en menighet har fått tilgang til og hva den har slått på. Kalender og Meldinger husker valget bare i nettleseren | Fase 1 |
 | 17 | Noen faste tekster passer ikke alle menigheter: standardtekstene i innholdsmodulene (søndagsskole, kirkekaffe, husfellesskap annenhver uke), de tre infoboksene på forsiden, og setningen om skattefradrag i bunnen av nettsiden. Demodataene (eksempelmenigheten) kan fortsatt legges inn fra Database i enhver installasjon | Fase 2, og trinn 2 for demodataene |
 | 18 | På Menighetsplattform er bare menyen og fanene i admin tilpasset. Min side, arrangementssiden, oversikten og gruppene på nettsiden viser fortsatt alt | Trinn 3c |
@@ -990,7 +1011,7 @@ Trinnene tas i rekkefølge. Et trinn er ferdig når det er prøvd, testene er gr
 | 1 | **Nøytral og flyttbar app.** Databasen leses fra installasjonens innstillinger. Ingenting om én menighet står i koden | **Levert 7. oktober** (kapittel 12) |
 | 2 | **Innlogging og roller:** administrator, gruppeleder og medlem. Testbryteren fjernes, og admin legges bak innlogging | **Levert 7. oktober** (kapittel 10.1 og 12) |
 | 3 | **Demoen** på demo.menighetsplan.no, i delene under | Pågår |
-| 4 | **Lukkede databaseregler og tilgang per menighet.** Regler for appens egne data. Nettsiden slutter å laste personregisteret. Appen leser `/system/entitlements`, siden Moduler viser «ikke inkludert», «av» og «på», og reglene sperrer det menigheten ikke har | |
+| 4 | **Lukkede databaseregler og tilgang per menighet.** Regler for appens egne data. Nettsiden slutter å laste personregisteret. Appen leser `/system/entitlements`, siden Moduler viser «ikke inkludert», «av» og «på», og reglene sperrer det menigheten ikke har | **Reglene og appens del er skrevet 12. oktober** (kapittel 12), ikke prøvd mot en database og ikke publisert. Tilgang per menighet er ikke bygget |
 | 5 | **Første ekte menighet**, satt opp for hånd | |
 | 6 | **Prøveperiode** for en menighet som vil prøve før den bestiller | |
 | 7 | **Oppsett av ny menighet:** skript og sjekkliste for database, regler, tilgang, første administrator, startinnhold og adresse. Bygges bare hvis oppsett for hånd blir for tungt med 10–20 menigheter | |

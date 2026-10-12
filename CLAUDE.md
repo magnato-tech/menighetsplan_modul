@@ -82,7 +82,8 @@ Kjør `npm run lint` og `npm test` før en endring regnes som ferdig.
 | `src/components/husfellesskap/` | Fanene og dialogene i husfellesskapsvisningen (`HusfellesskapView.tsx`) |
 | `src/pages/`, `src/components/` | Øvrige sider og komponenter |
 | `tests/` | Tester (Vitest). `assert(betingelse, navn)` fra `tests/assert.ts` registrerer én navngitt sjekk. `tests/support/offlineFirestore.ts` gir en ekte Firestore-klient uten nett til tester av datalaget |
-| `firestore.rules` | Sikkerhetsregler |
+| `firestore.rules`, `storage.rules` | Reglene i en menighets egen database og fillager: lukket for alle som ikke står i registeret, bortsett fra det nettsiden viser. Demoen har `firestore.demo.rules`, som er åpne |
+| `src/utils/logins.ts`, `src/utils/mirror.ts`, `src/services/registerMirror.ts`, `src/hooks/useRegisterMirror.ts` | Det som ligger ved siden av registeret i en lukket database: innloggingene (`logins`, én per e-postadresse) og de offentlige kopiene av personer (`publicProfiles`). Hva de er, hva som må skrives for at de skal følge registeret, lagringen, og kroken som skriver dem fra nettleseren til en administrator |
 
 ---
 
@@ -94,6 +95,9 @@ Kjør `npm run lint` og `npm test` før en endring regnes som ferdig.
 - **`undefined` før skriving.** Firestore avviser `undefined`. Et nytt dokument går gjennom `sanitizeForFirestore`, som fjerner slike felt. En oppdatering går gjennom `forUpdate`, som sletter feltet i databasen. Bruker du `sanitizeForFirestore` på en oppdatering, blir et tømt felt stående med gammel verdi.
 - **Navnet på en samling skrives bare i `src/data/collections.ts`.** Bruk `COLLECTIONS` og `CMS_COLLECTIONS`, aldri navnet som tekst. I demoen har navnene id-en til menigheten den besøkende ser på, foran (`sogne-cms_pages`), og det er slik hver menighet der har sitt eget innhold. Det som skal ha de vanlige navnene uansett (datasett, nullstillingen), bruker `PLAIN_COLLECTIONS`. `tests/demo-site.test.ts` feiler ellers.
 - **Nye samlinger** legges inn i `src/data/collections.ts` og får en regel i `firestore.rules`. En test feiler hvis regelen mangler. **Reglene i drift er eldre enn filen** og avviser nye samlinger til de publiseres. Prøv en skriving mot databasen før en funksjon bygges på en ny samling; tjenesteroller, oppmøtetall og besøkstall ligger derfor i `cms_settings` med `recordType`. En lytter på `cms_settings` spør etter sitt eget merke, aldri etter hele samlingen: besøkstallene der endres ved hvert besøk.
+- **To slags installasjoner leser forskjellig.** Der hvem som helst kan gå inn som en person (utviklermaskinen og demoen, `CAN_STAND_IN` i `FirebaseDataContext.tsx`), er databasen åpen, og alt leses som før. I en menighets egen installasjon slår appen opp kontoens innlogging (`logins/<e-postadresse>`) og leser registeret og planleggingen bare for den som har en. Alle andre får de offentlige kopiene (`publicProfiles`) og gruppene og arrangementene med `isPublic == true`. En spørring fra en besøkende må sette samme vilkår som regelen, ellers avvises hele spørringen.
+- **En regel som endres, endres sammen med appen.** `firestore.rules` og det appen leser og skriver, må stemme: et nytt felt en frivillig skal kunne endre, en ny samling eller et nytt merke i `cms_settings` trenger en regel. `logins` og `publicProfiles` redigeres aldri for hånd og er ikke innhold: de er ikke med i `ALL_COLLECTIONS`, i datasett eller i demoen.
+- **Første administrator før reglene.** I en ny database kjøres `npm run first-admin` mens den ennå er åpen. Den skriver personen og innloggingen. Etterpå publiseres `firestore.rules` og `storage.rules`. `firestore.demo.rules` publiseres aldri i en database med ekte personer.
 - **Ingenting om én menighet i koden.** Ikke et navn, en adresse, et kirkesamfunn eller en database. Det en menighet er og har, kommer fra innstillingene (`cms_settings`) eller fra installasjonens innstillinger (`src/installation.ts`), og et felt som er tomt, tegnes ikke. Eksempelmenigheten er oppdiktet, også navnet, og hører hjemme i demodataene (`src/data/cmsData.ts`, `src/data/mockData.ts`) og ingen andre steder. Heller ikke demodataene nevner en ekte menighet eller et kirkesamfunn. `tests/neutral-code.test.ts` feiler ellers.
 - **Demoinnholdet er skrevet for én uke.** Hver dato i `mockData.ts` og `cmsData.ts` settes som om i dag var en dag i uka som begynner `DEMO_CONTENT_WEEK`: det som er gjort, dateres før den uka, og et oppmøtetall gjelder en samling som er holdt. Teksten nevner ingen årstid, høytid, måned eller dato, for innholdet vises hele året. Datoene flyttes når dokumentene lages (`getCustomMockDocuments(counts, now)`), så en test som trenger faste datoer, gir `now`. `tests/live-demo-data.test.ts` feiler ellers.
 - **Valget av menighet i demoen er den besøkendes eget.** Det ligger i nettleseren og bestemmer hvilke samlinger appen leser (`DEMO_SITE`). Ingenting i demoen bytter ut innhold for alle: «Velg menighet» under Database gjør det, og er derfor ikke med i demoen. Det en menighet i demoen består av, bestemmes i `siteDocuments` i `src/utils/demoReset.ts`.
@@ -137,13 +141,15 @@ Disse er ikke løst ennå. Rekkefølgen de skal løses i står i kapittel 14 i `
 - Opplastede bilder lagres som tekst inne i sidedokumentene, og kan derfor ikke brukes som delebilde.
 - Forsidens faste tekster står i koden, og standardtekstene i innholdsmodulene passer ikke alle menigheter.
 - Stab vises fra to kilder: personregisteret med samtykke, og `cms_staff` uten.
-- Innloggingen sperrer skjermene, ikke dataene. Reglene i databasen kjenner ennå ikke koblingen fra konto til person (trinn 4).
-- `firestore.rules` slipper gjennom lesing og skriving uten innlogging.
-- De offentlige sidene laster hele personregisteret til nettleseren, selv om de bare viser personer med samtykke.
+- De lukkede reglene i `firestore.rules` og `storage.rules` er skrevet 12. oktober, men ikke kjørt mot en database (maskinen mangler Java og Firebase sitt lokale prøveverktøy), og ikke publisert noe sted. Prøv dem før de publiseres hos en menighet.
+- Tre ting i reglene er bevisst grove: alle i registeret leser hele registeret, alle i registeret kan endre tildelinger, og en besøkende kan legge til hva som helst i dagens besøkstall.
+- I demoen og på utviklermaskinen laster de offentlige sidene hele personregisteret til nettleseren. I en menighets egen installasjon får de bare de offentlige kopiene.
+- To personer som deler e-postadresse, kan ingen av dem logge inn. Admin sier ikke fra om det (`sharedAddresses` i `src/utils/logins.ts` finner dem).
+- En gruppe eller et arrangement som er lagret uten merket `isPublic` (eldre data, og noen av gruppene til eksempelmenigheten), regnes som offentlig der databasen er åpen, men gis ikke til en besøkende i en lukket database. Alt appen lagrer nå, har merket.
 - En besøkende kan ikke melde interesse for en gruppe i appen; `/fellesskap` viser hvem man kan kontakte.
 - Innmeldingsdato i en gruppe lagres, men eldre meldinger skjules ikke for nye medlemmer.
 - De to bryterne fra før modulene (kalender, meldinger) lagres bare i nettleseren til den som endrer dem, og styrer ikke noe innhold.
 - Moduler kan slås av og på av hvem som helst i admin. Tildeling av moduler per menighet finnes ikke.
 - Programmet i kjøreplanen Min side, arrangementssiden, oversikten og gruppene på nettsiden er like på begge nivå (trinn 3c), og hos en menighet kan nivået ikke settes (trinn 4).
-- Reglene i databasen i drift er eldre enn `firestore.rules`. Nye samlinger avvises der til reglene publiseres.
-- Besøkstallene kan endres og slettes av hvem som helst så lenge reglene er åpne. Med innlogging trenger de en egen samling der en besøkende bare kan legge til i summene.
+- Tjenesteroller, oppmøtetall, maler og besøkstall ligger i `cms_settings` med `recordType`, fra den gang reglene i drift avviste nye samlinger. De lukkede reglene kjenner merkene.
+- Besøkstallene: med de lukkede reglene kan en besøkende bare legge til i dagens summer. I demoen kan de fortsatt endres av hvem som helst.

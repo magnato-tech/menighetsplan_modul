@@ -66,6 +66,29 @@ export function sessionOf(state: AccountState, persons: Person[], registerReady:
   return { status: "notInRegister", account, reason: matches.length === 0 ? "noMatch" : "severalMatches" };
 }
 
+/**
+ * What is known of the login of the account that is signed in (see utils/logins.ts): not asked
+ * for yet, on its way, not there, or there with the person it belongs to.
+ */
+export type LoginState = { status: "none" } | { status: "loading" } | { status: "missing" } | { status: "found"; personId: string };
+
+/**
+ * Who the account is, in an installation where the register is closed to those who are not in
+ * it. The account's own login says which person it is; the register, which arrives once the
+ * login is found, says the rest. `registerReady` is whether the whole register has arrived.
+ */
+export function sessionOfLogin(state: AccountState, login: LoginState, persons: Person[], registerReady: boolean): Session {
+  if (state.status !== "signedIn") return state;
+  const { account } = state;
+  if (!account.emailVerified || normalized(account.email) === "") return { status: "notInRegister", account, reason: "unverified" };
+  if (login.status === "none" || login.status === "loading") return { status: "loading" };
+  if (login.status === "missing") return { status: "notInRegister", account, reason: "noMatch" };
+  if (!registerReady) return { status: "loading" };
+
+  const person = persons.find((candidate) => candidate.id === login.personId);
+  return person ? { status: "member", person, account } : { status: "notInRegister", account, reason: "noMatch" };
+}
+
 /** The person standing in for a signed-in member on a developer's own machine, or loading/signed out. */
 export function standInSession(personId: string, persons: Person[], registerReady: boolean): Session {
   if (!registerReady) return { status: "loading" };

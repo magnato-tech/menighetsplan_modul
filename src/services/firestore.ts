@@ -6,8 +6,10 @@ import {
   doc,
   FieldPath,
   onSnapshot,
+  query,
   setDoc,
   updateDoc,
+  where,
   writeBatch,
 } from "firebase/firestore";
 import { db, handleFirestoreError, OperationType } from "../firebase";
@@ -34,6 +36,26 @@ export function subscribeCollection<T extends { id: string }>(
 ): () => void {
   return onSnapshot(
     collection(db, name),
+    (snapshot) => onChange(snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as T))),
+    (error) => handleFirestoreError(error, OperationType.GET, name)
+  );
+}
+
+/**
+ * Calls back with the public part of the groups or the events, now and after every change:
+ * what a visitor who is not in the register may read. The database rules let such a visitor
+ * read a group or an event only when it is marked public, and a question that could also give
+ * other documents is turned away whole. So the question sets the same condition as the rules.
+ *
+ * Both are marked with `isPublic` when they are stored (see buildGroup, and visibilityFields in
+ * utils/visibility.ts). A document without the mark is not given.
+ */
+export function subscribePublicPart<T extends { id: string }>(
+  name: typeof COLLECTIONS.GROUPS | typeof COLLECTIONS.GATHERINGS,
+  onChange: (items: T[]) => void
+): () => void {
+  return onSnapshot(
+    query(collection(db, name), where("isPublic", "==", true)),
     (snapshot) => onChange(snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as T))),
     (error) => handleFirestoreError(error, OperationType.GET, name)
   );

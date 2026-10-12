@@ -33,6 +33,7 @@ import { deleteHeadcount, saveHeadcount, subscribeHeadcounts } from "../services
 import { reportWriteError } from "../services/writeErrors";
 import {
   subscribeCollection,
+  subscribePublicPart,
   createDocument,
   updateDocument,
   deleteDocument,
@@ -44,7 +45,9 @@ import {
 } from "../services/firestore";
 import { signOut as signOutOfAccount, subscribeAccount } from "../services/auth";
 import { isInGroup } from "../utils/groups";
-import { mayStandIn, sessionOf, standInSession, type AccountState, type Session } from "../utils/session";
+import { mayStandIn, sessionOf, sessionOfLogin, standInSession, type AccountState, type LoginState, type Session } from "../utils/session";
+import { readOwnLogin, subscribePublicProfiles } from "../services/registerMirror";
+import { useRegisterMirror } from "../hooks/useRegisterMirror";
 import { DEMO } from "../demo";
 import type { HeadcountInput } from "../utils/headcount";
 import { AssignmentChange, applyAssignmentChange, holdsSlot, isAcuteForfall, taskStatusFor } from "../utils/staffing";
@@ -227,6 +230,8 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
   const [accountState, setAccountState] = useState<AccountState>({ status: "loading" });
   // Whether the register has been received. Until then nobody can be said to be missing from it.
   const [registerReady, setRegisterReady] = useState(false);
+  // Whether what was received is the register itself, and not only the public copies of it
+  const [registerWhole, setRegisterWhole] = useState(false);
   const [gatheringsReady, setGatheringsReady] = useState(false);
   const [standInId, setStandInId] = useState<string | null>(storedStandIn);
 
@@ -253,28 +258,81 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
     };
   }, []);
 
-  // Listen in real-time to Firestore collections
+  // The login of the account that is signed in: which person in the register it is (see
+  // utils/logins.ts). It is the one thing someone who has signed in may read before the
+  // database knows them. Where anyone can go in without signing in, it is not asked for.
+  const [login, setLogin] = useState<LoginState>({ status: "none" });
+  const signedInEmail = accountState.status === "signedIn" && accountState.account.emailVerified ? accountState.account.email : null;
   useEffect(() => {
-    const unsubscribers = [
-      subscribeCollection<Person>(COLLECTIONS.PERSONS, (list) => {
-        setPersons(list);
-        setRegisterReady(true);
-      }),
-      subscribeCollection<Group>(COLLECTIONS.GROUPS, setGroups),
-      subscribeCollection<Gathering>(COLLECTIONS.GATHERINGS, (list) => {
-        setGatherings(list);
-        setGatheringsReady(true);
-      }),
-    ];
-    return () => unsubscribers.forEach((unsubscribe) => unsubscribe());
-  }, []);
+    if (CAN_STAND_IN || !signedInEmail) {
+      setLogin({ status: "none" });
+      return;
+    }
+    let current = true;
+    setLogin({ status: "loading" });
+    readOwnLogin(signedInEmail).then(
+      (found) => current && setLogin(found ? { status: "found", personId: found.personId } : { status: "missing" }),
+      (error) => {
+        // An address the database will not answer for, is treated as nobody's: the pages behind sign-in stay closed
+        console.error("Innloggingen kunne ikke slås opp:", error);
+        if (current) setLogin({ status: "missing" });
+      }
+    );
+    return () => {
+      current = false;
+    };
+  }, [signedInEmail]);
 
-  // Who is using the app. The register decides who an account is; the stand-in is only on a developer's machine.
+  // The register, the groups and the events. Someone the database knows gets all of them.
+  // Everyone else gets what is public: the public copies of the persons who are shown on the
+  // website, and the groups and events that are marked public. A developer's own machine and
+  // the demo, where anyone can go in as a person, get all of it, as their databases allow.
+  const seesAll = CAN_STAND_IN || login.status === "found";
+  useEffect(() => {
+    setRegisterReady(false);
+    setRegisterWhole(false);
+    setGatheringsReady(false);
+    const onPersons = (list: Person[]) => {
+      setPersons(list);
+      setRegisterWhole(seesAll);
+      setRegisterReady(true);
+    };
+    const onGatherings = (list: Gathering[]) => {
+      setGatherings(list);
+      setGatheringsReady(true);
+    };
+    const unsubscribers = seesAll
+      ? [
+          subscribeCollection<Person>(COLLECTIONS.PERSONS, onPersons),
+          subscribeCollection<Group>(COLLECTIONS.GROUPS, setGroups),
+          subscribeCollection<Gathering>(COLLECTIONS.GATHERINGS, onGatherings),
+        ]
+      : [
+          subscribePublicProfiles(onPersons),
+          subscribePublicPart<Group>(COLLECTIONS.GROUPS, setGroups),
+          subscribePublicPart<Gathering>(COLLECTIONS.GATHERINGS, onGatherings),
+        ];
+    return () => unsubscribers.forEach((unsubscribe) => unsubscribe());
+  }, [seesAll]);
+
+  // Who is using the app. Where anyone can stand in, the register decides who an account is, and
+  // the stand-in is someone from it. Elsewhere the account's own login decides, and the register
+  // counts only once all of it has arrived: the public copies are not the register.
   const session = useMemo<Session>(() => {
+    if (!CAN_STAND_IN) return sessionOfLogin(accountState, login, persons, registerReady && registerWhole && seesAll);
     const real = sessionOf(accountState, persons, registerReady);
     if (real.status === "signedOut" && standInId !== null) return standInSession(standInId, persons, registerReady);
     return real;
-  }, [accountState, persons, registerReady, standInId]);
+  }, [accountState, login, persons, registerReady, registerWhole, seesAll, standInId]);
+
+  // An administrator's own browser keeps the logins and the public copies in step with the
+  // register (see hooks/useRegisterMirror.ts). Not where anyone can stand in: there the
+  // database is open, and nothing is kept beside the register.
+  useRegisterMirror(
+    persons,
+    !CAN_STAND_IN && registerWhole && session.status === "member" && session.person.globalRole === "admin",
+    signedInEmail
+  );
   const isMember = session.status === "member";
 
   // Planning data, only behind the public website, and only for someone who is in the register

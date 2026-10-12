@@ -30,6 +30,23 @@ const CMS_NAMES = {
   MEDIA: "cms_media",
 } as const;
 
+/**
+ * Who may sign in: one document for each e-mail address that belongs to exactly one person in
+ * the register (see utils/logins.ts). The database rules read it to know who is asking.
+ *
+ * It is not content. It follows from the register, so it is never part of a dataset, and the
+ * demo, where nobody signs in, is without it.
+ */
+export const LOGINS_COLLECTION = "logins";
+
+/**
+ * What the website shows of the register: one document for each person who has consented to a
+ * public profile, holding the public fields and nothing else (see publicCopyOf in
+ * utils/publicProfile.ts). Anyone may read it, and nobody but those in the register may read
+ * the register itself. Like the logins it follows from the register, and is not content.
+ */
+export const PUBLIC_PROFILES_COLLECTION = "publicProfiles";
+
 const PREFIX = collectionPrefixOf(DEMO_SITE);
 
 /** The names as the congregation being looked at has them. They keep their plain types: no code tells the two apart. */

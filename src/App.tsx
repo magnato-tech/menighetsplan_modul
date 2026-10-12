@@ -186,14 +186,23 @@ function AppContent() {
   );
 }
 
+/**
+ * The website's content. The pages that are not published are asked for only behind sign-in, by
+ * someone who is in the register: a closed database gives them to nobody else, and a question it
+ * has turned away is not asked again.
+ */
+function WebsiteContent({ onPublicPath, children }: { onPublicPath: boolean; children: React.ReactNode }) {
+  const { session } = useFirebase();
+  return <CmsProvider publicPagesOnly={onPublicPath || session.status !== "member"}>{children}</CmsProvider>;
+}
+
 function DataProviders({ children }: { children: React.ReactNode }) {
   const { pathname } = useLocation();
   const internal = isAdminStudioPath(pathname) || isMinSidePath(pathname);
-  const publicPagesOnly = isPublicPath(pathname);
 
   return (
     <FirebaseDataProvider internal={internal}>
-      <CmsProvider publicPagesOnly={publicPagesOnly}>{children}</CmsProvider>
+      <WebsiteContent onPublicPath={isPublicPath(pathname)}>{children}</WebsiteContent>
     </FirebaseDataProvider>
   );
 }

@@ -1,127 +1,227 @@
 rules_version = '2';
+
+// The rules of a congregation's own database: closed to everyone who is not in the register,
+// except for what the public website shows.
+//
+// Three kinds of visitors:
+//   - anyone: reads the published website, the public events and groups, and the public copies
+//     of the persons who are shown on the website. Writes nothing, except adding to the visit
+//     counts.
+//   - a member: someone who has signed in with a confirmed e-mail address that stands on
+//     exactly one person in the register. Reads the planning data and the register, answers
+//     for themselves, and leads the groups they are a leader of.
+//   - an administrator: a member whose person is an administrator. Writes everything.
+//
+// Who someone is, is looked up in `logins` (see src/utils/logins.ts): one document per address,
+// saying which person it is and whether the person is an administrator. Only an administrator
+// writes there, and the app writes it from the register (src/hooks/useRegisterMirror.ts).
+//
+// The first administrator is put in from the outside, BEFORE these rules are published
+// (scripts/first-admin.ts). With the rules in place and nobody in `logins`, nobody gets in.
+//
+// The demo has its own rules, firestore.demo.rules, which are open. They must never be
+// published in a database with real persons.
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function isAuthenticated() {
-      return request.auth != null;
+    // ---------- Who is asking ----------
+
+    function signedIn() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email is string;
+    }
+
+    function loginPath() {
+      return /databases/$(database)/documents/logins/$(request.auth.token.email.lower());
+    }
+
+    function isMember() {
+      return signedIn() && exists(loginPath());
     }
 
     function isAdmin() {
-      return isAuthenticated() && (
-        request.auth.token.admin == true ||
-        get(/databases/$(database)/documents/persons/$(request.auth.uid)).data.globalRole == 'admin'
-      );
+      return signedIn() && get(loginPath()).data.role == 'admin';
     }
 
-    function isValidAuditUpdate() {
-      return !('updatedBy' in request.resource.data) ||
-             (request.auth != null && request.resource.data.updatedBy == request.auth.uid) ||
-             (request.auth == null);
+    // The person in the register the one who asks is. Only called where isMember() holds.
+    function me() {
+      return get(loginPath()).data.personId;
     }
 
-    // Connection test document
+    function leadsThis(group) {
+      return me() in group.leaderIds || me() in group.get('deputyLeaderIds', []);
+    }
+
+    // Whether the one who asks is leader or deputy leader of the group
+    function leads(groupId) {
+      return isMember()
+        && groupId is string
+        && leadsThis(get(/databases/$(database)/documents/groups/$(groupId)).data);
+    }
+
+    // Whether the one who asks leads the group the event belongs to
+    function leadsEvent(gatheringId) {
+      return gatheringId is string
+        && leads(get(/databases/$(database)/documents/gatherings/$(gatheringId)).data.groupId);
+    }
+
+    function changedOnly(fields) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(fields);
+    }
+
+    // ---------- Beside the register ----------
+
+    // The app asks for this document to see whether the database answers
     match /test/{docId} {
-      allow read, write: if true;
+      allow get: if true;
     }
 
-    // Persons collection
-    // Public profile fields can only be marked public/consented by Admin.
+    // Who may sign in. Someone signing in reads their own, to learn which person they are.
+    match /logins/{address} {
+      allow get: if (signedIn() && request.auth.token.email.lower() == address) || isAdmin();
+      allow list: if isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // What the website shows of persons: public fields only
+    match /publicProfiles/{personId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ---------- The register and the planning ----------
+
     match /persons/{personId} {
-      allow read: if true;
-      allow create: if isValidAuditUpdate();
-      allow update: if isValidAuditUpdate() && (
-        // Changing public profile visibility requires admin or unauthenticated dev fallback
-        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['isPublicProfile', 'publicPhone', 'publicEmail', 'consentToPublishGivenAt', 'consentGivenBy']) ||
-         isAdmin() ||
-         !isAuthenticated())
-      );
-      allow delete: if isAdmin() || !isAuthenticated();
+      allow read: if isMember();
+      allow create, delete: if isAdmin();
+      // A member changes nothing about themselves but how their own analysis board is laid out
+      allow update: if isAdmin()
+        || (isMember() && personId == me() && changedOnly(['analyticsHiddenModules']));
     }
 
-    // Groups collection
     match /groups/{groupId} {
-      allow read: if true;
-      allow write: if isValidAuditUpdate();
+      allow read: if resource.data.isPublic == true || isMember();
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin()
+        || (isMember() && leadsThis(resource.data))
+        // A member turns their own notifications from the group on or off
+        || (isMember()
+            && changedOnly(['notificationPreferences'])
+            && request.resource.data.notificationPreferences
+                 .diff(resource.data.get('notificationPreferences', {}))
+                 .affectedKeys().hasOnly([me()]));
     }
 
-    // Gatherings (Arrangementer) collection
     match /gatherings/{gatheringId} {
-      allow read: if true;
-      allow write: if isValidAuditUpdate();
+      allow read: if resource.data.isPublic == true || isMember();
+      allow create: if isAdmin() || leads(request.resource.data.groupId);
+      // A leader cannot move an event to a group they do not lead
+      allow update: if isAdmin()
+        || (leads(resource.data.groupId) && request.resource.data.groupId == resource.data.groupId);
+      allow delete: if isAdmin() || leads(resource.data.groupId);
     }
 
-    // Tasks collection
     match /tasks/{taskId} {
-      allow read: if true;
-      allow write: if isValidAuditUpdate();
+      allow read: if isMember();
+      allow create: if isAdmin()
+        || leads(request.resource.data.get('groupId', null))
+        || leadsEvent(request.resource.data.gatheringId);
+      // The status follows from who has answered, and is written together with the answer
+      allow update: if isAdmin()
+        || (isMember() && changedOnly(['status']))
+        || leads(resource.data.get('groupId', null))
+        || leadsEvent(resource.data.gatheringId);
+      allow delete: if isAdmin()
+        || leads(resource.data.get('groupId', null))
+        || leadsEvent(resource.data.gatheringId);
     }
 
-    // Assignments collection
+    // Who is asked, and what they answered. Members ask each other and answer for themselves.
     match /assignments/{assignmentId} {
-      allow read: if true;
-      allow write: if true;
+      allow read, write: if isMember();
     }
 
-    // Group messages collection
     match /groupMessages/{messageId} {
-      allow read: if true;
-      allow write: if true;
+      allow read: if isMember();
+      allow create: if isMember() && request.resource.data.senderPersonId == me();
+      allow update: if isAdmin();
+      allow delete: if isAdmin()
+        || (isMember() && resource.data.senderPersonId == me())
+        || leads(resource.data.groupId);
     }
 
-    // Gathering attendances collection
+    // Whether someone is coming to an event. Each answers for themselves.
     match /gatheringAttendances/{attendanceId} {
-      allow read: if true;
-      allow write: if true;
+      allow read: if isMember();
+      allow create, update: if isAdmin() || (isMember() && request.resource.data.personId == me());
+      allow delete: if isAdmin() || (isMember() && resource.data.personId == me());
     }
 
-    // Headcounts (oppmøtetall) per gathering. Internal: only read behind the planner,
-    // never by the public website. Same open write as attendances until real auth ships.
-    // Until these rules are deployed, headcounts are stored in cms_settings (src/services/headcounts.ts).
+    // Not in use: the headcounts and the roles are stored in cms_settings (see below)
     match /gatheringHeadcounts/{headcountId} {
-      allow read: if true;
-      allow write: if true;
+      allow read: if isMember();
+      allow write: if isAdmin();
     }
-
-    // Volunteer roles (tjenesteroller med instruks) — same open write as assignments until real auth ships
     match /volunteer_roles/{roleId} {
-      allow read: if true;
-      allow write: if true;
+      allow read: if isMember();
+      allow write: if isAdmin();
     }
 
-    // CMS Pages: published pages are public; drafts require admin
+    // ---------- The website ----------
+
+    // A page that is not published is read by those in the register only
     match /cms_pages/{pageId} {
-      allow read: if (resource.data.isPublished == true && resource.data.status != 'draft') || isAdmin();
-      allow write: if isValidAuditUpdate();
+      allow read: if resource.data.isPublished == true || isMember();
+      allow write: if isAdmin();
     }
 
-    // Public CMS News Articles collection
     match /cms_news/{articleId} {
       allow read: if true;
-      allow write: if isValidAuditUpdate();
+      allow write: if isAdmin();
     }
 
-    // Public CMS Sermons collection
     match /cms_sermons/{sermonId} {
       allow read: if true;
-      allow write: if isValidAuditUpdate();
+      allow write: if isAdmin();
     }
 
-    // Public CMS Staff collection
     match /cms_staff/{staffId} {
       allow read: if true;
-      allow write: if isValidAuditUpdate();
+      allow write: if isAdmin();
     }
 
-    // CMS Settings collection
-    match /cms_settings/{docId} {
-      allow read: if true;
-      allow write: if isValidAuditUpdate();
-    }
-
-    // CMS Media library metadata (files live in Firebase Storage)
+    // What is known of each file in the media library (the files are in Storage, see storage.rules)
     match /cms_media/{mediaId} {
       allow read: if true;
-      allow write: if isValidAuditUpdate();
+      allow write: if isAdmin();
+    }
+
+    // The settings, and the marked documents that are stored beside them: the roles, the
+    // headcounts, the templates, the visit counts, the add-ons and the operating mode
+    // (see src/data/settingsRecords.ts).
+    match /cms_settings/{docId} {
+      function isTrafficDay(data) {
+        return docId.matches('^traffic-[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+          && data.recordType == 'siteTraffic'
+          && data.keys().hasOnly(['recordType', 'date', 'views', 'hours', 'visits', 'entries', 'deepVisits', 'seconds', 'missing', 'actions', 'sermons']);
+      }
+
+      // The website reads the settings, which add-ons are on and the operating mode
+      allow get: if docId in ['global', 'addons', 'operating-mode'] || isMember();
+      allow list: if isMember();
+
+      allow create: if isAdmin()
+        || (isMember() && request.resource.data.recordType == 'gatheringHeadcount')
+        // A visit to the website adds to the sums of the day
+        || isTrafficDay(request.resource.data);
+      allow update: if isAdmin()
+        || (isMember()
+            && resource.data.recordType == 'gatheringHeadcount'
+            && request.resource.data.recordType == 'gatheringHeadcount')
+        || (resource.data.recordType == 'siteTraffic' && isTrafficDay(request.resource.data));
+      allow delete: if isAdmin();
     }
   }
 }

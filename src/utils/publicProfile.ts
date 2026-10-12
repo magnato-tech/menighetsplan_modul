@@ -35,6 +35,37 @@ export function toPublicProfile(person: Person): PublicProfile | null {
   };
 }
 
+// What a public copy holds of a person, beside the id, the name and the consent. The private
+// phone number and e-mail address, the role and everything about the planning are left out.
+const COPIED = ["publicTitle", "publicPhone", "publicEmail", "avatarUrl", "isStaff", "staffRole", "staffCategory", "staffBio", "staffOrder"] as const;
+
+/**
+ * The copy of a person that anyone may read: what toPublicProfile shows, in the form of a
+ * person, so the website reads it the way it reads the register. Null for a person who has not
+ * consented to a public profile. In a database that is closed to those who are not in the
+ * register, these copies are what a visitor gets instead of the register.
+ */
+export function publicCopyOf(person: Person): Person | null {
+  if (!toPublicProfile(person)) return null;
+  const copy: Person = {
+    id: person.id,
+    name: person.name,
+    globalRole: "member",
+    isPublicProfile: true,
+    consentToPublishGivenAt: person.consentToPublishGivenAt,
+  };
+  const fields: Partial<Record<(typeof COPIED)[number], unknown>> = {};
+  for (const field of COPIED) {
+    const value = person[field];
+    if (value !== undefined && value !== "") fields[field] = value;
+  }
+  return { ...copy, ...(fields as Partial<Person>) };
+}
+
+/** The public copies a register gives, by id. */
+export const publicCopiesOf = (persons: readonly Person[]): Person[] =>
+  persons.flatMap((person) => publicCopyOf(person) ?? []).sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+
 /** The public profiles among the given persons, in the order of the ids. */
 export function publicProfilesOf(personIds: string[], persons: Person[]): PublicProfile[] {
   const profiles: PublicProfile[] = [];

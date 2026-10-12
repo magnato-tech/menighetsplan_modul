@@ -1,18 +1,23 @@
 import { initializeApp } from 'firebase/app';
 import { collection, doc, getDocs, getFirestore, setDoc, updateDoc } from 'firebase/firestore';
 import { loadEnv } from 'vite';
-import { COLLECTIONS } from '../src/data/collections';
+import { COLLECTIONS, LOGINS_COLLECTION } from '../src/data/collections';
 import { firebaseOptionsOf, missingInstallationSettings, readInstallationConfig } from '../src/installation';
 import type { Person } from '../src/types';
 import { planFirstAdmin } from '../src/utils/firstAdmin';
+import { loginIdOf } from '../src/utils/logins';
 
 // Puts the first administrator in the register of the installation named in .env.local
 // (see src/utils/firstAdmin.ts for why it has to be done from the outside, once).
 //
 //   npm run first-admin -- kari@menigheten.no "Kari Nordmann"
 //
-// It writes with the same access as the app has. Once the database rules are closed, this will
-// have to be run with the vendor's own access instead.
+// It also writes the person's login (see src/utils/logins.ts), which is what the database rules
+// know an administrator by. The administrator's own browser writes the logins of everyone else.
+//
+// It writes with the same access as the app has without anyone signed in. So it has to be run
+// BEFORE the closed rules in firestore.rules are published in the database: while the database
+// is new and still open. Afterwards the rules turn it away.
 
 async function main() {
   const [email = '', name = ''] = process.argv.slice(2);
@@ -33,11 +38,11 @@ async function main() {
   const persons = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }) as Person);
   const plan = planFirstAdmin(email, name, persons);
 
+  if (plan.action === 'refuse') throw new Error(plan.reason);
+
   switch (plan.action) {
-    case 'refuse':
-      throw new Error(plan.reason);
     case 'none':
-      console.log(`${plan.person.name} er administrator fra før. Ingenting er endret.`);
+      console.log(`${plan.person.name} er administrator i registeret fra før.`);
       break;
     case 'promote':
       await updateDoc(doc(db, COLLECTIONS.PERSONS, plan.person.id), { globalRole: 'admin' });
@@ -48,6 +53,11 @@ async function main() {
       console.log(`${plan.person.name} er lagt inn i registeret som administrator.`);
       break;
   }
+
+  // The address as it stands on the person: the one that was given, or the one the register had
+  const address = loginIdOf(plan.person.email ?? email);
+  await setDoc(doc(db, LOGINS_COLLECTION, address), { personId: plan.person.id, role: 'admin' });
+  console.log(`Innloggingen for ${address} er skrevet. Nå kan reglene i firestore.rules publiseres.`);
 }
 
 main()
