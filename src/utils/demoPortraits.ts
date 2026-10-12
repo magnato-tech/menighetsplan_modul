@@ -5,7 +5,9 @@ import { parseMediaAltComment } from "./media";
 // A congregation's website shown in the demo (see utils/demoSite.ts) is shown without the
 // pictures of its staff. The demo presents the product to others, and a picture of a person is
 // not used for that without the person having said yes. The names and titles stand, as they do
-// on the congregation's own website; the pictures do not.
+// on the congregation's own website; the pictures do not. A congregation that has said yes to
+// being shown as its own website stands, is not sent through here (see siteDocuments in
+// utils/demoReset.ts).
 //
 // A picture of a member of the staff is found in three places in a set: on the person in the
 // staff register, in a block of picture and text on a page (the congregation's own page of

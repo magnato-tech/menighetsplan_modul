@@ -120,7 +120,30 @@ describe("Settene som følger med appen, slik de vises i demoen", () => {
   const sets = readDemoSets(path.resolve(__dirname, "..", "public", "demosett"));
   const example = getCustomMockDocuments(FULL_DEMO_COUNTS, Date.parse("2026-10-09T10:00:00Z"));
 
-  test.each(sets.map((set) => [set.name, set] as const))("%s: ingen bilder av de ansatte er med", (_name, { set }) => {
+  // A congregation that has said yes to being shown as its own website stands, keeps the pictures
+  const withoutPortraits = sets.filter(({ set }) => set.asPublished !== true);
+  const asPublished = sets.filter(({ set }) => set.asPublished === true);
+
+  test.each(asPublished.map((set) => [set.name, set] as const))("%s vises slik nettsiden er: bildene av de ansatte er med", (_name, { set }) => {
+    const staff = set.collections[CMS_COLLECTIONS.STAFF] ?? [];
+    const site = siteDocuments(example, set, Date.parse("2026-10-09T10:00:00Z"));
+    const shown = site.filter((d) => d.collection === CMS_COLLECTIONS.STAFF).map((d) => d.data as Record<string, unknown>);
+
+    expect(staff.some((member) => member.imageUrl)).toBe(true);
+    expect(shown.map((member) => member.imageUrl ?? null).sort()).toEqual(staff.map((member) => member.imageUrl ?? null).sort());
+  });
+
+  test("uten et ja fra menigheten tas bildene ut, og med et ja står de", () => {
+    const set = { createdAt: "2026-10-06T12:00:00.000Z", collections: { cms_staff: [{ id: "s1", name: "Kari Nordmann", role: "Pastor", imageUrl: PORTRAIT }] } };
+    const staffOf = (asPublished?: boolean) =>
+      siteDocuments(example, { ...set, asPublished }, Date.parse("2026-10-09T10:00:00Z")).filter((d) => d.collection === CMS_COLLECTIONS.STAFF && d.id === "s1").map((d) => d.data);
+
+    expect(staffOf()).toEqual([{ id: "s1", name: "Kari Nordmann", role: "Pastor" }]);
+    expect(staffOf(false)).toEqual([{ id: "s1", name: "Kari Nordmann", role: "Pastor" }]);
+    expect(staffOf(true)).toEqual([{ id: "s1", name: "Kari Nordmann", role: "Pastor", imageUrl: PORTRAIT }]);
+  });
+
+  test.each(withoutPortraits.map((set) => [set.name, set] as const))("%s: ingen bilder av de ansatte er med", (_name, { set }) => {
     const staff = set.collections[CMS_COLLECTIONS.STAFF] ?? [];
     const portraits = staff.map((member) => String(member.imageUrl ?? "").split("?")[0]).filter(Boolean);
     const names = staff.map((member) => String(member.name)).filter((name) => name.length >= 5);

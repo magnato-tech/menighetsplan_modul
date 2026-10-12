@@ -60,8 +60,11 @@ export function resetRefusal(env: InstallationEnv, confirmedProject: string | un
 /** A document's place in the database: "persons/person-1". */
 export const pathOf = (document: { collection: string; id: string }): string => `${document.collection}/${document.id}`;
 
-/** A congregation's set, as far as the reset reads it: its documents, and when they were fetched. */
-export type SiteSet = Pick<Dataset, "collections" | "createdAt">;
+/**
+ * A congregation's set, as far as the reset reads it: its documents, when they were fetched, and
+ * whether the congregation has said yes to being shown as its own website stands.
+ */
+export type SiteSet = Pick<Dataset, "collections" | "createdAt"> & { asPublished?: boolean };
 
 /** The documents of one congregation in the demo: the example congregation is null (see utils/demoSite.ts). */
 export interface SiteContent {
@@ -77,7 +80,8 @@ export interface SiteContent {
  *
  * The dates in a set are moved whole weeks from the week it was fetched in, like the example's
  * (see utils/liveDates.ts), so the calendar on the website is never all in the past. The
- * pictures of the congregation's staff are left out (see utils/demoPortraits.ts).
+ * pictures of the congregation's staff are left out (see utils/demoPortraits.ts), unless the
+ * congregation has said yes to being shown as its own website stands.
  */
 export function siteDocuments(example: MockDocument[], set: SiteSet | null, now: number): MockDocument[] {
   if (!set) return example;
@@ -89,7 +93,8 @@ export function siteDocuments(example: MockDocument[], set: SiteSet | null, now:
   const gone = new Set(documentsToDelete(exampleCollections, ["website"]).map(pathOf));
 
   const weeks = weeksBetween(set.createdAt.slice(0, 10), now);
-  const website = Object.entries(keepParts(withoutStaffPictures(set.collections), ["website"])).flatMap(([collection, documents]) =>
+  const shown = set.asPublished === true ? set.collections : withoutStaffPictures(set.collections);
+  const website = Object.entries(keepParts(shown, ["website"])).flatMap(([collection, documents]) =>
     documents.map((document): MockDocument => {
       // The settings document is addressed by its place, not by a field in it
       const { id, ...withoutId } = document;

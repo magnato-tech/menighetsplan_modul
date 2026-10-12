@@ -3,7 +3,8 @@ import { parseDataset, type Dataset } from "../utils/dataset";
 // The congregations whose websites can be put in for a demonstration («Velg menighet» under
 // Database). Each is a dataset file in public/demosett/, listed in index.json there. The files
 // are made from the congregations' own public websites, with every e-mail address and phone
-// number taken out, and are only fetched when one is chosen.
+// number taken out, and are only fetched when one is chosen. A congregation that has said yes
+// to being shown as its own website stands (`asPublished`) has its contact details in the file.
 
 const FOLDER = "/demosett";
 
@@ -21,6 +22,12 @@ export interface DemoSetInfo {
    * owner of the demo says otherwise (see utils/demoSite.ts). Left out, it is not.
    */
   listed?: boolean;
+  /**
+   * Whether the congregation has said yes to being shown as its own website stands: with its
+   * contact details, and in the demo with the pictures of its staff (see utils/demoPortraits.ts).
+   * Left out, it has not.
+   */
+  asPublished?: boolean;
 }
 
 const isInfo = (value: unknown): value is DemoSetInfo => {
@@ -35,7 +42,8 @@ const isInfo = (value: unknown): value is DemoSetInfo => {
     typeof info.source === "string" &&
     typeof info.fetchedAt === "string" &&
     typeof info.documents === "number" &&
-    (info.listed === undefined || typeof info.listed === "boolean")
+    (info.listed === undefined || typeof info.listed === "boolean") &&
+    (info.asPublished === undefined || typeof info.asPublished === "boolean")
   );
 };
 

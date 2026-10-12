@@ -163,14 +163,14 @@ export async function resetDemo(target: ResetTarget, now: number, fetchFn: Fetch
 export function readDemoSets(folder: string): DemoSet[] {
   const list: unknown = JSON.parse(readFileSync(path.join(folder, 'index.json'), 'utf8'));
   if (!Array.isArray(list)) throw new Error('Listen over menigheter (index.json) har et ukjent format.');
-  return list.map((entry: { id?: unknown; name?: unknown; file?: unknown }) => {
+  return list.map((entry: { id?: unknown; name?: unknown; file?: unknown; asPublished?: unknown }) => {
     const id = parseDemoSiteId(entry.id);
     if (!id || typeof entry.name !== 'string' || typeof entry.file !== 'string' || !/^[a-z0-9-]+\.json$/.test(entry.file)) {
       throw new Error(`Listen over menigheter har en rad som ikke kan brukes: ${JSON.stringify(entry).slice(0, 200)}`);
     }
     const parsed = parseDataset(readFileSync(path.join(folder, entry.file), 'utf8'));
     if (!parsed.ok) throw new Error(`Innholdet for ${entry.name} kunne ikke leses: ${parsed.error}`);
-    return { id, name: entry.name, set: parsed.dataset };
+    return { id, name: entry.name, set: { ...parsed.dataset, asPublished: entry.asPublished === true } };
   });
 }
 

@@ -15,7 +15,8 @@
     "source": "lillesandmisjonskirke.no",
     "fetchedAt": "2026-10-12T08:24:23.941Z",
     "documents": 167,
-    "listed": true
+    "listed": true,
+    "asPublished": true
   },
   {
     "id": "salem",

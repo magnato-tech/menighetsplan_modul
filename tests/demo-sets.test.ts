@@ -51,7 +51,22 @@ describe("Demosettene som følger med appen", () => {
     expect(parsed.dataset.collections[CMS_COLLECTIONS.PAGES].length).toBeGreaterThan(0);
   });
 
-  test.each(index)("$name: ingen e-postadresser og ingen telefonnumre", (set) => {
+  // A congregation that has said yes to being shown as its own website stands, keeps its contact details
+  const withoutContactDetails = index.filter((set) => set.asPublished !== true);
+  const asPublished = index.filter((set) => set.asPublished === true);
+
+  test("de fleste settene er uten kontaktopplysninger: det er unntaket å vises slik nettsiden er", () => {
+    expect(withoutContactDetails.length).toBeGreaterThan(asPublished.length);
+  });
+
+  test.each(asPublished)("$name vises slik nettsiden er: menighetens telefon og e-post er med", (set) => {
+    const dataset = JSON.parse(read(set.file)) as { collections: Record<string, Record<string, unknown>[]> };
+    const settings = dataset.collections[CMS_COLLECTIONS.SETTINGS][0];
+    expect(String(settings.email)).toMatch(/@/);
+    expect(String(settings.phone)).toMatch(/\d/);
+  });
+
+  test.each(withoutContactDetails)("$name: ingen e-postadresser og ingen telefonnumre", (set) => {
     const text = read(set.file);
     const dataset = JSON.parse(text) as { collections: Record<string, Record<string, unknown>[]> };
     // Web addresses are left out of the search: the digits in a file name are not a phone number
