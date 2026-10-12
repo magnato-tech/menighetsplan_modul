@@ -27,7 +27,7 @@ export const PublicLeadershipPage: React.FC = () => {
 
     return publicProfilesOf(allIds, allPersons)
       .map((person) => {
-        let roleInGroup = "Medlem";
+        let roleInGroup = "Deltaker";
         if (leaderIds.has(person.id)) roleInGroup = "Leder";
         else if (deputyIds.has(person.id)) roleInGroup = "Nestleder";
 

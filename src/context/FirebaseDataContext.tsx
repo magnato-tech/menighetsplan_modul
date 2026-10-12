@@ -726,9 +726,9 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
       updateGroupName: (groupId: string, newName: string) =>
         updateGroup(groupId, { name: newName.trim() }, "lagre gruppenavnet"),
       addGroupMember: (groupId: string, personId: string) =>
-        save("legge til medlemmet i gruppen", () => addGroupMember(groupId, personId)),
+        save("legge til deltakeren i gruppen", () => addGroupMember(groupId, personId)),
       removeGroupMember: (groupId: string, personId: string) =>
-        save("fjerne medlemmet fra gruppen", () => removeGroupMember(groupId, personId)),
+        save("fjerne deltakeren fra gruppen", () => removeGroupMember(groupId, personId)),
 
       addPerson: (data: NewPersonInput) => {
         const person = buildPerson(data);

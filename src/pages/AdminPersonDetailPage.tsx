@@ -255,7 +255,7 @@ export const AdminPersonDetailPage: React.FC = () => {
                     : "bg-slate-100 text-[var(--studio-text)] border border-[var(--studio-border)]"
                 }`}
               >
-                {person.globalRole === "admin" ? "Global Admin" : "Medlem (member)"}
+                {person.globalRole === "admin" ? "Global Admin" : "Frivillig"}
               </span>
             </div>
 
@@ -358,7 +358,7 @@ export const AdminPersonDetailPage: React.FC = () => {
                 onChange={(e) => setGlobalRole(e.target.value as "member" | "admin")}
                 className={studioDetailInput}
               >
-                <option value="member">Medlem / Frivillig (standard tilgang)</option>
+                <option value="member">Frivillig (standard tilgang)</option>
                 <option value="admin">Administrator (full tilgang til Admin Studio & CMS)</option>
               </select>
             </div>
@@ -672,7 +672,7 @@ export const AdminPersonDetailPage: React.FC = () => {
 
           {personGroups.length === 0 ? (
             <p className="text-xs text-[var(--studio-muted)] italic py-2">
-              Personen er ikke medlem av noen grupper ennå.
+              Personen er ikke deltaker i noen grupper ennå.
             </p>
           ) : (
             <div className="space-y-2">
@@ -709,7 +709,7 @@ export const AdminPersonDetailPage: React.FC = () => {
                       )}
                       {!isLeader && !isDeputy && (
                         <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-slate-200 text-[var(--studio-text)]">
-                          Medlem
+                          Deltaker
                         </span>
                       )}
                     </div>

@@ -129,7 +129,7 @@ export const HusfellesskapView: React.FC<{
           }`}
         >
           <Users className="w-3.5 h-3.5 text-slate-500" />
-          <span>Medlemmer ({members.length})</span>
+          <span>Deltakere ({members.length})</span>
         </button>
       </div>
 

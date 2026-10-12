@@ -191,7 +191,7 @@ export const initialPersons: Person[] = [
     isStaff: true,
     staffRole: "Diakon & Omsorgsarbeider",
     staffCategory: "diakoni",
-    staffBio: "Ruth følger opp besøkstjeneste, eldrekafé og sjelesorg for menighetens medlemmer.",
+    staffBio: "Ruth følger opp besøkstjeneste, eldrekafé og sjelesorg for menigheten.",
     avatarUrl: "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&w=400&h=400&q=80",
     isPublicProfile: true,
     publicTitle: "Diakon",

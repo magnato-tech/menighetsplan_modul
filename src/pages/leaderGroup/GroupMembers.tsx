@@ -38,7 +38,7 @@ export const GroupMembers: React.FC<GroupMembersProps> = ({ detail, group, showT
     const res = addGroupMember(group.id, selectedPersonToAdd);
     if (res.success) {
       setSelectedPersonToAdd("");
-      showToast("Personen ble lagt til som medlem i gruppen!");
+      showToast("Personen ble lagt til som deltaker i gruppen!");
     }
   };
 
@@ -60,7 +60,7 @@ export const GroupMembers: React.FC<GroupMembersProps> = ({ detail, group, showT
       <div className="flex items-center justify-between">
         <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
           <Users className="w-3.5 h-3.5 text-emerald-600" />
-          <span>Medlemmer ({members.length})</span>
+          <span>Deltakere i gruppen ({members.length})</span>
         </h2>
       </div>
 
@@ -131,7 +131,7 @@ export const GroupMembers: React.FC<GroupMembersProps> = ({ detail, group, showT
           withdrawProposal(proposalId).catch((error) => reportWriteError("trekke tilbake forslaget", error));
         }}
         onAccept={(proposal, personId) => {
-          acceptProposal(proposal.id, group.id, personId).catch((error) => reportWriteError("legge til medlemmet", error));
+          acceptProposal(proposal.id, group.id, personId).catch((error) => reportWriteError("legge til deltakeren", error));
         }}
         onCreate={(proposal) => {
           acceptProposalAsNew(proposal.id, group.id, proposal.name).catch((error) => reportWriteError("opprette personen", error));
@@ -146,7 +146,7 @@ export const GroupMembers: React.FC<GroupMembersProps> = ({ detail, group, showT
         availablePersonsToAdd.length > 0 ? (
           <div className="pt-2 border-t border-slate-100 space-y-2">
             <label className="text-[11px] font-semibold text-slate-600 block">
-              Legg til person i gruppen:
+              Legg til deltaker:
             </label>
             <div className="flex gap-2">
               <select
@@ -170,13 +170,13 @@ export const GroupMembers: React.FC<GroupMembersProps> = ({ detail, group, showT
                 className="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 disabled:bg-slate-200 disabled:text-slate-400 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1 shadow-xs cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>Legg til</span>
+                <span>Legg til deltaker</span>
               </button>
             </div>
           </div>
         ) : (
           <p className="text-[11px] text-slate-400 italic pt-1">
-            Alle registrerte personer er allerede medlemmer i denne gruppen.
+            Alle registrerte personer er allerede deltakere i denne gruppen.
           </p>
         )
       )}

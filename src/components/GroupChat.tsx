@@ -179,7 +179,7 @@ export const GroupChat: React.FC<{
           </h3>
           <p className="text-xs text-slate-600 mt-1 max-w-xs mx-auto leading-relaxed">
             Chatten i <strong>{group.name}</strong> er et konfidensielt rom
-            forbeholdt gruppens medlemmer. Du må være registrert som medlem for å
+            forbeholdt gruppens deltakere. Du må være registrert som deltaker for å
             se innholdet.
           </p>
         </div>
@@ -299,7 +299,7 @@ export const GroupChat: React.FC<{
       <div className="px-4 py-2 bg-emerald-50/40 border-b border-emerald-100/50 flex items-center gap-2 text-[11px] text-slate-600">
         <Info className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
         <span className="truncate">
-          Internt rom. Nye medlemmer ser kun meldinger publisert etter at de ble medlem.
+          Internt rom. Nye deltakere ser kun meldinger publisert etter at de ble med.
         </span>
       </div>
 

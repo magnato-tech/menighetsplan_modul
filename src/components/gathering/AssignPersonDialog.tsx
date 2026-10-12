@@ -170,7 +170,7 @@ export const AssignPersonDialog: React.FC<AssignPersonDialogProps> = ({
 
         <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
           <span className="text-[11px]">
-            {canAdminister ? "Viser personer i menigheten" : `Viser medlemmer i ${taskGroup?.name || "gruppen"}`}
+            {canAdminister ? "Viser personer i menigheten" : `Viser deltakere i ${taskGroup?.name || "gruppen"}`}
           </span>
           <button
             type="button"

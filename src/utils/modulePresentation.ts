@@ -85,7 +85,7 @@ export const MODULE_PRESENTATION_DEFAULTS: Record<DynamicModuleType, ModulePrese
     badge: "Givertjeneste & Støtte",
     title: "Støtt menighetens arbeid",
     body:
-      "Arbeidet drives utelukkende av frivillige gaver fra medlemmer og støttespillere. Din gave gjør barnekirke, ungdomsarbeid og diakonalt arbeid mulig.",
+      "Arbeidet drives utelukkende av frivillige gaver fra menigheten og støttespillere. Din gave gjør barnekirke, ungdomsarbeid og diakonalt arbeid mulig.",
     backgroundImage: "",
     backgroundColor: "",
   },

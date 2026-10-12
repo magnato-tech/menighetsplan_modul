@@ -122,7 +122,7 @@ export const PersonsTab: React.FC<PersonsTabProps> = ({ studio, showFeedback }) 
             </span>
           </h2>
           <p className="text-xs text-[var(--studio-muted)] mt-1">
-            Administrer kontaktinfo, tilganger og fravær for medlemmer og ledere.
+            Administrer kontaktinfo, tilganger og fravær for frivillige og ledere.
           </p>
         </div>
 
@@ -139,7 +139,7 @@ export const PersonsTab: React.FC<PersonsTabProps> = ({ studio, showFeedback }) 
           onClick={handlePopulateTestData}
           disabled={isPopulating}
           className="px-3.5 py-2 rounded-xl bg-indigo-600/90 hover:bg-indigo-600 disabled:opacity-50 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer self-start sm:self-auto shrink-0"
-          title="Fyller databasen i Firebase med 32 personer (pastorer, lederskap, stab, frivillige og medlemmer)"
+          title="Fyller databasen i Firebase med 32 personer (pastorer, lederskap, stab og frivillige)"
         >
           {isPopulating ? (
             <Loader2 className="w-4 h-4 animate-spin text-white" />
@@ -213,7 +213,7 @@ export const PersonsTab: React.FC<PersonsTabProps> = ({ studio, showFeedback }) 
             <div>
               <p className="font-bold text-[var(--studio-text)]">Få et fyldig testmiljø med 32 personer</p>
               <p className="text-[var(--studio-muted)]">
-                Fyll automatisk inn et komplett register med pastorer, menighetsråd, lovsangsteam, teknikere, barnekirkeledere og medlemmer.
+                Fyll automatisk inn et komplett register med pastorer, menighetsråd, lovsangsteam, teknikere, barnekirkeledere og frivillige.
               </p>
             </div>
           </div>
@@ -313,7 +313,7 @@ export const PersonsTab: React.FC<PersonsTabProps> = ({ studio, showFeedback }) 
                       </span>
                     ) : (
                       <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-[var(--studio-bg)] text-[var(--studio-accent-text)]">
-                        Medlem
+                        Frivillig
                       </span>
                     )}
 

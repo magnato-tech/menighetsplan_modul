@@ -296,7 +296,7 @@ export const CONTENT_BLOCKS: ContentBlockDefinition[] = [
     previewNode: (
       <div className="w-full p-2 rounded-lg bg-white border border-stone-200 text-[10px]">
         <div className="font-bold text-stone-900">Menighetsråd</div>
-        <div className="text-[9px] text-stone-500">Ledere og medlemmer med offentlig profil</div>
+        <div className="text-[9px] text-stone-500">Ledere og deltakere med offentlig profil</div>
       </div>
     ),
   },

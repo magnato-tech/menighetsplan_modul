@@ -92,7 +92,7 @@ export const TaskDetailPage: React.FC = () => {
               Ikke tilgang til denne oppgaven
             </h2>
             <p className="text-xs text-slate-500 leading-relaxed max-w-xs mx-auto">
-              Denne oppgaven tilhører en gruppe du ikke er medlem i. I Menighetsplan ser du kun oppgaver for dine egne grupper.
+              Denne oppgaven tilhører en gruppe du ikke er deltaker i. I Menighetsplan ser du kun oppgaver for dine egne grupper.
             </p>
           </div>
 

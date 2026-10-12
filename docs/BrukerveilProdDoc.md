@@ -16,7 +16,7 @@ Koden har bare to roller på en person: `globalRole` er enten `member` eller `ad
 
 | Arbeidsflyt | Forventet i denne inndelingen | Det koden faktisk sjekker | Avvik |
 |---|---|---|---|
-| 1–6, fanene under Nettside & CMS | Nett­sideredaktør | Ingen sjekk i `AdminStudio.tsx`. Alle som åpner `/admin` kommer inn i fanene. | Ja. Fanene skiller ikke redaktør fra administrator eller medlem. |
+| 1–6, fanene under Nettside & CMS | Nett­sideredaktør | Ingen sjekk i `AdminStudio.tsx`. Alle som åpner `/admin` kommer inn i fanene. | Ja. Fanene skiller ikke redaktør fra administrator eller frivillig. |
 | 7, fanen Arrangementer | Planlegger / administrator | Ingen sjekk på fanen. | Ja. |
 | 7, kjøreplan `/admin/samling/:id` | Administrator | `hasAccess` er sann for administrator, gruppeleder eller nestleder i en involvert gruppe. Andre ser «Arrangementet krever leder- eller admin-tilgang». | Delvis. Ikke bare administrator. |
 | 8, fanen Trenger oppfølging | Administrator | Ingen sjekk på fanen. | Ja. |
@@ -240,17 +240,17 @@ Menypunktet heter **Sider & Innhold**. Overskriften på siden er **Sider & Innho
 
 ### 9. Grupper & Husfellesskap (`#grupper`)
 
-- **Formål:** Opprette en gruppe og sette leder, nestleder og medlemmer.
+- **Formål:** Opprette en gruppe og sette leder, nestleder og deltakere.
 - **Hvor:** Sidemeny **Grupper & Husfellesskap**. Overskrift: **Grupper & Fellesskap**. Detalj: **Administrer gruppe →**, merket **Gruppeadministrasjon**. Tilbake: **Tilbake til grupper**.
 - **Steg for steg:**
   1. Trykk **Opprett ny gruppe**.
   2. Skriv navn, velg type, leder og eventuell beskrivelse.
   3. Trykk **Opprett gruppe**.
   4. Filtrer med **Alle**, **Ledergrupper**, **Strategigrupper**, **Tjenestegrupper**, **Husgrupper** eller **Interessegrupper**.
-  5. Åpne gruppen. Sett **Leder** og **Nestleder**, legg til medlemmer med **Legg til**, eller **Fjern**.
+  5. Åpne gruppen. Sett **Leder** og **Nestleder**, legg til deltakere med **Legg til deltaker**, eller **Fjern**.
   6. Trykk **Lagre endringer for gruppen**.
-- **Tekst i grensesnittet:** Typer i listen: «Ledergruppe (Stabsgruppe, lederskapsgruppe, gruppeledere)», «Strategigruppe (Vekstgrupper Bønn, Kommunikasjon, Historie)», «Tjenestegruppe (Lyd, kirkekaffe, søndagsskole)», «Husgruppe (Husfellesskap i hjemmene)», «Interessegruppe (Turgruppe, kor, hobby, senior)». Plassholder navn: «f.eks. Turgruppe & Friluft eller Vekstgruppe Bønn». Felt: **Leder**. På kortet: «Leder: [navn]» eller «Ikke satt». I detalj: **Medlemmer i gruppen**, merker **Leder**, **Nestleder**, **Medlem**.
-- **Etter lagring:** «Gruppen "[navn]" ble opprettet!» Kortet viser medlemstall og leder. Etter lagring på gruppekortet ligger endringen i medlemslisten.
+- **Tekst i grensesnittet:** Typer i listen: «Ledergruppe (Stabsgruppe, lederskapsgruppe, gruppeledere)», «Strategigruppe (Vekstgrupper Bønn, Kommunikasjon, Historie)», «Tjenestegruppe (Lyd, kirkekaffe, søndagsskole)», «Husgruppe (Husfellesskap i hjemmene)», «Interessegruppe (Turgruppe, kor, hobby, senior)». Plassholder navn: «f.eks. Turgruppe & Friluft eller Vekstgruppe Bønn». Felt: **Leder**. På kortet: «Leder: [navn]» eller «Ikke satt». I detalj: **Deltakere i gruppen**, merker **Leder**, **Nestleder**, **Deltaker**.
+- **Etter lagring:** «Gruppen "[navn]" ble opprettet!» Kortet viser antall deltakere og leder. Etter lagring på gruppekortet ligger endringen i listen over deltakere.
 - **Påkrevd og feil:** «Gruppen må ha et navn». Navnefeltet er påkrevd i skjemaet.
 - **Rettigheter:** Fanen har ingen rollesjekk. Gruppekortet krever administrator.
 - **Kilde:** `src/pages/admin/tabs/GroupsTab.tsx`, `src/pages/AdminGroupDetailPage.tsx`
@@ -265,7 +265,7 @@ Menypunktet heter **Sider & Innhold**. Overskriften på siden er **Sider & Innho
   3. Oppdater navn, telefon, e-post, tilgang, **Politiattest (gyldig til dato)** og fravær.
   4. Under **Offentlig profil på nettsiden** bestemmer du hva som kan vises utad.
   5. Trykk **Lagre alle personopplysninger & tilganger**.
-- **Tekst i grensesnittet:** Søk: «Søk etter navn, gruppe, tilgang eller kontaktinfo...» Kolonner: **Navn**, **Tilgang**, **Grupper**, **E-post**, **Telefon**, **Handling**. Tilgangsmerker inkluderer **GRUPPELEDER**, **NESTLEDER**, **MEDLEM** og **ADMINISTRATOR**.
+- **Tekst i grensesnittet:** Søk: «Søk etter navn, gruppe, tilgang eller kontaktinfo...» Kolonner: **Navn**, **Tilgang**, **Grupper**, **E-post**, **Telefon**, **Handling**. Tilgangsmerker inkluderer **GRUPPELEDER**, **NESTLEDER**, **FRIVILLIG** og **ADMINISTRATOR**.
 - **Etter lagring:** Fravær som legges til, bekreftes med «Fraværsperiode lagt til!» Øvrig lagring viser en bekreftelse på personkortet. [USIKKER] den nøyaktige suksessmeldingen etter **Lagre alle personopplysninger & tilganger** er ikke gjengitt her.
 - **Påkrevd og feil:** Offentlig visning krever at offentlig profil er slått på. Telefon og e-post fra det interne kortet vises ikke på nettsiden av seg selv. **Populer testdata (32 personer)** er eksempeldata, ikke vanlig registrering.
 - **Rettigheter:** Fanen har ingen rollesjekk. Personkortet krever administrator. Uten den vises «Admin-tilgang kreves».

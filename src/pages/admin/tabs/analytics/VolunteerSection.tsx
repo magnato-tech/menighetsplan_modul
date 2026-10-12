@@ -150,7 +150,7 @@ export const VolunteerSection: React.FC<VolunteerSectionProps> = ({ period, volu
         <div className="p-4 rounded-xl bg-[var(--studio-row)] border border-[var(--studio-border)] space-y-2">
           <h3 className="text-xs font-bold text-[var(--studio-text)]">Ikke brukt i perioden</h3>
           <p className="text-[11px] text-[var(--studio-muted)]">
-            Medlemmer av tjenestegrupper som ikke har hatt en oppgave på samlingene i perioden.
+            Deltakere i tjenestegrupper som ikke har hatt en oppgave på samlingene i perioden.
           </p>
           {volunteers.unused.length === 0 ? (
             <p className="text-xs text-[var(--studio-muted)]">Alle i tjenestegruppene har vært i bruk.</p>

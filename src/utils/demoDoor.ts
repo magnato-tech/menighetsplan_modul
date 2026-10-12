@@ -38,7 +38,7 @@ const WAYS_IN: { way: DemoWayIn; name: string; does: string; start: string }[] =
   {
     way: "tjenestegruppeleder",
     name: "Tjenestegruppeleder",
-    does: "Bemanner oppgavene i tjenestegruppene sine og holder medlemslisten",
+    does: "Bemanner oppgavene i tjenestegruppene sine og holder listen over deltakere",
     start: "/leder",
   },
   {
@@ -55,7 +55,7 @@ const WAYS_IN: { way: DemoWayIn; name: string; does: string; start: string }[] =
   },
   {
     way: "medlemUtenTjeneste",
-    name: "Medlem uten tjenestegruppe",
+    name: "Frivillig uten tjenestegruppe",
     does: "Ser Min side uten ledige tjenesteoppgaver (kun husfellesskap eller råd)",
     start: "/minside",
   },

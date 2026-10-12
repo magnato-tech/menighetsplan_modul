@@ -81,7 +81,7 @@ describe("Rollen følger av personen, ikke av kontoen", () => {
 
     expect(isAdministrator(kari)).toBe(true);
     expect(isAdministrator(ola)).toBe(false);
-    expect(Object.values(ROLE_LABELS)).toEqual(["Administrator", "Gruppeleder", "Medlem"]);
+    expect(Object.values(ROLE_LABELS)).toEqual(["Administrator", "Gruppeleder", "Frivillig"]);
   });
 });
 

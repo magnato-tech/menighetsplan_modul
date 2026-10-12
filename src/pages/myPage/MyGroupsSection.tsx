@@ -24,7 +24,7 @@ export const MyGroupsSection: React.FC<MyGroupsSectionProps> = ({ page }) => {
           <span>Mine grupper ({myGroups.length})</span>
         </h2>
         <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
-          Medlemskap
+          Deltakelse
         </span>
       </div>
 
@@ -62,7 +62,7 @@ export const MyGroupsSection: React.FC<MyGroupsSectionProps> = ({ page }) => {
                       </span>
                     ) : (
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
-                        Medlem
+                        Deltaker
                       </span>
                     )}
                   </div>
@@ -77,7 +77,7 @@ export const MyGroupsSection: React.FC<MyGroupsSectionProps> = ({ page }) => {
                     <Users className="w-3.5 h-3.5 text-slate-400" />
                     <span>
                       {allGroupPersonIds(group).length}{" "}
-                      {allGroupPersonIds(group).length === 1 ? "medlem" : "medlemmer"}
+                      {allGroupPersonIds(group).length === 1 ? "deltaker" : "deltakere"}
                     </span>
                   </span>
                   {nextActivity && (

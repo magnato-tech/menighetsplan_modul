@@ -163,13 +163,13 @@ export const MemberProposals: React.FC<MemberProposalsProps> = ({
           }}
         >
           <label className="sr-only" htmlFor="input-propose-member">
-            Foreslå et medlem
+            Foreslå en deltaker
           </label>
           <input
             id="input-propose-member"
             value={name}
             onChange={(event) => setName(event.target.value)}
-            placeholder="Foreslå et medlem"
+            placeholder="Foreslå en deltaker"
             maxLength={80}
             className="flex-1 text-xs px-3 py-2 border border-slate-300 rounded-xl bg-white text-slate-800"
           />

@@ -121,7 +121,7 @@ export function roleOf(person: Pick<Person, "id" | "globalRole">, groups: GroupR
 export const ROLE_LABELS: Record<SessionRole, string> = {
   administrator: "Administrator",
   gruppeleder: "Gruppeleder",
-  medlem: "Medlem",
+  medlem: "Frivillig",
 };
 
 /**

@@ -124,7 +124,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ studio, onTabChange,
             <Newspaper className="w-4 h-4 text-rose-400" />
           </div>
           <div className="text-3xl font-black text-[var(--studio-text)]">{news.length}</div>
-          <p className="text-[11px] text-[var(--studio-muted)]">Artikler for medlemmer & offentlighet</p>
+          <p className="text-[11px] text-[var(--studio-muted)]">Artikler for frivillige og offentlighet</p>
         </div>
 
         <div
@@ -208,7 +208,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ studio, onTabChange,
               onClick={() => onTabChange("planlegger-personer")}
               className="w-full flex items-center justify-between p-3 rounded-xl bg-[var(--studio-bg)] hover:bg-[var(--studio-hover)]/80 text-[var(--studio-text)] font-semibold transition-colors text-left"
             >
-              <span>Administrer medlemmer, ledere og frivillige</span>
+              <span>Administrer frivillige, ledere og deltakere</span>
               <Users className="w-4 h-4 text-[var(--studio-icon)]" />
             </button>
           </div>

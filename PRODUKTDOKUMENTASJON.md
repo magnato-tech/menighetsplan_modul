@@ -52,8 +52,8 @@ Menighetsplan er **ett adminpanel som styrer to ting i samme format**:
 | Rolle | Flate | Gjør |
 |---|---|---|
 | Besøkende | Nettsiden | Finner neste gudstjeneste, kalender, grupper, taler og kontaktinformasjon |
-| Frivillig (medlem) | Webappen, Min side | Ser egne oppgaver, tar ledige oppgaver, svarer på forespørsler, melder forfall, skriver i gruppene sine, svarer på innkalling til husfellesskap |
-| Gruppeleder | Webappen, Gruppeleder | Bemanner oppgavene i sine grupper, holder medlemslisten og møteplanen, sender beskjed til gruppen |
+| Frivillig | Webappen, Min side | Ser egne oppgaver, tar ledige oppgaver, svarer på forespørsler, melder forfall, skriver i gruppene sine, svarer på innkalling til husfellesskap |
+| Gruppeleder | Webappen, Gruppeleder | Bemanner oppgavene i sine grupper, holder listen over deltakere og møteplanen, sender beskjed til gruppen |
 | Administrator | Adminpanelet | Alt det over, og i tillegg samlinger, personregister med samtykke, og hele nettsiden |
 
 En gruppeleder er den som står som leder eller nestleder i en gruppe. Administrator er en rolle på personen.
@@ -164,7 +164,7 @@ Adminpanelet ligger på `/admin` og har én meny med to deler. Hver fane har sin
 * Panelet er responsivt: fast meny på PC, uttrekksmeny på mobil.
 * En handling bekreftes med en melding som forsvinner av seg selv. En lagring som feiler, vises i et rødt banner og blir ikke stående som om den var lagret.
 * **Moduler** (under System & Database) viser hvilke moduler produktet har, og slår delene av dem av og på for hele menigheten (kapittel 2.6).
-* **Innlogging.** `/admin` er bare for administratorer. Den som ikke er logget inn, sendes til innloggingssiden, og et medlem får beskjed om at det kreves administrator (kapittel 10.1). Nederst i menyen står hvem som er logget inn, og «Logg ut».
+* **Innlogging.** `/admin` er bare for administratorer. Den som ikke er logget inn, sendes til innloggingssiden, og en frivillig får beskjed om at det kreves administrator (kapittel 10.1). Nederst i menyen står hvem som er logget inn, og «Logg ut».
 
 ### 2.4 Analysebord
 
@@ -188,8 +188,8 @@ Analysebordet er en del av modulen **Analyse**. Det står i menyen under **Analy
 | Flere oppgaver på samme samling | Hvor mange ganger noen har hatt to eller flere oppgaver på samme samling (for eksempel bilde og møteleder), hvem, de vanligste kombinasjonene og de siste gangene | Andel av tjenestene: av gangene noen tjenestegjorde på en samling, hvor ofte de hadde flere oppgaver. «Samme klokkeslett» vises bare der kjøreplanen har klokkeslett for begge oppgavene |
 | Oppgaver og aktiviteter per måned | Hvor stor del av personregisteret som har 0, 1, 2 … 8 eller flere oppgaver i en vanlig måned, med omtrent hvor mange personer det er. Kan byttes til aktiviteter. Antall uten oppgave, antall uten både oppgave og gruppe, og andelen med fire eller flere i måneden | En måned er 30 dager. Perioden deles i måneder, og hver person telles i hver måned. Aktiviteter er oppgaver og gruppesamlinger personen har svart «Kommer» på |
 | Hver enkelt | Tabell per person: oppgaver, gudstjenester med oppgave (antall og andel av alle gudstjenestene), ganger med flere oppgaver på samme samling, tjenestegrupper, andre grupper, aktiviteter per måned. Kan sorteres | En leder eller nestleder regnes som med i gruppen |
-| Frivillighet og bemanning | Forfall (akutte under 48 timer), avslag, svartid (median), de neste fire ukene, hvor ofte hver har stått på, roller som er vanskeligst å bemanne, «Kan trenge avlastning», «Ikke brukt i perioden» | Avlastning: har stått på minst like mange samlinger som halvparten av ukene i perioden, og minst tre. Ikke brukt: medlem av en tjenestegruppe uten oppgave i perioden |
-| Grupper og fellesskap | Antall grupper per kategori, nye medlemskap, meldinger, samlinger og svar per gruppe, sist aktiv, personer uten gruppe | Stille gruppe: verken samling eller melding de siste 30 dagene |
+| Frivillighet og bemanning | Forfall (akutte under 48 timer), avslag, svartid (median), de neste fire ukene, hvor ofte hver har stått på, roller som er vanskeligst å bemanne, «Kan trenge avlastning», «Ikke brukt i perioden» | Avlastning: har stått på minst like mange samlinger som halvparten av ukene i perioden, og minst tre. Ikke brukt: deltaker i en tjenestegruppe uten oppgave i perioden |
+| Grupper og fellesskap | Antall grupper per kategori, nye deltakere, meldinger, samlinger og svar per gruppe, sist aktiv, personer uten gruppe | Stille gruppe: verken samling eller melding de siste 30 dagene |
 | Personregisteret | Personer, administratorer, stab, offentlige profiler med samtykke, borte i dag, politiattester som er utløpt eller går ut innen 60 dager | Øyeblikksbilde |
 | Nettsiden | Nyheter publisert, taler lagt ut (med opptak), sider publisert, kladder og planlagte | Besøk telles på bordet «Besøk på nettsiden» (kapittel 2.5) |
 
@@ -269,23 +269,23 @@ Regnskap er ikke en egen modul. Givertjeneste og Utleie skal registrere inntekte
 | **Min side** | `/minside` | «Trenger svar» (forespørsler, innkallinger, ledige oppgaver i mine grupper), «Neste for deg», neste samling i kirken, mine grupper og mine oppgaver | Levert |
 | **Oppgave** | `/oppgave/:id` | Tid, sted, instruks og hvem andre som står på. Ta oppgaven, svar på forespørsel, meld forfall | Levert. En grunn for forfallet lagres ikke: den kan være privat, og tas muntlig |
 | **Gruppeleder** | `/leder` | Gruppene jeg leder, med bemanningsstatus | Levert |
-| **Gruppe** | `/gruppe/:id` | Medlemmer, møteplan, aktiviteter og beskjeder til gruppen, med bilde | Levert |
+| **Gruppe** | `/gruppe/:id` | Deltakere, møteplan, aktiviteter og beskjeder til gruppen, med bilde | Levert |
 | **Samling** | `/samling/:id` | Kjøreplan: programmet og oppgavene på én tidslinje, med hvem som står på hva | Delvis: programmet kan ikke redigeres i løsningen ennå |
-| **Husfellesskap** | `/husfellesskap` | Neste møte med vert, tema og bibeltekst. «Kommer» / «Kommer ikke». Medlemsliste | Levert |
+| **Husfellesskap** | `/husfellesskap` | Neste møte med vert, tema og bibeltekst. «Kommer» / «Kommer ikke». Deltakerliste | Levert |
 | Meldinger | `/meldinger` | Valgfri modul for meldinger på tvers av grupper | Planlagt: i dag en plassholderside |
 | Kalender | – | Valgfri modul med felles kalender | Planlagt: modulen kan slås på, men har ingen side |
 | **Min kalender** | – | Personlig oversikt på Min side | Mulig funksjon, ikke prioritert. Se under |
 
-Min side ligger bak innlogging (kapittel 10.1). Øverst står hvem som er logget inn, rollen og «Logg ut». Et medlem ser bare det som gjelder egne grupper. Løsningen kan installeres på mobilen som app (PWA).
+Min side ligger bak innlogging (kapittel 10.1). Øverst står hvem som er logget inn, rollen og «Logg ut». En frivillig ser bare det som gjelder egne grupper. Løsningen kan installeres på mobilen som app (PWA).
 
 ### Mulig funksjon: Min kalender
 
 Ikke bygget. Avtalt innhold, hvis den tas inn senere:
 
-* Kildebasert, ikke bare det medlemmet har bekreftet. Den viser offentlige arrangementer i menigheten, pluss kommende samlinger i gruppene medlemmet er med i.
+* Kildebasert, ikke bare det den frivillige har bekreftet. Den viser offentlige arrangementer i menigheten, pluss kommende samlinger i gruppene den frivillige er med i.
 * Hver kilde (menigheten og hver gruppe) kan slås av og på med et øyeikon. Standard er at alle kilder er på.
 * «Kommer ikke» skjuler den ene samlingen. En bekreftet oppgave legges på samlingen den hører til, og lager ikke en egen hendelse.
-* Husfellesskap vises bare når innkalling er sendt, eller medlemmet allerede har svart. Andre grupper viser alle kommende gruppesamlinger så lenge kilden er på.
+* Husfellesskap vises bare når innkalling er sendt, eller den frivillige allerede har svart. Andre grupper viser alle kommende gruppesamlinger så lenge kilden er på.
 * Den erstatter «Neste for deg» og «Neste i menigheten» på Min side. «Trenger svar», gruppene og oppgavene blir stående.
 * Personlig kalenderabonnement (iCal) venter til innlogging finnes. Abonnement på menighetens offentlige kalender hører hjemme på nettsiden, ikke her.
 
@@ -365,7 +365,7 @@ Felles begrep for enhver samling: gudstjeneste, ungdomsmøte, bønnemøte, dugna
 | `id` | `string` | Ja | Unik identifikator. *Planlagt:* lik brukerens ID ved innlogging |
 | `name` | `string` | Ja | Fullt navn |
 | `email`, `phone` | `string` | Nei | Privat kontaktinfo. Vises aldri på nettsiden |
-| `globalRole` | `"member" \| "admin"` | Ja | Medlem eller administrator |
+| `globalRole` | `"member" \| "admin"` | Ja | Frivillig eller administrator |
 | `policeCertificateValidUntil` | `YYYY-MM-DD` | Nei | Utløpsdato for politiattest |
 | `unavailablePeriods` | `{ from, to, reason? }[]` | Nei | Perioder personen er borte. Vises som advarsel ved tildeling |
 | `isPublicProfile` | `boolean` | Nei | Om personen skal vises på nettsiden |
@@ -384,10 +384,10 @@ Felles begrep for enhver samling: gudstjeneste, ungdomsmøte, bønnemøte, dugna
 | `category` | `"tjenestegruppe" \| "husgruppe" \| "strategigruppe" \| "ledergruppe" \| "interessegruppe"` | Nei | Kategori |
 | `tags` | `string[]` | Nei | Stikkord |
 | `isPublic` | `boolean` | Nei | `false` skjuler gruppen på nettsiden og i API-et. Mangler feltet, vises gruppen |
-| `memberIds`, `leaderIds`, `deputyLeaderIds` | `string[]` | Ja, Ja, Nei | Medlemmer, ledere og nestledere |
+| `memberIds`, `leaderIds`, `deputyLeaderIds` | `string[]` | Ja, Ja, Nei | Deltakere, ledere og nestledere |
 | `meetingSchedule` | `{ weekday, time, frequency }` | Nei | Fast møtetid: hver uke, annenhver uke eller hver måned |
-| `memberJoinedAt` | `{ personId: dato }` | Nei | Når hvert medlem ble med |
-| `notificationPreferences` | `{ personId: boolean }` | Nei | Om medlemmet vil ha varsler fra gruppen |
+| `memberJoinedAt` | `{ personId: dato }` | Nei | Når hver deltaker ble med |
+| `notificationPreferences` | `{ personId: boolean }` | Nei | Om deltakeren vil ha varsler fra gruppen |
 
 ### 5.6 Gruppemelding og oppmøte
 
@@ -476,12 +476,12 @@ Den som har avslått eller meldt forfall, holder ingen plass.
 | Handling | Hvem | Resultat |
 |:---|:---|:---|
 | **Tildel** | Leder eller administrator, når vakten alt er avtalt | Bekreftet med en gang |
-| **Forespør** | Leder eller administrator | Venter på svar til medlemmet svarer ja eller nei på Min side eller oppgavesiden |
-| **Ta oppgaven** | Medlemmet selv, når en plass er ledig i en av medlemmets grupper | Bekreftet med en gang |
+| **Forespør** | Leder eller administrator | Venter på svar til deltakeren svarer ja eller nei på Min side eller oppgavesiden |
+| **Ta oppgaven** | Den frivillige selv, når en plass er ledig i en av den frivilliges grupper | Bekreftet med en gang |
 
 ### 6.2 Forfall
 
-* Et bekreftet medlem som melder forfall, lagres som **forfall**. Et nei på en forespørsel lagres som **avslått**.
+* En bekreftet frivillig som melder forfall, lagres som **forfall**. Et nei på en forespørsel lagres som **avslått**.
 * En grunn for forfallet lagres ikke. Det er et valg, ikke en mangel: opplysningen kan være privat, og tas muntlig.
 * Kommer forfallet eller avslaget **mindre enn 48 timer før samlingen starter**, er det **akutt**: oppgaven merkes og løftes fram i «Trenger oppfølging» til plassen er fylt igjen.
 * Hver tildeling får tidspunkt for når den ble opprettet og når den ble besvart.
@@ -516,7 +516,7 @@ Tre regler avgjør hva en besøkende ser. Hver av dem ligger ett sted i koden og
 ### 7.1 Samlinger: én bryter
 Feltet `visibility` er den eneste bryteren:
 
-* **`intern`** – bare for medlemmer, ledere og stab. Skjult i kalenderen og i API-et.
+* **`intern`** – bare for deltakere, ledere og stab. Skjult i kalenderen og i API-et.
 * **`offentlig`** – vises i kalenderen på nettsiden.
 * **`fremhevet`** – offentlig, og løftet fram øverst på forsiden.
 
@@ -634,8 +634,8 @@ Kontrakten står i `INTEGRASJON-MENIGHETSPLAN.md`. Det eksterne CMS-et (`menighe
 
 | Område | Mål | I dag |
 |:---|:---|:---|
-| Innlogging | Medlemmer logger inn med Google-konto eller en lenke på e-post. Rollen styrer hva man ser og kan gjøre | **Levert 7. oktober** for skjermene: Min side krever at man står i personregisteret, og admin krever administrator (kapittel 10.1) |
-| Regler i databasen | Besøkende leser bare offentlige data. Et medlem endrer bare sitt eget. Bare administrator endrer offentlige profilfelt og samtykke | **Skrevet og prøvd lokalt 12. oktober** (kapittel 12, «Lukket database»). Ikke publisert i noen database ennå. Demoen har sine egne, åpne regler |
+| Innlogging | Frivillige logger inn med Google-konto eller en lenke på e-post. Rollen styrer hva man ser og kan gjøre | **Levert 7. oktober** for skjermene: Min side krever at man står i personregisteret, og admin krever administrator (kapittel 10.1) |
+| Regler i databasen | Besøkende leser bare offentlige data. En frivillig endrer bare sitt eget. Bare administrator endrer offentlige profilfelt og samtykke | **Skrevet og prøvd lokalt 12. oktober** (kapittel 12, «Lukket database»). Ikke publisert i noen database ennå. Demoen har sine egne, åpne regler |
 | Sporbarhet | `updatedBy` er alltid den innloggede brukeren | **Delvis.** Regelen finnes, men gjelder først når noen er logget inn |
 | Personregisteret | Lastes bare for innloggede | **Levert 12. oktober** for en menighets egen installasjon: en besøkende får bare de offentlige kopiene av personer med samtykke. Demoen og utviklermaskinen laster fortsatt hele registeret, for der går hvem som helst inn som en person |
 | Samtykke | Ingen person vises uten registrert samtykke | **Levert** |
@@ -656,7 +656,7 @@ Kontrakten står i `INTEGRASJON-MENIGHETSPLAN.md`. Det eksterne CMS-et (`menighe
 | Står ikke i registeret | Beskjed om å kontakte menigheten, og «Logg ut og prøv en annen konto». Ingenting annet |
 | Har en adresse flere personer deler | Beskjed om at adressen ikke sier hvem man er, og at menigheten må rette det |
 
-**Tre roller, og de følger av personen.** *Administrator* står på personen i registeret. *Gruppeleder* er den som leder minst én gruppe, som leder eller stedfortreder. *Medlem* er alle andre i registeret. Rollen lagres ikke på kontoen, så den endres i det personen endres i registeret.
+**Tre roller, og de følger av personen.** *Administrator* står på personen i registeret. *Gruppeleder* er den som leder minst én gruppe, som leder eller stedfortreder. *Frivillig* er alle andre i registeret. Rollen lagres ikke på kontoen, så den endres i det personen endres i registeret.
 
 **Bak innlogging.** Min side med undersidene krever at man står i registeret. Admin krever administrator. Den offentlige nettsiden er åpen. Planleggingsdataene (oppgaver, tildelinger, meldinger, oppmøte) hentes bare for den som er inne, og fjernes fra nettleseren ved utlogging.
 
@@ -697,7 +697,7 @@ De tre flatene, Firestore-databasen, bemanningsmotoren, husfellesskap, gruppemel
 |:---|:---|
 | **Fundament** | Streng typesjekk. Testløp med Vitest: over 430 tester som kjører den ekte koden. Nye dokumenter bygges ett sted. En lagring som feiler, vises for brukeren |
 | **Datalaget** | Skjermen viser bare det databasen har. Det som hører sammen, lagres i én operasjon. To samtidige endringer kan ikke overskrive hverandre. Testene kjører mot den ekte Firestore-klienten uten nett |
-| **Bemanning** | Oppgavens status regnes ut av tildelingene. Et medlem kan ta en ledig oppgave og svare på en forespørsel. Forfall med 48-timersregel og tidsstempler |
+| **Bemanning** | Oppgavens status regnes ut av tildelingene. En frivillig kan ta en ledig oppgave og svare på en forespørsel. Forfall med 48-timersregel og tidsstempler |
 | **Min side** | Bruker dagens dato i stedet for en fast demodato. «Trenger svar» er sortert etter hva som haster |
 | **Nettsiden** | Forsiden følger «fremhevet», ellers neste gudstjeneste. Kalenderen viser kommende samlinger. Grupper kan skjules. Et interesseskjema som ikke lagret noe, er erstattet med hvem man kan kontakte. Personer vises bare med samtykke |
 | **Kjøreplan** | Viser bare det som er registrert. Et oppdiktet standardprogram og oppdiktede navn er fjernet |
@@ -759,7 +759,7 @@ Trinn 2 av «Klar for flere menigheter» (kapittel 14).
 |:---|:---|
 | **Innlogging** | Google-konto eller lenke på e-post, på `/logg-inn`. Ingen passord. Feil sies på norsk, uten koder |
 | **Konto og person** | Kontoens bekreftede e-postadresse peker ut personen i registeret. Den som ikke står der, eller deler adresse med en annen, kommer ikke inn og får vite hvorfor |
-| **Roller** | Administrator står på personen. Gruppeleder følger av gruppene. Medlem er alle andre i registeret |
+| **Roller** | Administrator står på personen. Gruppeleder følger av gruppene. Frivillig er alle andre i registeret |
 | **Sperren** | Min side krever at man står i registeret, og admin krever administrator. Planleggingsdataene hentes bare for den som er inne, og fjernes ved utlogging |
 | **Testbryteren** | Fjernet fra menyen på nettsiden, Min side og alle undersidene. Testverktøyet på husfellesskapssiden og den gamle innstillingssiden er fjernet |
 | **Første administrator** | Legges inn med `npm run first-admin` av den som setter opp installasjonen |
@@ -945,13 +945,13 @@ Første del av trinn 4 (kapittel 14). Bestilt av produkteier for at planene fram
 | **Følger registeret av seg selv** | Innloggingene og kopiene skrives fra registeret, i nettleseren til en administrator som har appen åpen. Den som legger inn en frivillig med e-postadresse, gir dermed personen adgang i samme øyeblikk. En administrator kan ikke miste sin egen innlogging på denne måten |
 | **Nettsiden** | En besøkende får bare gruppene og arrangementene som er merket offentlige, og ingenting av oppgaver, tildelinger, meldinger og oppmøte |
 | **Gruppeledere** | En leder eller nestleder endrer sin egen gruppe, arrangementene til gruppen og oppgavene på dem |
-| **Medlemmer** | Svarer på forespørsler, melder seg på og av oppgaver, svarer på om de kommer, skriver meldinger i eget navn, og slår egne varsler av og på |
+| **Frivillige** | Svarer på forespørsler, melder seg på og av oppgaver, svarer på om de kommer, skriver meldinger i eget navn, og slår egne varsler av og på |
 | **Besøkstall** | En besøkende kan legge til i dagens summer, og ikke noe annet |
 | **Bilder og filer** | Alle kan se dem. Bare administrator kan laste opp og slette |
 | **Første administrator** | Legges inn utenfra før reglene publiseres (`npm run first-admin`), og får da også sin innlogging |
 | **Demoen** | Uendret. Den har sin egen database og sine egne, åpne regler, og ingen logger inn der |
 | **Prøvd** | 34 nye sjekker: innloggingene et register gir, delte adresser, de offentlige kopiene, hvem en konto er, hva en besøkende og en innlogget får fra databasen, og at skrivingen fra registeret stopper når den blir avvist |
-| **Reglene er kjørt** | Mot Firebase sin lokale prøvedatabase, med 27 sjekker (`npm run test:rules`): hva en besøkende, en innlogget utenfor registeret, et medlem, en gruppeleder og en administrator får lese og skrive, spurt slik appen spør. Også 400 dokumenter i én sending, og opplasting til bildelageret. Sjekkene slår ut når en regel bevisst ødelegges |
+| **Reglene er kjørt** | Mot Firebase sin lokale prøvedatabase, med 27 sjekker (`npm run test:rules`): hva en besøkende, en innlogget utenfor registeret, en frivillig, en gruppeleder og en administrator får lese og skrive, spurt slik appen spør. Også 400 dokumenter i én sending, og opplasting til bildelageret. Sjekkene slår ut når en regel bevisst ødelegges |
 | **Ikke prøvd** | Reglene er ikke publisert i en ekte database, og innloggingen mot Google og e-post er ikke prøvd i drift |
 | **Ikke levert her** | Tilgang per menighet (nivå og moduler). En advarsel i admin når to personer deler e-postadresse: ingen av dem kan logge inn. Finere regler for hvem som kan endre tildelinger |
 
@@ -982,18 +982,18 @@ Bestilt av produkteier under oppsettet av første menighet.
 
 **Hvem som kan lese den.** Bare en administrator ser og endrer feltet. I koden leser en frivillig bare sitt eget personkort (kapittel 14). Det gjelder i databasen først når `firestore.rules` er publisert på nytt hos menigheten.
 
-### Leder og nestleder regnes som medlemmer (12. oktober 2026)
+### Leder og nestleder regnes som deltakere (12. oktober 2026)
 
-Funnet av produkteier hos første menighet: Min side viste to i en husgruppe, mens admin viste «0 medlemmer» og «Ingen medlemmer i gruppen» i feltet for leder.
+Funnet av produkteier hos første menighet: Min side viste to i en husgruppe, mens admin viste «0 medlemmer» (nå «0 deltakere») og «Ingen medlemmer i gruppen» (nå «Ingen deltakere i gruppen») i feltet for leder.
 
 | Område | Rettet |
 |:---|:---|
-| **Årsaken** | Gruppene var hentet inn fra et datasett der lederen og nestlederen sto som leder og nestleder, men ikke i medlemslisten. Min side regnet alle tre rollene som medlemmer, admin bare medlemslisten |
-| **Admin** | Gruppesiden, gruppekortene og personsiden regner nå leder og nestleder som medlemmer. Feltene «Leder» og «Nestleder» viser den som har rollen, også når personen ikke står i medlemslisten |
-| **Gruppelederens side** | Samme regel: medlemslisten har med leder og nestleder, og bare de som ikke er i gruppen i det hele tatt, kan legges til |
-| **Min side** | Antallet medlemmer på gruppekortet teller hver person én gang, uansett rolle |
-| **Når en gruppe lagres i admin** | Den som er valgt som leder eller nestleder, skrives inn i medlemslisten. En gruppe som mangler lederen der, rettes dermed første gang den lagres |
-| **Databasen rettes av seg selv** | Når en administrator har appen åpen i en menighets egen installasjon, skrives ledere og nestledere som mangler i medlemslisten til gruppen sin, inn i den. Ingenting annet i gruppen røres |
+| **Årsaken** | Gruppene var hentet inn fra et datasett der lederen og nestlederen sto som leder og nestleder, men ikke i listen over deltakere. Min side regnet alle tre rollene som deltakere, admin bare den listen |
+| **Admin** | Gruppesiden, gruppekortene og personsiden regner nå leder og nestleder som deltakere. Feltene «Leder» og «Nestleder» viser den som har rollen, også når personen ikke står i listen over deltakere |
+| **Gruppelederens side** | Samme regel: listen over deltakere har med leder og nestleder, og bare de som ikke er i gruppen i det hele tatt, kan legges til |
+| **Min side** | Antallet deltakere på gruppekortet teller hver person én gang, uansett rolle |
+| **Når en gruppe lagres i admin** | Den som er valgt som leder eller nestleder, skrives inn i listen over deltakere. En gruppe som mangler lederen der, rettes dermed første gang den lagres |
+| **Databasen rettes av seg selv** | Når en administrator har appen åpen i en menighets egen installasjon, skrives ledere og nestledere som mangler i listen over deltakere til gruppen sin, inn i den. Ingenting annet i gruppen røres |
 | **Ubesatte oppgaver** | En oppgave som er satt til «trengs ikke» på et arrangement, telles ikke lenger som ubesatt i admin |
 | **Prøvd** | 9 sjekker, med en gruppe slik datasettet hadde den |
 
@@ -1016,7 +1016,7 @@ Sortert etter hvor mye de betyr for en menighet som skal ta løsningen i bruk.
 | 8 | Ingen varsling: forespørsler og forfall når ingen uten at de åpner appen | Fase 3 |
 | 9 | Modulvalg lagres bare i én nettleser | Fase 3 |
 | 10 | En besøkende kan ikke melde interesse for en gruppe i løsningen | Fase 3 |
-| 11 | Et nytt gruppemedlem ser hele meldingshistorikken | Fase 3 |
+| 11 | En ny deltaker ser hele meldingshistorikken | Fase 3 |
 | 12 | Valg, ikke en mangel: forfallsgrunn lagres ikke. Opplysningen kan være privat, og tas muntlig | — |
 | 13 | Firebase-klienten lastes på første nettsidebesøk (~1,3 MB JavaScript utover CSS). Admin og Min side er skilt ut, men Firestore er felles datakilde for alle flater | Fase 4 |
 | 14 | Tjenesteroller, oppmøtetall, maler og besøkstall ligger fortsatt i `cms_settings`, merket med `recordType`, slik de ble lagt da reglene i drift avviste nye samlinger. De lukkede reglene kjenner merkene | Fase 1 |
@@ -1051,7 +1051,7 @@ Trinnene tas i rekkefølge. Et trinn er ferdig når det er prøvd, testene er gr
 | Trinn | Hva | Status |
 |:---|:---|:---|
 | 1 | **Nøytral og flyttbar app.** Databasen leses fra installasjonens innstillinger. Ingenting om én menighet står i koden | **Levert 7. oktober** (kapittel 12) |
-| 2 | **Innlogging og roller:** administrator, gruppeleder og medlem. Testbryteren fjernes, og admin legges bak innlogging | **Levert 7. oktober** (kapittel 10.1 og 12) |
+| 2 | **Innlogging og roller:** administrator, gruppeleder og frivillig. Testbryteren fjernes, og admin legges bak innlogging | **Levert 7. oktober** (kapittel 10.1 og 12) |
 | 3 | **Demoen** på demo.menighetsplan.no, i delene under | Pågår |
 | 4 | **Lukkede databaseregler og tilgang per menighet.** Regler for appens egne data. Nettsiden slutter å laste personregisteret. Appen leser `/system/entitlements`, siden Moduler viser «ikke inkludert», «av» og «på», og reglene sperrer det menigheten ikke har | **Reglene og appens del er skrevet og prøvd lokalt 12. oktober** (kapittel 12). Ikke publisert. Tilgang per menighet er ikke bygget |
 | 5 | **Første ekte menighet**, satt opp for hånd | |
@@ -1123,12 +1123,12 @@ git push origin origin/main:stabil
 
 * Ingenting utvikles på `stabil`. Retningen er alltid fra `main` til `stabil`.
 * Før en slipp prøves det nye i demoen, og det sies fra om databasereglene er endret. Reglene følger ikke med koden: `firestore.rules` må limes inn i hver menighets Firebase-prosjekt (Firestore → Rules → Publish).
-* Reglene som er publisert hos Lillesand, er fra 12. oktober kl. 19 og mangler tillegget som lar et medlem lagre `calendarFeedToken` på seg selv. De må publiseres på nytt før det personlige kalenderabonnementet virker der.
+* Reglene som er publisert hos Lillesand, er fra 12. oktober kl. 19 og mangler tillegget som lar en frivillig lagre `calendarFeedToken` på seg selv. De må publiseres på nytt før det personlige kalenderabonnementet virker der.
 * Filer med personopplysninger (registeret, bemanningen) ligger utenfor repoet og skal aldri inn i det.
 
 ### Brukernivåer som holder i databasen *(avtalt 12. oktober 2026; lesetilgangen er i koden, ikke publisert i databasen ennå)*
 
-**Problemet.** Appen har tre roller (administrator, gruppeleder, medlem). De styrer skjermene. Lesingen av registeret var den samme for alle som var logget inn. Produkteier har bedt om tre sikre nivåer, og frivillige skal ikke inviteres inn før reglene er publisert.
+**Problemet.** Appen har tre roller (administrator, gruppeleder, frivillig). De styrer skjermene. Lesingen av registeret var den samme for alle som var logget inn. Produkteier har bedt om tre sikre nivåer, og frivillige skal ikke inviteres inn før reglene er publisert.
 
 **Avtalt.**
 
@@ -1141,7 +1141,7 @@ git push origin origin/main:stabil
 | Hvem som står på oppgavene på et arrangement | Bare navnet | Bare navnet | Ser alt |
 | Legge folk i gruppen | Nei | Foreslår navn, administrator godkjenner | Ja |
 
-**Lesetilgangen er skrevet i koden** (`src/utils/groupAccess.ts`, `firestore.rules`, `useRegisterMirror`). En frivillig henter sitt eget personkort, navn og telefon for egen gruppe, og e-post bare når hun leder gruppen. Kjøreplanen bruker navnet på tildelingen. «Legg til person» fra registeret vises bare for administrator. Gruppeleder kan fortsatt fjerne et medlem, men kan ikke ta inn noen som ikke allerede er i gruppen. Demoen leser hele registeret, fordi ingen logger inn der.
+**Lesetilgangen er skrevet i koden** (`src/utils/groupAccess.ts`, `firestore.rules`, `useRegisterMirror`). En frivillig henter sitt eget personkort, navn og telefon for egen gruppe, og e-post bare når hun leder gruppen. Kjøreplanen bruker navnet på tildelingen. «Legg til person» fra registeret vises bare for administrator. Gruppeleder kan fortsatt fjerne en deltaker, men kan ikke ta inn noen som ikke allerede er i gruppen. Demoen leser hele registeret, fordi ingen logger inn der.
 
 Det holder ikke før reglene er publisert. Reglene som ligger hos Lillesand i dag, avviser skriving til de nye samlingene. Speilet kan derfor ikke kjøre før de nye reglene er publisert. Rekkefølgen er:
 
@@ -1150,13 +1150,13 @@ Det holder ikke før reglene er publisert. Reglene som ligger hos Lillesand i da
 3. Utrulling til `stabil` godkjennes.
 4. De nye Firestore-reglene publiseres straks etter utrullingen.
 5. Administrator åpner appen og lar speilet fullføre.
-6. Speilingen kontrolleres før én medlemskonto brukes til sluttkontroll. Hele `persons` skal ikke komme ned i nettleseren.
+6. Speilingen kontrolleres før én konto for en frivillig brukes til sluttkontroll. Hele `persons` skal ikke komme ned i nettleseren.
 
-Gruppene kan mangle på nettsiden mellom utrullingen og fullført speiling, fordi nettsiden leser de offentlige gruppekortene, og de skrives først når speilet er ferdig. Vanlige medlemmer skal ikke inviteres til å teste før speilingen er kontrollert.
+Gruppene kan mangle på nettsiden mellom utrullingen og fullført speiling, fordi nettsiden leser de offentlige gruppekortene, og de skrives først når speilet er ferdig. Vanlige frivillige skal ikke inviteres til å teste før speilingen er kontrollert.
 
-**Gruppeleder foreslår medlemmer** er skrevet i koden (`memberProposals`, `MemberProposals.tsx`). Leder og nestleder skriver et navn. Forslaget har bare gruppe, navn, hvem som sendte det, tidspunkt og status. Administrator knytter navnet til en person i registeret eller oppretter personen, og kan fortsatt legge inn medlemmer direkte. Ventende forslag vises for seg, med teksten «Venter på godkjenning», og bare for leder, nestleder og administrator. Det gjelder husgrupper og tjenestegrupper. Reglene må publiseres etter utrulling til `stabil`, i samme rekkefølge som lesetilgangen over. Før de er publisert, blir forslaget avvist.
+**Gruppeleder foreslår deltakere** er skrevet i koden (`memberProposals`, `MemberProposals.tsx`). Leder og nestleder skriver et navn. Forslaget har bare gruppe, navn, hvem som sendte det, tidspunkt og status. Administrator knytter navnet til en person i registeret eller oppretter personen, og kan fortsatt legge inn deltakere direkte. Ventende forslag vises for seg, med teksten «Venter på godkjenning», og bare for leder, nestleder og administrator. Det gjelder husgrupper og tjenestegrupper. Reglene må publiseres etter utrulling til `stabil`, i samme rekkefølge som lesetilgangen over. Før de er publisert, blir forslaget avvist.
 
-**Svar på tildelinger** er skrevet i reglene. Den som står på tildelingen, svarer for seg selv. Leder, nestleder og administrator kan endre og fjerne bemanningen de har ansvar for. En frivillig kan ikke slette en tildeling, og kan ikke avlyse en oppgave. Oppmøte leses av en selv, av dem som er med i gruppen arrangementet hører til, og av administrator. Forfallsgrunn lagres ikke. Reglene må publiseres etter utrulling til `stabil`, sammen med lesetilgangen og medlemsforslagene. Inntil speilet har kjørt, kan en gammel grunn fortsatt ligge på tildelingen.
+**Svar på tildelinger** er skrevet i reglene. Den som står på tildelingen, svarer for seg selv. Leder, nestleder og administrator kan endre og fjerne bemanningen de har ansvar for. En frivillig kan ikke slette en tildeling, og kan ikke avlyse en oppgave. Oppmøte leses av en selv, av dem som er med i gruppen arrangementet hører til, og av administrator. Forfallsgrunn lagres ikke. Reglene må publiseres etter utrulling til `stabil`, sammen med lesetilgangen og forslagene om deltakere. Inntil speilet har kjørt, kan en gammel grunn fortsatt ligge på tildelingen.
 
 Administrator er det samme som den som skal se registeret. En redaktør som endrer nettsiden uten å se registeret, er ikke bygget.
 
@@ -1164,7 +1164,7 @@ Administrator er det samme som den som skal se registeret. En redaktør som endr
 
 ### Fase 1 – Trygg i drift *(trinn 2 og 4 over)*
 1. Innlogging med Google-konto. Første administrator er produkteierens konto.
-2. Roller: administrator, gruppeleder (avledet av gruppene) og medlem.
+2. Roller: administrator, gruppeleder (avledet av gruppene) og frivillig.
 3. Databaseregler etter rolle: besøkende leser bare offentlige data, og kladder leveres ikke ut.
 4. Testbryteren, testverktøyet på husfellesskapssiden og demodata-knappene fjernes eller legges bak administrator.
 5. Personregisteret lastes ikke på nettsiden.
@@ -1184,7 +1184,7 @@ Administrator er det samme som den som skal se registeret. En redaktør som endr
 2. **Varsling** ved forespørsel, påminnelse og akutt forfall. Kanal må velges (se under).
 3. Modulvalg lagres for hele menigheten.
 4. «Bli med»: en besøkende melder interesse for en gruppe, og lederen ser henvendelsen.
-5. Et nytt medlem ser meldinger fra innmeldingsdatoen.
+5. En ny deltaker ser meldinger fra innmeldingsdatoen.
 6. ~~Forfall med grunn.~~ **Valg:** grunnen lagres ikke. Opplysningen kan være privat, og tas muntlig.
 7. Kalender- og meldingsmodul med innhold. *Min kalender* på Min side er en mulig funksjon med avtalt innhold (kapittel 3), men er ikke prioritert.
 8. Omsorgsvarsel når samme person settes opp ofte, og varsel før en politiattest går ut.
@@ -1231,8 +1231,8 @@ Scenarioene under er dekket av automatiske tester.
 * **A. Tildeling.** En oppgave «Lydtekniker» trenger én. Administrator tildeler Kari. Tildelingen er bekreftet, og oppgaven viser `Dekket (1/1)` med en gang.
 * **B. Forespørsel og avslag.** En oppgave «Kirkekaffe» trenger to. Administrator forespør person A. Oppgaven viser `Venter på svar`, og én plass er fortsatt ledig. Svarer A nei mindre enn 48 timer før samlingen, merkes oppgaven som akutt.
 * **C. Samtykke.** Administrator krysser av «Vis offentlig» for en medarbeider. Tidspunktet og hvem som registrerte samtykket lagres. Uten samtykke vises personen ikke.
-* **D. Medlemmet tar en oppgave.** En plass er ledig i en av medlemmets grupper. Medlemmet trykker «Ta oppgaven». Tildelingen er bekreftet, og oppgaven står under «Mine oppgaver».
-* **E. Forfall.** Et bekreftet medlem melder forfall. Plassen blir ledig, tidspunktet lagres, og oppgaven forsvinner fra medlemmets liste. Er det mindre enn 48 timer til samlingen, merkes oppgaven som akutt til noen tar den.
+* **D. Den frivillige tar en oppgave.** En plass er ledig i en av den frivilliges grupper. Den frivillige trykker «Ta oppgaven». Tildelingen er bekreftet, og oppgaven står under «Mine oppgaver».
+* **E. Forfall.** En bekreftet frivillig melder forfall. Plassen blir ledig, tidspunktet lagres, og oppgaven forsvinner fra den frivilliges liste. Er det mindre enn 48 timer til samlingen, merkes oppgaven som akutt til noen tar den.
 * **F. Skjult gruppe.** Administrator fjerner krysset «Vis gruppen på nettsiden». Gruppen og møtetiden forsvinner fra «Fellesskap» og fra API-et.
 * **G. Fremhevet samling.** Administrator fremhever en samling. Den står øverst på forsiden til den er passert eller avlyst. Da står neste gudstjeneste der.
 * **H. Planlagt publisering.** En side settes til publisering i morgen kl. 08:00. Den står ikke i menyen i dag, og er der i morgen etter kl. 08:00.

@@ -57,7 +57,7 @@ export const LeaderGroupDetailPage: React.FC = () => {
             <p className="text-xs text-slate-500 leading-relaxed max-w-xs mx-auto">
               {!group
                 ? "Gruppen ble ikke funnet."
-                : `Du har ikke tilgang til denne gruppen. ${currentUser.name} er ikke registrert som medlem eller leder for ${group.name}.`}
+                : `Du har ikke tilgang til denne gruppen. ${currentUser.name} er ikke registrert som deltaker eller leder for ${group.name}.`}
             </p>
           </div>
           <div className="pt-2 flex flex-col gap-2">
@@ -100,7 +100,7 @@ export const LeaderGroupDetailPage: React.FC = () => {
           <div>
             <h1 className="text-lg font-bold text-slate-900">{group.name}</h1>
             <p className="text-xs text-slate-500 capitalize">
-              {group.category || "Tjenestegruppe"} • {members.length} medlemmer
+              {group.category || "Tjenestegruppe"} • {members.length} {members.length === 1 ? "deltaker" : "deltakere"}
             </p>
           </div>
           {hasLeaderAccess && !isEditingMeta && (
@@ -163,7 +163,7 @@ export const LeaderGroupDetailPage: React.FC = () => {
           }`}
         >
           <Users className="w-3.5 h-3.5 text-slate-500" />
-          <span>Medlemmer ({members.length})</span>
+          <span>Deltakere ({members.length})</span>
         </button>
       </div>
 

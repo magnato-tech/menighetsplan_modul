@@ -143,7 +143,7 @@ export const EditMeetingDialog: React.FC<EditMeetingDialogProps> = ({ model, act
                 onChange={(e) => setFormHostId(e.target.value)}
                 className="w-full text-xs px-3 py-2 border border-slate-300 rounded-xl bg-white focus:outline-emerald-600 text-slate-800"
               >
-                <option value="">Velg vert blant medlemmene...</option>
+                <option value="">Velg vert blant deltakerne...</option>
                 {members.map((m) => (
                   <option key={m.id} value={m.id}>
                     {m.name}

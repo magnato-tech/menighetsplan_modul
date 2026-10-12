@@ -424,7 +424,7 @@ export const GroupActivities: React.FC<GroupActivitiesProps> = ({ detail, showTo
                             {quickAssignTaskId === task.id && (
                               <div className="p-2.5 bg-slate-900 text-white rounded-xl space-y-2 mt-1">
                                 <span className="text-[10px] uppercase font-bold text-amber-400 block">
-                                  Velg medlem for direkte tildeling:
+                                  Velg deltaker for direkte tildeling:
                                 </span>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
                                   {members.map((m) => (

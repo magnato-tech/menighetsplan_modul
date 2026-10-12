@@ -28,7 +28,7 @@ export const MembersTab: React.FC<MembersTabProps> = ({ model, group }) => {
     <div id="section-husfellesskap-members" className="p-5 space-y-4">
       <div className="flex items-center justify-between">
         <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-          Gruppens medlemmer ({members.length})
+          Deltakere i gruppen ({members.length})
         </span>
       </div>
 
@@ -88,7 +88,7 @@ export const MembersTab: React.FC<MembersTabProps> = ({ model, group }) => {
           withdrawProposal(proposalId).catch((error) => reportWriteError("trekke tilbake forslaget", error));
         }}
         onAccept={(proposal, personId) => {
-          acceptProposal(proposal.id, group.id, personId).catch((error) => reportWriteError("legge til medlemmet", error));
+          acceptProposal(proposal.id, group.id, personId).catch((error) => reportWriteError("legge til deltakeren", error));
         }}
         onCreate={(proposal) => {
           acceptProposalAsNew(proposal.id, group.id, proposal.name).catch((error) => reportWriteError("opprette personen", error));

@@ -50,7 +50,7 @@ export const MeetingTab: React.FC<MeetingTabProps> = ({ model, showToast, onCrea
     const res = await sendInvitation(activeMeeting.id);
     setSubmitting(false);
     if (res.success) {
-      showToast("Møteinnkalling er sendt ut til alle gruppemedlemmer!");
+      showToast("Møteinnkalling er sendt ut til alle deltakerne!");
     } else {
       showToast(res.error || "Kunne ikke sende innkalling.", "info");
     }
@@ -201,8 +201,8 @@ export const MeetingTab: React.FC<MeetingTabProps> = ({ model, showToast, onCrea
 
               <p className="text-xs text-emerald-100 leading-relaxed">
                 {activeMeeting.invitationSent
-                  ? "Innkallingen er sendt til gruppen. Medlemmenes svar oppdateres fortløpende nedenfor."
-                  : "Møtet er opprettet som et utkast. Trykk på knappen under for å sende innkalling til alle medlemmene."}
+                  ? "Innkallingen er sendt til gruppen. Deltakernes svar oppdateres fortløpende nedenfor."
+                  : "Møtet er opprettet som et utkast. Trykk på knappen under for å sende innkalling til alle deltakerne."}
               </p>
 
               <div className="flex items-center gap-2 pt-1">
@@ -305,11 +305,11 @@ export const MeetingTab: React.FC<MeetingTabProps> = ({ model, showToast, onCrea
                   Deltakelse & Svarstatus
                 </h4>
                 <span className="text-[11px] text-slate-500 font-medium">
-                  {answeredCount} av {totalMembersCount} medlemmer har svart
+                  {answeredCount} av {totalMembersCount} deltakere har svart
                 </span>
               </div>
               <span className="text-xs font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-xl">
-                Totalt {totalMembersCount} medlemmer
+                Totalt {totalMembersCount} deltakere
               </span>
             </div>
 
@@ -402,7 +402,7 @@ export const MeetingTab: React.FC<MeetingTabProps> = ({ model, showToast, onCrea
                 </div>
               ) : (
                 <p className="text-xs text-emerald-700 font-semibold">
-                  Alle medlemmene har svart på innkallingen!
+                  Alle deltakerne har svart på innkallingen!
                 </p>
               )}
             </div>

@@ -227,7 +227,7 @@ export const GroupsTab: React.FC<GroupsTabProps> = ({ studio, showFeedback }) =>
                     >
                       {cat}
                     </span>
-                    <span className="text-xs text-[var(--studio-muted)]">{g.members.length} medlemmer</span>
+                    <span className="text-xs text-[var(--studio-muted)]">{g.members.length} {g.members.length === 1 ? "deltaker" : "deltakere"}</span>
                   </div>
 
                   <h3 className="font-bold text-[var(--studio-text)] text-lg">{g.group.name}</h3>

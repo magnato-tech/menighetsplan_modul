@@ -23,7 +23,7 @@ export function useLeadersAsMembers(groups: Group[], active: boolean): void {
     if (missing.length === 0) return;
     Promise.all(missing.map(({ groupId, personId }) => addGroupMember(groupId, personId))).catch((error) => {
       stopped.current = true;
-      console.warn("Lederne kunne ikke skrives inn i medlemslistene:", error);
+      console.warn("Lederne kunne ikke skrives inn i listene over deltakere:", error);
     });
   }, [active, groups]);
 }

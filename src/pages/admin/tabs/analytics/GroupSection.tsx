@@ -39,7 +39,7 @@ export const GroupSection: React.FC<GroupSectionProps> = ({ period, groups, now,
             ? `${groups.quietGroups} uten aktivitet siste ${QUIET_GROUP_DAYS} dager`
             : `alle aktive siste ${QUIET_GROUP_DAYS} dager`}
         </MiniStat>
-        <MiniStat label="Nye medlemskap" value={String(groups.newMembers)}>
+        <MiniStat label="Nye deltakere" value={String(groups.newMembers)}>
           i perioden
         </MiniStat>
         <MiniStat label="Meldinger i gruppene" value={String(groups.messages)}>
@@ -70,7 +70,7 @@ export const GroupSection: React.FC<GroupSectionProps> = ({ period, groups, now,
               <tr className="text-left text-[11px] text-[var(--studio-muted)] border-b border-[var(--studio-border)]">
                 <th className="py-2 pr-3 font-bold">Gruppe</th>
                 <th className="py-2 pr-3 font-bold">Kategori</th>
-                <th className="py-2 pr-3 font-bold text-right">Medlemmer</th>
+                <th className="py-2 pr-3 font-bold text-right">Deltakere</th>
                 <th className="py-2 pr-3 font-bold text-right">Samlinger</th>
                 <th className="py-2 pr-3 font-bold text-right">Svarte «Kommer»</th>
                 <th className="py-2 pr-3 font-bold text-right">Meldinger</th>

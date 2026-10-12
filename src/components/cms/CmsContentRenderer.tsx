@@ -903,7 +903,7 @@ const PersonGridRenderer: React.FC<PersonGridRendererProps> = ({ filter }) => {
     const allIds = Array.from(new Set([...(targetGroup.leaderIds || []), ...(targetGroup.memberIds || [])]));
 
     const profiles = publicProfilesOf(allIds, allPersons).map((p) => {
-      let role = p.title || "Medlem";
+      let role = p.title || "Deltaker";
       if (leaderIds.has(p.id)) role = p.title || "Leder i menighetsrådet";
       else if (deputyIds.has(p.id)) role = p.title || "Nestleder";
       return {

@@ -76,7 +76,7 @@ export const LeaderPage: React.FC = () => {
           <div className="space-y-1.5">
             <h3 className="text-base font-bold text-slate-800">Ikke registrert som leder</h3>
             <p className="text-xs text-slate-500 leading-relaxed max-w-xs mx-auto">
-              <span className="font-semibold text-slate-700">{currentUser.name}</span> er registrert som medlem, men leder for øyeblikket ingen grupper. Bytt bruker i toppen for å teste lederflaten.
+              <span className="font-semibold text-slate-700">{currentUser.name}</span> er registrert som frivillig, men leder for øyeblikket ingen grupper. Bytt bruker i toppen for å teste lederflaten.
             </p>
           </div>
           <div className="pt-2">
@@ -241,7 +241,7 @@ export const LeaderPage: React.FC = () => {
                           </span>
                         </div>
                         <p className="text-xs text-slate-500">
-                          <span className="capitalize">{group.category || "Tjenestegruppe"}</span> · {members.length} medlemmer
+                          <span className="capitalize">{group.category || "Tjenestegruppe"}</span> · {members.length} {members.length === 1 ? "deltaker" : "deltakere"}
                         </p>
                       </div>
                     </div>

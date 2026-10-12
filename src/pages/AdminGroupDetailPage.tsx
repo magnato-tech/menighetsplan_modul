@@ -141,10 +141,10 @@ export const AdminGroupDetailPage: React.FC = () => {
     const res = addGroupMember(group.id, selectedPersonToAdd);
     if (res.success) {
       const addedPerson = allPersons.find((p) => p.id === selectedPersonToAdd);
-      showFeedback(`${addedPerson?.name || "Personen"} ble lagt til som medlem i gruppen!`);
+      showFeedback(`${addedPerson?.name || "Personen"} ble lagt til som deltaker i gruppen!`);
       setSelectedPersonToAdd("");
     } else {
-      showFeedback(res.error || "Kunne ikke legge til medlem.", "error");
+      showFeedback(res.error || "Kunne ikke legge til deltaker.", "error");
     }
   };
 
@@ -154,7 +154,7 @@ export const AdminGroupDetailPage: React.FC = () => {
     if (res.success) {
       showFeedback(`${memberName} ble fjernet fra gruppen.`);
     } else {
-      showFeedback(res.error || "Kunne ikke fjerne medlem.", "error");
+      showFeedback(res.error || "Kunne ikke fjerne deltaker.", "error");
     }
   };
 
@@ -317,7 +317,7 @@ export const AdminGroupDetailPage: React.FC = () => {
                 >
                   {/* Without this option the list would show the first member as leader of a group that has none */}
                   <option value="">
-                    {members.length === 0 ? "Ingen medlemmer i gruppen" : "-- Ingen leder valgt --"}
+                    {members.length === 0 ? "Ingen deltakere i gruppen" : "-- Ingen leder valgt --"}
                   </option>
                   {members.map((member) => (
                     <option key={member.id} value={member.id}>
@@ -483,7 +483,7 @@ export const AdminGroupDetailPage: React.FC = () => {
           <div className="flex items-center justify-between border-b border-[var(--studio-border)] pb-2">
             <span className="text-xs font-bold text-[var(--studio-text)] flex items-center gap-1.5">
               <Users className="w-4 h-4 text-[var(--studio-muted)]" />
-              Medlemmer i gruppen ({members.length})
+              Deltakere i gruppen ({members.length})
             </span>
           </div>
 
@@ -520,7 +520,7 @@ export const AdminGroupDetailPage: React.FC = () => {
                     )}
                     {!isLeader && !isDeputy && (
                       <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-slate-200 text-[var(--studio-text)]">
-                        Medlem
+                        Deltaker
                       </span>
                     )}
 
@@ -555,7 +555,7 @@ export const AdminGroupDetailPage: React.FC = () => {
                 withdrawProposal(proposalId).catch((error) => reportWriteError("trekke tilbake forslaget", error));
               }}
               onAccept={(proposal, personId) => {
-                acceptProposal(proposal.id, group.id, personId).catch((error) => reportWriteError("legge til medlemmet", error));
+                acceptProposal(proposal.id, group.id, personId).catch((error) => reportWriteError("legge til deltakeren", error));
               }}
               onCreate={(proposal) => {
                 acceptProposalAsNew(proposal.id, group.id, proposal.name).catch((error) => reportWriteError("opprette personen", error));
@@ -589,7 +589,7 @@ export const AdminGroupDetailPage: React.FC = () => {
                 disabled={!selectedPersonToAdd}
                 className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
               >
-                Legg til
+                Legg til deltaker
               </button>
             </div>
           )}

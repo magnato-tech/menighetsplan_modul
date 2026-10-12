@@ -268,20 +268,20 @@ const grupper: HelpArticle = {
   id: "grupper",
   title: "Grupper & Husfellesskap",
   layout: "wide",
-  formal: "Opprette en gruppe og sette leder, nestleder og medlemmer.",
+  formal: "Opprette en gruppe og sette leder, nestleder og deltakere.",
   hvor: "Sidemeny Grupper & Husfellesskap. Overskrift: Grupper & Fellesskap. Detalj: Administrer gruppe, merket Gruppeadministrasjon. Tilbake: Tilbake til grupper.",
   steg: [
     "Trykk Opprett ny gruppe.",
     "Skriv navn, velg type, leder og eventuell beskrivelse.",
     "Trykk Opprett gruppe.",
     "Filtrer med Alle, Ledergrupper, Strategigrupper, Tjenestegrupper, Husgrupper eller Interessegrupper.",
-    "Åpne gruppen. Sett Leder og Nestleder, legg til medlemmer med Legg til, eller Fjern.",
+    "Åpne gruppen. Sett Leder og Nestleder, legg til deltakere med Legg til deltaker, eller Fjern.",
     "Trykk Lagre endringer for gruppen.",
   ],
   knapper:
-    "Ledergruppe, Strategigruppe, Tjenestegruppe, Husgruppe, Interessegruppe. Plassholder: «f.eks. Turgruppe & Friluft eller Vekstgruppe Bønn». Felt: Leder. På kortet: «Leder: [navn]» eller «Ikke satt». I detalj: Medlemmer i gruppen, merker Leder, Nestleder, Medlem.",
+    "Ledergruppe, Strategigruppe, Tjenestegruppe, Husgruppe, Interessegruppe. Plassholder: «f.eks. Turgruppe & Friluft eller Vekstgruppe Bønn». Felt: Leder. På kortet: «Leder: [navn]» eller «Ikke satt». I detalj: Deltakere i gruppen, merker Leder, Nestleder, Deltaker.",
   etterLagring:
-    "«Gruppen [navn] ble opprettet!» Kortet viser medlemstall og leder. «Gruppen må ha et navn».",
+    "«Gruppen [navn] ble opprettet!» Kortet viser antall deltakere og leder. «Gruppen må ha et navn».",
 };
 
 const personer: HelpArticle = {
@@ -298,7 +298,7 @@ const personer: HelpArticle = {
     "Trykk Lagre alle personopplysninger & tilganger.",
   ],
   knapper:
-    "Søk: «Søk etter navn, gruppe, tilgang eller kontaktinfo...» Kolonner: Navn, Tilgang, Grupper, E-post, Telefon, Handling. Tilgangsmerker: GRUPPELEDER, NESTLEDER, MEDLEM, ADMINISTRATOR.",
+    "Søk: «Søk etter navn, gruppe, tilgang eller kontaktinfo...» Kolonner: Navn, Tilgang, Grupper, E-post, Telefon, Handling. Tilgangsmerker: GRUPPELEDER, NESTLEDER, FRIVILLIG, ADMINISTRATOR.",
   etterLagring:
     "Fravær som legges til, bekreftes med «Fraværsperiode lagt til!» Offentlig visning krever at offentlig profil er slått på.",
 };

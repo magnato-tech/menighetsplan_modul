@@ -24,7 +24,7 @@ export const PERSON_ACCESS_LABEL: Record<PersonAccess, string> = {
   administrator: "Administrator",
   gruppeleder: "Gruppeleder",
   nestleder: "Nestleder",
-  medlem: "Medlem",
+  medlem: "Frivillig",
 };
 
 export function personAccess(row: PersonDirectoryRow): PersonAccess {

@@ -202,7 +202,7 @@ export function useHusfellesskap(explicitGroupId?: string, explicitGatheringId?:
   const sendMessage = useCallback(
     (content: string, imageUrl?: string) => {
       if (!group) return { success: false, error: "Ingen gruppe valgt" };
-      if (!isMember) return { success: false, error: "Du er ikke medlem av denne gruppen." };
+      if (!isMember) return { success: false, error: "Du er ikke deltaker i denne gruppen." };
       return sendGroupMessage(group.id, content, imageUrl);
     },
     [group, isMember, sendGroupMessage]

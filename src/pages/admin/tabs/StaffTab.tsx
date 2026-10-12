@@ -121,7 +121,7 @@ export const StaffTab: React.FC<StaffTabProps> = ({ showFeedback }) => {
             onClick={handlePopulateTestData}
             disabled={isPopulating}
             className="px-3.5 py-2 rounded-xl bg-indigo-600/90 hover:bg-indigo-600 disabled:opacity-50 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
-            title="Fyller databasen i Firebase med 32 personer (pastorer, lederskap, stab, frivillige og medlemmer)"
+            title="Fyller databasen i Firebase med 32 personer (pastorer, lederskap, stab og frivillige)"
           >
             {isPopulating ? (
               <Loader2 className="w-4 h-4 animate-spin text-white" />
@@ -149,7 +149,7 @@ export const StaffTab: React.FC<StaffTabProps> = ({ showFeedback }) => {
             <div>
               <p className="font-bold text-[var(--studio-text)]">Trenger du flere personer i stab, lederskap og grupper?</p>
               <p className="text-[var(--studio-muted)]">
-                Klikk på «Populer testdata» for å fylle databasen med 32 personer: pastorer, menighetsråd, diakoni, lovsangsteam og aktive medlemmer.
+                Klikk på «Populer testdata» for å fylle databasen med 32 personer: pastorer, menighetsråd, diakoni, lovsangsteam og aktive frivillige.
               </p>
             </div>
           </div>
@@ -295,9 +295,9 @@ export const StaffTab: React.FC<StaffTabProps> = ({ showFeedback }) => {
 
         {leadershipPersons.length === 0 ? (
           <div className="p-6 rounded-2xl bg-[var(--studio-row)] border border-[var(--studio-border)] text-center space-y-1">
-            <p className="text-xs text-[var(--studio-muted)]">Ingen medlemmer funnet i lederskapsgruppen.</p>
+            <p className="text-xs text-[var(--studio-muted)]">Ingen deltakere funnet i lederskapsgruppen.</p>
             <Link to="/admin?tab=planlegger-grupper" className="text-xs text-[var(--studio-icon)] font-bold hover:underline">
-              Gå til Grupper & Husfellesskap for å legge til medlemmer
+              Gå til Grupper & Husfellesskap for å legge til deltakere
             </Link>
           </div>
         ) : (

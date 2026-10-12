@@ -353,7 +353,7 @@ export const TasksTab: React.FC<TasksTabProps> = ({ studio, showFeedback }) => {
             </div>
 
             <div className="space-y-1.5 text-xs">
-              <label className="font-semibold text-[var(--studio-muted)]">Velg person fra medlemsregisteret</label>
+              <label className="font-semibold text-[var(--studio-muted)]">Velg person fra personregisteret</label>
               <select
                 value={selectedPersonIdToAssign}
                 onChange={(e) => setSelectedPersonIdToAssign(e.target.value)}

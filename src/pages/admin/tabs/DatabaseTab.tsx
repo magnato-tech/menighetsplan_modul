@@ -187,7 +187,7 @@ export const DatabaseTab: React.FC<DatabaseTabProps> = ({ showFeedback }) => {
         showFeedback(`Fylling fullført med feil: ${result.failures[0].message}`, "error");
       } else {
         showFeedback(
-          `Databasen er fylt med 32 medlemmer, 14 grupper, 19 samlinger, oppgaver og ${DEFAULT_VOLUNTEER_ROLE_NAMES.length} tjenesteroller.`
+          `Databasen er fylt med 32 personer, 14 grupper, 19 samlinger, oppgaver og ${DEFAULT_VOLUNTEER_ROLE_NAMES.length} tjenesteroller.`
         );
       }
     } catch (err) {

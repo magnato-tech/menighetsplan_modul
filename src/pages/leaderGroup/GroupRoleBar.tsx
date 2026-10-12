@@ -44,7 +44,7 @@ export const GroupRoleBar: React.FC<GroupRoleBarProps> = ({ detail }) => {
             : "bg-slate-100 text-slate-700"
         }`}
       >
-        {isLeader ? "Gruppeleder" : isDeputy ? "Nestleder" : isAdmin ? "Admin" : "Medlem"}
+        {isLeader ? "Gruppeleder" : isDeputy ? "Nestleder" : isAdmin ? "Admin" : "Deltaker"}
       </span>
     </div>
   );

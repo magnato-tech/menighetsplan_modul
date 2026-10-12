@@ -195,7 +195,7 @@ describe("Veien inn i demoen", () => {
     expect(buttons[0].textContent).toContain("Administrator");
     expect(buttons[0].textContent).toContain("Redigerer nettsiden (CMS), planlegger arrangementer og holder personregisteret");
     expect(screen.queryByRole("button", { name: /Rediger nettsiden/ })).toBeNull();
-    expect(screen.getByRole("button", { name: /Håkon Tveit/ }).textContent).toContain("Medlem uten tjenestegruppe");
+    expect(screen.getByRole("button", { name: /Håkon Tveit/ }).textContent).toContain("Frivillig uten tjenestegruppe");
     expect(screen.getByRole("button", { name: /Silje Moen/ }).textContent).toContain("Frivillig i tjenestegruppe");
     expect(screen.queryByRole("button", { name: "Fortsett med Google" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Send meg en lenke" })).toBeNull();
