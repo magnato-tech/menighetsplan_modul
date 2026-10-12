@@ -13,7 +13,8 @@ import { parseMediaAltComment } from "./media";
 //
 // A sermon can have a picture too, and some show the one who spoke. Nothing in a set says which,
 // so that is settled where the set is made: a set for the demo has sermon pictures only when
-// the congregation has said yes to them being shown (datasett-verktoy, `talebilderIDemo`).
+// it is decided for that set that they are shown, and how many (datasett-verktoy,
+// `talebilderIDemo`).
 
 type Collections = Record<string, DatasetDocument[]>;
 
