@@ -546,6 +546,7 @@ export const AdminGroupDetailPage: React.FC = () => {
               canPropose={canPropose}
               canDecide
               candidates={availablePersonsToAdd}
+              memberNames={members.map((member) => member.name)}
               proposedBy={currentUser.id}
               onPropose={(proposalName) => {
                 proposeMember(group.id, currentUser.id, proposalName).catch((error) => reportWriteError("sende forslaget", error));

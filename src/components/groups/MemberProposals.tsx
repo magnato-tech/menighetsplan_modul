@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Clock, Plus } from "lucide-react";
 import type { MemberProposal, Person } from "../../types";
-import { proposalName } from "../../utils/memberProposals";
+import { duplicateProposalWarning, pendingProposals, proposalName, proposalOutcomeLabel } from "../../utils/memberProposals";
 
 interface MemberProposalsProps {
   proposals: MemberProposal[];
@@ -11,6 +11,8 @@ interface MemberProposalsProps {
   canDecide: boolean;
   /** People in the register who are not already in the group. */
   candidates: Person[];
+  /** Names already in the group, for the duplicate warning. */
+  memberNames: string[];
   proposedBy: string;
   onPropose: (name: string) => void;
   onWithdraw: (proposalId: string) => void;
@@ -28,6 +30,7 @@ export const MemberProposals: React.FC<MemberProposalsProps> = ({
   canPropose,
   canDecide,
   candidates,
+  memberNames,
   proposedBy,
   onPropose,
   onWithdraw,
@@ -38,6 +41,9 @@ export const MemberProposals: React.FC<MemberProposalsProps> = ({
   const [name, setName] = useState("");
   const [chosen, setChosen] = useState<Record<string, string>>({});
   const [notice, setNotice] = useState<string | null>(null);
+  const waiting = pendingProposals(proposals);
+  const outcomes = proposals.filter((proposal) => proposal.status !== "pending");
+  const warning = duplicateProposalWarning(name, memberNames, waiting.map((proposal) => proposal.name));
 
   if (!canPropose && !canDecide) return null;
   if (!canPropose && proposals.length === 0) return null;
@@ -60,11 +66,11 @@ export const MemberProposals: React.FC<MemberProposalsProps> = ({
         <span>Venter på godkjenning</span>
       </h3>
 
-      {proposals.length === 0 ? (
+      {waiting.length === 0 ? (
         <p className="text-[11px] opacity-70">Ingen forslag venter.</p>
       ) : (
         <ul className="space-y-2">
-          {proposals.map((proposal) => (
+          {waiting.map((proposal) => (
             <li
               key={proposal.id}
               id={`proposal-row-${proposal.id}`}
@@ -128,10 +134,21 @@ export const MemberProposals: React.FC<MemberProposalsProps> = ({
                     onClick={() => onDismiss(proposal.id)}
                     className="text-[11px] font-bold text-amber-900 hover:underline cursor-pointer"
                   >
-                    Avvis
+                    Ikke legg til
                   </button>
                 </div>
               )}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {outcomes.length > 0 && (
+        <ul className="space-y-2">
+          {outcomes.map((proposal) => (
+            <li key={proposal.id} id={`proposal-outcome-${proposal.id}`} className="px-3 py-2 rounded-xl border border-slate-200 text-xs">
+              <span className="font-bold">{proposal.name}</span>
+              <span className="ml-2 text-slate-500">{proposalOutcomeLabel(proposal.status)}</span>
             </li>
           ))}
         </ul>
@@ -166,6 +183,7 @@ export const MemberProposals: React.FC<MemberProposalsProps> = ({
           </button>
         </form>
       )}
+      {warning && <p className="text-[11px] text-amber-800">{warning}</p>}
       {notice && <p className="text-[11px] text-red-700">{notice}</p>}
     </div>
   );

@@ -1,7 +1,14 @@
 import { describe, expect, test } from "vitest";
 import { buildMemberProposal } from "../src/data/newDocuments";
 import { documentFields, sanitizeForFirestore } from "../src/utils/firestoreData";
-import { pendingProposals, proposalName, PROPOSAL_NAME_MAX } from "../src/utils/memberProposals";
+import {
+  duplicateProposalWarning,
+  pendingProposals,
+  proposalIdsToForget,
+  proposalName,
+  PROPOSAL_NAME_MAX,
+  visibleProposals,
+} from "../src/utils/memberProposals";
 import type { MemberProposal } from "../src/types";
 
 describe("Forslag om et medlem", () => {
@@ -28,5 +35,23 @@ describe("Forslag om et medlem", () => {
       { id: "avvist", groupId: "g", name: "Avvist", proposedBy: "leder", proposedAt: "2026-10-12T07:00:00.000Z", status: "dismissed" },
     ];
     expect(pendingProposals(proposals).map((proposal) => proposal.id)).toEqual(["gammel", "ny"]);
+  });
+
+  test("utfall vises i 30 dager fra behandlingen, og slettes etterpå", () => {
+    const now = Date.parse("2026-10-12T12:00:00.000Z");
+    const day = 24 * 60 * 60 * 1000;
+    const proposals: MemberProposal[] = [
+      { id: "venter", groupId: "g", name: "Venter", proposedBy: "leder", proposedAt: "2026-08-01T00:00:00.000Z", status: "pending" },
+      { id: "ny", groupId: "g", name: "Ny", proposedBy: "leder", proposedAt: "2026-08-01T00:00:00.000Z", status: "added", decidedAt: new Date(now - 10 * day).toISOString() },
+      { id: "gammel", groupId: "g", name: "Gammel", proposedBy: "leder", proposedAt: "2026-10-01T00:00:00.000Z", status: "dismissed", decidedAt: new Date(now - 31 * day).toISOString() },
+    ];
+    expect(visibleProposals(proposals, now).map((proposal) => proposal.id)).toEqual(["venter", "ny"]);
+    expect(proposalIdsToForget(proposals, now)).toEqual(["gammel"]);
+  });
+
+  test("advarer om et navn som allerede er i gruppen eller venter, men stopper ikke", () => {
+    expect(duplicateProposalWarning("  anne berg ", ["Anne Berg"], [])).toMatch(/allerede i gruppen/);
+    expect(duplicateProposalWarning("Per", [], ["per"])).toMatch(/allerede foreslått/);
+    expect(duplicateProposalWarning("Kari", ["Anne"], ["Per"])).toBeNull();
   });
 });

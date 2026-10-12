@@ -34,6 +34,8 @@ vi.mock("../src/services/registerMirror", () => ({
   storePublicGroupCardChanges: async () => {},
   storeGatheringReaderChanges: async () => {},
   patchAssignmentAccess: async () => {},
+  subscribeMemberProposals: () => () => {},
+  deleteMemberProposals: async () => {},
 }));
 
 import { useRegisterMirror } from "../src/hooks/useRegisterMirror";

@@ -3,14 +3,14 @@ import { collection, onSnapshot, query, where, type QuerySnapshot } from "fireba
 import { COLLECTIONS } from "../data/collections";
 import { db, handleFirestoreError, OperationType } from "../firebase";
 import type { MemberProposal } from "../types";
-import { pendingProposals } from "../utils/memberProposals";
+import { visibleProposals } from "../utils/memberProposals";
 
 const read = (snapshot: QuerySnapshot): MemberProposal[] =>
   snapshot.docs.map((d) => ({ id: d.id, ...d.data() }) as MemberProposal);
 
 /**
- * The proposals still waiting for one group. Nothing is read unless the caller may see them:
- * a leader, a deputy, or an administrator.
+ * Waiting proposals for one group, and outcomes from the last 30 days.
+ * Nothing is read unless the caller may see them: a leader, a deputy, or an administrator.
  */
 export function useGroupProposals(groupId: string, enabled: boolean): MemberProposal[] {
   const [proposals, setProposals] = useState<MemberProposal[]>([]);
@@ -21,12 +21,8 @@ export function useGroupProposals(groupId: string, enabled: boolean): MemberProp
       return;
     }
     return onSnapshot(
-      query(
-        collection(db, COLLECTIONS.MEMBER_PROPOSALS),
-        where("groupId", "==", groupId),
-        where("status", "==", "pending")
-      ),
-      (snapshot) => setProposals(pendingProposals(read(snapshot))),
+      query(collection(db, COLLECTIONS.MEMBER_PROPOSALS), where("groupId", "==", groupId)),
+      (snapshot) => setProposals(visibleProposals(read(snapshot))),
       (error) => handleFirestoreError(error, OperationType.GET, COLLECTIONS.MEMBER_PROPOSALS)
     );
   }, [groupId, enabled]);

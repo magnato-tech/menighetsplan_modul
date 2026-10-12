@@ -400,8 +400,9 @@ describe("En gruppeleder", () => {
   test("endrer sin egen gruppe, og ingen andres", async () => {
     const db = ola();
     await assertSucceeds(updateDoc(doc(db, "groups/group-lyd"), { name: "Lyd, lys og bilde" }));
-    // A member of the group may be named deputy. Someone from outside may not be added.
-    await assertSucceeds(updateDoc(doc(db, "groups/group-lyd"), { deputyLeaderIds: ["hakon"] }));
+    // A leader cannot appoint a new deputy or leader. Someone from outside may not be added.
+    await assertFails(updateDoc(doc(db, "groups/group-lyd"), { deputyLeaderIds: ["hakon"] }));
+    await assertFails(updateDoc(doc(db, "groups/group-lyd"), { leaderIds: ["hakon"] }));
     await assertFails(updateDoc(doc(db, "groups/group-lyd"), "memberIds", arrayUnion("liv"), new FieldPath("memberJoinedAt", "liv"), "2026-10-12T10:00:00.000Z"));
     await assertSucceeds(updateDoc(doc(db, "groups/group-lyd"), { memberIds: arrayRemove("hakon") }));
     await assertFails(updateDoc(doc(db, "groups/group-intern"), { name: "Overtatt" }));
@@ -664,7 +665,8 @@ describe("Forslag om nye medlemmer", () => {
 
     await assertSucceeds(getDocs(query(collection(kari(), "memberProposals"), where("status", "==", "pending"))));
     await assertFails(updateDoc(doc(db, `memberProposals/${built.id}`), { status: "added" }));
-    await assertSucceeds(updateDoc(doc(kari(), `memberProposals/${built.id}`), { status: "added" }));
+    await assertFails(updateDoc(doc(kari(), `memberProposals/${built.id}`), { status: "added" }));
+    await assertSucceeds(updateDoc(doc(kari(), `memberProposals/${built.id}`), { status: "added", decidedAt: "2026-10-12T12:00:00.000Z" }));
     await assertFails(updateDoc(doc(kari(), `memberProposals/${built.id}`), { status: "dismissed" }));
     await assertFails(deleteDoc(doc(db, `memberProposals/${built.id}`)));
 

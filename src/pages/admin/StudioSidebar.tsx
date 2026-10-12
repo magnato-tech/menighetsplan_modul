@@ -36,6 +36,7 @@ import { useDemoOwner } from "../../hooks/useDemoOwner";
 import { STUDIO_ADDONS, addonMenuSections } from "./addons";
 import { StudioData, StudioTab, countUrgentTasks } from "./studio";
 import { prefetchStudioTab } from "./studioTabLoaders";
+import { usePendingProposalCounts } from "../../hooks/useMemberProposals";
 import { useStudioAppearance } from "./studioAppearance";
 import { StudioThemeToggle } from "./StudioThemeToggle";
 
@@ -68,6 +69,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({ studio, activeTab,
   const { sidebarTheme, toggleSidebarTheme } = useStudioAppearance();
   // The media library shows the images that come with the app next to the uploaded ones
   const mediaCount = media.filter((item) => item.status === "ready").length + useStockImageCount();
+  const waitingProposals = [...usePendingProposalCounts(hasPlanner(level)).values()].reduce((sum, count) => sum + count, 0);
 
   return (
     <>
@@ -389,8 +391,15 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({ studio, activeTab,
                 <FolderKanban className="w-4 h-4" />
                 <span>Grupper & Husfellesskap</span>
               </div>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--studio-surface)] text-[var(--studio-muted)]">
-                {adminGroups.length}
+              <span className="flex items-center gap-1">
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--studio-surface)] text-[var(--studio-muted)]">
+                  {adminGroups.length}
+                </span>
+                {waitingProposals > 0 && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-950" title="Venter på godkjenning">
+                    {waitingProposals}
+                  </span>
+                )}
               </span>
             </button>
             )}

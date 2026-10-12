@@ -1,9 +1,9 @@
-import { doc, setDoc } from "firebase/firestore";
+import { arrayUnion, doc, setDoc, writeBatch, FieldPath } from "firebase/firestore";
 import { COLLECTIONS } from "../data/collections";
 import { buildMemberProposal, buildPerson } from "../data/newDocuments";
 import { db } from "../firebase";
 import { documentFields, sanitizeForFirestore } from "../utils/firestoreData";
-import { addGroupMember, createDocument, deleteDocument, updateDocument } from "./firestore";
+import { deleteDocument, updateDocument } from "./firestore";
 
 /** Sends a name for an administrator to approve. The id is the document's place, not a field. */
 export async function proposeMember(groupId: string, proposedBy: string, name: string): Promise<void> {
@@ -20,24 +20,44 @@ export function withdrawProposal(proposalId: string): Promise<void> {
   return deleteDocument(COLLECTIONS.MEMBER_PROPOSALS, proposalId);
 }
 
-/** The administrator sets the proposal aside. */
+/** The administrator sets the proposal aside. The person is not added. */
 export function dismissProposal(proposalId: string): Promise<void> {
-  return updateDocument(COLLECTIONS.MEMBER_PROPOSALS, proposalId, { status: "dismissed" });
+  return updateDocument(COLLECTIONS.MEMBER_PROPOSALS, proposalId, {
+    status: "dismissed",
+    decidedAt: new Date().toISOString(),
+  });
 }
 
-/**
- * Puts someone who is already in the register into the group, and only then marks the proposal
- * dealt with. Adding is idempotent, so a second try still finishes the proposal.
- */
+const decided = () => new Date().toISOString();
+
+/** Membership and the outcome land together, or not at all. */
 export async function acceptProposal(proposalId: string, groupId: string, personId: string): Promise<void> {
-  await addGroupMember(groupId, personId);
-  await updateDocument(COLLECTIONS.MEMBER_PROPOSALS, proposalId, { status: "added" });
+  const decidedAt = decided();
+  const batch = writeBatch(db);
+  batch.update(
+    doc(db, COLLECTIONS.GROUPS, groupId),
+    "memberIds",
+    arrayUnion(personId),
+    new FieldPath("memberJoinedAt", personId),
+    decidedAt
+  );
+  batch.update(doc(db, COLLECTIONS.MEMBER_PROPOSALS, proposalId), { status: "added", decidedAt });
+  await batch.commit();
 }
 
-/** Creates a person from the proposed name, puts them in the group, and then marks the proposal. */
+/** The new person, the membership and the outcome land together, or not at all. */
 export async function acceptProposalAsNew(proposalId: string, groupId: string, name: string): Promise<void> {
   const person = buildPerson({ name });
-  await createDocument(COLLECTIONS.PERSONS, person);
-  await addGroupMember(groupId, person.id);
-  await updateDocument(COLLECTIONS.MEMBER_PROPOSALS, proposalId, { status: "added" });
+  const decidedAt = decided();
+  const batch = writeBatch(db);
+  batch.set(doc(db, COLLECTIONS.PERSONS, person.id), sanitizeForFirestore(person));
+  batch.update(
+    doc(db, COLLECTIONS.GROUPS, groupId),
+    "memberIds",
+    arrayUnion(person.id),
+    new FieldPath("memberJoinedAt", person.id),
+    decidedAt
+  );
+  batch.update(doc(db, COLLECTIONS.MEMBER_PROPOSALS, proposalId), { status: "added", decidedAt });
+  await batch.commit();
 }

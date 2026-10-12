@@ -9,7 +9,7 @@ import {
   PUBLIC_PROFILES_COLLECTION,
 } from "../data/collections";
 import { db, handleFirestoreError, OperationType } from "../firebase";
-import type { Person } from "../types";
+import type { MemberProposal, Person } from "../types";
 import type { AssignmentAccess, GatheringReader, GroupDirectoryCard, GroupLeaderEmail, PublicGroupCard } from "../utils/groupAccess";
 import { chunk } from "../utils/chunk";
 import { sanitizeForFirestore } from "../utils/firestoreData";
@@ -153,6 +153,33 @@ export const storeGroupDirectoryChanges = (changes: MirrorChanges<GroupDirectory
 export const storeGroupLeaderEmailChanges = (changes: MirrorChanges<GroupLeaderEmail>): Promise<void> => store(GROUP_LEADER_EMAILS_COLLECTION, changes);
 export const storePublicGroupCardChanges = (changes: MirrorChanges<PublicGroupCard>): Promise<void> => store(PUBLIC_GROUP_CARDS_COLLECTION, changes);
 export const storeGatheringReaderChanges = (changes: MirrorChanges<GatheringReader>): Promise<void> => store(GATHERING_READERS_COLLECTION, changes);
+
+export function subscribeMemberProposals(onChange: (proposals: MemberProposal[], settled: Settled) => void): () => void {
+  return subscribePlain(COLLECTIONS.MEMBER_PROPOSALS, onChange, (id, data): MemberProposal | null => {
+    const status = data.status === "pending" || data.status === "added" || data.status === "dismissed" ? data.status : null;
+    if (!status || typeof data.groupId !== "string" || typeof data.name !== "string" || typeof data.proposedBy !== "string" || typeof data.proposedAt !== "string") {
+      return null;
+    }
+    return {
+      id,
+      groupId: data.groupId,
+      name: data.name,
+      proposedBy: data.proposedBy,
+      proposedAt: data.proposedAt,
+      status,
+      ...(typeof data.decidedAt === "string" ? { decidedAt: data.decidedAt } : {}),
+    };
+  });
+}
+
+/** Deletes proposals the register no longer keeps. Admin only. */
+export async function deleteMemberProposals(ids: readonly string[]): Promise<void> {
+  for (const piece of chunk(ids, BATCH_SIZE)) {
+    const batch = writeBatch(db);
+    for (const id of piece) batch.delete(doc(db, COLLECTIONS.MEMBER_PROPOSALS, id));
+    await batch.commit();
+  }
+}
 
 /** Writes the name and the gathering onto assignments that do not have them yet. */
 export async function patchAssignmentAccess(patches: AssignmentAccess[]): Promise<void> {

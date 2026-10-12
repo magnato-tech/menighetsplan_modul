@@ -14,7 +14,7 @@ interface GroupMetaFormProps {
 }
 
 export const GroupMetaForm: React.FC<GroupMetaFormProps> = ({ detail, group, showToast, onClose }) => {
-  const { members, updateGroup } = detail;
+  const { members, updateGroup, isAdmin } = detail;
 
   // The form starts from the group as it is when it opens
   const [editName, setEditName] = useState(group.name);
@@ -30,14 +30,15 @@ export const GroupMetaForm: React.FC<GroupMetaFormProps> = ({ detail, group, sho
       return;
     }
 
-    const newLeaderIds = editLeaderId ? [editLeaderId] : group.leaderIds;
-    const newDeputyIds = editDeputyId ? [editDeputyId] : [];
-
     const res = updateGroup(group.id, {
       name: editName.trim(),
       category: editCategory,
-      leaderIds: newLeaderIds,
-      deputyLeaderIds: newDeputyIds,
+      ...(isAdmin
+        ? {
+            leaderIds: editLeaderId ? [editLeaderId] : group.leaderIds,
+            deputyLeaderIds: editDeputyId ? [editDeputyId] : [],
+          }
+        : {}),
     });
 
     if (res.success) {
@@ -89,6 +90,7 @@ export const GroupMetaForm: React.FC<GroupMetaFormProps> = ({ detail, group, sho
           </select>
         </div>
 
+        {isAdmin && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <div>
             <label className="text-xs font-semibold text-slate-700 block mb-1">
@@ -128,6 +130,7 @@ export const GroupMetaForm: React.FC<GroupMetaFormProps> = ({ detail, group, sho
             </select>
           </div>
         </div>
+        )}
 
         <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
           <button

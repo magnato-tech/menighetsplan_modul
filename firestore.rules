@@ -100,13 +100,13 @@ service cloud.firestore {
         .concat(group.get('deputyLeaderIds', []));
     }
 
-    // A leader may change the group, but not bring in someone who is not already in it.
-    // Moving a member into a leader list is allowed. Adding an outsider is not.
+    // A leader may change the group, but not bring in someone who is not already in it,
+    // and not add anyone to the leader or deputy lists. Removing someone still works.
     function staysInside(group) {
       let people = groupPeople(group);
       return people.hasAll(request.resource.data.get('memberIds', []))
-        && people.hasAll(request.resource.data.get('leaderIds', []))
-        && people.hasAll(request.resource.data.get('deputyLeaderIds', []));
+        && group.get('leaderIds', []).hasAll(request.resource.data.get('leaderIds', []))
+        && group.get('deputyLeaderIds', []).hasAll(request.resource.data.get('deputyLeaderIds', []));
     }
 
     // Whether the one who asks leads the group the event belongs to
@@ -273,7 +273,8 @@ service cloud.firestore {
       allow update: if isAdmin()
         && resource.data.status == 'pending'
         && request.resource.data.status in ['added', 'dismissed']
-        && changedOnly(['status']);
+        && request.resource.data.decidedAt is string
+        && changedOnly(['status', 'decidedAt']);
       allow delete: if isAdmin()
         || (leads(resource.data.groupId)
             && resource.data.proposedBy == me()

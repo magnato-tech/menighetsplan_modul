@@ -79,6 +79,7 @@ export const MembersTab: React.FC<MembersTabProps> = ({ model, group }) => {
         canPropose={canPropose}
         canDecide={canDecide}
         candidates={allPersons.filter((person) => !members.some((member) => member.id === person.id))}
+        memberNames={members.map((member) => member.name)}
         proposedBy={currentUser.id}
         onPropose={(proposalName) => {
           proposeMember(group.id, currentUser.id, proposalName).catch((error) => reportWriteError("sende forslaget", error));

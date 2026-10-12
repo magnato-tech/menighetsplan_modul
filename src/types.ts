@@ -70,6 +70,8 @@ export interface MemberProposal {
   proposedBy: string;
   proposedAt: string;
   status: "pending" | "added" | "dismissed";
+  /** When an administrator dealt with it. Outcomes are kept for 30 days from here. */
+  decidedAt?: string;
 }
 
 export interface ProgramItem {

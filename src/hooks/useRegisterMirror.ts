@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import {
   patchAssignmentAccess,
+  deleteMemberProposals,
   storeGatheringReaderChanges,
+  subscribeMemberProposals,
   storeGroupDirectoryChanges,
   storeGroupLeaderEmailChanges,
   storeLoginChanges,
@@ -14,7 +16,7 @@ import {
   subscribePublicGroupCards,
   subscribePublicProfiles,
 } from "../services/registerMirror";
-import type { Assignment, Gathering, Group, Person, Task } from "../types";
+import type { Assignment, Gathering, Group, MemberProposal, Person, Task } from "../types";
 import {
   assignmentAccessPatches,
   gatheringReadersOf,
@@ -27,6 +29,7 @@ import {
   type PublicGroupCard,
 } from "../utils/groupAccess";
 import { keepingOwnLogin, loginsOf, type Login } from "../utils/logins";
+import { proposalIdsToForget } from "../utils/memberProposals";
 import { hasChanges, mirrorChanges } from "../utils/mirror";
 import { publicCopiesOf } from "../utils/publicProfile";
 
@@ -62,12 +65,13 @@ export function useRegisterMirror(
   const [emails, setEmails] = useState<GroupLeaderEmail[] | null>(null);
   const [cards, setCards] = useState<PublicGroupCard[] | null>(null);
   const [readers, setReaders] = useState<GatheringReader[] | null>(null);
+  const [proposals, setProposals] = useState<MemberProposal[] | null>(null);
   // Each mirror stops on its own. A refusal of one write must not leave the others unwritten.
-  const stopped = useRef({ logins: false, copies: false, directory: false, emails: false, cards: false, readers: false, assignments: false });
+  const stopped = useRef({ logins: false, copies: false, directory: false, emails: false, cards: false, readers: false, assignments: false, proposals: false });
 
   useEffect(() => {
     if (!active) return;
-    stopped.current = { logins: false, copies: false, directory: false, emails: false, cards: false, readers: false, assignments: false };
+    stopped.current = { logins: false, copies: false, directory: false, emails: false, cards: false, readers: false, assignments: false, proposals: false };
     const unsubscribers = [
       subscribeLogins((list, settled) => setLogins(settled ? list : null)),
       subscribePublicProfiles((list, settled) => setCopies(settled ? list : null)),
@@ -75,6 +79,7 @@ export function useRegisterMirror(
       subscribeGroupLeaderEmails((list, settled) => setEmails(settled ? list : null)),
       subscribePublicGroupCards((list, settled) => setCards(settled ? list : null)),
       subscribeGatheringReaders((list, settled) => setReaders(settled ? list : null)),
+      subscribeMemberProposals((list, settled) => setProposals(settled ? list : null)),
     ];
     return () => {
       unsubscribers.forEach((unsubscribe) => unsubscribe());
@@ -84,6 +89,7 @@ export function useRegisterMirror(
       setEmails(null);
       setCards(null);
       setReaders(null);
+      setProposals(null);
     };
   }, [active]);
 
@@ -143,4 +149,11 @@ export function useRegisterMirror(
     if (patches.length === 0) return;
     patchAssignmentAccess(patches).catch(fail("assignments", "Navnene på tildelingene"));
   }, [active, planning.planningReady, planning.assignments, planning.tasks, planning.gatherings, persons]);
+
+  useEffect(() => {
+    if (!active || stopped.current.proposals || proposals === null) return;
+    const ids = proposalIdsToForget(proposals);
+    if (ids.length === 0) return;
+    deleteMemberProposals(ids).catch(fail("proposals", "Gamle forslag"));
+  }, [active, proposals]);
 }
