@@ -1142,7 +1142,7 @@ git push origin origin/main:stabil
 | Hvem som står på oppgavene på et arrangement | Bare navnet | Bare navnet | Ser alt |
 | Legge folk i gruppen | Nei | Foreslår navn, administrator godkjenner | Ja |
 
-**Lesetilgangen er skrevet i koden** (`src/utils/groupAccess.ts`, `firestore.rules`, `useRegisterMirror`). En frivillig henter sitt eget personkort, navn og telefon for egen gruppe, og e-post bare når hun leder gruppen. Kjøreplanen bruker navnet på tildelingen. «Legg til person» fra registeret vises bare for administrator. Gruppeleder kan fortsatt fjerne et medlem. Demoen leser hele registeret, fordi ingen logger inn der.
+**Lesetilgangen er skrevet i koden** (`src/utils/groupAccess.ts`, `firestore.rules`, `useRegisterMirror`). En frivillig henter sitt eget personkort, navn og telefon for egen gruppe, og e-post bare når hun leder gruppen. Kjøreplanen bruker navnet på tildelingen. «Legg til person» fra registeret vises bare for administrator. Gruppeleder kan fortsatt fjerne et medlem, men kan ikke ta inn noen som ikke allerede er i gruppen. Demoen leser hele registeret, fordi ingen logger inn der.
 
 Det holder ikke før reglene er publisert. Reglene som ligger hos Lillesand i dag, avviser skriving til de nye samlingene. Speilet kan derfor ikke kjøre før de nye reglene er publisert. Rekkefølgen er:
 
@@ -1155,10 +1155,11 @@ Det holder ikke før reglene er publisert. Reglene som ligger hos Lillesand i da
 
 Gruppene kan mangle på nettsiden mellom utrullingen og fullført speiling, fordi nettsiden leser de offentlige gruppekortene, og de skrives først når speilet er ferdig. Vanlige medlemmer skal ikke inviteres til å teste før speilingen er kontrollert.
 
-**To leveranser står igjen.**
+**Gruppeleder foreslår medlemmer** er skrevet i koden (`memberProposals`, `MemberProposals.tsx`). Leder og nestleder skriver et navn. Forslaget har bare gruppe, navn, hvem som sendte det, tidspunkt og status. Administrator knytter navnet til en person i registeret eller oppretter personen, og kan fortsatt legge inn medlemmer direkte. Ventende forslag vises for seg, med teksten «Venter på godkjenning», og bare for leder, nestleder og administrator. Det gjelder husgrupper og tjenestegrupper. Reglene må publiseres etter utrulling til `stabil`, i samme rekkefølge som lesetilgangen over. Før de er publisert, blir forslaget avvist.
 
-1. *Gruppeleder foreslår medlemmer:* lederen skriver navn på en liste og sender, administrator kobler navnene til personer i registeret eller oppretter dem. Likt for husgrupper og tjenestegrupper.
-2. *Finere skriveregler:* i dag kan enhver innlogget fortsatt endre svaret på en tildeling. Navn og person på en ny tildeling kan en frivillig bare skrive for seg selv, og en leder bare for noen i en gruppe hun leder, med navnet fra katalogen.
+**Én leveranse står igjen.**
+
+1. *Finere skriveregler:* i dag kan enhver innlogget fortsatt endre svaret på en tildeling. Navn og person på en ny tildeling kan en frivillig bare skrive for seg selv, og en leder bare for noen i en gruppe hun leder, med navnet fra katalogen.
 
 Administrator er det samme som den som skal se registeret. En redaktør som endrer nettsiden uten å se registeret, er ikke bygget.
 

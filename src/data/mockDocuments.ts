@@ -191,6 +191,18 @@ export function getCustomMockDocuments(counts?: CustomMockCounts, now: number = 
   );
   const headcounts = initialGatheringHeadcounts.filter((count) => gatheringIds.has(count.gatheringId));
 
+  const host = groups.find((group) => group.leaderIds[0]);
+  const proposals = host
+    ? [{
+        id: "proposal-1",
+        groupId: host.id,
+        name: "Ny frivillig",
+        proposedBy: host.leaderIds[0],
+        proposedAt: "2026-08-30T18:00:00.000Z",
+        status: "pending" as const,
+      }]
+    : [];
+
   const sets: [string, { id: string }[]][] = [
     [COLLECTIONS.PERSONS, persons],
     [COLLECTIONS.GROUPS, groups],
@@ -198,6 +210,7 @@ export function getCustomMockDocuments(counts?: CustomMockCounts, now: number = 
     [COLLECTIONS.TASKS, tasks],
     [COLLECTIONS.ASSIGNMENTS, assignments],
     [COLLECTIONS.GROUP_MESSAGES, groupMessages],
+    [COLLECTIONS.MEMBER_PROPOSALS, proposals],
     [COLLECTIONS.GATHERING_ATTENDANCES, attendances],
     [COLLECTIONS.GATHERING_HEADCOUNTS, headcounts],
     [COLLECTIONS.VOLUNTEER_ROLES, buildInitialVolunteerRoles()],

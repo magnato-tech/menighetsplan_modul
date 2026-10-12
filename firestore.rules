@@ -93,6 +93,22 @@ service cloud.firestore {
         && holdsPlace(get(/databases/$(database)/documents/groups/$(groupId)).data, personId);
     }
 
+    // Everyone already in the group, in any of the three lists.
+    function groupPeople(group) {
+      return group.get('memberIds', [])
+        .concat(group.get('leaderIds', []))
+        .concat(group.get('deputyLeaderIds', []));
+    }
+
+    // A leader may change the group, but not bring in someone who is not already in it.
+    // Moving a member into a leader list is allowed. Adding an outsider is not.
+    function staysInside(group) {
+      let people = groupPeople(group);
+      return people.hasAll(request.resource.data.get('memberIds', []))
+        && people.hasAll(request.resource.data.get('leaderIds', []))
+        && people.hasAll(request.resource.data.get('deputyLeaderIds', []));
+    }
+
     // Whether the one who asks leads the group the event belongs to
     function leadsEvent(gatheringId) {
       return gatheringId is string
@@ -184,7 +200,7 @@ service cloud.firestore {
       allow read: if isAdmin() || (isMember() && inGroupData(resource.data));
       allow create, delete: if isAdmin();
       allow update: if isAdmin()
-        || (isMember() && leadsThis(resource.data))
+        || (isMember() && leadsThis(resource.data) && staysInside(resource.data))
         // A member turns their own notifications from the group on or off
         || (isMember()
             && changedOnly(['notificationPreferences'])
@@ -241,6 +257,27 @@ service cloud.firestore {
       allow update: if isAdmin()
         || (isMember() && changedOnly(['response', 'respondedAt', 'withdrawalReason']));
       allow delete: if isMember();
+    }
+
+    // A name a leader asks an administrator to add. No phone, e-mail or person id.
+    match /memberProposals/{proposalId} {
+      allow get, list: if isAdmin() || leads(resource.data.groupId);
+      allow create: if leads(request.resource.data.groupId)
+        && request.resource.data.proposedBy == me()
+        && request.resource.data.status == 'pending'
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 80
+        && request.resource.data.proposedAt is string
+        && request.resource.data.keys().hasOnly(['groupId', 'name', 'proposedBy', 'proposedAt', 'status']);
+      allow update: if isAdmin()
+        && resource.data.status == 'pending'
+        && request.resource.data.status in ['added', 'dismissed']
+        && changedOnly(['status']);
+      allow delete: if isAdmin()
+        || (leads(resource.data.groupId)
+            && resource.data.proposedBy == me()
+            && resource.data.status == 'pending');
     }
 
     match /groupMessages/{messageId} {

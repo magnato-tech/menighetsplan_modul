@@ -61,6 +61,17 @@ export interface Group {
   notificationPreferences?: Record<string, boolean>; // personId -> true/false
 }
 
+/** A name a leader has asked an administrator to add to a group. Nothing but the name. */
+export interface MemberProposal {
+  id: string;
+  groupId: string;
+  name: string;
+  /** The person in the register who sent it. */
+  proposedBy: string;
+  proposedAt: string;
+  status: "pending" | "added" | "dismissed";
+}
+
 export interface ProgramItem {
   id?: string;
   time: string;

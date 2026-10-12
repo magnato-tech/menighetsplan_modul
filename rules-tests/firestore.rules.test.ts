@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { buildAssignment } from "../src/data/newDocuments";
+import { buildAssignment, buildMemberProposal } from "../src/data/newDocuments";
 import { documentFields, sanitizeForFirestore } from "../src/utils/firestoreData";
 import {
   assignmentAccessPatches,
@@ -13,6 +13,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, test } from "vitest"
 import { assertFails, assertSucceeds, initializeTestEnvironment, type RulesTestEnvironment } from "@firebase/rules-unit-testing";
 import {
   FieldPath,
+  arrayRemove,
   arrayUnion,
   collection,
   deleteDoc,
@@ -162,7 +163,7 @@ describe("En besøkende som ikke er logget inn", () => {
 
   test("leser ikke registeret, planleggingen, kladder eller innloggingene", async () => {
     const db = visitor();
-    for (const name of ["persons", "tasks", "assignments", "groupMessages", "gatheringAttendances", "logins", "cms_pages", "cms_settings"]) {
+    for (const name of ["persons", "tasks", "assignments", "groupMessages", "gatheringAttendances", "memberProposals", "logins", "cms_pages", "cms_settings"]) {
       await assertFails(all(db, name));
     }
     await assertFails(getDoc(doc(db, "persons/kari")));
@@ -178,7 +179,7 @@ describe("En besøkende som ikke er logget inn", () => {
     const db = visitor();
     const places = [
       "persons/ny", "persons/kari", "groups/ny", "groups/group-lyd", "gatherings/ny", "gatherings/g-apen", "tasks/ny", "tasks/task-1",
-      "assignments/ny", "assignments/a1", "groupMessages/ny", "gatheringAttendances/ny", "gatheringHeadcounts/ny", "volunteer_roles/ny",
+      "assignments/ny", "assignments/a1", "groupMessages/ny", "memberProposals/ny", "gatheringAttendances/ny", "gatheringHeadcounts/ny", "volunteer_roles/ny",
       "cms_pages/ny", "cms_pages/p-pub", "cms_news/ny", "cms_sermons/ny", "cms_staff/ny", "cms_media/ny",
       "cms_settings/global", "cms_settings/addons", "cms_settings/operating-mode", "cms_settings/role-1", "cms_settings/ny",
       "logins/fremmed@eksempel.no", "logins/kari@menigheten.no", "publicProfiles/liv", "test/connection", "annet/ny",
@@ -399,8 +400,10 @@ describe("En gruppeleder", () => {
   test("endrer sin egen gruppe, og ingen andres", async () => {
     const db = ola();
     await assertSucceeds(updateDoc(doc(db, "groups/group-lyd"), { name: "Lyd, lys og bilde" }));
-    // The way a member is added (see addGroupMember in src/services/firestore.ts)
-    await assertSucceeds(updateDoc(doc(db, "groups/group-lyd"), "memberIds", arrayUnion("liv"), new FieldPath("memberJoinedAt", "liv"), "2026-10-12T10:00:00.000Z"));
+    // A member of the group may be named deputy. Someone from outside may not be added.
+    await assertSucceeds(updateDoc(doc(db, "groups/group-lyd"), { deputyLeaderIds: ["hakon"] }));
+    await assertFails(updateDoc(doc(db, "groups/group-lyd"), "memberIds", arrayUnion("liv"), new FieldPath("memberJoinedAt", "liv"), "2026-10-12T10:00:00.000Z"));
+    await assertSucceeds(updateDoc(doc(db, "groups/group-lyd"), { memberIds: arrayRemove("hakon") }));
     await assertFails(updateDoc(doc(db, "groups/group-intern"), { name: "Overtatt" }));
     await assertFails(updateDoc(doc(db, "groups/group-intern"), { leaderIds: arrayUnion("ola") }));
     await assertFails(setDoc(doc(db, "groups/ny"), { name: "Ny", isPublic: true, leaderIds: ["ola"], memberIds: [] }));
@@ -630,5 +633,52 @@ describe("Den første speilingen", () => {
     await assertFails(updateDoc(doc(hakon(), "assignments/a-gammel"), {
       personName: "Noen andre", gatheringId: "g-apen", gatheringGroupId: "group-lyd", gatheringPublic: true,
     }));
+  });
+});
+
+describe("Forslag om nye medlemmer", () => {
+  const storedProposal = (groupId: string, proposedBy: string, name: string) => {
+    const built = buildMemberProposal({ groupId, proposedBy, name });
+    if (!built) throw new Error("navnet kan ikke lagres");
+    return { built, fields: sanitizeForFirestore(documentFields(built)) };
+  };
+
+  test("leder og nestleder sender et navn, og bare administrator behandler det", async () => {
+    const db = ola();
+    const { built, fields } = storedProposal("group-lyd", "ola", "  Anne  Berg ");
+    expect(fields).not.toHaveProperty("id");
+    expect(Object.keys(fields).sort()).toEqual(["groupId", "name", "proposedAt", "proposedBy", "status"]);
+    expect(fields).toMatchObject({ groupId: "group-lyd", name: "Anne Berg", proposedBy: "ola", status: "pending" });
+
+    await assertFails(setDoc(doc(db, `memberProposals/${built.id}`), sanitizeForFirestore(built)));
+    await assertFails(setDoc(doc(db, `memberProposals/${built.id}`), { ...fields, phone: "99000000" }));
+    await assertFails(setDoc(doc(db, "memberProposals/annens"), { ...fields, proposedBy: "hakon" }));
+    await assertSucceeds(setDoc(doc(db, `memberProposals/${built.id}`), fields));
+
+    await assertFails(getDocs(query(collection(hakon(), "memberProposals"), where("groupId", "==", "group-lyd"))));
+    await assertFails(getDoc(doc(hakon(), `memberProposals/${built.id}`)));
+    await assertFails(all(hakon(), "memberProposals"));
+    await assertSucceeds(getDocs(query(collection(db, "memberProposals"), where("groupId", "==", "group-lyd"))));
+    await assertFails(all(db, "memberProposals"));
+    await assertFails(setDoc(doc(db, "memberProposals/intern"), { ...fields, groupId: "group-intern" }));
+
+    await assertSucceeds(getDocs(query(collection(kari(), "memberProposals"), where("status", "==", "pending"))));
+    await assertFails(updateDoc(doc(db, `memberProposals/${built.id}`), { status: "added" }));
+    await assertSucceeds(updateDoc(doc(kari(), `memberProposals/${built.id}`), { status: "added" }));
+    await assertFails(updateDoc(doc(kari(), `memberProposals/${built.id}`), { status: "dismissed" }));
+    await assertFails(deleteDoc(doc(db, `memberProposals/${built.id}`)));
+
+    const second = storedProposal("group-lyd", "ola", "Per");
+    await assertSucceeds(setDoc(doc(db, `memberProposals/${second.built.id}`), second.fields));
+    await assertFails(deleteDoc(doc(hakon(), `memberProposals/${second.built.id}`)));
+    await assertSucceeds(deleteDoc(doc(db, `memberProposals/${second.built.id}`)));
+
+    await env.withSecurityRulesDisabled(async (context) => {
+      const open = context.firestore() as unknown as Firestore;
+      await updateDoc(doc(open, "groups/group-lyd"), { deputyLeaderIds: ["hakon"] });
+    });
+    const asDeputy = storedProposal("group-lyd", "hakon", "Liv");
+    await assertSucceeds(setDoc(doc(hakon(), `memberProposals/${asDeputy.built.id}`), asDeputy.fields));
+    await assertSucceeds(getDocs(query(collection(hakon(), "memberProposals"), where("groupId", "==", "group-lyd"), where("status", "==", "pending"))));
   });
 });

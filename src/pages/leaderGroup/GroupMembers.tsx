@@ -1,5 +1,16 @@
 import React, { useState } from "react";
+import { MemberProposals } from "../../components/groups/MemberProposals";
+import { useGroupProposals } from "../../hooks/useMemberProposals";
+import {
+  acceptProposal,
+  acceptProposalAsNew,
+  dismissProposal,
+  proposeMember,
+  withdrawProposal,
+} from "../../services/memberProposals";
+import { reportWriteError } from "../../services/writeErrors";
 import { Group } from "../../types";
+import { leadsGroup } from "../../utils/groups";
 import { LeaderGroupDetail } from "./leaderGroupDetail";
 import {
   Users,
@@ -14,7 +25,9 @@ interface GroupMembersProps {
 }
 
 export const GroupMembers: React.FC<GroupMembersProps> = ({ detail, group, showToast }) => {
-  const { hasLeaderAccess, isAdmin, members, availablePersonsToAdd, addGroupMember, removeGroupMember } = detail;
+  const { hasLeaderAccess, isAdmin, currentUser, members, availablePersonsToAdd, addGroupMember, removeGroupMember } = detail;
+  const canPropose = leadsGroup(group, currentUser.id);
+  const proposals = useGroupProposals(group.id, canPropose || isAdmin);
 
   // Add member selector
   const [selectedPersonToAdd, setSelectedPersonToAdd] = useState<string>("");
@@ -103,6 +116,29 @@ export const GroupMembers: React.FC<GroupMembersProps> = ({ detail, group, showT
           );
         })}
       </div>
+
+      <MemberProposals
+        proposals={proposals}
+        canPropose={canPropose}
+        canDecide={isAdmin}
+        candidates={availablePersonsToAdd}
+        proposedBy={currentUser.id}
+        onPropose={(proposalName) => {
+          proposeMember(group.id, currentUser.id, proposalName).catch((error) => reportWriteError("sende forslaget", error));
+        }}
+        onWithdraw={(proposalId) => {
+          withdrawProposal(proposalId).catch((error) => reportWriteError("trekke tilbake forslaget", error));
+        }}
+        onAccept={(proposal, personId) => {
+          acceptProposal(proposal.id, group.id, personId).catch((error) => reportWriteError("legge til medlemmet", error));
+        }}
+        onCreate={(proposal) => {
+          acceptProposalAsNew(proposal.id, group.id, proposal.name).catch((error) => reportWriteError("opprette personen", error));
+        }}
+        onDismiss={(proposalId) => {
+          dismissProposal(proposalId).catch((error) => reportWriteError("avvise forslaget", error));
+        }}
+      />
 
       {/* Add Member form - for leaders only */}
       {hasLeaderAccess && isAdmin && (

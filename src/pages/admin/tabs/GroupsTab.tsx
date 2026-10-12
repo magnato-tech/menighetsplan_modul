@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import {
+  Clock,
   Plus,
   Tag,
 } from "lucide-react";
+import { usePendingProposalCounts } from "../../../hooks/useMemberProposals";
 import { GroupCategory } from "../../../types";
 import { StudioData, ShowFeedback } from "../studio";
 
@@ -14,6 +16,7 @@ interface GroupsTabProps {
 
 export const GroupsTab: React.FC<GroupsTabProps> = ({ studio, showFeedback }) => {
   const { adminPersons, adminGroups, createGroup } = studio;
+  const waiting = usePendingProposalCounts(true);
 
   // ==========================================
   // NY GRUPPE FORM STATE (PLANLEGGER)
@@ -228,6 +231,12 @@ export const GroupsTab: React.FC<GroupsTabProps> = ({ studio, showFeedback }) =>
                   </div>
 
                   <h3 className="font-bold text-[var(--studio-text)] text-lg">{g.group.name}</h3>
+                  {(waiting.get(g.group.id) ?? 0) > 0 && (
+                    <p className="text-xs font-bold text-amber-300 flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5" />
+                      <span>{waiting.get(g.group.id)} venter på godkjenning</span>
+                    </p>
+                  )}
 
                   {g.group.description && (
                     <p className="text-xs text-[var(--studio-muted)] line-clamp-2 leading-relaxed">

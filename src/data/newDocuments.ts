@@ -8,6 +8,7 @@ import {
   GatheringAttendance,
   GatheringHeadcount,
   GroupMessage,
+  MemberProposal,
   GroupCategory,
   MeetingSchedule,
   VolunteerRole,
@@ -17,6 +18,7 @@ import { newId } from "../utils/id";
 import { visibilityFields } from "../utils/visibility";
 import { isWorshipService } from "../utils/gatherings";
 import { headcountIdFor, type HeadcountInput } from "../utils/headcount";
+import { proposalName } from "../utils/memberProposals";
 
 // Each new document is built here exactly once, so its id and its defaults are decided in one place.
 
@@ -82,6 +84,27 @@ export interface NewVolunteerRoleInput {
   instruction?: string;
   groupId?: string;
   sortOrder?: number;
+}
+
+/**
+ * A leader's proposal that an administrator add someone to a group.
+ * Null when the name is empty or too long: the document would not be one the rules accept.
+ */
+export function buildMemberProposal(data: {
+  groupId: string;
+  proposedBy: string;
+  name: string;
+}): MemberProposal | null {
+  const name = proposalName(data.name);
+  if (!name || data.groupId === "" || data.proposedBy === "") return null;
+  return {
+    id: newId("proposal"),
+    groupId: data.groupId,
+    name,
+    proposedBy: data.proposedBy,
+    proposedAt: new Date().toISOString(),
+    status: "pending",
+  };
 }
 
 export function buildPerson(data: NewPersonInput): Person {
