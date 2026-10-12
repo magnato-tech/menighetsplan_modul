@@ -285,6 +285,10 @@ describe("Et medlem", () => {
     // The layout of their own analysis board is theirs
     await assertSucceeds(updateDoc(doc(db, "persons/hakon"), "analyticsHiddenModules", arrayUnion("besok")));
     await assertFails(updateDoc(doc(db, "persons/ola"), "analyticsHiddenModules", arrayUnion("besok")));
+    // And the key to their own calendar subscription
+    await assertSucceeds(updateDoc(doc(db, "persons/hakon"), { calendarFeedToken: "kal-123" }));
+    await assertFails(updateDoc(doc(db, "persons/ola"), { calendarFeedToken: "kal-123" }));
+    await assertFails(updateDoc(doc(db, "persons/hakon"), { calendarFeedToken: "kal-456", globalRole: "admin" }));
   });
 
   test("endrer ikke arrangementer eller oppgaver ut over statusen, og ikke nettsiden", async () => {

@@ -96,9 +96,10 @@ service cloud.firestore {
     match /persons/{personId} {
       allow read: if isMember();
       allow create, delete: if isAdmin();
-      // A member changes nothing about themselves but how their own analysis board is laid out
+      // A member changes nothing about themselves but how their own analysis board is laid out,
+      // and the key to their own calendar subscription (src/services/personalCalendarFeed.ts)
       allow update: if isAdmin()
-        || (isMember() && personId == me() && changedOnly(['analyticsHiddenModules']));
+        || (isMember() && personId == me() && changedOnly(['analyticsHiddenModules', 'calendarFeedToken']));
     }
 
     match /groups/{groupId} {

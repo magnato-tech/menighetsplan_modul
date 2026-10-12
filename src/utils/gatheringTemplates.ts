@@ -239,6 +239,8 @@ export function formValuesForTemplateApply(template: GatheringTemplate, values: 
 export function createPlannedGathering(actions: GatheringActions, plan: PlannedGathering): Result & { gathering?: Gathering } {
   const created = actions.createGathering(plan.gathering);
   if (!created.success || !created.gathering) return created;
+  // Without tasks and programme there is nothing more to store: the event holds the rest already
+  if (plan.tasks.length === 0 && plan.program.length === 0) return created;
   const attached = attachPlannedProgram(created.gathering.id, plan, actions);
   if (!attached.success) return attached;
   return created;
