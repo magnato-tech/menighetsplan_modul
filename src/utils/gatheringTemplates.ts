@@ -205,24 +205,49 @@ export interface GatheringActions {
   updateGathering: (gatheringId: string, updates: Partial<Gathering>) => Result;
 }
 
+export type GatheringProgramActions = Pick<GatheringActions, "createTask" | "updateGathering">;
+
+/** Creates the tasks and programme of a plan on an event that already exists. */
+export function attachPlannedProgram(gatheringId: string, plan: PlannedGathering, actions: GatheringProgramActions): Result {
+  const taskIds = new Map<string, { id: string; groupId?: string }>();
+  for (const { key, input } of plan.tasks) {
+    const created = actions.createTask({ ...input, gatheringId });
+    if (!created.success) return created;
+    if (created.task) taskIds.set(key, { id: created.task.id, groupId: created.task.groupId });
+  }
+
+  const updates: Partial<Gathering> = {};
+  if (plan.program.length > 0) {
+    updates.programSchedule = plan.program.map(({ taskKey, ...item }) => {
+      const task = taskKey ? taskIds.get(taskKey) : undefined;
+      return { id: newId("program"), ...item, ...(task ? { taskId: task.id, groupId: task.groupId } : {}) };
+    });
+  }
+  if (plan.gathering.templateId) updates.templateId = plan.gathering.templateId;
+  if (plan.gathering.endsAt) updates.endsAt = plan.gathering.endsAt;
+  if (Object.keys(updates).length === 0) return { success: true };
+  return actions.updateGathering(gatheringId, updates);
+}
+
+/** Form values for planning: the event's own day and title, with end time from the template when none is set. */
+export function formValuesForTemplateApply(template: GatheringTemplate, values: GatheringFormValues): GatheringFormValues {
+  const endTime = values.endTime || endClockOf(values.time, template);
+  return { ...values, endDate: endTime ? values.endDate || values.date : values.endDate, endTime };
+}
+
 /** Stores a planned event: the event, its tasks, and then the programme with each item tied to its task. */
 export function createPlannedGathering(actions: GatheringActions, plan: PlannedGathering): Result & { gathering?: Gathering } {
   const created = actions.createGathering(plan.gathering);
   if (!created.success || !created.gathering) return created;
-
-  const taskIds = new Map<string, { id: string; groupId?: string }>();
-  for (const { key, input } of plan.tasks) {
-    const task = actions.createTask({ ...input, gatheringId: created.gathering.id }).task;
-    if (task) taskIds.set(key, { id: task.id, groupId: task.groupId });
-  }
-  if (plan.program.length > 0) {
-    const programSchedule: ProgramItem[] = plan.program.map(({ taskKey, ...item }) => {
-      const task = taskKey ? taskIds.get(taskKey) : undefined;
-      return { id: newId("program"), ...item, ...(task ? { taskId: task.id, groupId: task.groupId } : {}) };
-    });
-    actions.updateGathering(created.gathering.id, { programSchedule });
-  }
+  const attached = attachPlannedProgram(created.gathering.id, plan, actions);
+  if (!attached.success) return attached;
   return created;
+}
+
+/** Fills an existing event with a template's programme and tasks. Existing tasks should be removed first. */
+export function applyTemplateToGathering(gatheringId: string, plan: PlannedGathering, actions: GatheringProgramActions): Result {
+  if (!plan.tasks.length && !plan.program.length) return { success: false, error: "Malen har ikke program eller oppgaver." };
+  return attachPlannedProgram(gatheringId, plan, actions);
 }
 
 // ---------- A template from an event ----------
@@ -278,26 +303,26 @@ export function templateFromGathering(gathering: Gathering, tasks: readonly Task
 
 // ---------- The template a congregation can start from ----------
 
-/** A worship service at 11:00, with what goes before and after: minutes from the start, length, title and role. */
-const STANDARD_SERVICE_PROGRAM: readonly (readonly [number, number, string, string?])[] = [
+/** A worship service at 11:00: offset and length in minutes from start, title, role, optional note for the run sheet. */
+const STANDARD_SERVICE_PROGRAM: readonly (readonly [number, number, string, string?, string?])[] = [
   [-15, 15, "Velkommen ved inngang", "Møtevert"],
   [0, 7, "Lovsang x2", "Lovsang"],
-  [7, 3, "Velkommen. Åpningsord", "Møteleder"],
+  [7, 3, "Velkommen. Åpningsord", "Møteleder", "Dagens tema"],
   [10, 2, "Bønn", "Møteleder"],
-  [12, 3, "Kunngjøringer", "Møteleder"],
-  [15, 10, "Lovsang x3", "Lovsang"],
-  [25, 2, "Barnekirke", "Barnekirke"],
-  [27, 8, "Kaffe / te-påfyll", "Møtevert"],
-  [35, 2, "Bønn før tale", "Møteleder"],
-  [37, 20, "Tale / undervisning", "Taler"],
-  [57, 5, "Lovsang", "Lovsang"],
-  [62, 8, "Nattverd og presentasjon av bønnestasjoner"],
-  [70, 7, "Forbønn", "Forbønn"],
-  [77, 2, "Kollekt", "Møteleder"],
-  [79, 7, "Lovsang x2", "Lovsang"],
-  [86, 1, "Velsignelsen", "Møteleder"],
-  [87, 2, "Lovsang (avslutningssang)", "Lovsang"],
-  [89, 30, "Kirkekaffe", "Møtevert"],
+  [15, 3, "Kunngjøringer", "Møteleder"],
+  [18, 10, "Lovsang x3", "Lovsang"],
+  [30, 2, "Barnekirke", "Barnekirke", "Barna går til sin samling"],
+  [32, 8, "☕Kaffe / te-påfyll", "Møtevert"],
+  [40, 2, "Bønn før tale", "Møteleder", "Forbønn for taler"],
+  [42, 20, "Tale / undervisning", "Taler"],
+  [62, 5, "Lovsang", "Lovsang"],
+  [67, 8, "Nattverd og presentasjon av bønnestasjoner (3stk)"],
+  [68, 7, "Forbønn", "Forbønn"],
+  [80, 2, "Kollekt", "Møteleder", "Vipps-skjerm under lovsang"],
+  [82, 7, "Lovsang x2", "Lovsang"],
+  [89, 1, "Velsignelsen", "Møteleder"],
+  [90, 2, "Lovsang (avslutningssang)", "Lovsang"],
+  [92, 30, "Kirkekaffe", "Møtevert"],
 ];
 
 /**
@@ -311,14 +336,15 @@ export function standardServiceTemplate(roles: readonly VolunteerRole[]): Gather
     name: "Gudstjeneste",
     title: "Gudstjeneste",
     time: "11:00",
-    durationMinutes: 90,
+    durationMinutes: 92,
     isGudstjeneste: true,
     visibility: "offentlig",
-    program: STANDARD_SERVICE_PROGRAM.map(([offsetMinutes, durationMinutes, title, roleName]) => ({
+    program: STANDARD_SERVICE_PROGRAM.map(([offsetMinutes, durationMinutes, title, roleName, description]) => ({
       id: newId("item"),
       offsetMinutes,
       durationMinutes,
       title,
+      ...(description ? { description } : {}),
       ...(roleName ? { roleName, roleId: roleOf({ roleName }, roles)?.id } : {}),
     })),
     extraStaffing: [],

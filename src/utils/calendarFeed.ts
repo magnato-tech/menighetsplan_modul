@@ -83,6 +83,12 @@ export function toIcalendar(gatherings: Gathering[], options: IcalendarOptions =
   return calendarOf(gatheringsForCalendarFeed(gatherings, options.now || new Date()), options);
 }
 
+/** Build an iCalendar document for an explicit list of gatherings (e.g. a personal feed). */
+export function toIcalendarFromGatherings(gatherings: Gathering[], options: IcalendarOptions = {}): string {
+  const sorted = [...gatherings].sort((a, b) => startOf(a) - startOf(b));
+  return calendarOf(sorted, options);
+}
+
 /** One event as a calendar file, for the one who wants just that event in their own calendar. */
 export function toIcalendarEvent(gathering: Gathering, options: IcalendarOptions = {}): string {
   return calendarOf([gathering], options);

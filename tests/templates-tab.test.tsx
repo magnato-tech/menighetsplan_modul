@@ -55,7 +55,7 @@ describe("Siden «Maler»", () => {
 
     await waitFor(() => expect(service.save).toHaveBeenCalledTimes(1));
     const saved = service.save.mock.calls[0][0] as GatheringTemplate;
-    expect(saved).toMatchObject({ name: "Gudstjeneste", time: "11:00", durationMinutes: 90, isGudstjeneste: true });
+    expect(saved).toMatchObject({ name: "Gudstjeneste", time: "11:00", durationMinutes: 92, isGudstjeneste: true });
     expect(saved.program).toHaveLength(18);
     expect(saved.program.find((item) => item.title === "Tale / undervisning")?.roleId).toBe("r-3");
     await waitFor(() => expect(showFeedback).toHaveBeenCalledWith(expect.stringMatching(/^Standardmalen for gudstjeneste er lagt inn/)));
@@ -66,7 +66,7 @@ describe("Siden «Maler»", () => {
     show();
     const row = screen.getByRole("heading", { name: "Gudstjeneste" }).closest("li") as HTMLElement;
 
-    expect(row.textContent).toContain("kl. 11:00 · 90 minutter");
+    expect(row.textContent).toContain("kl. 11:00 · 92 minutter");
     expect(row.textContent).toContain("18 programpunkter");
     expect(row.textContent).toContain("6 oppgaver: Møtevert, Lovsang, Møteleder, Barnekirke, Taler, Forbønn");
   });
@@ -79,9 +79,10 @@ describe("Siden «Maler»", () => {
     const form = screen.getByRole("dialog", { name: "Nytt arrangement" });
     expect((within(form).getByLabelText("Tittel") as HTMLInputElement).value).toBe("Gudstjeneste");
     expect((within(form).getByLabelText("Starter kl.") as HTMLInputElement).value).toBe("11:00");
-    expect((within(form).getByLabelText("Slutter kl. (valgfritt)") as HTMLInputElement).value).toBe("12:30");
+    expect((within(form).getByLabelText("Slutter kl. (valgfritt)") as HTMLInputElement).value).toBe("12:32");
     expect((within(form).getByLabelText("Arrangementet gjentas") as HTMLInputElement).checked).toBe(true);
-    expect(within(form).getByRole("button", { name: /Gudstjeneste/ }).getAttribute("aria-pressed")).toBe("true");
+    const malSection = within(form).getByRole("region", { name: "Start fra en mal" });
+    expect(within(malSection).getAllByRole("button", { name: /Gudstjeneste/ })[0].getAttribute("aria-pressed")).toBe("true");
   });
 
   test("en mal slettes først etter bekreftelse", async () => {
@@ -145,6 +146,20 @@ describe("Skjemaet for en mal", () => {
   test("to punkter bytter plass og tid når et flyttes", async () => {
     show();
     fireEvent.click(screen.getByRole("button", { name: "Flytt punkt 2 ned" }));
+    save();
+
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    expect(saved().program.map((item) => `${itemClock("11:00", item)} ${item.title}`)).toEqual(["10:45 Velkommen ved inngang", "11:00 Velkommen. Åpningsord", "11:07 Lovsang x2"]);
+  });
+
+  test("programpunkt kan flyttes med dra og slipp", async () => {
+    show();
+    const grip = screen.getByLabelText("Flytt programpunkt 2");
+    const row3 = screen.getByLabelText("Klokkeslett for punkt 3").closest("li")!;
+    const transfer = { effectAllowed: "move", dropEffect: "move", setData: vi.fn() };
+    fireEvent.dragStart(grip, { dataTransfer: transfer });
+    fireEvent.dragOver(row3, { dataTransfer: transfer, preventDefault: vi.fn() });
+    fireEvent.drop(row3, { dataTransfer: transfer, preventDefault: vi.fn() });
     save();
 
     await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));

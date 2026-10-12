@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import { GatheringFormDialog, type GatheringFormChoices } from "../../components/gathering/GatheringFormDialog";
 import { useGatheringTemplates } from "../../hooks/useGatheringTemplates";
+import { saveGatheringTemplate } from "../../services/gatheringTemplates";
 import { useLevel } from "../../hooks/useLevel";
 import { parseIsoToDateAndTime } from "../../utils/dates";
 import { onDay, type GatheringFormValues } from "../../utils/gatheringForm";
@@ -66,6 +67,15 @@ export const NewGatheringDialog: React.FC<NewGatheringDialogProps> = ({ studio, 
       initialTemplateId={initialTemplateId}
       initialRepeat={initialRepeat}
       existing={existing}
+      templateEditor={{
+        roles: adminVolunteerRoles,
+        withPlanner,
+        onSave: async (template) => {
+          const saved = await saveGatheringTemplate(template);
+          if (saved) showFeedback(`Malen «${template.name}» er lagret`);
+          return saved;
+        },
+      }}
       onSave={handleSave}
       onClose={onClose}
     />

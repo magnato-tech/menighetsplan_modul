@@ -76,3 +76,41 @@ export function filterPersonalCalendarEvents(
   if (filter === "menigheten") return events.filter((event) => event.source === "menigheten");
   return events.filter((event) => event.source === "mine_grupper");
 }
+
+/** Same window as the public iCal feed: recent past and one year ahead. */
+export const PERSONAL_FEED_PAST_MS = 30 * 24 * 60 * 60 * 1000;
+export const PERSONAL_FEED_FUTURE_MS = 365 * 24 * 60 * 60 * 1000;
+
+/**
+ * Gatherings for a person's iCal subscription: same rules as Min kalender, within the feed window.
+ */
+export function personalCalendarGatheringsForFeed(
+  gatherings: Gathering[],
+  myGroups: Group[],
+  now: Date,
+  getAttendance: (gatheringId: string) => GatheringAttendance | undefined
+): Gathering[] {
+  const from = now.getTime() - PERSONAL_FEED_PAST_MS;
+  const to = now.getTime() + PERSONAL_FEED_FUTURE_MS;
+  return personalCalendarEvents(gatherings, myGroups, from, getAttendance)
+    .map((event) => event.gathering)
+    .filter((gathering) => startOf(gathering) <= to);
+}
+
+export const PERSONAL_CALENDAR_FEED_PATH = "/api/min/kalender.ics";
+
+/** Query string for the personal feed (token required; menighet in the demo). */
+export function personalCalendarFeedSearchParams(token: string, demoSite: string | null, isDemo: boolean): string {
+  const params = new URLSearchParams({ token });
+  if (isDemo) params.set("menighet", demoSite ?? "eksempel");
+  return params.toString();
+}
+
+export function personalCalendarFeedUrl(origin: string, token: string, demoSite: string | null, isDemo: boolean): string {
+  return `${origin.replace(/\/+$/, "")}${PERSONAL_CALENDAR_FEED_PATH}?${personalCalendarFeedSearchParams(token, demoSite, isDemo)}`;
+}
+
+/** Opens Google Calendar's «add by URL» flow for an https iCal address. */
+export function googleCalendarSubscribeUrl(icsUrl: string): string {
+  return `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(icsUrl)}`;
+}

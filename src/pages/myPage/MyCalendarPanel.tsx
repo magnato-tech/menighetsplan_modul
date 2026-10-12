@@ -1,13 +1,19 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Calendar, Clock, MapPin, X } from "lucide-react";
+import { Calendar, CalendarPlus, Clock, Copy, MapPin, X } from "lucide-react";
 import { useFirebase } from "../../context/FirebaseDataContext";
 import { useCurrentUser } from "../../hooks/memberHooks";
+import { useTimedMessage } from "../../hooks/useTimedMessage";
+import { DEMO } from "../../demo";
+import { DEMO_SITE } from "../../demoSite";
+import { ensurePersonalCalendarFeedToken } from "../../services/personalCalendarFeed";
 import { formatNorwegianDateTime } from "../../utils/dates";
 import { locationOf } from "../../utils/gatherings";
 import {
   filterPersonalCalendarEvents,
+  googleCalendarSubscribeUrl,
   personalCalendarEvents,
+  personalCalendarFeedUrl,
   PersonalCalendarFilter,
 } from "../../utils/personalCalendar";
 
@@ -24,8 +30,14 @@ const FILTERS: { id: PersonalCalendarFilter; label: string }[] = [
 export const MyCalendarPanel: React.FC<MyCalendarPanelProps> = ({ onClose }) => {
   const navigate = useNavigate();
   const { currentUser, userGroups } = useCurrentUser();
-  const { gatherings, getPersonAttendance } = useFirebase();
+  const { gatherings, getPersonAttendance, updatePerson } = useFirebase();
   const [filter, setFilter] = useState<PersonalCalendarFilter>("alle");
+  const [subscribeHint, showSubscribeHint] = useTimedMessage<string>();
+  const [feedToken, setFeedToken] = useState<string | null>(currentUser.calendarFeedToken ?? null);
+
+  useEffect(() => {
+    if (currentUser.calendarFeedToken) setFeedToken(currentUser.calendarFeedToken);
+  }, [currentUser.calendarFeedToken, currentUser.id]);
 
   const from = useMemo(() => Date.now(), []);
 
@@ -45,6 +57,42 @@ export const MyCalendarPanel: React.FC<MyCalendarPanelProps> = ({ onClose }) => 
   const openEvent = (gatheringId: string) => {
     onClose();
     navigate(`/samling/${gatheringId}`);
+  };
+
+  const resolveFeedToken = (): string | null => {
+    if (feedToken) return feedToken;
+    if (currentUser.calendarFeedToken) return currentUser.calendarFeedToken;
+    const ensured = ensurePersonalCalendarFeedToken(currentUser, updatePerson);
+    if (!ensured.success) return null;
+    setFeedToken(ensured.token);
+    return ensured.token;
+  };
+
+  const feedUrlFor = () => {
+    const token = resolveFeedToken();
+    if (!token) return null;
+    return personalCalendarFeedUrl(window.location.origin, token, DEMO_SITE, DEMO !== null);
+  };
+
+  const handleCopyFeedLink = () => {
+    const url = feedUrlFor();
+    if (!url) {
+      showSubscribeHint("Kunne ikke lage kalenderlenken. Prøv igjen.");
+      return;
+    }
+    void navigator.clipboard.writeText(url).then(
+      () => showSubscribeHint("Lenken er kopiert. Lim den inn i Google Kalender under «Fra nettadresse»."),
+      () => showSubscribeHint(url)
+    );
+  };
+
+  const handleOpenGoogleCalendar = () => {
+    const url = feedUrlFor();
+    if (!url) {
+      showSubscribeHint("Kunne ikke lage kalenderlenken. Prøv igjen.");
+      return;
+    }
+    window.open(googleCalendarSubscribeUrl(url), "_blank", "noopener,noreferrer");
   };
 
   return (
@@ -68,7 +116,32 @@ export const MyCalendarPanel: React.FC<MyCalendarPanelProps> = ({ onClose }) => 
           </button>
         </div>
 
-        <div className="px-4 pt-3 pb-2 bg-white border-b border-slate-200">
+        <div className="px-4 pt-3 pb-2 bg-white border-b border-slate-200 space-y-2">
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50/80 p-3 space-y-2">
+            <p className="text-[11px] text-slate-700 leading-relaxed">
+              Abonner på det du ser her i Google Kalender eller annen kalenderapp. Oppdateringen skjer automatisk, ofte med noen
+              timers mellomrom.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={handleOpenGoogleCalendar}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold text-white bg-emerald-700 hover:bg-emerald-800 cursor-pointer"
+              >
+                <CalendarPlus className="w-3.5 h-3.5" />
+                Legg til i Google Kalender
+              </button>
+              <button
+                type="button"
+                onClick={handleCopyFeedLink}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold text-emerald-900 border border-emerald-300 bg-white hover:bg-emerald-50 cursor-pointer"
+              >
+                <Copy className="w-3.5 h-3.5" />
+                Kopier abonnementslenke
+              </button>
+            </div>
+            {subscribeHint && <p className="text-[11px] font-medium text-emerald-900">{subscribeHint}</p>}
+          </div>
           <div className="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-0.5 w-full">
             {FILTERS.map((item) => (
               <button

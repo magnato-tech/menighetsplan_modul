@@ -1,8 +1,9 @@
 import React, { Suspense, lazy, useMemo, useRef, useState } from "react";
 import { AlertCircle, CalendarPlus, Edit3, EyeOff, Globe, Image as ImageIcon, LayoutTemplate, Plus, Repeat, Save, Star, X } from "lucide-react";
-import type { GatheringVisibility } from "../../types";
+import type { GatheringVisibility, VolunteerRole } from "../../types";
 import { gatheringFormError, hasPresentation, type GatheringFormValues } from "../../utils/gatheringForm";
 import { formValuesFromTemplate, type GatheringTemplate } from "../../utils/gatheringTemplates";
+import { TemplateFormDialog } from "./TemplateFormDialog";
 import { DEFAULT_LOCATION } from "../../utils/gatherings";
 import { SERIES_FREQUENCIES, SERIES_LIMIT, seriesDays, suggestedLastDay, type SeriesFrequency } from "../../utils/series";
 
@@ -15,6 +16,13 @@ export interface GatheringFormChoices {
   templateId: string | null;
   /** The days of the series, the event's own day among them. Empty when the event is not repeated. */
   days: string[];
+}
+
+/** Opens the template form from «Nytt arrangement» and stores changes in the congregation's library. */
+export interface GatheringTemplateEditor {
+  roles: VolunteerRole[];
+  withPlanner: boolean;
+  onSave: (template: GatheringTemplate) => Promise<boolean>;
 }
 
 interface GatheringFormDialogProps {
@@ -33,6 +41,8 @@ interface GatheringFormDialogProps {
   initialRepeat?: boolean;
   /** The events that already stand in the calendar, so a series can say where it meets one. */
   existing?: { day: string; title: string }[];
+  /** When set, each mal can be opened and changed before the event is created. */
+  templateEditor?: GatheringTemplateEditor;
   /** Stores the event, or the events of the series. The form closes itself when it went well. */
   onSave: (values: GatheringFormValues, choices: GatheringFormChoices) => { success: boolean; error?: string };
   onClose: () => void;
@@ -74,6 +84,7 @@ export const GatheringFormDialog: React.FC<GatheringFormDialogProps> = ({
   initialTemplateId,
   initialRepeat = false,
   existing = [],
+  templateEditor,
   onSave,
   onClose,
 }) => {
@@ -88,6 +99,7 @@ export const GatheringFormDialog: React.FC<GatheringFormDialogProps> = ({
   const showWebsiteSection = () => websiteSection.current?.scrollIntoView?.({ block: "start" });
 
   const [templateId, setTemplateId] = useState<string | null>(initialTemplateId ?? null);
+  const [editingTemplate, setEditingTemplate] = useState<GatheringTemplate | null>(null);
   const startFrom = (template: GatheringTemplate) => {
     const filled = formValuesFromTemplate(template, values);
     setTemplateId(template.id);
@@ -157,26 +169,54 @@ export const GatheringFormDialog: React.FC<GatheringFormDialogProps> = ({
                     <p className="text-xs text-slate-600">Malen fyller inn skjemaet, og arrangementet får malens program og oppgaver. Alt kan endres etterpå.</p>
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
                       {templates.map((template) => (
-                        <button
+                        <div
                           key={template.id}
-                          type="button"
-                          aria-pressed={templateId === template.id}
-                          onClick={() => startFrom(template)}
-                          className={`text-left px-3 py-2.5 rounded-xl border cursor-pointer transition-colors ${
+                          className={`flex rounded-xl border overflow-hidden transition-colors ${
                             templateId === template.id ? "border-indigo-500 bg-indigo-50" : "border-slate-200 bg-white hover:border-indigo-300"
                           }`}
                         >
-                          <span className="block text-sm font-bold text-slate-900">{template.name}</span>
-                          <span className="block text-[11px] text-slate-500">
-                            Kl. {template.time} · {template.program.length} programpunkter
-                          </span>
-                        </button>
+                          <button
+                            type="button"
+                            aria-pressed={templateId === template.id}
+                            onClick={() => startFrom(template)}
+                            className="flex-1 min-w-0 text-left px-3 py-2.5 cursor-pointer"
+                          >
+                            <span className="block text-sm font-bold text-slate-900">{template.name}</span>
+                            <span className="block text-[11px] text-slate-500">
+                              Kl. {template.time} · {template.program.length} programpunkter
+                            </span>
+                          </button>
+                          {templateEditor && (
+                            <button
+                              type="button"
+                              onClick={() => setEditingTemplate(template)}
+                              aria-label={`Rediger malen ${template.name}`}
+                              className="shrink-0 px-2.5 border-l border-slate-200 text-slate-500 hover:text-indigo-700 hover:bg-indigo-50/80 cursor-pointer"
+                            >
+                              <Edit3 className="w-4 h-4" aria-hidden="true" />
+                            </button>
+                          )}
+                        </div>
                       ))}
                     </div>
                     {templateId && (
-                      <button type="button" onClick={() => setTemplateId(null)} className="text-xs font-semibold text-slate-600 underline cursor-pointer">
-                        Ikke bruk mal: opprett uten program og oppgaver
-                      </button>
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                        {templateEditor && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const template = templates.find((candidate) => candidate.id === templateId);
+                              if (template) setEditingTemplate(template);
+                            }}
+                            className="text-xs font-semibold text-indigo-700 underline cursor-pointer"
+                          >
+                            Rediger malen før du oppretter
+                          </button>
+                        )}
+                        <button type="button" onClick={() => setTemplateId(null)} className="text-xs font-semibold text-slate-600 underline cursor-pointer">
+                          Ikke bruk mal: opprett uten program og oppgaver
+                        </button>
+                      </div>
                     )}
                   </>
                 )}
@@ -461,6 +501,25 @@ export const GatheringFormDialog: React.FC<GatheringFormDialogProps> = ({
           </div>
         </form>
       </div>
+
+      {editingTemplate && templateEditor && (
+        <TemplateFormDialog
+          isNew={false}
+          initial={editingTemplate}
+          groups={groups}
+          roles={templateEditor.roles}
+          withPlanner={templateEditor.withPlanner}
+          onSave={async (template) => {
+            const saved = await templateEditor.onSave(template);
+            if (saved) {
+              setEditingTemplate(null);
+              if (templateId === template.id) startFrom(template);
+            }
+            return saved;
+          }}
+          onClose={() => setEditingTemplate(null)}
+        />
+      )}
     </div>
   );
 };

@@ -4,25 +4,34 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import type { Group, Person } from "../src/types";
+import { initialGroups, initialPersons } from "../src/data/mockData";
 import { mayStandIn, type Session } from "../src/utils/session";
 import { demoDoors, whereDoorLeads } from "../src/utils/demoDoor";
 
-// The register of a made-up congregation
+// A small register for predictable picks
 const kari: Person = { id: "kari", name: "Kari Nordmann", globalRole: "admin" };
 const admin2: Person = { id: "anne", name: "Anne Aas", globalRole: "admin" };
 const ola: Person = { id: "ola", name: "Ola Hansen", globalRole: "member" };
 const ingrid: Person = { id: "ingrid", name: "Ingrid Berg", globalRole: "member" };
 const jonas: Person = { id: "jonas", name: "Jonas Lie", globalRole: "member" };
 const silje: Person = { id: "silje", name: "Silje Moen", globalRole: "member" };
+const ellen: Person = { id: "ellen", name: "Ellen Fossli", globalRole: "member" };
+const hakon: Person = { id: "hakon", name: "Håkon Tveit", globalRole: "member" };
 
-const group = (id: string, leaderIds: string[], memberIds: string[], deputyLeaderIds: string[] = []) =>
-  ({ id, name: id, leaderIds, memberIds, deputyLeaderIds }) as unknown as Group;
-// Ola leads two groups and Ingrid one, as deputy. Silje is in two groups and Jonas in one.
+const group = (
+  id: string,
+  leaderIds: string[],
+  memberIds: string[],
+  deputyLeaderIds: string[] = [],
+  category: Group["category"] = "tjenestegruppe"
+) => ({ id, name: id, leaderIds, memberIds, deputyLeaderIds, category }) as unknown as Group;
+
 const groups = [
   group("lyd", ["ola"], ["silje", "jonas"]),
   group("kjokken", ["ola"], ["silje"], ["ingrid"]),
+  group("hus-a", ["ellen"], ["hakon"], [], "husgruppe"),
 ];
-const everyone = [silje, jonas, ingrid, ola, admin2, kari];
+const everyone = [silje, jonas, ingrid, ola, admin2, kari, ellen, hakon];
 
 const { app, installation } = vi.hoisted(() => ({
   app: {
@@ -91,12 +100,17 @@ afterEach(() => {
 });
 
 describe("Hvem man går inn som i demoen", () => {
-  test("tre veier inn, én for hver rolle, og redigeringen av nettsiden er ikke en egen", () => {
+  test("fem veier inn med ulike roller, og ingen deler person", () => {
     const doors = demoDoors(everyone, groups);
-    expect(doors.map((door) => door.way)).toEqual(["administrator", "gruppeleder", "medlem"]);
-    expect(doors.map((door) => door.name)).toEqual(["Administrator", "Gruppeleder", "Frivillig"]);
-    // No two ways in lead to the same role
-    expect(new Set(doors.map((door) => door.person.id)).size).toBe(doors.length);
+    expect(doors.map((door) => door.way)).toEqual([
+      "administrator",
+      "tjenestegruppeleder",
+      "husgruppeleder",
+      "tjenestegruppemedlem",
+      "medlemUtenTjeneste",
+    ]);
+    expect(new Set(doors.map((door) => door.person.id)).size).toBe(5);
+    expect(doors.every((door) => door.groupNames.length > 0 || door.way === "administrator")).toBe(true);
   });
 
   test("CMS-et er nevnt først i det administratoren gjør, så den som vil se det, finner veien", () => {
@@ -106,7 +120,13 @@ describe("Hvem man går inn som i demoen", () => {
 
   test("hver vei starter på sitt sted", () => {
     const starts = Object.fromEntries(demoDoors(everyone, groups).map((door) => [door.way, door.start]));
-    expect(starts).toEqual({ administrator: "/admin", gruppeleder: "/leder", medlem: "/minside" });
+    expect(starts).toEqual({
+      administrator: "/admin",
+      tjenestegruppeleder: "/leder",
+      husgruppeleder: "/leder",
+      tjenestegruppemedlem: "/minside",
+      medlemUtenTjeneste: "/minside",
+    });
   });
 
   test("adressen man var på vei til, beholdes når den ligger der veien inn fører", () => {
@@ -114,17 +134,36 @@ describe("Hvem man går inn som i demoen", () => {
     expect(whereDoorLeads(administrator, "/admin?tab=demo-oppsett")).toBe("/admin?tab=demo-oppsett");
     expect(whereDoorLeads(administrator, "/admin/gruppe/g1")).toBe("/admin/gruppe/g1");
     expect(whereDoorLeads(administrator, "/admin")).toBe("/admin");
-    // Another part of the app, and an address that only begins the same way
     expect(whereDoorLeads(administrator, "/minside")).toBe("/admin");
     expect(whereDoorLeads(administrator, "/administrasjon")).toBe("/admin");
     expect(whereDoorLeads({ start: "/minside" }, "/admin?tab=demo-oppsett")).toBe("/minside");
     expect(whereDoorLeads({ start: "/leder" }, "/lederskap")).toBe("/leder");
   });
 
-  test("av dem med rollen velges den som er med i flest grupper, og navnet avgjør når det står likt", () => {
+  test("registeret velger forventede personer i små datasettet", () => {
     const doors = Object.fromEntries(demoDoors(everyone, groups).map((door) => [door.way, door.person.name]));
-    // Silje is in two groups, Jonas in one. Ola leads two, Ingrid one. The administrators are in none.
-    expect(doors).toEqual({ administrator: "Anne Aas", gruppeleder: "Ola Hansen", medlem: "Silje Moen" });
+    expect(doors).toEqual({
+      administrator: "Anne Aas",
+      tjenestegruppeleder: "Ola Hansen",
+      husgruppeleder: "Ellen Fossli",
+      tjenestegruppemedlem: "Silje Moen",
+      medlemUtenTjeneste: "Håkon Tveit",
+    });
+  });
+
+  test("eksempelmenighetens register gir fem kjente testpersoner", () => {
+    const byWay = Object.fromEntries(demoDoors(initialPersons, initialGroups).map((door) => [door.way, door]));
+    expect(byWay.administrator?.person.name).toBe("Kari Nordmann");
+    expect(byWay.tjenestegruppeleder?.person.name).toBe("Andreas Lind");
+    expect(byWay.medlemUtenTjeneste?.person.name).toBe("Håkon Tveit");
+    expect(byWay.husgruppeleder?.person.name).toBeTruthy();
+    const volunteer = byWay.tjenestegruppemedlem?.person;
+    expect(volunteer?.name).toBeTruthy();
+    expect(
+      initialGroups.some(
+        (group) => (group.category ?? "tjenestegruppe") === "tjenestegruppe" && group.memberIds.includes(volunteer!.id)
+      )
+    ).toBe(true);
   });
 
   test("samme register gir samme personer, uansett rekkefølgen det kommer i", () => {
@@ -132,9 +171,9 @@ describe("Hvem man går inn som i demoen", () => {
     expect(names([...everyone].reverse())).toEqual(names(everyone));
   });
 
-  test("en rolle ingen har, får ingen vei inn, og et tomt register gir ingen", () => {
-    expect(demoDoors([kari, jonas], []).map((door) => door.way)).toEqual(["administrator", "medlem"]);
-    expect(demoDoors([jonas], []).map((door) => door.way)).toEqual(["medlem"]);
+  test("manglende roller gir færre veier, og et tomt register gir ingen", () => {
+    expect(demoDoors([kari, jonas], []).map((door) => door.way)).toEqual(["administrator", "medlemUtenTjeneste"]);
+    expect(demoDoors([jonas], []).map((door) => door.way)).toEqual(["medlemUtenTjeneste"]);
     expect(demoDoors([], groups)).toEqual([]);
   });
 
@@ -146,30 +185,30 @@ describe("Hvem man går inn som i demoen", () => {
 });
 
 describe("Veien inn i demoen", () => {
-  test("siden ber ikke om innlogging: den har én knapp for hver vei inn, og administratoren med CMS-et står først", () => {
+  test("siden ber ikke om innlogging: fem valg, administratoren med CMS-et står først", () => {
     open();
 
     expect(screen.getByRole("heading", { name: "Gå inn i demoen" })).toBeTruthy();
     const buttons = screen.getAllByRole("button");
-    expect(buttons).toHaveLength(3);
+    expect(buttons).toHaveLength(5);
+    expect(buttons[0].textContent).toContain("Anne Aas");
     expect(buttons[0].textContent).toContain("Administrator");
     expect(buttons[0].textContent).toContain("Redigerer nettsiden (CMS), planlegger arrangementer og holder personregisteret");
     expect(screen.queryByRole("button", { name: /Rediger nettsiden/ })).toBeNull();
-    expect(screen.getByRole("button", { name: /Frivillig/ }).textContent).toContain("Du går inn som Silje Moen");
-    expect(screen.getByRole("button", { name: /Gruppeleder/ }).textContent).toContain("Du går inn som Ola Hansen");
-    expect(screen.getByRole("button", { name: /Administrator/ }).textContent).toContain("Du går inn som Anne Aas");
+    expect(screen.getByRole("button", { name: /Håkon Tveit/ }).textContent).toContain("Medlem uten tjenestegruppe");
+    expect(screen.getByRole("button", { name: /Silje Moen/ }).textContent).toContain("Frivillig i tjenestegruppe");
     expect(screen.queryByRole("button", { name: "Fortsett med Google" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Send meg en lenke" })).toBeNull();
     expect(document.querySelector("input")).toBeNull();
-    // Nor the list a developer chooses from on their own machine
     expect(document.querySelector("select")).toBeNull();
   });
 
   test("hver vei inn fører til sitt sted", () => {
     for (const [button, start] of [
-      [/Frivillig/, "/minside"],
-      [/Gruppeleder/, "/leder"],
-      [/Administrator/, "/admin"],
+      [/Håkon Tveit/, "/minside"],
+      [/Silje Moen/, "/minside"],
+      [/Ola Hansen/, "/leder"],
+      [/Anne Aas/, "/admin"],
     ] as const) {
       app.session = { status: "signedOut" };
       open();
@@ -181,19 +220,19 @@ describe("Veien inn i demoen", () => {
 
   test("valget bestemmer hvor man kommer, også for den som trykket «Min Side» på nettsiden først", () => {
     open("/logg-inn?neste=%2Fminside");
-    fireEvent.click(screen.getByRole("button", { name: /Administrator/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Anne Aas/ }));
     expect(screen.getByText("Kom til: /admin")).toBeTruthy();
   });
 
   test("en lenke til en fane i admin åpner fanen for den som går inn som administrator, og ikke for en frivillig", () => {
     open("/logg-inn?neste=%2Fadmin%3Ftab%3Ddemo-oppsett");
-    fireEvent.click(screen.getByRole("button", { name: /Administrator/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Anne Aas/ }));
     expect(screen.getByText("Kom til: /admin?tab=demo-oppsett")).toBeTruthy();
     cleanup();
 
     app.session = { status: "signedOut" };
     open("/logg-inn?neste=%2Fadmin%3Ftab%3Ddemo-oppsett");
-    fireEvent.click(screen.getByRole("button", { name: /Frivillig/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Silje Moen/ }));
     expect(screen.getByText("Kom til: /minside")).toBeTruthy();
   });
 
@@ -203,7 +242,7 @@ describe("Veien inn i demoen", () => {
     expect(screen.getByRole("heading", { name: "Gå inn i demoen" })).toBeTruthy();
     expect(screen.queryByText(/Kom til/)).toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: /Administrator/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Anne Aas/ }));
     expect(screen.getByText("Kom til: /admin")).toBeTruthy();
     expect((app.session as Session & { status: "member" }).person.name).toBe("Anne Aas");
   });
@@ -230,9 +269,8 @@ describe("Veien inn i demoen", () => {
         <SignInPage />
       </MemoryRouter>
     );
-    // What a congregation's published app has: no stand-in at all
     expect(screen.getByRole("heading", { name: "Logg inn" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Fortsett med Google" })).toBeTruthy();
-    expect(screen.queryByRole("button", { name: /Frivillig|Gruppeleder|Administrator/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Håkon Tveit|Silje Moen|Anne Aas/ })).toBeNull();
   });
 });

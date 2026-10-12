@@ -47,6 +47,25 @@ export function normalizeClock(value: string): string {
   return match ? `${match[1].padStart(2, "0")}:${match[2]}` : value.trim();
 }
 
+/** The place in `programSchedule` behind a kjøreplan row built with `buildRunSheet`, or null for a task row. */
+export function programIndexOfRunSheetRow(rowId: string): number | null {
+  const match = rowId.match(/^program-(\d+)$/);
+  return match ? Number(match[1]) : null;
+}
+
+/**
+ * Moves one programme item in the list. The clock time on each row stays put, like when a template
+ * programme is reordered, so the run sheet still sorts the same way but with new content on each line.
+ */
+export function reorderProgramSchedule(schedule: ProgramItem[], from: number, to: number): ProgramItem[] {
+  if (from === to || from < 0 || to < 0 || from >= schedule.length || to >= schedule.length) return schedule;
+  const times = schedule.map((item) => item.time);
+  const items = [...schedule];
+  const [moved] = items.splice(from, 1);
+  items.splice(to, 0, moved);
+  return items.map((item, index) => ({ ...item, time: times[index] }));
+}
+
 /**
  * The meeting time an instruction opens with: "Møt opp kl. 09:30 for rigging" gives "09:30".
  * Only an instruction that starts by saying when to meet counts; a clock time further into

@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   Clock,
   AlertTriangle,
@@ -7,11 +8,156 @@ import {
   Check,
   ChevronDown,
   Edit3,
+  GripVertical,
   Trash2,
 } from "lucide-react";
 import { Assignment, Task } from "../../types";
 import { RunSheetRow } from "../../utils/runSheet";
 import { RESPONSE_LABELS } from "../../utils/staffing";
+
+const MENU_HEIGHT = 260;
+const MENU_WIDTH = 192;
+
+interface PersonAssignmentMenuProps {
+  assignment: Assignment;
+  personName?: string;
+  response: Assignment["response"];
+  open: boolean;
+  canIntervene: boolean;
+  onToggle: () => void;
+  onStatusChange: (assignmentId: string, response: Assignment["response"], personName?: string) => void;
+  onRemovePerson: (assignmentId: string, personName?: string) => void;
+}
+
+/** Status menu for one person on a task. Rendered in a portal so it is not clipped at the bottom of the screen. */
+const PersonAssignmentMenu: React.FC<PersonAssignmentMenuProps> = ({
+  assignment,
+  personName,
+  response,
+  open,
+  canIntervene,
+  onToggle,
+  onStatusChange,
+  onRemovePerson,
+}) => {
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [menuStyle, setMenuStyle] = useState<React.CSSProperties | null>(null);
+
+  useLayoutEffect(() => {
+    if (!open) {
+      setMenuStyle(null);
+      return;
+    }
+    const button = buttonRef.current;
+    if (!button) return;
+
+    const place = () => {
+      const rect = button.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const top =
+        spaceBelow < MENU_HEIGHT ? Math.max(8, rect.top - MENU_HEIGHT - 4) : rect.bottom + 4;
+      const left = Math.min(rect.left, window.innerWidth - MENU_WIDTH - 8);
+      setMenuStyle({ position: "fixed", top, left, width: MENU_WIDTH, zIndex: 100 });
+    };
+
+    place();
+    window.addEventListener("scroll", place, true);
+    window.addEventListener("resize", place);
+    return () => {
+      window.removeEventListener("scroll", place, true);
+      window.removeEventListener("resize", place);
+    };
+  }, [open]);
+
+  return (
+    <>
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={onToggle}
+        disabled={!canIntervene}
+        className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg border transition-all ${
+          response === "confirmed"
+            ? "bg-emerald-50 text-emerald-900 border-emerald-300 hover:bg-emerald-100/80"
+            : response === "withdrawn"
+            ? "bg-red-50 text-red-900 border-red-300 hover:bg-red-100/80"
+            : response === "declined"
+            ? "bg-slate-100 text-slate-700 border-slate-300 line-through"
+            : "bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100/80"
+        } ${canIntervene ? "cursor-pointer" : "cursor-default"}`}
+      >
+        <span>{personName || "Ukjent person"}</span>
+        {response !== "confirmed" && (
+          <span
+            className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+              response === "withdrawn"
+                ? "bg-red-200 text-red-800"
+                : response === "declined"
+                ? "bg-slate-200 text-slate-700"
+                : "bg-amber-200 text-amber-900"
+            }`}
+          >
+            {RESPONSE_LABELS[response]}
+          </span>
+        )}
+        {canIntervene && <ChevronDown className="w-3 h-3 text-slate-400 print:hidden" />}
+      </button>
+
+      {open &&
+        menuStyle &&
+        createPortal(
+          <div
+            role="menu"
+            style={menuStyle}
+            className="bg-white rounded-xl shadow-lg border border-slate-200 p-1.5 space-y-1 text-xs animate-fadeIn print:hidden"
+          >
+            <div className="px-2 py-1 text-[10px] font-bold uppercase text-slate-400 border-b border-slate-100">
+              Endre status for {personName}
+            </div>
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => onStatusChange(assignment.id, "confirmed", personName)}
+              className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-emerald-50 text-emerald-800 font-medium flex items-center justify-between cursor-pointer"
+            >
+              <span>Akseptert / Bekreftet</span>
+              <Check className="w-3.5 h-3.5 text-emerald-600" />
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => onStatusChange(assignment.id, "pending", personName)}
+              className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-amber-50 text-amber-800 font-medium flex items-center justify-between cursor-pointer"
+            >
+              <span>Sett som Forespurt</span>
+              <Clock className="w-3.5 h-3.5 text-amber-600" />
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => onStatusChange(assignment.id, "withdrawn", personName)}
+              className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-red-50 text-red-700 font-medium flex items-center justify-between cursor-pointer"
+            >
+              <span>Meld forfall (Trenger vikar)</span>
+              <AlertTriangle className="w-3.5 h-3.5 text-red-600" />
+            </button>
+            <div className="border-t border-slate-100 pt-1">
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => onRemovePerson(assignment.id, personName)}
+                className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-red-50 text-red-600 font-semibold flex items-center justify-between cursor-pointer"
+              >
+                <span>Fjern fra oppgave</span>
+                <Trash2 className="w-3.5 h-3.5 text-red-500" />
+              </button>
+            </div>
+          </div>,
+          document.body
+        )}
+    </>
+  );
+};
 
 interface RunSheetRowCardProps {
   row: RunSheetRow;
@@ -26,6 +172,14 @@ interface RunSheetRowCardProps {
   onShowInstruction: (row: RunSheetRow) => void;
   onAssign: (taskId: string) => void;
   onEditTask: (task: Task) => void;
+  /** Admin may reorder programme items in the gathering's schedule. */
+  canReorder?: boolean;
+  isDragging?: boolean;
+  isDragOver?: boolean;
+  onProgramDragStart?: (event: React.DragEvent) => void;
+  onProgramDragEnd?: () => void;
+  onProgramDragOver?: (event: React.DragEvent) => void;
+  onProgramDrop?: (event: React.DragEvent) => void;
 }
 
 /**
@@ -43,6 +197,13 @@ export const RunSheetRowCard: React.FC<RunSheetRowCardProps> = ({
   onShowInstruction,
   onAssign,
   onEditTask,
+  canReorder = false,
+  isDragging = false,
+  isDragOver = false,
+  onProgramDragStart,
+  onProgramDragEnd,
+  onProgramDragOver,
+  onProgramDrop,
 }) => {
   const { task } = row;
   const isVacant = !row.isFullyCovered || row.hasForfall;
@@ -50,7 +211,13 @@ export const RunSheetRowCard: React.FC<RunSheetRowCardProps> = ({
   return (
     <div
       id={`schedule-row-${row.id}`}
+      onDragOver={canReorder ? onProgramDragOver : undefined}
+      onDrop={canReorder ? onProgramDrop : undefined}
       className={`p-3 bg-white rounded-2xl border transition-all ${
+        isDragging ? "opacity-50" : ""
+      } ${
+        isDragOver ? "border-indigo-400 ring-1 ring-indigo-200" : ""
+      } ${
         row.hasForfall
           ? "border-red-300/80 bg-red-50/20 shadow-xs"
           : !row.isFullyCovered
@@ -61,6 +228,18 @@ export const RunSheetRowCard: React.FC<RunSheetRowCardProps> = ({
       {/* Top line: Time, Program Item, Group & Status indicator */}
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-start gap-2.5 min-w-0">
+          {canReorder && (
+            <button
+              type="button"
+              draggable
+              aria-label={`Flytt programposten ${row.title}`}
+              onDragStart={onProgramDragStart}
+              onDragEnd={onProgramDragEnd}
+              className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-grab active:cursor-grabbing touch-none shrink-0 mt-0.5 print:hidden"
+            >
+              <GripVertical className="w-4 h-4" aria-hidden="true" />
+            </button>
+          )}
           {/* Time pill */}
           <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-800 border border-slate-200/60 shrink-0 mt-0.5">
             {row.time || "–"}
@@ -122,82 +301,17 @@ export const RunSheetRowCard: React.FC<RunSheetRowCardProps> = ({
 
             {row.assignedPersons.length > 0 ? (
               row.assignedPersons.map(({ assignment, person, response }) => (
-                <div key={assignment.id} className="relative group inline-flex items-center">
-                  <button
-                    type="button"
-                    onClick={() => onToggleMenu(openMenuAssignmentId === assignment.id ? null : assignment.id)}
-                    disabled={!canIntervene}
-                    className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg border transition-all ${
-                      response === "confirmed"
-                        ? "bg-emerald-50 text-emerald-900 border-emerald-300 hover:bg-emerald-100/80"
-                        : response === "withdrawn"
-                        ? "bg-red-50 text-red-900 border-red-300 hover:bg-red-100/80"
-                        : response === "declined"
-                        ? "bg-slate-100 text-slate-700 border-slate-300 line-through"
-                        : "bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100/80"
-                    } ${canIntervene ? "cursor-pointer" : "cursor-default"}`}
-                  >
-                    <span>{person?.name || "Ukjent person"}</span>
-                    {response !== "confirmed" && (
-                      <span
-                        className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
-                          response === "withdrawn"
-                            ? "bg-red-200 text-red-800"
-                            : response === "declined"
-                            ? "bg-slate-200 text-slate-700"
-                            : "bg-amber-200 text-amber-900"
-                        }`}
-                      >
-                        {RESPONSE_LABELS[response]}
-                      </span>
-                    )}
-                    {canIntervene && (
-                      <ChevronDown className="w-3 h-3 text-slate-400 group-hover:text-slate-600 print:hidden" />
-                    )}
-                  </button>
-
-                  {/* Person Status Dropdown Menu (hidden in print) */}
-                  {openMenuAssignmentId === assignment.id && (
-                    <div className="absolute left-0 top-full mt-1 w-48 bg-white rounded-xl shadow-lg border border-slate-200 z-30 p-1.5 space-y-1 text-xs animate-fadeIn print:hidden">
-                      <div className="px-2 py-1 text-[10px] font-bold uppercase text-slate-400 border-b border-slate-100">
-                        Endre status for {person?.name}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => onStatusChange(assignment.id, "confirmed", person?.name)}
-                        className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-emerald-50 text-emerald-800 font-medium flex items-center justify-between cursor-pointer"
-                      >
-                        <span>Akseptert / Bekreftet</span>
-                        <Check className="w-3.5 h-3.5 text-emerald-600" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => onStatusChange(assignment.id, "pending", person?.name)}
-                        className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-amber-50 text-amber-800 font-medium flex items-center justify-between cursor-pointer"
-                      >
-                        <span>Sett som Forespurt</span>
-                        <Clock className="w-3.5 h-3.5 text-amber-600" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => onStatusChange(assignment.id, "withdrawn", person?.name)}
-                        className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-red-50 text-red-700 font-medium flex items-center justify-between cursor-pointer"
-                      >
-                        <span>Meld forfall (Trenger vikar)</span>
-                        <AlertTriangle className="w-3.5 h-3.5 text-red-600" />
-                      </button>
-                      <div className="border-t border-slate-100 pt-1">
-                        <button
-                          type="button"
-                          onClick={() => onRemovePerson(assignment.id, person?.name)}
-                          className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-red-50 text-red-600 font-semibold flex items-center justify-between cursor-pointer"
-                        >
-                          <span>Fjern fra oppgave</span>
-                          <Trash2 className="w-3.5 h-3.5 text-red-500" />
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                <div key={assignment.id} className="inline-flex items-center">
+                  <PersonAssignmentMenu
+                    assignment={assignment}
+                    personName={person?.name}
+                    response={response}
+                    open={openMenuAssignmentId === assignment.id}
+                    canIntervene={canIntervene}
+                    onToggle={() => onToggleMenu(openMenuAssignmentId === assignment.id ? null : assignment.id)}
+                    onStatusChange={onStatusChange}
+                    onRemovePerson={onRemovePerson}
+                  />
                 </div>
               ))
             ) : (

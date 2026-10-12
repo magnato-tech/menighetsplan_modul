@@ -141,6 +141,31 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
     showFeedback(`${remove.length} arrangementer i serien ble slettet`);
   };
 
+  const handleDeleteGathering = (item: AdminGatheringItem) => {
+    const g = item.gathering;
+    const taskIds = new Set(item.tasks.map((task) => task.id));
+    if (assignments.some((assignment) => taskIds.has(assignment.taskId))) {
+      showFeedback(
+        "Arrangementet kan ikke slettes fordi noen er forespurt eller tildelt på oppgaver. Gå til kjøreplanen og fjern tildelingene først.",
+        "error"
+      );
+      return;
+    }
+    if (!confirm(`Vil du slette «${g.title}» (${formatNorwegianDateTime(g.startsAt)})? Program og oppgaver fjernes også.`)) {
+      return;
+    }
+    for (const task of item.tasks) {
+      const removed = deleteTask(task.id);
+      if (!removed.success) {
+        showFeedback(removed.error || "Kunne ikke slette en oppgave", "error");
+        return;
+      }
+    }
+    const res = studio.deleteGathering(g.id);
+    if (res.success) showFeedback("Arrangementet ble slettet");
+    else showFeedback(res.error || "Kunne ikke slette arrangementet", "error");
+  };
+
   const handleCreateGathering = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newGatheringTitle || !newGatheringDate) {
@@ -352,6 +377,16 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
                   >
                     <CalendarPlus className="w-3.5 h-3.5 text-[var(--studio-icon)]" />
                     <span>Lag neste arrangement</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteGathering(item)}
+                    className="px-3 py-1.5 rounded-lg bg-[var(--studio-bg)] hover:bg-red-950 text-[var(--studio-muted)] hover:text-red-400 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer border border-[var(--studio-border)]"
+                    title="Slett dette arrangementet"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Slett</span>
                   </button>
 
                   <Link

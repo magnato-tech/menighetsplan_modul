@@ -3,6 +3,9 @@ import { assert } from "./assert";
 import {
   filterPersonalCalendarEvents,
   personalCalendarEvents,
+  personalCalendarGatheringsForFeed,
+  PERSONAL_FEED_FUTURE_MS,
+  PERSONAL_FEED_PAST_MS,
 } from "../src/utils/personalCalendar";
 import type { Gathering, Group } from "../src/types";
 
@@ -121,4 +124,27 @@ describe("Min kalender", () => {
     filtered.every((event) => event.source === "mine_grupper"),
     "Filteret Mine grupper viser bare gruppesamlinger"
   );
+
+  const now = new Date(from);
+  const feed = personalCalendarGatheringsForFeed(docs, [tjenesteGroup, husGroup], now, () => undefined);
+  assert(feed.map((g) => g.id).join() === "gruppe-mote,gudstjeneste", "iCal-utvalg følger Min kalender i feed-vinduet");
+
+  const tooOld: Gathering = {
+    ...groupGathering,
+    id: "old",
+    startsAt: new Date(from - PERSONAL_FEED_PAST_MS - 86400000).toISOString(),
+  };
+  const tooFar: Gathering = {
+    ...groupGathering,
+    id: "far",
+    startsAt: new Date(from + PERSONAL_FEED_FUTURE_MS + 86400000).toISOString(),
+  };
+  const feedWindow = personalCalendarGatheringsForFeed(
+    [...docs, tooOld, tooFar],
+    [tjenesteGroup],
+    now,
+    () => undefined
+  );
+  assert(!feedWindow.some((g) => g.id === "old"), "Arrangement eldre enn feed-vinduet tas ikke med");
+  assert(!feedWindow.some((g) => g.id === "far"), "Arrangement utenfor ett år fram tas ikke med");
 });

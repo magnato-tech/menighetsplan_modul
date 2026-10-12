@@ -49,6 +49,11 @@ export function useMyPage() {
 
   const myGroupIds = useMemo(() => myGroups.map((g) => g.id), [myGroups]);
 
+  const hasServiceGroupMembership = useMemo(
+    () => myGroups.some((group) => (group.category ?? "tjenestegruppe") === "tjenestegruppe"),
+    [myGroups]
+  );
+
   // The tasks the user has said yes to and that still lie ahead, the nearest first
   const myTasks = useMemo(() => {
     const startOf = (task: Task) => getGatheringById(task.gatheringId)?.startsAt;
@@ -297,6 +302,7 @@ export function useMyPage() {
     feedbackMessage,
     clearFeedbackMessage,
     myGroups,
+    hasServiceGroupMembership,
     attentionItems,
     handleAttentionAnswer,
     nextChurchEvent,

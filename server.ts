@@ -3,7 +3,7 @@ import path from 'node:path';
 import express, { Request, Response } from 'express';
 import { createServer as createViteServer, loadEnv } from 'vite';
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, doc, getDoc, getDocs } from 'firebase/firestore';
+import { getFirestore, collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
 import {
   type GatheringDoc,
   type GroupDoc,
@@ -19,9 +19,12 @@ import { type CmsMedia, type CmsNewsArticle, type CmsPage, type CmsSettings, emp
 import { firebaseOptionsOf, missingInstallationSettings, readInstallationConfig } from './src/installation';
 import { isPublicPath } from './src/utils/routes';
 import { type SiteContent, resolvePageSeo, seoForPath } from './src/utils/siteSeo';
-import { toIcalendar } from './src/utils/calendarFeed';
+import { toIcalendar, toIcalendarFromGatherings } from './src/utils/calendarFeed';
+import { collectionPrefixOf, parseDemoSiteId } from './src/utils/demoSite';
+import { isInGroup } from './src/utils/groups';
+import { personalCalendarGatheringsForFeed } from './src/utils/personalCalendar';
 import { validateEvent } from './src/utils/validation';
-import type { Gathering } from './src/types';
+import type { Gathering, GatheringAttendance, Group, Person } from './src/types';
 
 const app = express();
 const port = 3000;
@@ -57,16 +60,27 @@ app.use((req, res, next) => {
   next();
 });
 
-async function loadGatheringDocs(): Promise<GatheringDoc[]> {
-  const snap = await getDocs(collection(db, 'gatherings'));
+function demoSiteFromQuery(req: Request): string | null {
+  const raw = req.query.menighet;
+  if (typeof raw !== 'string' || !raw) return null;
+  if (raw === 'eksempel') return null;
+  return parseDemoSiteId(raw);
+}
+
+function plannerCollection(name: string, site: string | null): string {
+  return collectionPrefixOf(site) + name;
+}
+
+async function loadGatheringDocs(site: string | null = null): Promise<GatheringDoc[]> {
+  const snap = await getDocs(collection(db, plannerCollection('gatherings', site)));
   return snap.docs.map((docSnap) => {
     const data = docSnap.data();
     return { ...data, id: data.id || docSnap.id };
   });
 }
 
-async function loadGroupDocs(): Promise<GroupDoc[]> {
-  const snap = await getDocs(collection(db, 'groups'));
+async function loadGroupDocs(site: string | null = null): Promise<GroupDoc[]> {
+  const snap = await getDocs(collection(db, plannerCollection('groups', site)));
   return snap.docs.map((docSnap) => {
     const data = docSnap.data();
     return { ...data, id: data.id || docSnap.id };
@@ -142,6 +156,86 @@ app.get('/api/offentlig/kalender.ics', async (req: Request, res: Response) => {
     res.send(toIcalendar(gatherings, { calendarName, now, siteUrl: `${req.protocol}://${req.get('host')}` }));
   } catch (err: any) {
     console.error('Error fetching /api/offentlig/kalender.ics:', err);
+    res.status(500).json({ error: 'Kunne ikke hente kalenderabonnement', message: err.message });
+  }
+});
+
+/**
+ * Personal iCal feed for Min kalender (token on the person document; optional menighet in the demo).
+ */
+app.get('/api/min/kalender.ics', async (req: Request, res: Response) => {
+  try {
+    const token = typeof req.query.token === 'string' ? req.query.token.trim() : '';
+    if (!token) {
+      res.status(400).send('Mangler token');
+      return;
+    }
+
+    const site = demoSiteFromQuery(req);
+    const personsSnap = await getDocs(
+      query(collection(db, plannerCollection('persons', site)), where('calendarFeedToken', '==', token))
+    );
+    if (personsSnap.empty) {
+      res.status(404).send('Ugyldig kalenderlenke');
+      return;
+    }
+
+    const personDoc = personsSnap.docs[0];
+    const person = { ...(personDoc.data() as Person), id: personDoc.data().id || personDoc.id };
+
+    const [gatheringDocs, groupDocs, attendanceSnap] = await Promise.all([
+      loadGatheringDocs(site),
+      loadGroupDocs(site),
+      getDocs(collection(db, plannerCollection('gatheringAttendances', site))),
+    ]);
+
+    const groups = groupDocs as Group[];
+    const myGroups = groups.filter((group) => isInGroup(group, person.id));
+    const attendances: GatheringAttendance[] = attendanceSnap.docs.map((docSnap) => {
+      const data = docSnap.data() as GatheringAttendance;
+      return { ...data, id: data.id || docSnap.id };
+    });
+    const attendanceOf = (gatheringId: string) =>
+      attendances.find((row) => row.personId === person.id && row.gatheringId === gatheringId);
+
+    const gatherings: Gathering[] = [];
+    for (const doc of gatheringDocs) {
+      try {
+        gatherings.push(validateEvent(doc));
+      } catch (err) {
+        console.warn(
+          `Personal iCal: skipping invalid gathering ${doc.id ?? '(no id)'}:`,
+          err instanceof Error ? err.message : err
+        );
+      }
+    }
+
+    const now = new Date();
+    const selected = personalCalendarGatheringsForFeed(gatherings, myGroups, now, attendanceOf);
+
+    let calendarName = `${person.name} – Menighetsplan`;
+    try {
+      const settingsSnap = await getDoc(doc(db, plannerCollection('cms_settings', site), CMS_SETTINGS_DOC_ID));
+      const churchName = settingsSnap.data()?.churchName;
+      if (typeof churchName === 'string' && churchName.trim()) {
+        calendarName = `${person.name} – ${churchName.trim()}`;
+      }
+    } catch {
+      // Default name is fine when settings are unavailable
+    }
+
+    res.set('Content-Type', 'text/calendar; charset=utf-8');
+    res.set('Content-Disposition', 'attachment; filename="min-kalender.ics"');
+    res.set('Cache-Control', 'private, max-age=300');
+    res.send(
+      toIcalendarFromGatherings(selected, {
+        calendarName,
+        now,
+        siteUrl: `${req.protocol}://${req.get('host')}`,
+      })
+    );
+  } catch (err: any) {
+    console.error('Error fetching /api/min/kalender.ics:', err);
     res.status(500).json({ error: 'Kunne ikke hente kalenderabonnement', message: err.message });
   }
 });
