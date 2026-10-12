@@ -18,6 +18,7 @@ import { useTimedMessage } from "../hooks/useTimedMessage";
 import { toPublicProfile, publicProfileFields } from "../utils/publicProfile";
 import { compressImageFile } from "../utils/imageUpload";
 import { ageOn, birthDateError, formatBirthDate, todayInNorway } from "../utils/birthDate";
+import { membershipValue } from "../utils/personForm";
 import {
   Globe,
   User,
@@ -56,6 +57,8 @@ export const AdminPersonDetailPage: React.FC = () => {
   const [phone, setPhone] = useState<string>("");
   const [email, setEmail] = useState<string>("");
   const [birthDate, setBirthDate] = useState<string>("");
+  const [congregationMember, setCongregationMember] = useState(false);
+  const [denominationMember, setDenominationMember] = useState(false);
   const [globalRole, setGlobalRole] = useState<"member" | "admin">("member");
   const [policeCert, setPoliceCert] = useState<string>("");
   const [unavailablePeriods, setUnavailablePeriods] = useState<{ from: string; to: string; reason?: string }[]>([]);
@@ -81,6 +84,8 @@ export const AdminPersonDetailPage: React.FC = () => {
       setPhone(person.phone || "");
       setEmail(person.email || "");
       setBirthDate(person.birthDate || "");
+      setCongregationMember(person.congregationMember === true);
+      setDenominationMember(person.denominationMember === true);
       setGlobalRole(person.globalRole || "member");
       setPoliceCert(person.policeCertificateValidUntil || "");
       setUnavailablePeriods(person.unavailablePeriods || []);
@@ -154,6 +159,8 @@ export const AdminPersonDetailPage: React.FC = () => {
       phone: phone.trim() || undefined,
       email: email.trim() || undefined,
       birthDate: birthDate || undefined,
+      congregationMember: membershipValue(congregationMember),
+      denominationMember: membershipValue(denominationMember),
       globalRole,
       avatarUrl: avatarUrl.trim() || undefined,
       isStaff,
@@ -337,6 +344,15 @@ export const AdminPersonDetailPage: React.FC = () => {
                     : "Valgfritt. Vises ikke på nettsiden.")}
               </p>
             </div>
+
+            <label className="flex items-center gap-2 text-xs text-[var(--studio-text)]">
+              <input id="check-edit-congregation" type="checkbox" checked={congregationMember} onChange={(event) => setCongregationMember(event.target.checked)} />
+              Medlem i menigheten
+            </label>
+            <label className="flex items-center gap-2 text-xs text-[var(--studio-text)]">
+              <input id="check-edit-denomination" type="checkbox" checked={denominationMember} onChange={(event) => setDenominationMember(event.target.checked)} />
+              Medlem i kirkesamfunnet
+            </label>
 
             {/* 4. Global Rolle (Sikrer støtte for flere co-admins) */}
             <div className="space-y-1.5 pt-1 border-t border-[var(--studio-border)]">

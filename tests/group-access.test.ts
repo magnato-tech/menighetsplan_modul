@@ -13,7 +13,16 @@ import {
   visibleGroupPeople,
 } from "../src/utils/groupAccess";
 
-const ola: Person = { id: "ola", name: "Ola", phone: "111", email: "ola@example.com", globalRole: "member", birthDate: "1980-01-02" };
+const ola: Person = {
+  id: "ola",
+  name: "Ola",
+  phone: "111",
+  email: "ola@example.com",
+  globalRole: "member",
+  birthDate: "1980-01-02",
+  congregationMember: true,
+  denominationMember: true,
+};
 const kari: Person = { id: "kari", name: "Kari", email: "kari@example.com", globalRole: "admin", birthDate: "1975-05-05" };
 const liv: Person = {
   id: "liv",
@@ -60,12 +69,17 @@ describe("Gruppekatalog", () => {
     expect(JSON.stringify(cards)).not.toContain("email");
     expect(JSON.stringify(cards)).not.toContain("birthDate");
     expect(JSON.stringify(cards)).not.toContain("1980");
+    expect(JSON.stringify(cards)).not.toContain("congregationMember");
+    expect(JSON.stringify(cards)).not.toContain("denominationMember");
   });
 
   test("e-postkortet er et eget dokument, og mangler når personen ikke har e-post", () => {
     const without = { ...ola, email: undefined, phone: undefined };
     expect(groupLeaderEmailsOf([without, kari, liv], [lyd]).map((card) => card.personId)).toEqual(["kari", "liv"]);
     expect(groupLeaderEmailsOf([kari], [lyd])[0]).toEqual({ id: "lyd_kari", groupId: "lyd", personId: "kari", email: "kari@example.com" });
+    const fromOla = JSON.stringify(groupLeaderEmailsOf([ola], [lyd]));
+    expect(fromOla).not.toContain("congregationMember");
+    expect(fromOla).not.toContain("denominationMember");
   });
 
   test("et offentlig kort har bare personer med offentlig profil, og hopper over grupper som ikke er merket", () => {
@@ -80,6 +94,8 @@ describe("Gruppekatalog", () => {
     });
     expect(JSON.stringify(cards[0])).not.toContain("ola");
     expect(JSON.stringify(cards[0])).not.toContain("kari");
+    expect(JSON.stringify(cards)).not.toContain("congregationMember");
+    expect(JSON.stringify(cards)).not.toContain("denominationMember");
   });
 
   test("uten hele registeret ser et medlem telefon, og en leder også e-post", () => {
@@ -90,6 +106,7 @@ describe("Gruppekatalog", () => {
     expect(asMember.find((person) => person.id === "kari")?.email).toBeUndefined();
     expect(asMember.find((person) => person.id === "ola")).toMatchObject({ phone: "111" });
     expect(asMember.every((person) => person.birthDate === undefined)).toBe(true);
+    expect(asMember.every((person) => person.congregationMember === undefined && person.denominationMember === undefined)).toBe(true);
 
     const asLeader = visibleGroupPeople(lyd, false, [], cards, emails, "kari");
     expect(asLeader.find((person) => person.id === "ola")?.email).toBe("ola@example.com");
