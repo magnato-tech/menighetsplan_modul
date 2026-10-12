@@ -11,6 +11,8 @@ export interface Person {
   name: string;
   phone?: string;
   email?: string;
+  /** The date of birth, a calendar day: "1980-03-12" (see utils/birthDate.ts). Never part of what the website shows. */
+  birthDate?: string;
   globalRole: "member" | "admin";
   policeCertificateValidUntil?: string; // ISO date YYYY-MM-DD
   unavailablePeriods?: UnavailablePeriod[];

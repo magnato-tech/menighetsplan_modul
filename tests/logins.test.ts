@@ -84,6 +84,7 @@ describe("Den offentlige kopien av en person", () => {
     name: "Liv Pastor",
     email: "liv.privat@eksempel.no",
     phone: "99 88 77 66",
+    birthDate: "1975-04-23",
     globalRole: "admin",
     policeCertificateValidUntil: "2027-01-01",
     unavailablePeriods: [{ id: "u1", from: "2026-07-01", to: "2026-07-20" } as never],
@@ -122,7 +123,7 @@ describe("Den offentlige kopien av en person", () => {
       staffOrder: 1,
     });
     const text = JSON.stringify(copy);
-    for (const secret of ["liv.privat@eksempel.no", "99 88 77 66", "2027-01-01", "2026-07-01", "besok", "admin"]) {
+    for (const secret of ["liv.privat@eksempel.no", "99 88 77 66", "1975-04-23", "2027-01-01", "2026-07-01", "besok", "admin"]) {
       expect(text).not.toContain(secret);
     }
   });

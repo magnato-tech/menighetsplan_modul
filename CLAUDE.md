@@ -86,6 +86,7 @@ Kjør `npm run lint` og `npm test` før en endring regnes som ferdig.
 | `firestore.rules`, `storage.rules` | Reglene i en menighets egen database og fillager: lukket for alle som ikke står i registeret, bortsett fra det nettsiden viser. Demoen har `firestore.demo.rules`, som er åpne |
 | `rules-tests/` | Prøvene av reglene, med egne pakker (Firebase sitt prøveverktøy er stort, og holdes utenfor appen). `firebase.json` i roten sier hvor emulatorene finner reglene |
 | `src/utils/logo.ts` | Menighetens logo: hvilke filer som kan være logo, og hva som vises som en. Den ligger som tekst i innstillingene (`logoUrl`), og vises øverst på nettsiden og på innloggingssiden |
+| `src/utils/birthDate.ts` | Fødselsdatoen til en person: en kalenderdag uten klokkeslett, kontrollen av den, alderen og teksten den leses som |
 | `src/utils/logins.ts`, `src/utils/mirror.ts`, `src/services/registerMirror.ts`, `src/hooks/useRegisterMirror.ts` | Det som ligger ved siden av registeret i en lukket database: innloggingene (`logins`, én per e-postadresse) og de offentlige kopiene av personer (`publicProfiles`). Hva de er, hva som må skrives for at de skal følge registeret, lagringen, og kroken som skriver dem fra nettleseren til en administrator |
 
 ---

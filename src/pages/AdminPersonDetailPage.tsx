@@ -17,6 +17,7 @@ import {
 import { useTimedMessage } from "../hooks/useTimedMessage";
 import { toPublicProfile, publicProfileFields } from "../utils/publicProfile";
 import { compressImageFile } from "../utils/imageUpload";
+import { ageOn, birthDateError, formatBirthDate, todayInNorway } from "../utils/birthDate";
 import {
   Globe,
   User,
@@ -34,6 +35,7 @@ import {
   Shield,
   Camera,
   Briefcase,
+  Cake,
 } from "lucide-react";
 
 export const AdminPersonDetailPage: React.FC = () => {
@@ -53,6 +55,7 @@ export const AdminPersonDetailPage: React.FC = () => {
   const [name, setName] = useState<string>("");
   const [phone, setPhone] = useState<string>("");
   const [email, setEmail] = useState<string>("");
+  const [birthDate, setBirthDate] = useState<string>("");
   const [globalRole, setGlobalRole] = useState<"member" | "admin">("member");
   const [policeCert, setPoliceCert] = useState<string>("");
   const [unavailablePeriods, setUnavailablePeriods] = useState<{ from: string; to: string; reason?: string }[]>([]);
@@ -77,6 +80,7 @@ export const AdminPersonDetailPage: React.FC = () => {
       setName(person.name);
       setPhone(person.phone || "");
       setEmail(person.email || "");
+      setBirthDate(person.birthDate || "");
       setGlobalRole(person.globalRole || "member");
       setPoliceCert(person.policeCertificateValidUntil || "");
       setUnavailablePeriods(person.unavailablePeriods || []);
@@ -139,10 +143,17 @@ export const AdminPersonDetailPage: React.FC = () => {
       return;
     }
 
+    const wrongBirthDate = birthDateError(birthDate);
+    if (wrongBirthDate) {
+      showFeedback(wrongBirthDate, "error");
+      return;
+    }
+
     const res = updatePerson(person.id, {
       name: name.trim(),
       phone: phone.trim() || undefined,
       email: email.trim() || undefined,
+      birthDate: birthDate || undefined,
       globalRole,
       avatarUrl: avatarUrl.trim() || undefined,
       isStaff,
@@ -303,6 +314,28 @@ export const AdminPersonDetailPage: React.FC = () => {
                 placeholder="F.eks. kari@eksempel.no"
                 className={studioDetailInput}
               />
+            </div>
+
+            {/* Fødselsdato */}
+            <div className="space-y-1.5">
+              <label htmlFor="input-edit-person-birthdate" className="text-xs font-bold text-[var(--studio-muted)] flex items-center gap-1.5">
+                <Cake className="w-3.5 h-3.5 text-indigo-600" />
+                Fødselsdato:
+              </label>
+              <input
+                type="date"
+                id="input-edit-person-birthdate"
+                value={birthDate}
+                max={todayInNorway()}
+                onChange={(e) => setBirthDate(e.target.value)}
+                className={studioDetailInput}
+              />
+              <p className="text-[11px] text-[var(--studio-muted)]">
+                {birthDateError(birthDate) ??
+                  (ageOn(birthDate) !== null
+                    ? `Født ${formatBirthDate(birthDate)}, ${ageOn(birthDate)} år. Vises ikke på nettsiden.`
+                    : "Valgfritt. Vises ikke på nettsiden.")}
+              </p>
             </div>
 
             {/* 4. Global Rolle (Sikrer støtte for flere co-admins) */}

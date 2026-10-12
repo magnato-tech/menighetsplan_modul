@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.20 · **Sist oppdatert:** 2026-10-12
+> **Dokumentversjon:** 4.21 · **Sist oppdatert:** 2026-10-12
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -968,6 +968,20 @@ Bestilt av produkteier under oppsettet av første menighet.
 | **Lagring** | Logoen ligger som tekst i innstillingene, så den følger med i et datasett og trenger ikke bildelageret |
 | **Prøvd** | 9 sjekker: hva som kan være logo, visningen med og uten logo, og valg, feil fil og fjerning i innstillingene |
 | **Ikke levert her** | En egen hvit utgave for mørk bakgrunn, og logo i bunnen av nettsiden og i admin |
+
+### Fødselsdato i personregisteret (12. oktober 2026)
+
+Bestilt av produkteier under oppsettet av første menighet.
+
+| Område | Levert |
+|:---|:---|
+| **Personsiden i admin** | Feltet «Fødselsdato» under e-postadressen. Det er valgfritt, og viser datoen skrevet ut og alderen når den er fylt inn |
+| **Kontroll** | En dato som ikke finnes, en dato fram i tid og et årstall før 1900 avvises med en forklaring |
+| **Nettsiden** | Fødselsdatoen er aldri med i det nettsiden viser av en person |
+| **Prøvd** | 6 sjekker av dato, alder og tekst, og én av at den offentlige kopien av en person ikke har fødselsdatoen |
+| **Ikke levert her** | Fødselsdato i skjemaet for ny person og i personlisten. Fødselsdagsliste og aldersgrupper |
+
+**Hvem som kan lese den.** Bare en administrator ser og endrer feltet i appen. Men alle som står i registeret og er logget inn, får hele registeret levert til nettleseren sin, også fødselsdatoene (kapittel 13, punkt 1). Det bør strammes inn før registeret holder mer enn kontaktopplysninger.
 
 ---
 
