@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.22 · **Sist oppdatert:** 2026-10-12
+> **Dokumentversjon:** 4.23 · **Sist oppdatert:** 2026-10-12
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -1007,7 +1007,7 @@ Sortert etter hvor mye de betyr for en menighet som skal ta løsningen i bruk.
 
 | # | Mangel | Løses i |
 |:---:|:---|:---|
-| 1 | De lukkede databasereglene er prøvd lokalt, men ikke publisert i noen database. Tre ting er bevisst grove: alle i registeret kan lese hele registeret, alle i registeret kan endre tildelinger, og en besøkende kan legge til i besøkstallene med hvilke tall som helst | Trinn 4 og 5 |
+| 1 | De lukkede databasereglene er publisert hos første menighet, og stenger for fremmede. Men alle som er logget inn, kan lese hele personregisteret, også fødselsdato: frivillige skal ikke inviteres inn før det er rettet (kapittel 14, «Brukernivåer som holder i databasen»). To ting til er bevisst grove: alle i registeret kan endre tildelinger, og en besøkende kan legge til i besøkstallene med hvilke tall som helst | Kapittel 14 |
 | 2 | Kladder til nyheter, taler og stab leveres til alle nettlesere. Kladder til sider leveres bare til dem som står i registeret. I demoen leveres hele registeret til alle, som før | Fase 1 |
 | 3 | To personer som deler e-postadresse, kan ikke logge inn før adressen står på bare én av dem. Første administrator må legges inn med et skript | Trinn 7 for skriptet |
 | 4 | Forsidens tekster og menighetens navn står delvis i koden | Fase 2 |
@@ -1110,6 +1110,54 @@ Bestilt av produkteier etter en gjennomgang av skjemaet for arrangementer i eRed
 * **«Én gang i måneden»** er samme ukedag i samme uke i måneden. En måned uten en slik dag står over.
 * **Nivåene.** Skjema, bilde, tekst, maler og serier gjelder begge nivå. Bemanning og kjøreplan i en mal hører til Menighetsplan. På Menighetsplattform velges ingen ansvarlig gruppe: arrangementet går til gruppen som holder kalenderen.
 * **Ikke med her:** redigering av kjøreplanen med varighet og dra og slipp (fase 3).
+
+### Første menighet i drift, og slipp av versjoner *(12. oktober 2026)*
+
+**Lillesand Misjonskirke** er satt opp som første menighet, på lillesandmisjonskirke.menighetsplan.no: eget Firebase-prosjekt (`menighetsplan-lillesand`), eget Vercel-prosjekt, lukkede regler publisert, innlogging med Google og e-postlenke, og driftsmodus «Produksjon». Innholdet er nettsiden fra lillesandmisjonskirke.no, personregisteret, tjenestegruppene, husgruppene, malen for gudstjeneste og gudstjenestene fram til sommeren 2027 med oppgaver, og bemanningen fram til jul fra menighetens eget ark.
+
+**En menighet får bare stabile versjoner.** Demoen følger grenen `main` og bygges ved hver innsending. En menighets installasjon følger grenen `stabil` (Vercel: Settings → Environments → Production → Branch Tracking). En slipp er å flytte `stabil` fram til `main`, og det er produkteier som gjør det:
+
+```
+git fetch origin
+git push origin origin/main:stabil
+```
+
+* Ingenting utvikles på `stabil`. Retningen er alltid fra `main` til `stabil`.
+* Før en slipp prøves det nye i demoen, og det sies fra om databasereglene er endret. Reglene følger ikke med koden: `firestore.rules` må limes inn i hver menighets Firebase-prosjekt (Firestore → Rules → Publish).
+* Reglene som er publisert hos Lillesand, er fra 12. oktober kl. 19 og mangler tillegget som lar et medlem lagre `calendarFeedToken` på seg selv. De må publiseres på nytt før det personlige kalenderabonnementet virker der.
+* Filer med personopplysninger (registeret, bemanningen) ligger utenfor repoet og skal aldri inn i det.
+
+### Brukernivåer som holder i databasen *(foreslått 12. oktober 2026, ikke godkjent og ikke bygget)*
+
+**Problemet.** Appen har tre roller (administrator, gruppeleder, medlem). De styrer skjermene og hva man får endre. Men alle som er logget inn, får hele personregisteret levert til nettleseren: reglene lar et medlem lese `persons`, og appen henter hele samlingen. En frivillig gruppeleder har dermed teknisk tilgang til alle opplysninger om alle, også fødselsdato. Det er ikke forsvarlig, og frivillige skal ikke inviteres inn hos en menighet før det er rettet. Produkteier har bedt om tre sikre nivåer.
+
+**Forslaget.**
+
+| | Frivillig | Gruppeleder og nestleder | Administrator |
+|:---|:---|:---|:---|
+| Egne opplysninger | Ser sine egne | Ser sine egne | Ser alt |
+| Personer i egne grupper | Navn og telefon | Navn, telefon og e-post | Ser alt |
+| Personer utenfor egne grupper | Ingenting | Ingenting | Ser alt |
+| Fødselsdato, politiattest, fravær | Bare sin egen | Bare sin egen | Ser alt |
+| Hvem som står på oppgavene på et arrangement | Bare navnet | Bare navnet | Ser alt |
+| Legge folk i gruppen | Nei | Foreslår navn, administrator godkjenner | Ja |
+
+**Hvordan det sikres i databasen, og ikke bare på skjermen.**
+
+1. `persons` leses bare av administrator. Et medlem kan hente sitt eget dokument.
+2. Hver gruppe får en egen medlemsliste med begrensede felt (navn og telefon, e-post for lederen), som bare de som er med i gruppen, kan lese. Den skrives fra registeret av nettleseren til en administrator, slik `logins` og `publicProfiles` skrives i dag (`src/hooks/useRegisterMirror.ts`).
+3. Navnet legges på tildelingen, så kjøreplanen kan vise hvem som har en oppgave uten oppslag i registeret.
+4. Appen slutter å hente hele `persons` for andre enn administrator, og bygger personlisten sin av eget dokument og gruppelistene.
+
+**Tre leveranser, i rekkefølge.**
+
+1. *Lesetilgangen* over, med nye regler og prøver i `rules-tests/`. Etter denne kan frivillige slippes til.
+2. *Gruppeleder foreslår medlemmer:* lederen skriver navn på en liste og sender, administrator kobler navnene til personer i registeret eller oppretter dem, og listen hos lederen blir riktig. Likt for husgrupper og tjenestegrupper. I dag kan en leder av en tjenestegruppe legge til hvem som helst fra hele registeret, og en leder av en husgruppe kan ikke legge til noen. Ingen bryter per leder i første omgang.
+3. *Finere skriveregler:* i dag kan enhver innlogget endre enhver tildeling.
+
+**Åpne valg hos produkteier.** Om frivillige skal se navnet på dem som har andre oppgaver på samme arrangement (antatt ja). Hva gruppemedlemmer ser om hverandre (foreslått navn og telefon). Om administrator er det samme som pastor, eller om det trengs et fjerde nivå, redaktør, som redigerer nettsiden uten å se registeret.
+
+**Kan ikke vises i demoen**, fordi ingen logger inn der. Reglene prøves lokalt (`npm run test:rules`), og med en konto til hos første menighet før adressen sendes ut.
 
 ### Fase 1 – Trygg i drift *(trinn 2 og 4 over)*
 1. Innlogging med Google-konto. Første administrator er produkteierens konto.

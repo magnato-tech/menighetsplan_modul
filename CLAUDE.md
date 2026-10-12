@@ -35,6 +35,8 @@ Det finnes også et eldre, eksternt CMS-repo (`magnato-tech/menighetsplan_Claude
 
 Kjør `npm run lint` og `npm test` før en endring regnes som ferdig.
 
+**To grener.** `main` er demoen, og bygges ved hver innsending. `stabil` er det menighetene kjører, og flyttes bare fram til `main` av produkteier når en versjon slippes (`PRODUKTDOKUMENTASJON.md`, kapittel 14). Send aldri inn til `stabil`, og utvikle aldri der. En endring i `firestore.rules` når ikke en menighet før reglene er limt inn i Firebase-prosjektet dens: si fra om det når en slik endring er klar.
+
 ---
 
 ## 3. Hvor ting ligger
@@ -147,7 +149,7 @@ Disse er ikke løst ennå. Rekkefølgen de skal løses i står i kapittel 14 i `
 - Forsidens faste tekster står i koden, og standardtekstene i innholdsmodulene passer ikke alle menigheter.
 - Stab vises fra to kilder: personregisteret med samtykke, og `cms_staff` uten.
 - De lukkede reglene i `firestore.rules` og `storage.rules` er prøvd lokalt (`npm run test:rules`, 27 sjekker), men ikke publisert i noen database. Innloggingen mot Google og e-post er ikke prøvd i drift.
-- Tre ting i reglene er bevisst grove: alle i registeret leser hele registeret, alle i registeret kan endre tildelinger, og en besøkende kan legge til hva som helst i dagens besøkstall.
+- **Alle som er logget inn, kan lese hele personregisteret**, også fødselsdato. Det er ikke forsvarlig, og er første leveranse i «Brukernivåer som holder i databasen» (`PRODUKTDOKUMENTASJON.md`, kapittel 14). Legg ikke nye følsomme felt på `persons` før den er levert. To ting til er bevisst grove: alle i registeret kan endre tildelinger, og en besøkende kan legge til hva som helst i dagens besøkstall.
 - I demoen og på utviklermaskinen laster de offentlige sidene hele personregisteret til nettleseren. I en menighets egen installasjon får de bare de offentlige kopiene.
 - To personer som deler e-postadresse, kan ingen av dem logge inn. Admin sier ikke fra om det (`sharedAddresses` i `src/utils/logins.ts` finner dem).
 - En gruppe eller et arrangement som er lagret uten merket `isPublic` (eldre data, og noen av gruppene til eksempelmenigheten), regnes som offentlig der databasen er åpen, men gis ikke til en besøkende i en lukket database. Alt appen lagrer nå, har merket.
