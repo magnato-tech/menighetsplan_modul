@@ -18,7 +18,7 @@ import {
 
 export const MyPage: React.FC = () => {
   const page = useMyPage();
-  const { currentUser, myTasks, feedbackMessage, clearFeedbackMessage, myGroups, attentionItems } = page;
+  const { currentUser, myTasks, feedbackMessage, clearFeedbackMessage, myGroups, attentionItems, hasServiceGroupMembership } = page;
 
   const [searchParams] = useSearchParams();
 
@@ -92,6 +92,13 @@ export const MyPage: React.FC = () => {
            ========================================================================= */}
         {attentionItems.length > 0 && (
           <AttentionSection page={page} onShowAll={() => setShowAttentionModal(true)} />
+        )}
+
+        {!hasServiceGroupMembership && attentionItems.length === 0 && (
+          <p className="text-xs text-slate-600 bg-slate-100 border border-slate-200/80 rounded-xl px-3.5 py-2.5 leading-relaxed">
+            Ledige tjenesteoppgaver vises her når du er med i en tjenestegruppe (for eksempel lovsang, lyd eller kjøkken). Du er med i{" "}
+            {myGroups.length === 0 ? "ingen grupper ennå" : myGroups.map((g) => g.name).join(", ")}.
+          </p>
         )}
 
         {/* =========================================================================

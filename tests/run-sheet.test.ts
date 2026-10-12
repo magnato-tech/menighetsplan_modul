@@ -1,6 +1,6 @@
 import { describe } from "vitest";
 import { assert } from "./assert";
-import { buildRunSheet, meetingTimeOf, type RunSheetTask } from "../src/utils/runSheet";
+import { buildRunSheet, meetingTimeOf, reorderProgramSchedule, type RunSheetTask } from "../src/utils/runSheet";
 import type { ProgramItem, Task } from "../src/types";
 
 describe("Kjøreplan", () => {
@@ -88,4 +88,18 @@ describe("Kjøreplan", () => {
     []
   );
   assert(summary(odd) === "09:30 Rigg | 10:00 Lydprøve | Etter møtet Rydding", "«9.30» sorteres som 09:30, og tekst som ikke er et klokkeslett havner til slutt");
+
+  const moved = reorderProgramSchedule(
+    [
+      { time: "11:00", title: "Velkommen" },
+      { time: "11:05", title: "Lovsang", taskId: "lyd" },
+      { time: "11:10", title: "Tale" },
+    ],
+    1,
+    2
+  );
+  assert(
+    moved.map((item) => `${item.time} ${item.title}`).join(" | ") === "11:00 Velkommen | 11:05 Tale | 11:10 Lovsang",
+    "Flytting bytter innhold mellom radene, klokkeslettene på radene står"
+  );
 });

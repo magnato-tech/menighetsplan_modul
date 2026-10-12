@@ -6,7 +6,7 @@ import {
 } from "../hooks/useAppHooks";
 import { useTimedMessage } from "../hooks/useTimedMessage";
 import { studioTabUrl } from "../pages/admin/studio";
-import { buildRunSheet } from "../utils/runSheet";
+import { buildRunSheet, programIndexOfRunSheetRow, reorderProgramSchedule } from "../utils/runSheet";
 import { locationOf } from "../utils/gatherings";
 import {
   ArrowLeft,
@@ -30,7 +30,9 @@ import { InstructionDialog } from "./gathering/InstructionDialog";
 import { AssignPersonDialog } from "./gathering/AssignPersonDialog";
 import { EditTaskDialog } from "./gathering/EditTaskDialog";
 import { CreateTaskDialog } from "./gathering/CreateTaskDialog";
+import { ApplyTemplateDialog } from "./gathering/ApplyTemplateDialog";
 import { GatheringFormDialog } from "./gathering/GatheringFormDialog";
+import { useGatheringTemplates } from "../hooks/useGatheringTemplates";
 import { useFirebase } from "../context/FirebaseDataContext";
 import { useLevel } from "../hooks/useLevel";
 import { formOfGathering, gatheringUpdatesOf } from "../utils/gatheringForm";
@@ -60,6 +62,7 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
     programSchedule,
     updateAssignmentStatus,
     removeAssignment,
+    updateGathering,
   } = detail;
 
   // The form the event is changed in is the one it was made in (see utils/gatheringForm.ts)
@@ -104,8 +107,15 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
   // Admin: Create Task modal
   const [isCreatingTask, setIsCreatingTask] = useState<boolean>(false);
 
+  const [isApplyingTemplate, setIsApplyingTemplate] = useState(false);
+  const { templates: gatheringTemplates } = useGatheringTemplates();
+
   // Toast feedback
   const [toastMessage, showToast] = useTimedMessage<string>();
+
+  const [draggedProgramIndex, setDraggedProgramIndex] = useState<number | null>(null);
+  const [dragOverProgramIndex, setDragOverProgramIndex] = useState<number | null>(null);
+  const canReorderProgram = canAdminister && viewFilter === "all" && selectedGroupFilter === "all";
 
   // The programme and the tasks on one timeline, built from what is registered and nothing else
   const { volunteerRoles } = detail;
@@ -201,6 +211,13 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
     }
   };
 
+  const handleProgramReorder = (from: number, to: number) => {
+    if (from === to) return;
+    const res = updateGathering(gathering.id, { programSchedule: reorderProgramSchedule(programSchedule, from, to) });
+    if (res.success) showToast("Programpostene er flyttet.");
+    else showToast(res.error || "Programmet kunne ikke lagres.");
+  };
+
   // Unassign handler
   const handleRemovePerson = (assignmentId: string, personName?: string) => {
     const res = removeAssignment(assignmentId);
@@ -236,7 +253,13 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
     : "Tilbake til samlingsoversikt";
 
   return (
-    <div className="w-full max-w-2xl mx-auto bg-slate-50 min-h-screen shadow-md sm:my-4 sm:rounded-3xl sm:border sm:border-slate-200/80 overflow-hidden flex flex-col print:max-w-none print:shadow-none print:my-0 print:border-none print:bg-white">
+    <div
+      className={`w-full max-w-none bg-slate-50 overflow-x-hidden flex flex-col print:shadow-none print:my-0 print:border-none print:bg-white ${
+        isExplicitAdminView
+          ? "min-h-0 rounded-2xl border border-slate-200/80 shadow-sm"
+          : "min-h-screen shadow-md sm:my-4 sm:rounded-3xl sm:border sm:border-slate-200/80"
+      }`}
+    >
       {/* Toast feedback banner */}
       {toastMessage && (
         <div className="bg-emerald-600 text-white text-xs font-semibold px-4 py-2.5 text-center flex items-center justify-center gap-2 shadow-xs transition-all animate-fadeIn print:hidden">
@@ -271,6 +294,18 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
                   <Edit3 className="w-3.5 h-3.5 text-slate-500" />
                   <span>Rediger</span>
                 </button>
+                {withPlanner && (
+                  <button
+                    type="button"
+                    id="btn-apply-template"
+                    onClick={() => setIsApplyingTemplate(true)}
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/80 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
+                    title="Fyll inn program og oppgaver fra en mal"
+                  >
+                    <LayoutTemplate className="w-3.5 h-3.5" />
+                    <span>Hent fra mal</span>
+                  </button>
+                )}
                 <button
                   type="button"
                   id="btn-admin-add-task"
@@ -490,6 +525,7 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
           </h2>
           <span className="text-[11px] text-slate-400">
             Viser {filteredSchedule.length} av {integratedSchedule.length} punkter
+            {canReorderProgram && programSchedule.length > 1 ? " · Dra i håndtaket for å flytte programposter" : ""}
           </span>
         </div>
 
@@ -509,8 +545,22 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
             <Info className="w-8 h-8 text-slate-300 mx-auto" />
             <p className="text-xs font-bold text-slate-700">Arrangementet har ikke noe program ennå</p>
             <p className="text-[11px] text-slate-400">
-              {canAdminister ? "Legg inn den første oppgaven med «Ny oppgave». Den blir første punkt i kjøreplanen." : "Ingen oppgaver eller programpunkter er lagt inn."}
+              {canAdminister
+                ? withPlanner
+                  ? "Bruk «Hent fra mal» for et ferdig program, eller legg inn den første oppgaven med «Ny oppgave»."
+                  : "Legg inn den første oppgaven med «Ny oppgave». Den blir første punkt i kjøreplanen."
+                : "Ingen oppgaver eller programpunkter er lagt inn."}
             </p>
+            {canAdminister && withPlanner && (
+              <button
+                type="button"
+                onClick={() => setIsApplyingTemplate(true)}
+                className="inline-flex items-center gap-1.5 mt-2 px-4 py-2 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-xl cursor-pointer"
+              >
+                <LayoutTemplate className="w-4 h-4" />
+                Hent fra mal
+              </button>
+            )}
           </div>
         ) : filteredSchedule.length === 0 ? (
           <div className="p-8 text-center bg-white rounded-2xl border border-slate-200/80 space-y-2">
@@ -532,39 +582,66 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
           </div>
         ) : (
           <div className="space-y-2 print:space-y-1">
-            {filteredSchedule.map((row) => (
-              <RunSheetRowCard
-                key={row.id}
-                row={row}
-                canIntervene={canAdminister || (row.isMyGroup && isLeader)}
-                canAdminister={canAdminister}
-                openMenuAssignmentId={activePersonActionId}
-                onToggleMenu={setActivePersonActionId}
-                onStatusChange={handleStatusChange}
-                onRemovePerson={handleRemovePerson}
-                onShowInstruction={(shown) =>
-                  setViewInstructionTask({
-                    taskId: shown.task?.id,
-                    title: shown.roleTitle ? `${shown.title} – ${shown.roleTitle}` : shown.title,
-                    instruction: shown.instruction || "",
-                    volunteerRoleId: shown.task?.volunteerRoleId,
-                    time: shown.time,
-                    groupName: shown.groupName,
-                  })
-                }
-                onAssign={setActiveInterveneTaskId}
-                onEditTask={(task) =>
-                  setEditingTask({
-                    id: task.id,
-                    title: task.title,
-                    volunteerRoleId: task.volunteerRoleId,
-                    groupId: task.groupId,
-                    neededCount: task.neededCount || 1,
-                    description: task.description || "",
-                  })
-                }
-              />
-            ))}
+            {filteredSchedule.map((row) => {
+              const programIndex = programIndexOfRunSheetRow(row.id);
+              const reorderRow = canReorderProgram && programIndex !== null;
+              return (
+                <RunSheetRowCard
+                  key={row.id}
+                  row={row}
+                  canIntervene={canAdminister || (row.isMyGroup && isLeader)}
+                  canAdminister={canAdminister}
+                  openMenuAssignmentId={activePersonActionId}
+                  onToggleMenu={setActivePersonActionId}
+                  onStatusChange={handleStatusChange}
+                  onRemovePerson={handleRemovePerson}
+                  onShowInstruction={(shown) =>
+                    setViewInstructionTask({
+                      taskId: shown.task?.id,
+                      title: shown.roleTitle ? `${shown.title} – ${shown.roleTitle}` : shown.title,
+                      instruction: shown.instruction || "",
+                      volunteerRoleId: shown.task?.volunteerRoleId,
+                      time: shown.time,
+                      groupName: shown.groupName,
+                    })
+                  }
+                  onAssign={setActiveInterveneTaskId}
+                  onEditTask={(task) =>
+                    setEditingTask({
+                      id: task.id,
+                      title: task.title,
+                      volunteerRoleId: task.volunteerRoleId,
+                      groupId: task.groupId,
+                      neededCount: task.neededCount || 1,
+                      description: task.description || "",
+                    })
+                  }
+                  canReorder={reorderRow}
+                  isDragging={reorderRow && draggedProgramIndex === programIndex}
+                  isDragOver={reorderRow && dragOverProgramIndex === programIndex}
+                  onProgramDragStart={(event) => {
+                    setDraggedProgramIndex(programIndex);
+                    event.dataTransfer.effectAllowed = "move";
+                    event.dataTransfer.setData("text/plain", String(programIndex));
+                  }}
+                  onProgramDragEnd={() => {
+                    setDraggedProgramIndex(null);
+                    setDragOverProgramIndex(null);
+                  }}
+                  onProgramDragOver={(event) => {
+                    event.preventDefault();
+                    event.dataTransfer.dropEffect = "move";
+                    if (dragOverProgramIndex !== programIndex) setDragOverProgramIndex(programIndex);
+                  }}
+                  onProgramDrop={(event) => {
+                    event.preventDefault();
+                    if (draggedProgramIndex !== null && programIndex !== null) handleProgramReorder(draggedProgramIndex, programIndex);
+                    setDraggedProgramIndex(null);
+                    setDragOverProgramIndex(null);
+                  }}
+                />
+              );
+            })}
           </div>
         )}
       </div>
@@ -604,6 +681,16 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
         open={isCreatingTask}
         showToast={showToast}
         onClose={() => setIsCreatingTask(false)}
+      />
+
+      <ApplyTemplateDialog
+        detail={detail}
+        gathering={gathering}
+        templates={gatheringTemplates}
+        withPlanner={withPlanner}
+        open={isApplyingTemplate}
+        showToast={showToast}
+        onClose={() => setIsApplyingTemplate(false)}
       />
 
       {isEditingGathering && (

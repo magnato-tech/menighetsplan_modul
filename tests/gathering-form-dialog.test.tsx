@@ -9,7 +9,7 @@ import { MemoryRouter } from "react-router-dom";
 
 const { installation, planner, library } = vi.hoisted(() => ({
   installation: { demo: null as null | Record<string, string> },
-  planner: { assignments: [] as { taskId: string }[], deleteTask: vi.fn() },
+  planner: { assignments: [] as { taskId: string }[], deleteTask: vi.fn((_taskId: string) => ({ success: true })) },
   library: { templates: [] as unknown[] },
 }));
 vi.mock("../src/demo", () => ({
@@ -28,6 +28,7 @@ import { chooseDemoLevel, forgetDemoLevel } from "../src/services/demoLevel";
 import type { Gathering, Task, VolunteerRole } from "../src/types";
 import { combineDateAndTimeToIso } from "../src/utils/dates";
 import { newGatheringForm, type GatheringFormValues } from "../src/utils/gatheringForm";
+import type { GatheringTemplate } from "../src/utils/gatheringTemplates";
 import { standardServiceTemplate } from "../src/utils/gatheringTemplates";
 
 const groups = [
@@ -123,14 +124,14 @@ describe("Det store skjemaet for et nytt arrangement", () => {
     test("malen fyller inn skjemaet, og valget følger med når arrangementet opprettes", () => {
       show({ date: "2026-10-18" }, { templates: [service, youth] });
       const section = screen.getByRole("region", { name: "Start fra en mal" });
-      expect(within(section).getByRole("button", { name: /Gudstjeneste/ }).textContent).toContain("Kl. 11:00 · 18 programpunkter");
+      expect(within(section).getAllByRole("button", { name: /Gudstjeneste/ })[0].textContent).toContain("Kl. 11:00 · 18 programpunkter");
 
-      fireEvent.click(within(section).getByRole("button", { name: /Ungdomsmøte/ }));
+      fireEvent.click(within(section).getAllByRole("button", { name: /Ungdomsmøte/ })[0]);
       expect((screen.getByLabelText("Tittel") as HTMLInputElement).value).toBe("Ungdomsmøte");
       expect((screen.getByLabelText("Starter kl.") as HTMLInputElement).value).toBe("19:00");
       expect((screen.getByLabelText("Slutter kl. (valgfritt)") as HTMLInputElement).value).toBe("21:00");
       expect((screen.getByLabelText("Dette er en gudstjeneste") as HTMLInputElement).checked).toBe(false);
-      expect(within(section).getByRole("button", { name: /Ungdomsmøte/ }).getAttribute("aria-pressed")).toBe("true");
+      expect(within(section).getAllByRole("button", { name: /Ungdomsmøte/ })[0].getAttribute("aria-pressed")).toBe("true");
 
       save();
       expect(onSave.mock.calls[0][1]).toEqual({ templateId: "mal-ungdom", days: [] });
@@ -138,12 +139,24 @@ describe("Det store skjemaet for et nytt arrangement", () => {
 
     test("malen kan velges bort igjen: da opprettes arrangementet uten program og oppgaver", () => {
       show({ date: "2026-10-18" }, { templates: [service] });
-      fireEvent.click(screen.getByRole("button", { name: /Gudstjeneste/ }));
+      const section = screen.getByRole("region", { name: "Start fra en mal" });
+      fireEvent.click(within(section).getAllByRole("button", { name: /Gudstjeneste/ })[0]);
       fireEvent.click(screen.getByRole("button", { name: /Ikke bruk mal/ }));
       save();
       expect(onSave.mock.calls[0][1].templateId).toBeNull();
       // What the template filled in, stands
       expect(onSave.mock.calls[0][0].location).toBe("Kirkesalen");
+    });
+
+    test("malen kan redigeres fra skjemaet før arrangementet opprettes", () => {
+      const onSaveTemplate = vi.fn(async (_template: GatheringTemplate) => true);
+      show({ date: "2026-10-18" }, { templates: [service], templateEditor: { roles, withPlanner: true, onSave: onSaveTemplate } });
+      fireEvent.click(screen.getByRole("button", { name: "Rediger malen Gudstjeneste" }));
+      expect(screen.getByRole("dialog", { name: /Rediger mal/ })).toBeTruthy();
+      fireEvent.change(screen.getByLabelText("Navn på malen"), { target: { value: "Gudstjeneste søndag" } });
+      fireEvent.click(screen.getByRole("button", { name: "Lagre mal" }));
+      expect(onSaveTemplate).toHaveBeenCalled();
+      expect(onSaveTemplate.mock.calls.at(0)?.[0]?.name).toBe("Gudstjeneste søndag");
     });
   });
 
@@ -199,7 +212,8 @@ describe("Det store skjemaet for et nytt arrangement", () => {
 
     test("åpnet fra en mal for å planlegge en serie, står malen valgt og gjentakelsen på", () => {
       show({ title: "Gudstjeneste", date: "2026-10-18" }, { templates: [service], initialTemplateId: service.id, initialRepeat: true });
-      expect(screen.getByRole("button", { name: /Gudstjeneste/ }).getAttribute("aria-pressed")).toBe("true");
+      const section = screen.getByRole("region", { name: "Start fra en mal" });
+      expect(within(section).getAllByRole("button", { name: /Gudstjeneste/ })[0].getAttribute("aria-pressed")).toBe("true");
       expect((within(series()).getByLabelText("Arrangementet gjentas") as HTMLInputElement).checked).toBe(true);
     });
   });
@@ -304,12 +318,13 @@ describe("Arrangementer i admin", () => {
     library.templates = [service];
     show();
     const form = openFullForm();
-    fireEvent.click(within(form).getByRole("button", { name: /Gudstjeneste/ }));
+    const malSection = within(form).getByRole("region", { name: "Start fra en mal" });
+    fireEvent.click(within(malSection).getAllByRole("button", { name: /Gudstjeneste/ })[0]);
     fireEvent.change(within(form).getByLabelText("Dato"), { target: { value: "2026-10-18" } });
     fireEvent.click(within(form).getByRole("button", { name: "Opprett arrangement" }));
 
     expect(stored.gatherings).toHaveLength(1);
-    expect(stored.gatherings[0]).toMatchObject({ title: "Gudstjeneste", templateId: "mal-gudstjeneste", location: "Kirkesalen", endsAt: combineDateAndTimeToIso("2026-10-18", "12:30") });
+    expect(stored.gatherings[0]).toMatchObject({ title: "Gudstjeneste", templateId: "mal-gudstjeneste", location: "Kirkesalen", endsAt: combineDateAndTimeToIso("2026-10-18", "12:32") });
     expect(stored.tasks.map((task) => task.title)).toEqual(["Møtevert", "Lovsang", "Møteleder", "Barnekirke", "Taler", "Forbønn"]);
     expect(stored.programs[0][0]).toBe(stored.gatherings[0].id);
     expect(stored.programs[0][1].programSchedule).toHaveLength(18);
@@ -320,7 +335,8 @@ describe("Arrangementer i admin", () => {
     library.templates = [service];
     show();
     const form = openFullForm();
-    fireEvent.click(within(form).getByRole("button", { name: /Gudstjeneste/ }));
+    const malSection = within(form).getByRole("region", { name: "Start fra en mal" });
+    fireEvent.click(within(malSection).getAllByRole("button", { name: /Gudstjeneste/ })[0]);
     fireEvent.change(within(form).getByLabelText("Dato"), { target: { value: "2026-10-18" } });
     fireEvent.click(within(form).getByLabelText("Arrangementet gjentas"));
     fireEvent.change(within(form).getByLabelText("Siste dato"), { target: { value: "2026-11-01" } });
@@ -343,7 +359,8 @@ describe("Arrangementer i admin", () => {
     expect(screen.queryByLabelText("Ansvarlig gruppe")).toBeNull();
     const form = openFullForm();
     expect(within(form).queryByLabelText("Ansvarlig gruppe")).toBeNull();
-    fireEvent.click(within(form).getByRole("button", { name: /Gudstjeneste/ }));
+    const malSection = within(form).getByRole("region", { name: "Start fra en mal" });
+    fireEvent.click(within(malSection).getAllByRole("button", { name: /Gudstjeneste/ })[0]);
     fireEvent.change(within(form).getByLabelText("Dato"), { target: { value: "2026-10-18" } });
     fireEvent.click(within(form).getByRole("button", { name: "Opprett arrangement" }));
 
@@ -377,5 +394,35 @@ describe("Arrangementer i admin", () => {
     show([{ gathering: { id: "a", title: "Gudstjeneste", startsAt: combineDateAndTimeToIso("2026-10-18", "11:00"), groupId: "lovsang", seriesId: "serie-1" }, tasks: [], staffing: { color: "red" } }]);
     fireEvent.click(screen.getByRole("button", { name: "Slett resten av serien" }));
     expect(deleteGathering).not.toHaveBeenCalled();
+  });
+
+  test("ett arrangement kan slettes med Slett-knappen", () => {
+    vi.stubGlobal("confirm", vi.fn(() => true));
+    show([
+      {
+        gathering: { id: "a", title: "Gudstjeneste & dåp", startsAt: combineDateAndTimeToIso("2026-10-18", "11:00"), groupId: "lovsang", type: "arrangement", visibility: "offentlig" },
+        tasks: [{ id: "oppgave-a", title: "Lovsang" }],
+        staffing: { color: "red" },
+      },
+    ]);
+    fireEvent.click(screen.getByRole("button", { name: "Slett" }));
+    expect(deleteGathering).toHaveBeenCalledWith("a");
+    expect(planner.deleteTask).toHaveBeenCalledWith("oppgave-a");
+    expect(showFeedback).toHaveBeenCalledWith("Arrangementet ble slettet");
+  });
+
+  test("arrangement med tildelinger kan ikke slettes med Slett-knappen", () => {
+    vi.stubGlobal("confirm", vi.fn(() => true));
+    planner.assignments = [{ taskId: "oppgave-a" }];
+    show([
+      {
+        gathering: { id: "a", title: "Gudstjeneste", startsAt: combineDateAndTimeToIso("2026-10-18", "11:00"), groupId: "lovsang", type: "arrangement", visibility: "offentlig" },
+        tasks: [{ id: "oppgave-a", title: "Lovsang" }],
+        staffing: { color: "red" },
+      },
+    ]);
+    fireEvent.click(screen.getByRole("button", { name: "Slett" }));
+    expect(deleteGathering).not.toHaveBeenCalled();
+    expect(showFeedback).toHaveBeenCalledWith(expect.stringContaining("kan ikke slettes"), "error");
   });
 });

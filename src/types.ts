@@ -30,6 +30,8 @@ export interface Person {
   staffOrder?: number;
   /** Modules this person has hidden on the analysis board (see utils/analyticsModules.ts). */
   analyticsHiddenModules?: string[];
+  /** Secret token for the personal iCal feed at /api/min/kalender.ics (not the person's id). */
+  calendarFeedToken?: string;
   updatedBy?: string;
   updatedAt?: string;
 }

@@ -32,9 +32,14 @@ export const DemoDoor: React.FC<DemoDoorProps> = ({ onEnter }) => {
           className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-300 bg-white hover:border-indigo-500 hover:bg-indigo-50/50 text-left cursor-pointer transition-colors"
         >
           <span className="flex-1 min-w-0">
-            <span className="block text-sm font-bold text-slate-900">{door.name}</span>
-            <span className="block text-xs text-slate-600">{door.does}</span>
-            <span className="block text-[11px] text-slate-400 mt-0.5">Du går inn som {door.person.name}</span>
+            <span className="block text-sm font-bold text-slate-900">{door.person.name}</span>
+            <span className="block text-xs font-semibold text-indigo-800 mt-0.5">{door.name}</span>
+            <span className="block text-xs text-slate-600 mt-1">{door.does}</span>
+            {door.groupNames.length > 0 && (
+              <span className="block text-[11px] text-slate-500 mt-1">
+                Grupper: {door.groupNames.join(", ")}
+              </span>
+            )}
           </span>
           <ArrowRight className="w-4 h-4 shrink-0 text-slate-400" aria-hidden="true" />
         </button>

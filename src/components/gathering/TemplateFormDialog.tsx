@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useState } from "react";
-import { ArrowDown, ArrowUp, Clock, Image as ImageIcon, LayoutTemplate, ListChecks, Plus, Save, Trash2, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Clock, GripVertical, Image as ImageIcon, LayoutTemplate, ListChecks, Plus, Save, Trash2, X } from "lucide-react";
 import type { GatheringVisibility, VolunteerRole } from "../../types";
 import { DEFAULT_LOCATION } from "../../utils/gatherings";
 import { itemClock, minutesOf, roleNameOf, tasksOfTemplate, type GatheringTemplate, type TemplateProgramItem } from "../../utils/gatheringTemplates";
@@ -38,6 +38,8 @@ export const TemplateFormDialog: React.FC<TemplateFormDialogProps> = ({ isNew, i
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [websiteOpen, setWebsiteOpen] = useState(Boolean(initial.imageUrl || initial.summary || initial.content || initial.linkUrl));
+  const [draggedProgramIndex, setDraggedProgramIndex] = useState<number | null>(null);
+  const [dragOverProgramIndex, setDragOverProgramIndex] = useState<number | null>(null);
   const set = (changes: Partial<GatheringTemplate>) => setTemplate((current) => ({ ...current, ...changes }));
 
   // ---------- The programme ----------
@@ -61,11 +63,36 @@ export const TemplateFormDialog: React.FC<TemplateFormDialogProps> = ({ isNew, i
   const moveItem = (index: number, by: -1 | 1) => {
     const other = index + by;
     if (other < 0 || other >= template.program.length) return;
+    reorderProgram(index, other);
+  };
+  /** Moves a row in the list; the clock times on each row stay put, like when using the arrows. */
+  const reorderProgram = (from: number, to: number) => {
+    if (from === to || from < 0 || to < 0 || from >= template.program.length || to >= template.program.length) return;
     const program = [...template.program];
-    const [a, b] = [program[index], program[other]];
-    program[index] = { ...b, offsetMinutes: a.offsetMinutes };
-    program[other] = { ...a, offsetMinutes: b.offsetMinutes };
-    set({ program });
+    const offsets = program.map((item) => item.offsetMinutes);
+    const [moved] = program.splice(from, 1);
+    program.splice(to, 0, moved);
+    set({ program: program.map((item, index) => ({ ...item, offsetMinutes: offsets[index] })) });
+  };
+  const handleProgramDragStart = (event: React.DragEvent, index: number) => {
+    setDraggedProgramIndex(index);
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", String(index));
+  };
+  const handleProgramDragOver = (event: React.DragEvent, index: number) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    if (dragOverProgramIndex !== index) setDragOverProgramIndex(index);
+  };
+  const handleProgramDrop = (event: React.DragEvent, index: number) => {
+    event.preventDefault();
+    if (draggedProgramIndex !== null) reorderProgram(draggedProgramIndex, index);
+    setDraggedProgramIndex(null);
+    setDragOverProgramIndex(null);
+  };
+  const handleProgramDragEnd = () => {
+    setDraggedProgramIndex(null);
+    setDragOverProgramIndex(null);
   };
   const sortProgram = () => set({ program: [...template.program].sort(byTime) });
 
@@ -151,7 +178,7 @@ export const TemplateFormDialog: React.FC<TemplateFormDialogProps> = ({ isNew, i
                     id="template-length"
                     type="number"
                     min={0}
-                    step={5}
+                    step={1}
                     value={template.durationMinutes}
                     onChange={(e) => set({ durationMinutes: Math.max(0, Number(e.target.value) || 0) })}
                     className={field}
@@ -212,14 +239,31 @@ export const TemplateFormDialog: React.FC<TemplateFormDialogProps> = ({ isNew, i
                 </h3>
                 <p className="text-xs text-slate-600">
                   Klokkeslettene gjelder når arrangementet starter kl. {template.time}. Starter et arrangement til en annen tid, flytter hele programmet seg
-                  etter. Rollen på et punkt blir en oppgave som skal bemannes.
+                  etter. Rollen på et punkt blir en oppgave som skal bemannes. Dra i håndtaket for å flytte et punkt opp eller ned.
                 </p>
                 {template.program.length === 0 ? (
                   <p className="text-xs text-slate-500">Malen har ikke noe program ennå.</p>
                 ) : (
                   <ol className="space-y-2">
                     {template.program.map((item, index) => (
-                      <li key={item.id} className="grid grid-cols-[5.5rem_4.5rem_1fr] lg:grid-cols-[6rem_5rem_1fr_11rem_auto] gap-2 items-center p-2 rounded-xl bg-slate-50 border border-slate-200">
+                      <li
+                        key={item.id}
+                        onDragOver={(event) => handleProgramDragOver(event, index)}
+                        onDrop={(event) => handleProgramDrop(event, index)}
+                        className={`grid grid-cols-[auto_5.5rem_4.5rem_1fr] lg:grid-cols-[auto_6rem_5rem_1fr_11rem_auto] gap-2 items-center p-2 rounded-xl border transition-colors ${
+                          draggedProgramIndex === index ? "opacity-50" : ""
+                        } ${dragOverProgramIndex === index ? "border-indigo-400 bg-indigo-50/60" : "bg-slate-50 border-slate-200"}`}
+                      >
+                        <button
+                          type="button"
+                          draggable
+                          aria-label={`Flytt programpunkt ${index + 1}`}
+                          onDragStart={(event) => handleProgramDragStart(event, index)}
+                          onDragEnd={handleProgramDragEnd}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/80 cursor-grab active:cursor-grabbing touch-none"
+                        >
+                          <GripVertical className="w-4 h-4" aria-hidden="true" />
+                        </button>
                         <input
                           type="time"
                           aria-label={`Klokkeslett for punkt ${index + 1}`}

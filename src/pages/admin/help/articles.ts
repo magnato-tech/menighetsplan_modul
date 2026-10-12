@@ -234,10 +234,10 @@ const arrangementer: HelpArticle = {
     "Huk av Dette er en gudstjeneste hvis det gjelder.",
     "Trykk Legg til i planleggeren.",
     "Trenger arrangementet mer enn dette, trykk Flere valg. Da åpnes hele skjemaet, med det du har skrevet: sluttid, slutt en annen dag, sted, bibeltekst og hvem som ser arrangementet.",
-    "Start fra en mal i det store skjemaet fyller ut skjemaet, og arrangementet får malens program og oppgaver. Malene lages under Maler i menyen, eller med Lag mal på et arrangement som alt er satt opp.",
+    "Start fra en mal i det store skjemaet fyller ut skjemaet, og arrangementet får malens program og oppgaver. På et arrangement som allerede finnes bruker du Hent fra mal i kjøreplanen. Rediger malen (penn på malen, eller Rediger malen før du oppretter) åpner malen før arrangementet lages. Malene lages under Maler i menyen, eller med Lag mal på et arrangement som alt er satt opp.",
     "Gjenta som serie: velg hvor ofte og siste dato. Dagene vises med hake, og en dag kan tas ut før serien opprettes. Slett resten av serien står på hvert arrangement i en serie.",
     "For å gjenta et arrangement: åpne neste arrangement, sett ny dato, og bekreft. Oppgavene kopieres uten personer.",
-    "På kjøreplanen: Rediger åpner det samme store skjemaet, der arrangementet også kan avlyses. Ny oppgave, Skriv ut. Overskrift: Kjøreplan & «Hvem gjør hva».",
+    "På kjøreplanen: Rediger åpner det samme store skjemaet, der arrangementet også kan avlyses. Med hele programmet i visning kan admin dra i håndtaket på en programpost for å flytte den. Ny oppgave, Skriv ut. Overskrift: Kjøreplan & «Hvem gjør hva».",
   ],
   knapper:
     "Plassholder tittel: «Tittel, f.eks. Søndagsgudstjeneste & dåp». Plassholder tema: «Valgfritt tema...». Tom gruppe: «Ingen grupper finnes ennå». Knapp: Legg til i planleggeren.",

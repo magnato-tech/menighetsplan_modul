@@ -1,17 +1,19 @@
-import type { Person } from "../types";
+import type { Group, Person } from "../types";
 import { isInGroup, type GroupRoles } from "./groups";
-import { roleOf, type SessionRole } from "./session";
+import { roleOf } from "./session";
 
 // The ways into the demo. A visitor does not sign in there: they choose what to look at, and
-// go in as a person from the demo's register who has the role it takes. Which person it is
-// follows from the register, so the demo's content can be replaced without anything here being
-// changed.
-//
-// There is one way in for each role, and no more. Editing the website is an administrator's
-// work: it is named first in what the administrator does, so a visitor who wants to see the CMS
-// finds it, but it is not a way in of its own.
+// go in as a person from the demo's register. Which person follows from the register, so the
+// demo's content can be replaced without anything here being changed.
 
-export type DemoWayIn = "administrator" | "gruppeleder" | "medlem";
+export type DemoWayIn =
+  | "administrator"
+  | "tjenestegruppeleder"
+  | "husgruppeleder"
+  | "tjenestegruppemedlem"
+  | "medlemUtenTjeneste";
+
+export type DemoGroup = GroupRoles & Pick<Group, "id" | "name" | "category">;
 
 export interface DemoDoor {
   way: DemoWayIn;
@@ -20,42 +22,64 @@ export interface DemoDoor {
   does: string;
   /** The person from the register the visitor goes in as. */
   person: Person;
+  /** Groups the person belongs to, for the choice on the door. */
+  groupNames: string[];
   /** The address the visitor starts on. */
   start: string;
 }
 
-/** In the order they are offered: what the one deciding for a congregation works in first, then what its people see. */
-const WAYS_IN: { way: DemoWayIn; role: SessionRole; name: string; does: string; start: string }[] = [
+const WAYS_IN: { way: DemoWayIn; name: string; does: string; start: string }[] = [
   {
     way: "administrator",
-    role: "administrator",
     name: "Administrator",
     does: "Redigerer nettsiden (CMS), planlegger arrangementer og holder personregisteret",
     start: "/admin",
   },
   {
-    way: "gruppeleder",
-    role: "gruppeleder",
-    name: "Gruppeleder",
-    does: "Bemanner oppgavene i gruppene sine og holder medlemslisten",
+    way: "tjenestegruppeleder",
+    name: "Tjenestegruppeleder",
+    does: "Bemanner oppgavene i tjenestegruppene sine og holder medlemslisten",
     start: "/leder",
   },
   {
-    way: "medlem",
-    role: "medlem",
-    name: "Frivillig",
-    does: "Ser oppgavene sine, svarer på forespørsler og melder forfall",
+    way: "husgruppeleder",
+    name: "Husfellesskapsleder",
+    does: "Leder husfellesskapet og inviterer til gruppesamlinger",
+    start: "/leder",
+  },
+  {
+    way: "tjenestegruppemedlem",
+    name: "Frivillig i tjenestegruppe",
+    does: "Ser ledige oppgaver i gruppene sine og melder seg på gudstjenester",
+    start: "/minside",
+  },
+  {
+    way: "medlemUtenTjeneste",
+    name: "Medlem uten tjenestegruppe",
+    does: "Ser Min side uten ledige tjenesteoppgaver (kun husfellesskap eller råd)",
     start: "/minside",
   },
 ];
 
 const pathOf = (address: string): string => address.split(/[?#]/)[0];
 
+const isTjenestegruppe = (group: DemoGroup): boolean => (group.category ?? "tjenestegruppe") === "tjenestegruppe";
+const isHusgruppe = (group: DemoGroup): boolean => group.category === "husgruppe";
+
+const groupNamesOf = (person: Person, groups: DemoGroup[]): string[] =>
+  groups
+    .filter((group) => isInGroup(group, person.id))
+    .map((group) => group.name)
+    .sort((a, b) => a.localeCompare(b, "nb"));
+
+const byNameThenId = (a: Person, b: Person): number => a.name.localeCompare(b.name, "nb") || a.id.localeCompare(b.id);
+
+const pickFirst = (candidates: Person[], used: Set<string>): Person | undefined =>
+  candidates.find((person) => !used.has(person.id));
+
 /**
  * Where a way in leads. The choice decides which part of the app the visitor comes to. The
- * address the visitor was on the way to is kept when it lies in that part: a link to a tab in
- * the admin opens that tab for the one who goes in as administrator, and is dropped for the one
- * who goes in as a volunteer.
+ * address the visitor was on the way to is kept when it lies in that part.
  */
 export function whereDoorLeads(door: Pick<DemoDoor, "start">, wanted: string): string {
   const part = pathOf(door.start);
@@ -63,20 +87,66 @@ export function whereDoorLeads(door: Pick<DemoDoor, "start">, wanted: string): s
   return asked === part || asked.startsWith(`${part}/`) ? wanted : door.start;
 }
 
-/**
- * The ways in that the register has someone for. Of those with the role a way takes, the
- * visitor goes in as the one who is in the most groups, so the screens behind have something
- * to show. The same register always gives the same persons.
- */
-export function demoDoors(persons: Person[], groups: GroupRoles[]): DemoDoor[] {
-  const groupCount = (person: Person): number => groups.filter((group) => isInGroup(group, person.id)).length;
-  const personWith = (role: SessionRole): Person | undefined =>
-    persons
-      .filter((person) => roleOf(person, groups) === role)
-      .sort((a, b) => groupCount(b) - groupCount(a) || a.name.localeCompare(b.name, "nb") || a.id.localeCompare(b.id))[0];
+function personForWay(way: DemoWayIn, persons: Person[], groups: DemoGroup[], used: Set<string>): Person | undefined {
+  const inTjeneste = (personId: string) => groups.some((group) => isTjenestegruppe(group) && isInGroup(group, personId));
+  const leadsTjeneste = (person: Person) =>
+    groups.some((group) => isTjenestegruppe(group) && group.leaderIds.includes(person.id));
+  const leadsHus = (person: Person) => groups.some((group) => isHusgruppe(group) && group.leaderIds.includes(person.id));
+  const countLed = (person: Person, filter: (group: DemoGroup) => boolean) =>
+    groups.filter((group) => filter(group) && group.leaderIds.includes(person.id)).length;
 
-  return WAYS_IN.flatMap(({ role, ...door }) => {
-    const person = personWith(role);
-    return person ? [{ ...door, person }] : [];
-  });
+  const sortByLedCount = (filter: (group: DemoGroup) => boolean) => (a: Person, b: Person) =>
+    countLed(b, filter) - countLed(a, filter) || byNameThenId(a, b);
+
+  const sortByMembership = (filter: (group: DemoGroup) => boolean) => (a: Person, b: Person) => {
+    const inFiltered = (person: Person) => groups.filter((group) => filter(group) && isInGroup(group, person.id)).length;
+    const inAny = (person: Person) => groups.filter((group) => isInGroup(group, person.id)).length;
+    return inFiltered(b) - inFiltered(a) || inAny(b) - inAny(a) || byNameThenId(a, b);
+  };
+
+  switch (way) {
+    case "administrator":
+      return pickFirst(
+        persons.filter((person) => roleOf(person, groups) === "administrator").sort(byNameThenId),
+        used
+      );
+    case "tjenestegruppeleder":
+      return pickFirst(persons.filter(leadsTjeneste).sort(sortByLedCount(isTjenestegruppe)), used);
+    case "husgruppeleder":
+      return pickFirst(persons.filter(leadsHus).sort(sortByLedCount(isHusgruppe)), used);
+    case "tjenestegruppemedlem":
+      return pickFirst(
+        persons
+          .filter((person) => roleOf(person, groups) === "medlem" && inTjeneste(person.id))
+          .sort(sortByMembership(isTjenestegruppe)),
+        used
+      );
+    case "medlemUtenTjeneste":
+      return pickFirst(
+        persons
+          .filter((person) => roleOf(person, groups) === "medlem" && !inTjeneste(person.id))
+          .sort((a, b) => groupNamesOf(b, groups).length - groupNamesOf(a, groups).length || byNameThenId(a, b)),
+        used
+      );
+    default:
+      return undefined;
+  }
+}
+
+/**
+ * The ways in that the register has someone for. Each way picks a distinct person so visitors
+ * can compare what admin, leaders and volunteers see. The same register always gives the same persons.
+ */
+export function demoDoors(persons: Person[], groups: DemoGroup[]): DemoDoor[] {
+  const used = new Set<string>();
+  const doors: DemoDoor[] = [];
+
+  for (const door of WAYS_IN) {
+    const person = personForWay(door.way, persons, groups, used);
+    if (!person) continue;
+    used.add(person.id);
+    doors.push({ ...door, person, groupNames: groupNamesOf(person, groups) });
+  }
+
+  return doors;
 }

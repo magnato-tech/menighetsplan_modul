@@ -5,8 +5,10 @@ import { combineDateAndTimeToIso } from "../src/utils/dates";
 import { newGatheringForm } from "../src/utils/gatheringForm";
 import {
   clockOf,
+  applyTemplateToGathering,
   createPlannedGathering,
   endClockOf,
+  formValuesForTemplateApply,
   formValuesFromTemplate,
   itemClock,
   minutesOf,
@@ -78,10 +80,10 @@ describe("Standardmalen for gudstjeneste", () => {
     expect(program).toHaveLength(18);
     expect(program[0]).toBe("10:45 Velkommen ved inngang");
     expect(program[1]).toBe("11:00 Lovsang x2");
-    expect(program[9]).toBe("11:37 Tale / undervisning");
-    expect(program[16]).toBe("12:27 Lovsang (avslutningssang)");
-    expect(program[17]).toBe("12:29 Kirkekaffe");
-    expect(template).toMatchObject({ name: "Gudstjeneste", time: "11:00", durationMinutes: 90, isGudstjeneste: true, visibility: "offentlig" });
+    expect(program[9]).toBe("11:42 Tale / undervisning");
+    expect(program[16]).toBe("12:30 Lovsang (avslutningssang)");
+    expect(program[17]).toBe("12:32 Kirkekaffe");
+    expect(template).toMatchObject({ name: "Gudstjeneste", time: "11:00", durationMinutes: 92, isGudstjeneste: true, visibility: "offentlig" });
   });
 
   test("knytter hvert punkt til rollen med samme navn i menighetens egne roller, når den finnes", () => {
@@ -93,6 +95,8 @@ describe("Standardmalen for gudstjeneste", () => {
     expect(roleNameOf(kids, roles)).toBe("Barnekirke");
     // A point nobody has
     expect(roleNameOf(template.program.find((item) => item.title.startsWith("Nattverd"))!, roles)).toBe("");
+    expect(template.program.find((item) => item.title === "Velkommen. Åpningsord")?.description).toBe("Dagens tema");
+    expect(template.program.find((item) => item.title === "Kollekt")?.description).toBe("Vipps-skjerm under lovsang");
   });
 
   test("gir én oppgave per rolle, uansett hvor mange punkter rollen har", () => {
@@ -134,7 +138,7 @@ describe("Et arrangement fra en mal", () => {
 
   test("skjemaet fylles ut fra malen, og dagen er skjemaets egen", () => {
     const values = formValuesFromTemplate(template, form({ title: "", time: "17:00", date: "2026-11-01" }));
-    expect(values).toMatchObject({ title: "Gudstjeneste", date: "2026-11-01", time: "11:00", endTime: "12:30", location: "Kirkesalen", isGudstjeneste: true, summary: "Velkommen til gudstjeneste.", imageUrl: "media:m1", groupId: "g1" });
+    expect(values).toMatchObject({ title: "Gudstjeneste", date: "2026-11-01", time: "11:00", endTime: "12:32", location: "Kirkesalen", isGudstjeneste: true, summary: "Velkommen til gudstjeneste.", imageUrl: "media:m1", groupId: "g1" });
   });
 
   test("får programmet og oppgavene, og er merket med malen", () => {
@@ -150,7 +154,7 @@ describe("Et arrangement fra en mal", () => {
   test("programmet følger arrangementets egen starttid", () => {
     const evening = planGathering(form({ time: "17:00" }), { template, roles });
     expect(evening.program[0].time).toBe("16:45");
-    expect(evening.program[9]).toMatchObject({ time: "17:37", title: "Tale / undervisning" });
+    expect(evening.program[9]).toMatchObject({ time: "17:42", title: "Tale / undervisning" });
   });
 
   test("uten mal, og på nivået uten planleggeren, er det et arrangement uten program og oppgaver", () => {
@@ -179,7 +183,7 @@ describe("Et arrangement fra en mal", () => {
     const leader = stored.tasks.find((task) => task.title === "Møteleder")!;
     const song = stored.tasks.find((task) => task.title === "Lovsang")!;
     expect(programSchedule!.filter((item) => item.taskId === leader.id).map((item) => item.title)).toEqual(["Velkommen. Åpningsord", "Bønn", "Kunngjøringer", "Bønn før tale", "Kollekt", "Velsignelsen"]);
-    expect(programSchedule!.find((item) => item.title === "Lovsang x3")).toMatchObject({ time: "11:15", taskId: song.id, groupId: "group-lovsang" });
+    expect(programSchedule!.find((item) => item.title === "Lovsang x3")).toMatchObject({ time: "11:18", taskId: song.id, groupId: "group-lovsang" });
     expect(programSchedule!.find((item) => item.title.startsWith("Nattverd"))).not.toHaveProperty("taskId");
   });
 
@@ -195,6 +199,21 @@ describe("Et arrangement fra en mal", () => {
     expect(createPlannedGathering(failing, planGathering(form(), { template, roles }))).toEqual({ success: false, error: "Ingen kontakt med databasen." });
     expect(stored.tasks).toHaveLength(0);
   });
+
+  test("kan legges på et arrangement som allerede finnes", () => {
+    const { actions, stored } = fakeActions();
+    const created = createPlannedGathering(actions, planGathering(form({ title: "Tomt arrangement" }), { roles }));
+    const gatheringId = created.gathering!.id;
+    stored.tasks.length = 0;
+    stored.updates.length = 0;
+
+    const plan = planGathering(formValuesForTemplateApply(template, form({ title: "Tomt arrangement", time: "11:00" })), { template, roles });
+    expect(applyTemplateToGathering(gatheringId, plan, actions).success).toBe(true);
+    expect(stored.tasks).toHaveLength(6);
+    expect(stored.updates[0][0]).toBe(gatheringId);
+    expect(stored.updates[0][1].templateId).toBe("mal-1");
+    expect(stored.updates[0][1].programSchedule).toHaveLength(18);
+  });
 });
 
 describe("En mal laget av et arrangement", () => {
@@ -206,14 +225,14 @@ describe("En mal laget av et arrangement", () => {
   const made = templateFromGathering(gathering, stored.tasks, roles, "Søndagsgudstjeneste");
 
   test("har arrangementets fakta og presentasjon", () => {
-    expect(made).toMatchObject({ name: "Søndagsgudstjeneste", title: "Gudstjeneste", time: "11:00", durationMinutes: 90, location: "Kirkesalen", isGudstjeneste: true, summary: "Velkommen." });
+    expect(made).toMatchObject({ name: "Søndagsgudstjeneste", title: "Gudstjeneste", time: "11:00", durationMinutes: 92, location: "Kirkesalen", isGudstjeneste: true, summary: "Velkommen." });
     expect(made.id).not.toBe("mal-1");
   });
 
   test("har programmet som minutter fra starten, og hvert punkt varer til det neste begynner", () => {
     expect(made.program).toHaveLength(18);
     expect(made.program[0]).toMatchObject({ offsetMinutes: -15, durationMinutes: 15, title: "Velkommen ved inngang", roleId: "r-vert", roleName: "Møtevert" });
-    expect(made.program[9]).toMatchObject({ offsetMinutes: 37, durationMinutes: 20, title: "Tale / undervisning", roleName: "Taler" });
+    expect(made.program[9]).toMatchObject({ offsetMinutes: 42, durationMinutes: 20, title: "Tale / undervisning", roleName: "Taler" });
     expect(made.program.at(-1)).toMatchObject({ title: "Kirkekaffe", durationMinutes: 0 });
   });
 
