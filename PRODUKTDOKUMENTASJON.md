@@ -636,7 +636,7 @@ Kontrakten står i `INTEGRASJON-MENIGHETSPLAN.md`. Det eksterne CMS-et (`menighe
 | Område | Mål | I dag |
 |:---|:---|:---|
 | Innlogging | Medlemmer logger inn med Google-konto eller en lenke på e-post. Rollen styrer hva man ser og kan gjøre | **Levert 7. oktober** for skjermene: Min side krever at man står i personregisteret, og admin krever administrator (kapittel 10.1) |
-| Regler i databasen | Besøkende leser bare offentlige data. Et medlem endrer bare sitt eget. Bare administrator endrer offentlige profilfelt og samtykke | **Skrevet 12. oktober, ikke prøvd mot en database og ikke publisert** (kapittel 12, «Lukket database»). Demoen har sine egne, åpne regler |
+| Regler i databasen | Besøkende leser bare offentlige data. Et medlem endrer bare sitt eget. Bare administrator endrer offentlige profilfelt og samtykke | **Skrevet og prøvd lokalt 12. oktober** (kapittel 12, «Lukket database»). Ikke publisert i noen database ennå. Demoen har sine egne, åpne regler |
 | Sporbarhet | `updatedBy` er alltid den innloggede brukeren | **Delvis.** Regelen finnes, men gjelder først når noen er logget inn |
 | Personregisteret | Lastes bare for innloggede | **Levert 12. oktober** for en menighets egen installasjon: en besøkende får bare de offentlige kopiene av personer med samtykke. Demoen og utviklermaskinen laster fortsatt hele registeret, for der går hvem som helst inn som en person |
 | Samtykke | Ingen person vises uten registrert samtykke | **Levert** |
@@ -952,7 +952,8 @@ Første del av trinn 4 (kapittel 14). Bestilt av produkteier for at planene fram
 | **Første administrator** | Legges inn utenfra før reglene publiseres (`npm run first-admin`), og får da også sin innlogging |
 | **Demoen** | Uendret. Den har sin egen database og sine egne, åpne regler, og ingen logger inn der |
 | **Prøvd** | 34 nye sjekker: innloggingene et register gir, delte adresser, de offentlige kopiene, hvem en konto er, hva en besøkende og en innlogget får fra databasen, og at skrivingen fra registeret stopper når den blir avvist |
-| **Ikke prøvd** | Selve reglene er ikke kjørt mot en database. Det krever et verktøy som ikke er installert på maskinen de er skrevet på. De skal prøves før de publiseres hos en menighet |
+| **Reglene er kjørt** | Mot Firebase sin lokale prøvedatabase, med 27 sjekker (`npm run test:rules`): hva en besøkende, en innlogget utenfor registeret, et medlem, en gruppeleder og en administrator får lese og skrive, spurt slik appen spør. Også 400 dokumenter i én sending, og opplasting til bildelageret. Sjekkene slår ut når en regel bevisst ødelegges |
+| **Ikke prøvd** | Reglene er ikke publisert i en ekte database, og innloggingen mot Google og e-post er ikke prøvd i drift |
 | **Ikke levert her** | Tilgang per menighet (nivå og moduler). En advarsel i admin når to personer deler e-postadresse: ingen av dem kan logge inn. Finere regler for hvem som kan endre tildelinger |
 
 ---
@@ -964,7 +965,7 @@ Sortert etter hvor mye de betyr for en menighet som skal ta løsningen i bruk.
 
 | # | Mangel | Løses i |
 |:---:|:---|:---|
-| 1 | De lukkede databasereglene er skrevet, men ikke prøvd mot en database: maskinen de er skrevet på, mangler verktøyet som kjører regler lokalt. De må prøves før første menighet tas i bruk. Tre ting er bevisst grove: alle i registeret kan lese hele registeret, alle i registeret kan endre tildelinger, og en besøkende kan legge til i besøkstallene med hvilke tall som helst | Trinn 4 |
+| 1 | De lukkede databasereglene er prøvd lokalt, men ikke publisert i noen database. Tre ting er bevisst grove: alle i registeret kan lese hele registeret, alle i registeret kan endre tildelinger, og en besøkende kan legge til i besøkstallene med hvilke tall som helst | Trinn 4 og 5 |
 | 2 | Kladder til nyheter, taler og stab leveres til alle nettlesere. Kladder til sider leveres bare til dem som står i registeret. I demoen leveres hele registeret til alle, som før | Fase 1 |
 | 3 | To personer som deler e-postadresse, kan ikke logge inn før adressen står på bare én av dem. Første administrator må legges inn med et skript | Trinn 7 for skriptet |
 | 4 | Forsidens tekster og menighetens navn står delvis i koden | Fase 2 |
@@ -1011,7 +1012,7 @@ Trinnene tas i rekkefølge. Et trinn er ferdig når det er prøvd, testene er gr
 | 1 | **Nøytral og flyttbar app.** Databasen leses fra installasjonens innstillinger. Ingenting om én menighet står i koden | **Levert 7. oktober** (kapittel 12) |
 | 2 | **Innlogging og roller:** administrator, gruppeleder og medlem. Testbryteren fjernes, og admin legges bak innlogging | **Levert 7. oktober** (kapittel 10.1 og 12) |
 | 3 | **Demoen** på demo.menighetsplan.no, i delene under | Pågår |
-| 4 | **Lukkede databaseregler og tilgang per menighet.** Regler for appens egne data. Nettsiden slutter å laste personregisteret. Appen leser `/system/entitlements`, siden Moduler viser «ikke inkludert», «av» og «på», og reglene sperrer det menigheten ikke har | **Reglene og appens del er skrevet 12. oktober** (kapittel 12), ikke prøvd mot en database og ikke publisert. Tilgang per menighet er ikke bygget |
+| 4 | **Lukkede databaseregler og tilgang per menighet.** Regler for appens egne data. Nettsiden slutter å laste personregisteret. Appen leser `/system/entitlements`, siden Moduler viser «ikke inkludert», «av» og «på», og reglene sperrer det menigheten ikke har | **Reglene og appens del er skrevet og prøvd lokalt 12. oktober** (kapittel 12). Ikke publisert. Tilgang per menighet er ikke bygget |
 | 5 | **Første ekte menighet**, satt opp for hånd | |
 | 6 | **Prøveperiode** for en menighet som vil prøve før den bestiller | |
 | 7 | **Oppsett av ny menighet:** skript og sjekkliste for database, regler, tilgang, første administrator, startinnhold og adresse. Bygges bare hvis oppsett for hånd blir for tungt med 10–20 menigheter | |

@@ -175,7 +175,7 @@ Tre regler avgjør hva en besøkende ser, og hver av dem ligger ett sted:
 | Område | Mål | I dag |
 |---|---|---|
 | Innlogging | Brukere logger inn; roller styrer tilgang | Levert for skjermene (se Innlogging og roller). I en menighets egen database håndheves rollen av reglene, gjennom `logins`: ett dokument per e-postadresse, som sier hvilken person kontoen er og om personen er administrator (`src/utils/logins.ts`) |
-| Sikkerhetsregler | Bare admin endrer offentlige profilfelt; medlemmer endrer bare sitt eget | Skrevet i `firestore.rules` og `storage.rules` 12. oktober. Ikke kjørt mot en database og ikke publisert. Demoen har `firestore.demo.rules`, som er åpne |
+| Sikkerhetsregler | Bare admin endrer offentlige profilfelt; medlemmer endrer bare sitt eget | Skrevet i `firestore.rules` og `storage.rules` 12. oktober, og prøvd mot Firebase sine lokale emulatorer (`rules-tests/`). Ikke publisert i noen database. Demoen har `firestore.demo.rules`, som er åpne |
 | Regler i drift | Reglene i `firestore.rules` er de som gjelder | Ingen database har dem ennå. Tjenesteroller, oppmøtetall, maler og besøkstall ligger i `cms_settings` med `recordType`, og reglene kjenner merkene |
 | Besøkstall | En egen samling der en besøkende bare kan legge til i dagens summer, og bare administratorer kan lese og slette | Dagene ligger i `cms_settings`. De lukkede reglene lar en besøkende legge til i dagens dokument og ingenting annet, men kan ikke se hvor mye som legges til |
 | Moduler | En menighet har de modulene den er tildelt, og slår dem av og på selv | Alle tillegg som finnes, kan slås på av hvem som helst i admin. Tildeling per menighet finnes ikke. Kalender og Meldinger er brytere fra før, lagret i nettleseren |

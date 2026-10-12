@@ -29,6 +29,7 @@ Det finnes også et eldre, eksternt CMS-repo (`magnato-tech/menighetsplan_Claude
 | `npm run build` | Bygger klienten til `dist/` |
 | `npm run lint` | Typesjekk (`tsc --noEmit`) |
 | `npm test` | Kjører testene i `tests/` med Vitest (`npx vitest` følger med mens du jobber) |
+| `npm run test:rules` | Kjører `firestore.rules` og `storage.rules` mot Firebase sine lokale emulatorer (`rules-tests/`). Krever Java 21 i `PATH`, og `npm install` i `rules-tests/` første gang. Kjør den når en regel eller det appen leser og skriver, endres |
 | `npm run first-admin -- <e-post> "<navn>"` | Legger første administrator inn i registeret til installasjonen i `.env.local` |
 | `npm run reset-demo -- <prosjekt>` | Nullstiller demoens database: fyller den med eksempelmenigheten og fjerner alt annet. Bare demoen, og navnet på prosjektet må skrives. Innstillingene leses fra `.env.demodb.local` |
 
@@ -83,6 +84,7 @@ Kjør `npm run lint` og `npm test` før en endring regnes som ferdig.
 | `src/pages/`, `src/components/` | Øvrige sider og komponenter |
 | `tests/` | Tester (Vitest). `assert(betingelse, navn)` fra `tests/assert.ts` registrerer én navngitt sjekk. `tests/support/offlineFirestore.ts` gir en ekte Firestore-klient uten nett til tester av datalaget |
 | `firestore.rules`, `storage.rules` | Reglene i en menighets egen database og fillager: lukket for alle som ikke står i registeret, bortsett fra det nettsiden viser. Demoen har `firestore.demo.rules`, som er åpne |
+| `rules-tests/` | Prøvene av reglene, med egne pakker (Firebase sitt prøveverktøy er stort, og holdes utenfor appen). `firebase.json` i roten sier hvor emulatorene finner reglene |
 | `src/utils/logins.ts`, `src/utils/mirror.ts`, `src/services/registerMirror.ts`, `src/hooks/useRegisterMirror.ts` | Det som ligger ved siden av registeret i en lukket database: innloggingene (`logins`, én per e-postadresse) og de offentlige kopiene av personer (`publicProfiles`). Hva de er, hva som må skrives for at de skal følge registeret, lagringen, og kroken som skriver dem fra nettleseren til en administrator |
 
 ---
@@ -141,7 +143,7 @@ Disse er ikke løst ennå. Rekkefølgen de skal løses i står i kapittel 14 i `
 - Opplastede bilder lagres som tekst inne i sidedokumentene, og kan derfor ikke brukes som delebilde.
 - Forsidens faste tekster står i koden, og standardtekstene i innholdsmodulene passer ikke alle menigheter.
 - Stab vises fra to kilder: personregisteret med samtykke, og `cms_staff` uten.
-- De lukkede reglene i `firestore.rules` og `storage.rules` er skrevet 12. oktober, men ikke kjørt mot en database (maskinen mangler Java og Firebase sitt lokale prøveverktøy), og ikke publisert noe sted. Prøv dem før de publiseres hos en menighet.
+- De lukkede reglene i `firestore.rules` og `storage.rules` er prøvd lokalt (`npm run test:rules`, 27 sjekker), men ikke publisert i noen database. Innloggingen mot Google og e-post er ikke prøvd i drift.
 - Tre ting i reglene er bevisst grove: alle i registeret leser hele registeret, alle i registeret kan endre tildelinger, og en besøkende kan legge til hva som helst i dagens besøkstall.
 - I demoen og på utviklermaskinen laster de offentlige sidene hele personregisteret til nettleseren. I en menighets egen installasjon får de bare de offentlige kopiene.
 - To personer som deler e-postadresse, kan ingen av dem logge inn. Admin sier ikke fra om det (`sharedAddresses` i `src/utils/logins.ts` finner dem).

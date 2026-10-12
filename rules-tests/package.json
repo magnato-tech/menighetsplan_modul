@@ -1,0 +1,15 @@
+{
+  "name": "menighetsplan-rules-tests",
+  "private": true,
+  "type": "module",
+  "description": "Runs firestore.rules and storage.rules against Firebase's local emulators. Needs Java 21 on the PATH.",
+  "scripts": {
+    "test": "firebase emulators:exec --config ../firebase.json --only firestore,storage --project demo-menighetsplan-regler \"vitest run\""
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.0",
+    "firebase": "^12.19.0",
+    "firebase-tools": "^15.33.0",
+    "vitest": "^5.0.3"
+  }
+}
