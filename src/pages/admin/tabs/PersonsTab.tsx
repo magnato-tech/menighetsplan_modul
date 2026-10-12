@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import {
+  AlertTriangle,
   Shield,
   CalendarX,
   Database,
@@ -9,6 +10,7 @@ import {
   Search,
   Sparkles,
   Table2,
+  UserPlus,
 } from "lucide-react";
 import { StudioData, ShowFeedback } from "../studio";
 import { populateDemoPersons } from "../../../services/databaseAdmin";
@@ -22,7 +24,7 @@ import {
 import { PersonsTable } from "./persons/PersonsTable";
 import { studioSecondaryButton } from "../studioTheme";
 import { birthDateError, todayInNorway } from "../../../utils/birthDate";
-import { UserPlus } from "lucide-react";
+import { loginIdOf, sharedAddresses } from "../../../utils/logins";
 
 const emailError = (value: string): string | null => {
   const trimmed = value.trim();
@@ -64,6 +66,14 @@ export const PersonsTab: React.FC<PersonsTabProps> = ({ studio, showFeedback }) 
       setIsPopulating(false);
     }
   };
+
+  const sharedEmails = useMemo(() => {
+    const addresses = sharedAddresses(adminPersons.map((row) => row.person));
+    return addresses.map((address) => ({
+      address,
+      names: adminPersons.filter((row) => loginIdOf(row.person.email) === address).map((row) => row.person.name),
+    }));
+  }, [adminPersons]);
 
   const visiblePersons = useMemo(() => {
     const filtered = adminPersons.filter((row) => matchesPersonSearch(row, searchTerm));
@@ -215,6 +225,24 @@ export const PersonsTab: React.FC<PersonsTabProps> = ({ studio, showFeedback }) 
           >
             {isPopulating ? "Fyller data..." : "Fyll inn 32 personer nå"}
           </button>
+        </div>
+      )}
+
+      {sharedEmails.length > 0 && (
+        <div className="p-4 rounded-2xl border border-amber-300 bg-amber-50 text-amber-950 text-xs space-y-2">
+          <p className="font-bold flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4" />
+            Flere personer har samme e-postadresse. Ingen av dem kan logge inn.
+          </p>
+          <ul className="space-y-1">
+            {sharedEmails.map((row) => (
+              <li key={row.address}>
+                <span className="font-semibold">{row.address}</span>
+                {": "}
+                {row.names.join(", ")}
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
