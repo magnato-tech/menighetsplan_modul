@@ -10,6 +10,7 @@ import {
   Church,
   LayoutDashboard,
   Shield,
+  Settings,
   ChevronRight,
 } from "lucide-react";
 
@@ -182,15 +183,17 @@ export const PublicNavbar: React.FC = () => {
               <span>Min Side</span>
             </Link>
 
-            {/* Admin Studio Button (Shown to Admins) */}
+            {/* The way into the admin, for administrators: a small symbol, not a button that competes with the menu */}
             {isAdmin && (
               <Link
                 to="/admin"
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-primary-700 hover:bg-primary-800 text-white text-xs font-bold shadow-xs hover:shadow transition-all"
-                title="Åpne Fullskjerm Admin & CMS Workspace"
+                aria-label="Administrasjon"
+                title="Administrasjon"
+                className={`inline-flex items-center justify-center w-9 h-9 rounded-lg transition-colors ${
+                  overlay ? "text-white/85 hover:text-white hover:bg-white/15" : "text-stone-500 hover:text-primary-800 hover:bg-stone-100"
+                }`}
               >
-                <Shield className="w-3.5 h-3.5 text-accent-200" />
-                <span>Admin Studio</span>
+                <Settings className="w-[18px] h-[18px]" aria-hidden="true" />
               </Link>
             )}
           </div>

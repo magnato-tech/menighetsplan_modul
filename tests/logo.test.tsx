@@ -93,6 +93,23 @@ describe("Logoen på nettsiden og innloggingssiden", () => {
   });
 });
 
+describe("Veien til admin øverst på nettsiden", () => {
+  test("en administrator har et lite symbol, uten tekst", () => {
+    app.currentUser = { id: "kari", name: "Kari Nordmann", globalRole: "admin" };
+    inRouter(<PublicNavbar />);
+    const link = screen.getByRole("link", { name: "Administrasjon" });
+    expect(link.getAttribute("href")).toBe("/admin");
+    expect(link.textContent).toBe("");
+    expect(screen.queryByText("Admin Studio")).toBeNull();
+  });
+
+  test("andre har ingen vei dit", () => {
+    app.currentUser = { id: "ola", name: "Ola Hansen", globalRole: "member" };
+    inRouter(<PublicNavbar />);
+    expect(screen.queryByRole("link", { name: "Administrasjon" })).toBeNull();
+  });
+});
+
 describe("Logoen i innstillingene", () => {
   const choose = (file: File) => fireEvent.change(screen.getByLabelText("Logofil"), { target: { files: [file] } });
 
