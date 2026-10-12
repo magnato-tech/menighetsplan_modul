@@ -10,6 +10,10 @@ import { parseMediaAltComment } from "./media";
 // A picture of a member of the staff is found in three places in a set: on the person in the
 // staff register, in a block of picture and text on a page (the congregation's own page of
 // staff is made of them), and anywhere else the same picture is used.
+//
+// A sermon can have a picture too, and some show the one who spoke. Nothing in a set says which,
+// so that is settled where the set is made: a set for the demo has sermon pictures only when
+// the congregation has said yes to them being shown (datasett-verktoy, `talebilderIDemo`).
 
 type Collections = Record<string, DatasetDocument[]>;
 
@@ -65,7 +69,7 @@ const samePicture = (url: string): string => url.split("?")[0];
  *   register, is left as its text
  * - a page that names two or more of the staff is a page about people, and has no pictures
  *   in its text and none above it
- * - a news article that uses a picture from the register has none
+ * - a news article or a sermon that uses a picture from the register has none
  */
 export function withoutStaffPictures(collections: Collections): Collections {
   const staff = collections[CMS_COLLECTIONS.STAFF] ?? [];
@@ -95,6 +99,14 @@ export function withoutStaffPictures(collections: Collections): Collections {
       const withText: DatasetDocument = { ...article, content: withoutPictures(text(article.content), isPortrait) };
       if (!portraits.has(samePicture(text(article.imageUrl)))) return withText;
       const { imageUrl: _picture, ...withoutPicture } = withText;
+      return withoutPicture as DatasetDocument;
+    });
+  }
+
+  if (collections[CMS_COLLECTIONS.SERMONS]) {
+    result[CMS_COLLECTIONS.SERMONS] = collections[CMS_COLLECTIONS.SERMONS].map((sermon) => {
+      if (!portraits.has(samePicture(text(sermon.imageUrl)))) return sermon;
+      const { imageUrl: _picture, ...withoutPicture } = sermon;
       return withoutPicture as DatasetDocument;
     });
   }

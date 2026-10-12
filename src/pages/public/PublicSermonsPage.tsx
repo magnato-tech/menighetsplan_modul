@@ -1,5 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { useCms } from "../../context/CmsContext";
+import { useMediaMap } from "../../hooks/useMediaMap";
+import { resolveMediaUrl } from "../../utils/media";
 import {
   Headphones,
   Calendar,
@@ -28,6 +30,7 @@ function getSpotifyEmbedUrl(url: string | undefined): string | null {
 
 export const PublicSermonsPage: React.FC = () => {
   const { sermons, settings } = useCms();
+  const mediaById = useMediaMap();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSeries, setSelectedSeries] = useState<string>("alle");
   const [activeAudioUrl, setActiveAudioUrl] = useState<string | null>(null);
@@ -176,6 +179,7 @@ export const PublicSermonsPage: React.FC = () => {
           filteredSermons.map((sermon) => {
             const spotifyEmbed = getSpotifyEmbedUrl(sermon.spotifyUrl);
             const isSpotifyOpen = openSpotifyId === sermon.id;
+            const image = resolveMediaUrl(sermon.imageUrl, mediaById, "web");
 
             return (
               <div
@@ -183,7 +187,16 @@ export const PublicSermonsPage: React.FC = () => {
                 className="bg-white rounded-2xl border border-stone-200/80 p-6 shadow-xs hover:border-accent-300 hover:shadow-md transition-all space-y-4"
               >
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                  <div className="space-y-2 max-w-2xl">
+                  {/* The picture says nothing the title beside it does not, so it is not read out */}
+                  {image && (
+                    <img
+                      src={image}
+                      alt=""
+                      loading="lazy"
+                      className="w-full md:w-56 aspect-video object-cover rounded-xl shrink-0 bg-stone-100"
+                    />
+                  )}
+                  <div className="space-y-2 max-w-2xl flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2 text-xs">
                       {sermon.series && (
                         <span className="px-2 py-0.5 rounded font-bold uppercase tracking-wider text-[10px] bg-accent-50 text-accent-900 border border-accent-200/60">

@@ -12,6 +12,9 @@ import {
   Play,
 } from "lucide-react";
 import { StudioData, ShowFeedback } from "../studio";
+import { CmsMediaPicker } from "../../../components/admin/CmsMediaPicker";
+import { useMediaMap } from "../../../hooks/useMediaMap";
+import { resolveMediaUrl } from "../../../utils/media";
 
 interface SermonsTabProps {
   studio: StudioData;
@@ -21,6 +24,7 @@ interface SermonsTabProps {
 export const SermonsTab: React.FC<SermonsTabProps> = ({ studio, showFeedback }) => {
   const { currentUser } = studio;
   const { sermons, saveSermon, deleteSermon } = useCms();
+  const mediaById = useMediaMap();
 
   const [editingSermon, setEditingSermon] = useState<Partial<CmsSermon> | null>(null);
   const [isNewSermon, setIsNewSermon] = useState(false);
@@ -39,6 +43,7 @@ export const SermonsTab: React.FC<SermonsTabProps> = ({ studio, showFeedback }) 
       series: "",
       audioUrl: "",
       videoUrl: "",
+      imageUrl: "",
       summary: "",
     });
     setIsNewSermon(true);
@@ -171,6 +176,16 @@ export const SermonsTab: React.FC<SermonsTabProps> = ({ studio, showFeedback }) 
                 className="w-full px-3 py-2 rounded-xl bg-[var(--studio-bg)] border border-[var(--studio-border)] text-[var(--studio-input-text)] font-mono text-xs"
               />
             </div>
+
+            <div className="md:col-span-2">
+              <CmsMediaPicker
+                label="Bilde til talen (valgfritt)"
+                value={editingSermon.imageUrl || ""}
+                onChange={(url) => setEditingSermon({ ...editingSermon, imageUrl: url })}
+                helpText="Vises ved siden av talen i talearkivet, og på forsiden når talen er den nyeste."
+                decorative
+              />
+            </div>
           </div>
 
           <div className="space-y-1 text-xs">
@@ -208,7 +223,15 @@ export const SermonsTab: React.FC<SermonsTabProps> = ({ studio, showFeedback }) 
             key={s.id}
             className="p-5 rounded-2xl bg-[var(--studio-surface)] border border-[var(--studio-border)] flex flex-col sm:flex-row sm:items-center justify-between gap-4"
           >
-            <div className="space-y-1">
+            {resolveMediaUrl(s.imageUrl, mediaById, "thumb") && (
+              <img
+                src={resolveMediaUrl(s.imageUrl, mediaById, "thumb")}
+                alt=""
+                loading="lazy"
+                className="w-24 aspect-video object-cover rounded-lg shrink-0 bg-[var(--studio-bg)]"
+              />
+            )}
+            <div className="space-y-1 flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <h3 className="font-bold text-[var(--studio-text)] text-base">{s.title}</h3>
                 {s.series && (

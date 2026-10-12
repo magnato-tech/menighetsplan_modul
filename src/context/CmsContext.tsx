@@ -312,6 +312,7 @@ const writes = {
       audioUrl: sermonData.audioUrl || "",
       spotifyUrl: sermonData.spotifyUrl || "",
       videoUrl: sermonData.videoUrl || "",
+      imageUrl: sermonData.imageUrl || "",
       summary: sermonData.summary || "",
     };
     return attempt("lagre talen", () => createDocument(CMS_COLLECTIONS.SERMONS, sermon));
@@ -420,7 +421,7 @@ export const CmsProvider: React.FC<{ children: React.ReactNode; publicPagesOnly?
           })
         ),
       deleteMedia: async (mediaId) => {
-        const usages = findMediaUsages(mediaId, pages, news, staff);
+        const usages = findMediaUsages(mediaId, pages, news, staff, sermons);
         if (usages.length > 0) return { ok: false, blockedByUsages: true };
         try {
           await deleteMediaStorageFiles(mediaId);
@@ -433,7 +434,7 @@ export const CmsProvider: React.FC<{ children: React.ReactNode; publicPagesOnly?
           return { ok: false };
         }
       },
-      getMediaUsages: (mediaId) => findMediaUsages(mediaId, pages, news, staff),
+      getMediaUsages: (mediaId) => findMediaUsages(mediaId, pages, news, staff, sermons),
       deletePage: (pageId: string) => {
         const subPageIds = pages
           .filter((p) => (p.parentPageId !== undefined ? p.parentPageId === pageId : p.parentId === pageId))

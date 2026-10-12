@@ -1,4 +1,4 @@
-import type { CmsMedia, CmsNewsArticle, CmsPage, CmsStaffMember } from "../data/cmsData";
+import type { CmsMedia, CmsNewsArticle, CmsPage, CmsSermon, CmsStaffMember } from "../data/cmsData";
 import type { VisualBlock } from "./cmsBlocks";
 import { readGroupsModuleFields, readStaticFields } from "./cmsBlocks";
 import { readModulePresentation } from "./modulePresentation";
@@ -8,7 +8,7 @@ export const MEDIA_REF_PREFIX = "media:";
 export type MediaVariant = "web" | "thumb" | "og";
 
 export interface MediaUsage {
-  type: "page" | "news" | "staff" | "block";
+  type: "page" | "news" | "staff" | "sermon" | "block";
   id: string;
   label: string;
 }
@@ -140,7 +140,8 @@ export function findMediaUsages(
   mediaId: string,
   pages: CmsPage[],
   news: CmsNewsArticle[],
-  staff: CmsStaffMember[]
+  staff: CmsStaffMember[],
+  sermons: CmsSermon[] = []
 ): MediaUsage[] {
   const hits: MediaUsage[] = [];
   const ref = toMediaRef(mediaId);
@@ -172,6 +173,12 @@ export function findMediaUsages(
   for (const member of staff) {
     if (member.imageUrl?.includes(ref)) {
       hits.push({ type: "staff", id: member.id, label: member.name || "Medarbeider" });
+    }
+  }
+
+  for (const sermon of sermons) {
+    if (sermon.imageUrl?.includes(ref)) {
+      hits.push({ type: "sermon", id: sermon.id, label: `Talen «${sermon.title || "Uten tittel"}»` });
     }
   }
 

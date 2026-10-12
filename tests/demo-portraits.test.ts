@@ -63,6 +63,11 @@ describe("En nettside uten bilder av de ansatte", () => {
       { id: "n1", title: "Ny pastor", imageUrl: PORTRAIT, content: "Vi ønsker velkommen." },
       { id: "n2", title: "Dugnad", imageUrl: BUILDING, content: "Ta med rake." },
     ],
+    cms_sermons: [
+      { id: "t1", title: "Fred", speaker: "Kari Nordmann", imageUrl: `${PORTRAIT}?w=640` },
+      { id: "t2", title: "Glede", speaker: "Kari Nordmann", imageUrl: BUILDING },
+      { id: "t3", title: "Håp", speaker: "Ola Hansen" },
+    ],
     cms_settings: [{ id: "global", churchName: "Menigheten", heroImageUrl: BUILDING }],
   };
   const without = withoutStaffPictures(collections);
@@ -90,6 +95,14 @@ describe("En nettside uten bilder av de ansatte", () => {
   test("et bilde fra registeret tas ut der det ellers er brukt, også når det er bedt om i en annen størrelse", () => {
     expect(page("p-om").content).toBe("### Velkommen\nVi gleder oss til å møte deg.");
     expect(without.cms_news.find((n) => n.id === "n1")).not.toHaveProperty("imageUrl");
+  });
+
+  test("en tale som har et bilde fra registeret, har ikke bildet, og resten av talen står", () => {
+    expect(without.cms_sermons).toEqual([
+      { id: "t1", title: "Fred", speaker: "Kari Nordmann" },
+      { id: "t2", title: "Glede", speaker: "Kari Nordmann", imageUrl: BUILDING },
+      { id: "t3", title: "Håp", speaker: "Ola Hansen" },
+    ]);
   });
 
   test("bilder som ikke er av de ansatte, står", () => {

@@ -93,6 +93,15 @@ describe("findMediaUsages", () => {
     expect(usages.some((u) => u.label.includes("hovedbilde"))).toBe(true);
     expect(usages.some((u) => u.label.includes("Om oss"))).toBe(true);
   });
+
+  test("finner bildet til en tale, så et bilde som er i bruk der, ikke slettes", () => {
+    const sermons = [
+      { id: "sermon-1", title: "Fred", speaker: "Kari Nordmann", date: "2026-09-27T12:00:00.000Z", imageUrl: "media:media-1" },
+      { id: "sermon-2", title: "Glede", speaker: "Kari Nordmann", date: "2026-09-14T12:00:00.000Z", imageUrl: "https://menigheten.example/glede.jpg" },
+    ];
+    expect(findMediaUsages("media-1", [], [], [], sermons)).toEqual([{ type: "sermon", id: "sermon-1", label: "Talen «Fred»" }]);
+    expect(findMediaUsages("media-2", [], [], [], sermons)).toEqual([]);
+  });
 });
 
 describe("filterMediaLibrary", () => {

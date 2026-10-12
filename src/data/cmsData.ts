@@ -92,6 +92,8 @@ export interface CmsSermon {
   audioUrl?: string;
   spotifyUrl?: string; // e.g. https://open.spotify.com/episode/...
   videoUrl?: string; // e.g. YouTube or Vimeo link
+  /** The picture shown with the sermon: an address, or a picture from the media library. */
+  imageUrl?: string;
   summary?: string;
 }
 

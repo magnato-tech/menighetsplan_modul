@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.12 · **Sist oppdatert:** 2026-10-09
+> **Dokumentversjon:** 4.13 · **Sist oppdatert:** 2026-10-12
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -116,6 +116,7 @@ Demoen er appen installert én gang til, med egen database og egen adresse, og m
   * **Bare det som ligger klart, tilbys.** En menighet kan vises når nullstillingen har lagt den i databasen. Den som har valgt en menighet demoen ikke har, tas til eksempelmenigheten.
   * **Stripen sier hvor nettsiden er hentet fra** når en ekte menighet vises. Datoene i settet flyttes hele uker fra uka det ble hentet, så kalenderen ikke blir liggende i fortiden.
   * **Uten bilder av de ansatte** *(bestemt 9. oktober, produkteier)*. Demoen presenterer produktet for andre, og et bilde av en person brukes ikke til det uten at personen har sagt ja. Ingen i stab-registeret har bilde, portrettene på menighetens egen side om de ansatte er tatt ut, og et bilde som står ved siden av navnet til en ansatt, er tatt ut. Navn og tittel står, som på menighetens egen nettside. Andre bilder på nettsiden vises.
+  * **Talebildene er med når menigheten har sagt ja** *(12. oktober)*. Noen talebilder viser den som talte, og ingenting i et sett sier hvilke. Et sett til demoen har derfor talebilder bare når menigheten har sagt ja til at de vises. Lillesand Misjonskirke har sagt ja, og alle talebildene derfra er med. De andre settene er uten talebilder.
   * **Begrensning:** bemanningen i eksempelet hører til eksempelmenighetens gudstjenester, og er derfor ikke med hos en ekte menighet. Der viser planleggeren personene, gruppene og rollene, men nesten ingen oppgaver.
 * **Demo-oppsett** *(bygget 9. oktober)* er en fane i admin som bare eieren av demoen kommer inn i: `/admin?tab=demo-oppsett`. Der står hver menighet med en bryter («i lista for alle»), lenken rett til den, og en knapp som viser den.
   * **Eierkoden.** Ingen logger inn i demoen, så eieren kjennes på en kode, som skrives én gang og huskes i nettleseren. Demoens innstillinger har et fingeravtrykk av koden (`VITE_DEMO_OWNER_CODE_HASH`), aldri koden selv. Før den er satt opp, lager fanen linja som skal inn i innstillingene. Uten koden vises ingen menigheter og ingen brytere, og fanen står ikke i menyen. Eieren kan bytte kode fra fanen («Bytt eierkode»): den lager den nye linja, og den gamle koden slutter å virke når linja er byttet i innstillingene og demoen er bygget på nytt.
@@ -150,7 +151,7 @@ Adminpanelet ligger på `/admin` og har én meny med to deler. Hver fane har sin
 |---|---|---|
 | **Sider & innhold** | Bygger sidetreet i to nivåer med dra og slipp. Skriver innhold med ferdige innholdsblokker, laster opp hovedbilde, setter kladd, publisert eller planlagt, fyller ut søk og deling, og forhåndsviser | Levert, med begrensningene i kapittel 8.7 |
 | **Aktuelt & nyheter** | Skriver og publiserer artikler | Levert |
-| **Taler & prekener** | Legger inn taler med lyd, Spotify og video | Levert |
+| **Taler & prekener** | Legger inn taler med lyd, Spotify, video og et bilde til talen | Levert |
 | **Lederskap & stab** | Holder listen over stab som vises på «Om oss» | Delvis: en egen liste ved siden av personregisteret, uten samtykke (kapittel 13) |
 | **Tema & designsystem** | Velger ferdig tema eller egne farger, bakgrunn, skrift og avrunding. Forhåndsvisningen er tegnet med de samme fargene nettsiden får | Levert |
 | **Nettside-innstillinger** | Menighetens navn, slagord, velkomsttekst, kontaktinfo, Vipps, konto og sosiale medier | Levert |
@@ -294,7 +295,7 @@ Ikke bygget. Avtalt innhold, hvis den tas inn senere:
 |---|---|---|---|
 | **Forside** | `/` | Velkomsttekst fra innstillingene. Fremhevet samling eller neste gudstjeneste, og de fire neste samlingene, fra planleggeren. Tre siste nyheter og siste tale fra CMS-et | Delvis: tre infobokser, fellesskapsteksten og gaveteksten står fast i koden |
 | **Hva skjer** | `/hva-skjer` | Kommende offentlige samlinger fra planleggeren | Levert |
-| **Taler** | `/taler` | Talearkivet fra CMS-et, med avspilling | Levert |
+| **Taler** | `/taler` | Talearkivet fra CMS-et, med avspilling og bildet til hver tale | Levert |
 | **Fellesskap** | `/fellesskap` | Gruppene som er satt til å vises, med møtetid og hvem man kan kontakte | Levert |
 | **Lederskap** | `/lederskap` | Personer med offentlig profil og registrert samtykke | Levert |
 | **Faste sider** | `/:slug` | Sidene som er skrevet i CMS-et, for eksempel «Om oss» og «Kontakt» | Levert |
@@ -436,6 +437,7 @@ Felles begrep for enhver samling: gudstjeneste, ungdomsmøte, bønnemøte, dugna
 | `bibleText`, `series`, `summary` | `string` | Nei | Bibeltekst, serie og sammendrag |
 | `audioUrl`, `spotifyUrl` | `string` | Nei | Lydfil og Spotify-lenke |
 | `videoUrl` | `string` | Nei | Video. YouTube-lenker gjøres om til `youtube-nocookie.com` |
+| `imageUrl` | `string` | Nei | Bildet til talen: en adresse, eller et bilde fra mediebiblioteket. Vises ved talen i talearkivet, og på forsiden når talen er den nyeste. En tale uten bilde vises uten |
 | `speakerPersonId`, `guestSpeakerName`, `gatheringId` | `string` | Nei | *Planlagt:* kobling til person og samling |
 
 ### 5.10 Stab, innstillinger og design
@@ -808,6 +810,19 @@ Bestilt av produkteier samme dag: besøkende skal kunne se løsningen med nettsi
 | **Byttet over** | Produkteier byttet innstillingene i Vercel 9. oktober, og demoen ble bygget på nytt. demo.menighetsplan.no viser nå eksempelmenigheten fra sin egen database, med gudstjenesten førstkommende søndag, lista i stripen med Lillesand, og Lillesand fra lenken sin |
 | **Eierkoden** | Produkteier valgte en eierkode og la fingeravtrykket inn i Vercel 9. oktober. Den publiserte demoen ber nå om koden i «Demo-oppsett». Kopieringsknappene der prøver en eldre måte når nettleseren sperrer utklippstavlen, og ett klikk merker hele teksten |
 | **Ikke levert her** | Nullstillingen har ikke gått av seg selv ennå (første gang natt til 10. oktober). Bemanning på en ekte menighets gudstjenester |
+
+### Bilde til talene (12. oktober 2026)
+
+Bestilt av produkteier samme dag: talene på lillesandmisjonskirke.no har et bilde hver, og de var ikke med i demoen.
+
+| Område | Levert |
+|:---|:---|
+| **Feltet** | En tale kan ha et bilde (kapittel 5.9). Det velges i admin under «Taler & prekener», fra mediebiblioteket, bildene som følger med, eller en adresse |
+| **Nettsiden** | Bildet vises ved talen i talearkivet, og ved den nyeste talen på forsiden. En tale uten bilde vises som før |
+| **Mediebiblioteket** | Et bilde som er i bruk på en tale, regnes som i bruk og kan ikke slettes derfra |
+| **Lillesand i demoen** | Alle de 117 talene i settet har bildet sitt. Bildene lenkes fra menighetens egen nettside, som de andre bildene i settet |
+| **Bilder av personer** | Åtte av bildene viser den som talte. Produkteier, som er pastor i menigheten, bestemte at alle skal med. De andre menighetenes sett har ingen talebilder før menigheten har sagt ja. Et talebilde som er et bilde fra stab-registeret, tas ut i demoen som andre bilder derfra |
+| **Prøvd** | 8 nye sjekker: bildet på talesiden og på forsiden, en tale uten bilde, et bilde fra biblioteket, et bilde som er slettet, og bildet til en tale i mediebiblioteket og i demoen |
 
 ---
 

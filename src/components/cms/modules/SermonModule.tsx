@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from "react";
 import { CmsResolvedLink } from "../CmsResolvedLink";
 import { useCms } from "../../../context/CmsContext";
+import { useMediaMap } from "../../../hooks/useMediaMap";
+import { resolveMediaUrl } from "../../../utils/media";
 import {
   MODULE_PRESENTATION_DEFAULTS,
   ModulePresentationConfig,
@@ -29,6 +31,7 @@ export const SermonModule: React.FC<SermonModuleProps> = ({
   presentation,
 }) => {
   const { sermons } = useCms();
+  const mediaById = useMediaMap();
   const [isPlayingSermon, setIsPlayingSermon] = useState(false);
   const config = presentation || MODULE_PRESENTATION_DEFAULTS["module-sermon"];
   const defaults = MODULE_PRESENTATION_DEFAULTS["module-sermon"];
@@ -117,6 +120,7 @@ export const SermonModule: React.FC<SermonModuleProps> = ({
   }
 
   // Standard "player" variant
+  const image = resolveMediaUrl(latestSermon.imageUrl, mediaById, "web");
   return (
     <PresentationSection
       config={config}
@@ -124,7 +128,15 @@ export const SermonModule: React.FC<SermonModuleProps> = ({
     >
       <div className="bg-accent-50/70 border border-accent-200/80 rounded-3xl p-6 sm:p-10 shadow-xs space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-3 max-w-2xl">
+          {image && (
+            <img
+              src={image}
+              alt=""
+              loading="lazy"
+              className="w-full md:w-64 aspect-video object-cover rounded-2xl shrink-0 bg-accent-100"
+            />
+          )}
+          <div className="space-y-3 max-w-2xl flex-1 min-w-0">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent-100 text-accent-900 text-xs font-semibold">
               <Headphones className="w-3.5 h-3.5 text-accent-800" />
               <span>{badge}</span>
