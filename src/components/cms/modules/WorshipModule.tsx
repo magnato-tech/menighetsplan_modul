@@ -2,6 +2,7 @@ import React, { useMemo } from "react";
 import { CmsResolvedLink } from "../CmsResolvedLink";
 import { useFirebase } from "../../../context/FirebaseDataContext";
 import { locationOf, pickHighlight } from "../../../utils/gatherings";
+import { useResolvedMediaUrl } from "../../../hooks/useMediaMap";
 import {
   MODULE_PRESENTATION_DEFAULTS,
   ModulePresentationConfig,
@@ -35,6 +36,7 @@ export const WorshipModule: React.FC<WorshipModuleProps> = ({
 
   const highlight = useMemo(() => pickHighlight(gatherings, Date.now()), [gatherings]);
   const nextWorship = highlight?.gathering;
+  const image = useResolvedMediaUrl(nextWorship?.imageUrl);
   const autoLabel =
     highlight?.kind === "featured"
       ? "Fremhevet samling"
@@ -143,7 +145,14 @@ export const WorshipModule: React.FC<WorshipModuleProps> = ({
     >
       <div className="bg-white rounded-2xl shadow-xl border border-stone-200/80 p-6 sm:p-8 lg:p-10">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-stone-100">
-          <div className="space-y-2">
+          {image && (
+            <img
+              src={image}
+              alt={nextWorship?.imageAlt?.trim() || ""}
+              className="w-full lg:w-80 aspect-video object-cover rounded-xl shrink-0 bg-stone-100"
+            />
+          )}
+          <div className="space-y-2 flex-1 min-w-0">
             <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-primary-50 text-primary-800 text-xs font-bold uppercase tracking-wider">
               <Calendar className="w-3.5 h-3.5 text-primary-600" />
               <span>{highlightLabel}</span>
@@ -157,6 +166,7 @@ export const WorshipModule: React.FC<WorshipModuleProps> = ({
                 {nextWorship.bibleText && ` (${nextWorship.bibleText})`}
               </p>
             )}
+            {nextWorship?.summary?.trim() && <p className="text-sm text-stone-600 leading-relaxed">{nextWorship.summary.trim()}</p>}
           </div>
 
           {nextWorship && (

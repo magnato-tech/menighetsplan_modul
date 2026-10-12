@@ -25,6 +25,13 @@ export interface GatheringFormValues {
   bibleText: string;
   visibility: GatheringVisibility;
   cancelled: boolean;
+  // How the event is presented on the website (see utils/gatheringPresentation.ts)
+  imageUrl: string;
+  imageAlt: string;
+  summary: string;
+  content: string;
+  linkUrl: string;
+  linkLabel: string;
 }
 
 /** A form for a new event: open to everyone, a worship service at 11:00, and the rest empty. */
@@ -42,6 +49,12 @@ export function newGatheringForm(start: Partial<GatheringFormValues> = {}): Gath
     bibleText: "",
     visibility: "offentlig",
     cancelled: false,
+    imageUrl: "",
+    imageAlt: "",
+    summary: "",
+    content: "",
+    linkUrl: "",
+    linkLabel: "",
     ...start,
   };
 }
@@ -63,6 +76,12 @@ export function formOfGathering(gathering: Gathering): GatheringFormValues {
     bibleText: gathering.bibleText ?? "",
     visibility: visibilityOf(gathering),
     cancelled: gathering.cancelled === true,
+    imageUrl: gathering.imageUrl ?? "",
+    imageAlt: gathering.imageAlt ?? "",
+    summary: gathering.summary ?? "",
+    content: gathering.content ?? "",
+    linkUrl: gathering.linkUrl ?? "",
+    linkLabel: gathering.linkLabel ?? "",
   };
 }
 
@@ -80,10 +99,25 @@ export function gatheringFormError(values: GatheringFormValues): string | null {
   if (values.endDate && !values.endTime) return "Sett et klokkeslett for slutten, eller ta bort sluttdatoen.";
   const end = endOf(values);
   if (end && new Date(end).getTime() <= new Date(startOf(values)).getTime()) return "Slutten må være etter starten.";
+  const link = values.linkUrl.trim();
+  if (link && !/^(https?:\/\/|\/)\S+$/.test(link)) return "Lenken må starte med https:// eller /.";
   return null;
 }
 
 const filled = (text: string): string | undefined => text.trim() || undefined;
+
+/** The presentation on the website, as it is stored. A text on the button without a link is nothing, and neither is a description of a picture that is not there. */
+const presentationOf = (values: GatheringFormValues) => ({
+  imageUrl: filled(values.imageUrl),
+  imageAlt: filled(values.imageUrl) ? filled(values.imageAlt) : undefined,
+  summary: filled(values.summary),
+  content: filled(values.content),
+  linkUrl: filled(values.linkUrl),
+  linkLabel: filled(values.linkUrl) ? filled(values.linkLabel) : undefined,
+});
+
+/** Whether the form holds anything about how the event is presented on the website. */
+export const hasPresentation = (values: GatheringFormValues): boolean => Object.values(presentationOf(values)).some((value) => value !== undefined);
 
 /** What a new event is made from. */
 export function newGatheringOf(values: GatheringFormValues): NewGatheringInput {
@@ -99,6 +133,7 @@ export function newGatheringOf(values: GatheringFormValues): NewGatheringInput {
     visibility: values.visibility,
     isGudstjeneste: values.isGudstjeneste,
     cancelled: values.cancelled,
+    ...presentationOf(values),
   };
 }
 
@@ -117,6 +152,7 @@ export function gatheringUpdatesOf(values: GatheringFormValues, withGroup: boole
     ...visibilityFields(values.visibility),
     isGudstjeneste: values.isGudstjeneste,
     cancelled: values.cancelled,
+    ...presentationOf(values),
     ...(withGroup ? { groupId: values.groupId } : {}),
   };
 }

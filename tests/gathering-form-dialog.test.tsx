@@ -67,6 +67,12 @@ describe("Det store skjemaet for et nytt arrangement", () => {
       bibleText: "Sal 100",
       visibility: "fremhevet",
       cancelled: false,
+      imageUrl: "",
+      imageAlt: "",
+      summary: "",
+      content: "",
+      linkUrl: "",
+      linkLabel: "",
     });
     expect(onClose).toHaveBeenCalledTimes(1);
   });
@@ -93,6 +99,13 @@ describe("Det store skjemaet for et nytt arrangement", () => {
     expect(screen.getByRole("alert").textContent).toBe("Ingen kontakt med databasen.");
     expect((screen.getByLabelText("Tittel") as HTMLInputElement).value).toBe("Høstfest");
     expect(onClose).not.toHaveBeenCalled();
+  });
+
+  test("delen om nettsiden står sammenfoldet når den er tom, så skjemaet ikke er lengre enn det må", () => {
+    show();
+    const section = screen.getByRole("region", { name: "På nettsiden" });
+    expect(within(section).getByRole("button", { name: "Legg til bilde og tekst" })).toBeTruthy();
+    expect(screen.queryByLabelText("Ingress")).toBeNull();
   });
 
   test("et arrangement kan ikke avlyses før det finnes", () => {

@@ -54,6 +54,13 @@ export interface NewGatheringInput {
   isGudstjeneste?: boolean;
   cancelled?: boolean;
   sendInvitationImmediately?: boolean;
+  /** How the event is presented on the website (see utils/gatheringPresentation.ts). */
+  imageUrl?: string;
+  imageAlt?: string;
+  summary?: string;
+  content?: string;
+  linkUrl?: string;
+  linkLabel?: string;
 }
 
 export interface NewTaskInput {
@@ -119,6 +126,12 @@ export function buildGathering(data: NewGatheringInput): Gathering {
     // Said outright by the form when it asks; otherwise the title decides, as it does for older documents
     isGudstjeneste: data.isGudstjeneste ?? isWorshipService({ title: data.title }),
     cancelled: data.cancelled ?? false,
+    imageUrl: data.imageUrl,
+    imageAlt: data.imageAlt,
+    summary: data.summary,
+    content: data.content,
+    linkUrl: data.linkUrl,
+    linkLabel: data.linkLabel,
   };
 }
 

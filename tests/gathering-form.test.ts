@@ -2,7 +2,7 @@ import { describe, expect, test } from "vitest";
 import { buildGathering } from "../src/data/newDocuments";
 import type { Gathering } from "../src/types";
 import { combineDateAndTimeToIso } from "../src/utils/dates";
-import { defaultGroupId, formOfGathering, gatheringFormError, gatheringUpdatesOf, newGatheringForm, newGatheringOf } from "../src/utils/gatheringForm";
+import { defaultGroupId, formOfGathering, gatheringFormError, gatheringUpdatesOf, hasPresentation, newGatheringForm, newGatheringOf } from "../src/utils/gatheringForm";
 
 // The form an event is made and changed in: one set of fields, whichever way the event is reached.
 
@@ -99,6 +99,12 @@ describe("Et arrangement som finnes, i skjemaet", () => {
       bibleText: "Ef 2,8",
       visibility: "fremhevet",
       cancelled: false,
+      imageUrl: "",
+      imageAlt: "",
+      summary: "",
+      content: "",
+      linkUrl: "",
+      linkLabel: "",
     });
   });
 
@@ -144,6 +150,48 @@ describe("Et arrangement som finnes, i skjemaet", () => {
     const { isGudstjeneste: _mark, ...old } = stored;
     expect(formOfGathering(old as Gathering).isGudstjeneste).toBe(true);
     expect(formOfGathering({ ...old, title: "Dugnad" } as Gathering).isGudstjeneste).toBe(false);
+  });
+});
+
+describe("Slik arrangementet presenteres på nettsiden", () => {
+  const presented = { imageUrl: "media:m1", imageAlt: "Plakat for høstfesten", summary: "Mat, sang og lek.", content: "## Program\n\nVi starter kl. 17.", linkUrl: "https://pamelding.example/host", linkLabel: "Meld deg på" };
+
+  test("lagres på et nytt arrangement, og på et som finnes", () => {
+    expect(buildGathering(newGatheringOf(filled(presented)))).toMatchObject(presented);
+    expect(gatheringUpdatesOf(filled(presented), false)).toMatchObject(presented);
+  });
+
+  test("leses tilbake i skjemaet", () => {
+    const stored = buildGathering(newGatheringOf(filled(presented)));
+    expect(formOfGathering(stored)).toMatchObject(presented);
+  });
+
+  test("det som tømmes, tas bort på arrangementet", () => {
+    const updates = gatheringUpdatesOf(filled(), false);
+    for (const key of ["imageUrl", "imageAlt", "summary", "content", "linkUrl", "linkLabel"] as const) {
+      expect(key in updates).toBe(true);
+      expect(updates[key]).toBeUndefined();
+    }
+  });
+
+  test("en bildetekst uten bilde, og en knappetekst uten lenke, lagres ikke", () => {
+    const updates = gatheringUpdatesOf(filled({ imageAlt: "Plakat", linkLabel: "Meld deg på" }), false);
+    expect(updates.imageAlt).toBeUndefined();
+    expect(updates.linkLabel).toBeUndefined();
+  });
+
+  test("lenken må være en adresse", () => {
+    expect(gatheringFormError(filled({ linkUrl: "https://pamelding.example/host" }))).toBeNull();
+    expect(gatheringFormError(filled({ linkUrl: "/bli-med" }))).toBeNull();
+    expect(gatheringFormError(filled({ linkUrl: "pamelding.example" }))).toBe("Lenken må starte med https:// eller /.");
+    expect(gatheringFormError(filled({ linkUrl: "javascript:alert(1)" }))).toBe("Lenken må starte med https:// eller /.");
+  });
+
+  test("skjemaet vet om noe er fylt ut", () => {
+    expect(hasPresentation(filled())).toBe(false);
+    expect(hasPresentation(filled({ summary: "  " }))).toBe(false);
+    expect(hasPresentation(filled({ summary: "Mat, sang og lek." }))).toBe(true);
+    expect(hasPresentation(filled({ imageUrl: "media:m1" }))).toBe(true);
   });
 });
 

@@ -208,10 +208,10 @@ const mediebibliotek: HelpArticle = {
 
 const forside: HelpArticle = {
   id: "forside",
-  title: "Forside-overstyring",
+  title: "Arrangementer på nettsiden",
   layout: "wide",
   formal: "Bestemme hvilke arrangementer som løftes på forsiden, vises i den offentlige kalenderen, eller holdes interne.",
-  hvor: "Sidemeny Forside-overstyring. Overskrift: Forside-overstyring for arrangementer.",
+  hvor: "Sidemeny Arrangementer på nettsiden, under Nettside & CMS. Hvert arrangement viser om det mangler bilde eller tekst. Bilde og tekst åpner arrangementets skjema, på delen På nettsiden.",
   steg: [
     "Finn arrangementet i listen.",
     "Trykk Fremhev, Offentlig eller Kun intern.",

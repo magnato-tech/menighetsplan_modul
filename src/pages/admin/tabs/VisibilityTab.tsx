@@ -1,24 +1,44 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   formatNorwegianDateTime,
 } from "../../../hooks/useAppHooks";
-import { GatheringVisibility } from "../../../types";
+import { Gathering, GatheringVisibility } from "../../../types";
 import { visibilityOf, visibilityFields } from "../../../utils/visibility";
 import { locationOf } from "../../../utils/gatherings";
 import {
+  AlertCircle,
+  CheckCircle2,
   Globe,
+  Image as ImageIcon,
   Star,
   EyeOff,
 } from "lucide-react";
 import { StudioData, ShowFeedback } from "../studio";
+import { GatheringFormDialog } from "../../../components/gathering/GatheringFormDialog";
+import { useLevel } from "../../../hooks/useLevel";
+import { useMediaMap } from "../../../hooks/useMediaMap";
+import { formOfGathering, gatheringUpdatesOf } from "../../../utils/gatheringForm";
+import { missingOnWebsite } from "../../../utils/gatheringPresentation";
+import { hasPlanner } from "../../../utils/level";
+import { resolveMediaUrl } from "../../../utils/media";
 
 interface VisibilityTabProps {
   studio: StudioData;
   showFeedback: ShowFeedback;
 }
 
+const MISSING_WORDS = { bilde: "bilde", tekst: "tekst" } as const;
+
+/**
+ * «Arrangementer på nettsiden»: every event with who sees it, its picture, and what it is still
+ * without on the website. The picture and the text are filled in in the event's own form, opened
+ * here on the part about the website (see utils/gatheringForm.ts).
+ */
 export const VisibilityTab: React.FC<VisibilityTabProps> = ({ studio, showFeedback }) => {
-  const { adminGatherings, updateGathering } = studio;
+  const { adminGatherings, adminGroups, updateGathering } = studio;
+  const mediaById = useMediaMap();
+  const withPlanner = hasPlanner(useLevel());
+  const [editing, setEditing] = useState<Gathering | null>(null);
 
   const handleSetGatheringVisibility = (gatheringId: string, visibility: GatheringVisibility) => {
     updateGathering(gatheringId, visibilityFields(visibility));
@@ -28,9 +48,9 @@ export const VisibilityTab: React.FC<VisibilityTabProps> = ({ studio, showFeedba
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <div className="border-b border-[var(--studio-border)] pb-4">
-        <h2 className="text-xl sm:text-2xl font-black text-[var(--studio-text)]">Forside-overstyring for arrangementer</h2>
+        <h2 className="text-xl sm:text-2xl font-black text-[var(--studio-text)]">Arrangementer på nettsiden</h2>
         <p className="text-xs text-[var(--studio-muted)]">
-          Stjernemerk gudstjenester for å fremheve dem på forsiden, eller skjul spesifikke hendelser fra den offentlige kalenderen.
+          Legg bilde og tekst på et arrangement, fremhev det på forsiden, eller hold det utenfor den offentlige kalenderen.
         </p>
       </div>
 
@@ -41,13 +61,16 @@ export const VisibilityTab: React.FC<VisibilityTabProps> = ({ studio, showFeedba
           const isFeatured = visibility === "fremhevet";
           const isHidden = visibility === "intern";
           const isPublic = visibility === "offentlig";
+          const thumbnail = resolveMediaUrl(g.imageUrl, mediaById, "thumb");
+          const missing = missingOnWebsite(g);
 
           return (
             <div
               key={g.id}
               className="p-5 rounded-2xl bg-[var(--studio-surface)] border border-[var(--studio-border)] flex flex-col sm:flex-row sm:items-center justify-between gap-4"
             >
-              <div className="space-y-1">
+              {thumbnail && <img src={thumbnail} alt="" loading="lazy" className="w-24 aspect-video object-cover rounded-lg shrink-0 bg-[var(--studio-bg)]" />}
+              <div className="space-y-1 flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="font-bold text-[var(--studio-text)] text-base">{g.title}</h3>
                   {isFeatured && (
@@ -73,9 +96,33 @@ export const VisibilityTab: React.FC<VisibilityTabProps> = ({ studio, showFeedba
                   {formatNorwegianDateTime(g.startsAt)} · {locationOf(g)}
                   {g.theme && ` · Tema: ${g.theme}`}
                 </div>
+                {/* What the event is without on the website, said with an icon and in words. An event not shown there is not asked for anything */}
+                {!isHidden &&
+                  (missing.length > 0 ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-300">
+                      <AlertCircle className="w-3.5 h-3.5 text-amber-400" aria-hidden="true" />
+                      Mangler {missing.map((what) => MISSING_WORDS[what]).join(" og ")}
+                    </span>
+                  ) : (
+                    g.type !== "gruppesamling" && (
+                      <span className="inline-flex items-center gap-1 text-[11px] text-[var(--studio-muted)]">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" aria-hidden="true" />
+                        Har bilde og tekst
+                      </span>
+                    )
+                  ))}
               </div>
 
               <div className="flex flex-wrap items-center gap-2 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setEditing(g)}
+                  className="px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white cursor-pointer"
+                >
+                  <ImageIcon className="w-3.5 h-3.5" />
+                  <span>Bilde og tekst</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => handleSetGatheringVisibility(g.id, "fremhevet")}
@@ -122,6 +169,22 @@ export const VisibilityTab: React.FC<VisibilityTabProps> = ({ studio, showFeedba
           );
         })}
       </div>
+
+      {editing && (
+        <GatheringFormDialog
+          isNew={false}
+          initial={formOfGathering(editing)}
+          groups={adminGroups.map(({ group }) => group)}
+          showGroup={withPlanner}
+          openAt="website"
+          onSave={(values) => {
+            const result = updateGathering(editing.id, gatheringUpdatesOf(values, withPlanner));
+            if (result.success) showFeedback("Arrangementet ble oppdatert!");
+            return result;
+          }}
+          onClose={() => setEditing(null)}
+        />
+      )}
     </div>
   );
 };

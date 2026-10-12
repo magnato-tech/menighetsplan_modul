@@ -76,7 +76,8 @@ Kjør `npm run lint` og `npm test` før en endring regnes som ferdig.
 | `src/pages/myPage/` | Min side: `useMyPage.ts` regner ut alt som vises, resten er én fil per seksjon |
 | `src/pages/leaderGroup/` | Delene av gruppesiden (`LeaderGroupDetailPage.tsx`) |
 | `src/components/gathering/` | Dialogene i samlingsvisningen (`GatheringDetailView.tsx`) |
-| `src/utils/gatheringForm.ts`, `src/components/gathering/GatheringFormDialog.tsx`, `src/utils/series.ts`, `src/data/templateMockup.ts` | Skjemaet et arrangement opprettes og endres i: hva feltene holder og hva som lagres, det store skjemaet (åpnet fra «Flere valg» og fra «Rediger»), dagene i en serie, og eksemplene som står for maler til de er bygget |
+| `src/utils/gatheringForm.ts`, `src/components/gathering/GatheringFormDialog.tsx`, `src/utils/series.ts`, `src/data/templateMockup.ts` | Skjemaet et arrangement opprettes og endres i: hva feltene holder og hva som lagres, det store skjemaet (åpnet fra «Flere valg», fra «Rediger» og fra «Arrangementer på nettsiden»), dagene i en serie, og eksemplene som står for maler til de er bygget |
+| `src/utils/gatheringPresentation.ts`, `src/components/gathering/GatheringWebsiteFields.tsx`, `src/pages/admin/tabs/VisibilityTab.tsx` | Arrangementet på nettsiden: linja under tittelen på et kort og hva et arrangement mangler, delen «På nettsiden» i skjemaet (hentes når den åpnes, fordi den tar med mediebiblioteket), og oversikten «Arrangementer på nettsiden» i CMS-et |
 | `src/components/husfellesskap/` | Fanene og dialogene i husfellesskapsvisningen (`HusfellesskapView.tsx`) |
 | `src/pages/`, `src/components/` | Øvrige sider og komponenter |
 | `tests/` | Tester (Vitest). `assert(betingelse, navn)` fra `tests/assert.ts` registrerer én navngitt sjekk. `tests/support/offlineFirestore.ts` gir en ekte Firestore-klient uten nett til tester av datalaget |

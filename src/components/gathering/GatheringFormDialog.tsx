@@ -1,10 +1,13 @@
-import React, { useState } from "react";
-import { CalendarPlus, Edit3, EyeOff, Globe, LayoutTemplate, Repeat, Save, Star, X } from "lucide-react";
+import React, { Suspense, lazy, useRef, useState } from "react";
+import { CalendarPlus, Edit3, EyeOff, Globe, Image as ImageIcon, LayoutTemplate, Plus, Repeat, Save, Star, X } from "lucide-react";
 import { TEMPLATE_MOCKUPS, type TemplateMockup } from "../../data/templateMockup";
 import type { GatheringVisibility } from "../../types";
-import { gatheringFormError, type GatheringFormValues } from "../../utils/gatheringForm";
+import { gatheringFormError, hasPresentation, type GatheringFormValues } from "../../utils/gatheringForm";
 import { DEFAULT_LOCATION } from "../../utils/gatherings";
 import { SERIES_FREQUENCIES, seriesDays, type SeriesFrequency } from "../../utils/series";
+
+// The picture chooser brings the media library with it, so it is fetched when the part is opened
+const GatheringWebsiteFields = lazy(() => import("./GatheringWebsiteFields"));
 
 interface GatheringFormDialogProps {
   /** A new event, or one that exists. A new one can start from a template and be repeated. */
@@ -13,6 +16,8 @@ interface GatheringFormDialogProps {
   groups: { id: string; name: string }[];
   /** Whether the responsible group is chosen here. It is not on the level without the planner. */
   showGroup: boolean;
+  /** Set when the form is opened to fill in how the event is presented on the website: that part is then open, and in view. */
+  openAt?: "website";
   /** Stores the event. The form closes itself when it went well. */
   onSave: (values: GatheringFormValues) => { success: boolean; error?: string };
   onClose: () => void;
@@ -38,8 +43,14 @@ const mockupMark = "text-[10px] font-bold uppercase tracking-wider text-amber-80
  * utils/gatheringForm.ts for what its fields hold). Starting from a template and repeating the
  * event are mock-ups until they are built: they are marked as such, and store nothing.
  */
-export const GatheringFormDialog: React.FC<GatheringFormDialogProps> = ({ isNew, initial, groups, showGroup, onSave, onClose }) => {
+export const GatheringFormDialog: React.FC<GatheringFormDialogProps> = ({ isNew, initial, groups, showGroup, openAt, onSave, onClose }) => {
   const [values, setValues] = useState<GatheringFormValues>(initial);
+
+  // The part about the website is folded while it is empty, so the form is no longer than it has to be
+  const [websiteOpen, setWebsiteOpen] = useState(openAt === "website" || hasPresentation(initial));
+  // Brought into view once its fields are there: before that it is shorter than it will be
+  const websiteSection = useRef<HTMLElement>(null);
+  const showWebsiteSection = () => websiteSection.current?.scrollIntoView?.({ block: "start" });
   const [error, setError] = useState<string | null>(null);
   const set = (changes: Partial<GatheringFormValues>) => setValues((current) => ({ ...current, ...changes }));
 
@@ -268,6 +279,31 @@ export const GatheringFormDialog: React.FC<GatheringFormDialogProps> = ({ isNew,
                   <input type="checkbox" checked={values.cancelled} onChange={(e) => set({ cancelled: e.target.checked })} className="w-4 h-4 rounded border-slate-300" />
                   Arrangementet er avlyst
                 </label>
+              )}
+            </section>
+
+            <section ref={websiteSection} aria-labelledby="gathering-form-website" className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200 space-y-3">
+              <h3 id="gathering-form-website" className={sectionTitle}>
+                <ImageIcon className="w-4 h-4 text-indigo-600" aria-hidden="true" />
+                På nettsiden
+              </h3>
+              <p className="text-xs text-slate-600">
+                Bilde, ingress og tekst er valgfritt. Bildet og ingressen vises på kortet på forsiden. Egen side for arrangementet, med teksten og
+                lenken, kommer i neste del.
+              </p>
+              {websiteOpen ? (
+                <Suspense fallback={<p className="text-xs text-slate-500">Laster …</p>}>
+                  <GatheringWebsiteFields values={values} onChange={set} onReady={openAt === "website" ? showWebsiteSection : undefined} />
+                </Suspense>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setWebsiteOpen(true)}
+                  className="px-4 py-2.5 rounded-xl border border-slate-300 hover:border-indigo-400 text-sm font-bold text-slate-800 flex items-center gap-2 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4 text-indigo-600" aria-hidden="true" />
+                  Legg til bilde og tekst
+                </button>
               )}
             </section>
 

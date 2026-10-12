@@ -68,6 +68,10 @@ describe("En nettside uten bilder av de ansatte", () => {
       { id: "t2", title: "Glede", speaker: "Kari Nordmann", imageUrl: BUILDING },
       { id: "t3", title: "Håp", speaker: "Ola Hansen" },
     ],
+    gatherings: [
+      { id: "g1", title: "Gudstjeneste", imageUrl: `${PORTRAIT}?w=640`, imageAlt: "Kari Nordmann taler" },
+      { id: "g2", title: "Dugnad", imageUrl: BUILDING, imageAlt: "Kirken" },
+    ],
     cms_settings: [{ id: "global", churchName: "Menigheten", heroImageUrl: BUILDING }],
   };
   const without = withoutStaffPictures(collections);
@@ -102,6 +106,13 @@ describe("En nettside uten bilder av de ansatte", () => {
       { id: "t1", title: "Fred", speaker: "Kari Nordmann" },
       { id: "t2", title: "Glede", speaker: "Kari Nordmann", imageUrl: BUILDING },
       { id: "t3", title: "Håp", speaker: "Ola Hansen" },
+    ]);
+  });
+
+  test("et arrangement som har et bilde fra registeret, har ikke bildet og ikke bildeteksten", () => {
+    expect(without.gatherings).toEqual([
+      { id: "g1", title: "Gudstjeneste" },
+      { id: "g2", title: "Dugnad", imageUrl: BUILDING, imageAlt: "Kirken" },
     ]);
   });
 

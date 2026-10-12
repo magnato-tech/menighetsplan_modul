@@ -53,7 +53,8 @@ const renderMenu = () => {
 };
 
 const PLANNER_ITEMS = [/Trenger oppfølging/, /Grupper & Husfellesskap/, /^Roller/];
-const IN_BOTH = [/Sider & Innhold/, /Nyheter/, /Design/, /^Arrangementer/, /^Personer/];
+// «Arrangementer» in the planner, and not «Arrangementer på nettsiden» in the CMS
+const IN_BOTH = [/Sider & Innhold/, /Nyheter/, /Design/, /^Arrangementer(?! på nettsiden)/, /^Arrangementer på nettsiden/, /^Personer/];
 const NOT_IN_DEMO = [/Database/, /Moduler/];
 
 const started = vi.fn();

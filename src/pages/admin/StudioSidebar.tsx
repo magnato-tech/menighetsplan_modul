@@ -303,7 +303,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({ studio, activeTab,
               }`}
             >
               <Star className="w-4 h-4 text-amber-400" />
-              <span>Forside-overstyring</span>
+              <span>Arrangementer på nettsiden</span>
             </button>
 
             <button

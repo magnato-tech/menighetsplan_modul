@@ -87,6 +87,18 @@ export interface Gathering {
   isGudstjeneste?: boolean; // Whether this is a church service
   cancelled?: boolean; // Whether event is cancelled
   programSchedule?: ProgramItem[];
+  // How the event is presented on the website (see utils/gatheringPresentation.ts). All optional.
+  /** A picture: an address, or a picture from the media library. */
+  imageUrl?: string;
+  /** What the picture shows, for the one who does not see it. */
+  imageAlt?: string;
+  /** The lead: a sentence or two, shown on the event's card. */
+  summary?: string;
+  /** The longer text about the event, written as the text of a page is. */
+  content?: string;
+  /** Where the button on the event leads, e.g. to a sign-up form, and what the button says. */
+  linkUrl?: string;
+  linkLabel?: string;
   updatedBy?: string;
   updatedAt?: string;
 }

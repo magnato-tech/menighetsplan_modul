@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.15 · **Sist oppdatert:** 2026-10-12
+> **Dokumentversjon:** 4.16 · **Sist oppdatert:** 2026-10-12
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -156,7 +156,7 @@ Adminpanelet ligger på `/admin` og har én meny med to deler. Hver fane har sin
 | **Lederskap & stab** | Holder listen over stab som vises på «Om oss» | Delvis: en egen liste ved siden av personregisteret, uten samtykke (kapittel 13) |
 | **Tema & designsystem** | Velger ferdig tema eller egne farger, bakgrunn, skrift og avrunding. Forhåndsvisningen er tegnet med de samme fargene nettsiden får | Levert |
 | **Nettside-innstillinger** | Menighetens navn, slagord, velkomsttekst, kontaktinfo, Vipps, konto og sosiale medier | Levert |
-| **Forside-overstyring** | Fremhever en samling på forsiden eller skjuler den fra kalenderen | Levert |
+| **Arrangementer på nettsiden** | Ser hvert arrangement med bildet sitt og hva det mangler på nettsiden. Åpner arrangementets skjema for å legge inn bilde, ingress, tekst og lenke. Fremhever en samling på forsiden eller skjuler den fra kalenderen | Levert. Het «Forside-overstyring» til 12. oktober |
 
 ### 2.3 Felles for hele panelet
 
@@ -329,6 +329,10 @@ Felles begrep for enhver samling: gudstjeneste, ungdomsmøte, bønnemøte, dugna
 | `isPublic` | `boolean` | Nei | Speil av `visibility` for eldre dokumenter. Leses aldri alene |
 | `cancelled` | `boolean` | Nei | Avlyst |
 | `programSchedule` | `ProgramItem[]` | Nei | Program: klokkeslett, tittel, beskrivelse og eventuell kobling til en oppgave |
+| `imageUrl`, `imageAlt` | `string` | Nei | Bilde på nettsiden: en adresse eller et bilde fra mediebiblioteket, og bildeteksten for den som ikke ser bildet |
+| `summary` | `string` | Nei | Ingress: en setning eller to, vist på kortet på forsiden. Uten ingress vises temaet |
+| `content` | `string` | Nei | Lengre tekst om arrangementet, skrevet som teksten på en side. Lagres, og vises når arrangementet får egen side (kapittel 14, del A3) |
+| `linkUrl`, `linkLabel` | `string` | Nei | Lenke, for eksempel til påmelding, og teksten på knappen. Lagres, og vises på arrangementets egen side (del A3) |
 | `updatedBy`, `updatedAt` | `string`, ISO 8601 | Nei | Hvem som endret sist, og når |
 
 ### 5.2 Oppgave (`Task`)
@@ -874,6 +878,21 @@ Del A1 av «Arrangement, maler og serier» (kapittel 14).
 | **Prøveutgaver** | «Start fra en mal» og «Gjenta som serie», merket som det (kapittel 14) |
 | **Prøvd** | 37 nye sjekker: dagene i en serie over sommertid, nyttår og måneder uten femte ukedag, hva skjemaet lagrer og tar bort, og skjemaet selv fra «Flere valg» til lagret arrangement |
 
+### Bilde og tekst på arrangementer (12. oktober 2026)
+
+Del A2 av «Arrangement, maler og serier» (kapittel 14), og første del av A3.
+
+| Område | Levert |
+|:---|:---|
+| **Feltene** | Et arrangement kan ha bilde med bildetekst, ingress, lengre tekst og lenke med knappetekst (kapittel 5.1). Alt er valgfritt |
+| **I skjemaet** | Delen «På nettsiden» i arrangementets skjema. Den står sammenfoldet når den er tom, og hentes først når den åpnes |
+| **I CMS-et** | «Arrangementer på nettsiden» viser bildet til hvert arrangement, og sier med ikon og ord om det mangler bilde, tekst eller begge. «Bilde og tekst» åpner skjemaet på riktig del. Et internt arrangement blir ikke spurt om noe |
+| **På forsiden** | Kortene i «Hva skjer» viser bildet øverst, i formatet plakater lages i (16:9), og ingressen under tittelen. «Neste gudstjeneste» viser bildet og ingressen. Et arrangement uten bilde vises som før |
+| **Eksempelmenigheten** | Gudstjenesten og ungdomsmøtet har bilde og ingress, så det kan ses i demoen |
+| **Demoen** | Et arrangement hos en ekte menighet som har et bilde fra stab-registeret, vises uten bildet, som nyheter og taler |
+| **Lagres, men vises ikke ennå** | Den lengre teksten og lenken. De får plass på arrangementets egen side, som er neste del, og skjemaet sier det |
+| **Prøvd** | 22 nye sjekker: hva som lagres og tas bort, lenken, hva et arrangement mangler, skjemaet fra CMS-et til lagret arrangement, og kortene på forsiden |
+
 ---
 
 
@@ -968,8 +987,8 @@ Bestilt av produkteier etter en gjennomgang av skjemaet for arrangementer i eRed
 | Del | Hva | Status |
 |:---|:---|:---|
 | A1 | **Ett skjema i planleggeren.** Det raske skjemaet står, og «Flere valg» åpner det store, på en stor flate. Det samme skjemaet brukes ved redigering. Plass til mal og serie fra start | **Levert 12. oktober** (kapittel 12). Mal og serie er prøveutgaver |
-| A2 | **«Arrangementer på nettsiden» i CMS-et.** Dagens «Forside-overstyring» utvides: bilde med bildetekst, ingress, lang tekst og lenke eller knapp. Listen viser hvilke arrangementer som mangler bilde eller tekst | Neste |
-| A3 | **Nettsiden.** Bilde på kortene i «Neste gudstjeneste», «Hva skjer» og kalenderlisten. Egen side for hvert arrangement, som alle kort åpner. Bildet og ingressen følger med ved deling og i kalenderabonnementet. En nyhet som hører til et arrangement, får en faktaboks med tid og sted | |
+| A2 | **Bilde og tekst på arrangementet.** Feltene ligger i arrangementets eget skjema, i delen «På nettsiden»: bilde med bildetekst, ingress, lang tekst og lenke med knappetekst. «Forside-overstyring» i CMS-et er blitt «Arrangementer på nettsiden»: en oversikt som viser hva hvert arrangement mangler, og som åpner det samme skjemaet på delen om nettsiden | **Levert 12. oktober** (kapittel 12) |
+| A3 | **Nettsiden.** ~~Bilde og ingress på kortene i «Neste gudstjeneste» og «Hva skjer».~~ **Levert 12. oktober, sammen med A2.** Gjenstår, og er neste: bilde i kalenderlisten. Egen side for hvert arrangement, som alle kort åpner. Bildet og ingressen følger med ved deling og i kalenderabonnementet. En nyhet som hører til et arrangement, får en faktaboks med tid og sted | |
 | A4 | **«Lag neste arrangement»** kopierer også bilde, tekst og kjøreplan. I dag kopieres oppgavene, men ikke kjøreplanen | |
 | B | **Maler.** En mal har fakta, bilde og tekst, standard bemanning (roller og antall) og kjøreplanen fra arrangementet den ble laget av, med klokkeslett som følger starttiden. «Lag mal av dette arrangementet» og «Nytt arrangement fra mal» | |
 | C | **Serier.** Fra en mal: startdato, tidspunkt, siste dato og frekvens. Datoene vises før noe opprettes, enkeltdatoer kan tas bort, og det sies fra der det alt ligger et arrangement. Hvert arrangement i serien er et vanlig arrangement, merket som del av serien | Dagene i en serie regnes ut (`src/utils/series.ts`) |
@@ -977,6 +996,7 @@ Bestilt av produkteier etter en gjennomgang av skjemaet for arrangementer i eRed
 **Slik er det bestemt**
 
 * **Prøveutgaver i skjemaet** (produkteier, 12. oktober). «Start fra en mal» og «Gjenta som serie» står i det store skjemaet før de er bygget, merket «Prøveutgave». Malen fyller inn tittel og klokkeslett fra fire faste eksempler. Serien viser dagene, men bare det første arrangementet opprettes, og skjemaet sier det. Dette er et unntak fra regelen om at et valg i admin skal virke der det står, og det gjelder til del B og C er levert.
+* **Ett skjema, to innganger** (produkteier, 12. oktober). Bilde og tekst fylles ut i arrangementets skjema, ikke i et eget skjema i CMS-et. Planleggeren og CMS-et åpner det samme skjemaet. Da er feltene like på begge nivå, og en mal kan senere bære dem.
 * **En fast person i en mal blir forespurt** på hvert arrangement, ikke satt opp som bekreftet.
 * **Ingenting er påkrevd.** Malens bilde er standardbildet, og et arrangement uten mal og uten bilde vises uten.
 * **«Én gang i måneden»** er samme ukedag i samme uke i måneden. En måned uten en slik dag står over.

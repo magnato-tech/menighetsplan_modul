@@ -2,6 +2,9 @@ import React, { useMemo } from "react";
 import { useFirebase } from "../../../context/FirebaseDataContext";
 import { useCms } from "../../../context/CmsContext";
 import { locationOf, upcomingPublicGatherings } from "../../../utils/gatherings";
+import { teaserOf } from "../../../utils/gatheringPresentation";
+import { useMediaMap } from "../../../hooks/useMediaMap";
+import { resolveMediaUrl } from "../../../utils/media";
 import {
   MODULE_PRESENTATION_DEFAULTS,
   ModulePresentationConfig,
@@ -19,6 +22,7 @@ export interface CalendarModuleProps {
 export const CalendarModule: React.FC<CalendarModuleProps> = ({ presentation }) => {
   const { gatherings } = useFirebase();
   const { settings } = useCms();
+  const mediaById = useMediaMap();
   const config = presentation || MODULE_PRESENTATION_DEFAULTS["module-calendar"];
 
   const upcomingEvents = useMemo(
@@ -67,14 +71,23 @@ export const CalendarModule: React.FC<CalendarModuleProps> = ({ presentation }) 
         </div>
       ) : (
         <div ref={cards} className="reveal-children grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {upcomingEvents.map((item) => (
+          {upcomingEvents.map((item) => {
+            const image = resolveMediaUrl(item.imageUrl, mediaById, "web");
+            const teaser = teaserOf(item);
+            return (
             <div
               key={item.id}
-              className={`bg-white rounded-xl border p-5 hover:border-primary-300 hover:shadow-md transition-all flex flex-col justify-between min-h-[180px] ${
+              className={`bg-white rounded-xl border p-5 hover:border-primary-300 hover:shadow-md transition-all flex flex-col justify-between min-h-[180px] overflow-hidden ${
                 item.cancelled ? "border-red-200 bg-red-50/20 opacity-75" : "border-stone-200/80"
               }`}
             >
               <div className="space-y-2">
+                {/* The whole picture is shown, in the shape posters are made in, so a text in it is not cut */}
+                {image && (
+                  <div className="-mx-5 -mt-5 mb-3 aspect-video bg-stone-100">
+                    <img src={image} alt={item.imageAlt?.trim() || ""} loading="lazy" className="w-full h-full object-cover" />
+                  </div>
+                )}
                 <div className="text-[11px] font-bold uppercase tracking-wider text-primary-700">
                   {formatDate(item.startsAt)}
                 </div>
@@ -84,7 +97,7 @@ export const CalendarModule: React.FC<CalendarModuleProps> = ({ presentation }) 
                   </span>
                 )}
                 <h4 className="font-bold text-stone-900 text-base leading-snug">{item.title}</h4>
-                {item.theme && <p className="text-xs text-stone-500 line-clamp-2">{item.theme}</p>}
+                {teaser && <p className="text-xs text-stone-500 line-clamp-2">{teaser}</p>}
               </div>
 
               <div className="pt-4 mt-3 border-t border-stone-100 flex items-center justify-between text-xs text-stone-600">
@@ -98,7 +111,8 @@ export const CalendarModule: React.FC<CalendarModuleProps> = ({ presentation }) 
                 </div>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </PresentationSection>

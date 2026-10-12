@@ -1,4 +1,4 @@
-import { CMS_COLLECTIONS } from "../data/collections";
+import { CMS_COLLECTIONS, COLLECTIONS } from "../data/collections";
 import type { DatasetDocument } from "./dataset";
 import { parseMediaAltComment } from "./media";
 
@@ -72,7 +72,7 @@ const samePicture = (url: string): string => url.split("?")[0];
  *   register, is left as its text
  * - a page that names two or more of the staff is a page about people, and has no pictures
  *   in its text and none above it
- * - a news article or a sermon that uses a picture from the register has none
+ * - a news article, a sermon or an event that uses a picture from the register has none
  */
 export function withoutStaffPictures(collections: Collections): Collections {
   const staff = collections[CMS_COLLECTIONS.STAFF] ?? [];
@@ -102,6 +102,15 @@ export function withoutStaffPictures(collections: Collections): Collections {
       const withText: DatasetDocument = { ...article, content: withoutPictures(text(article.content), isPortrait) };
       if (!portraits.has(samePicture(text(article.imageUrl)))) return withText;
       const { imageUrl: _picture, ...withoutPicture } = withText;
+      return withoutPicture as DatasetDocument;
+    });
+  }
+
+  const events = collections[COLLECTIONS.GATHERINGS];
+  if (events) {
+    result[COLLECTIONS.GATHERINGS] = events.map((event) => {
+      if (!portraits.has(samePicture(text(event.imageUrl)))) return event;
+      const { imageUrl: _picture, imageAlt: _description, ...withoutPicture } = event;
       return withoutPicture as DatasetDocument;
     });
   }
