@@ -87,6 +87,28 @@ export function taskStatusFor(
   return acuteForfall || task.status === "vacant" ? "vacant" : "open";
 }
 
+/**
+ * What an absence stores on the assignment: the answer, and when it was given.
+ * A reason is not stored. It is taken in person, because it can be private.
+ */
+export function absenceFields(
+  response: Assignment["response"],
+  respondedAt: string
+): { response: "withdrawn" | "declined"; respondedAt: string } {
+  return { response: response === "confirmed" ? "withdrawn" : "declined", respondedAt };
+}
+
+/** Assignments that still carry a reason from before it stopped being stored. The field is deleted, not kept. */
+export function idsWithWithdrawalReason(assignments: readonly object[]): string[] {
+  return assignments
+    .flatMap((item) => {
+      if (typeof item !== "object" || item === null || !("withdrawalReason" in item)) return [];
+      const id = (item as { id?: unknown }).id;
+      return typeof id === "string" ? [id] : [];
+    })
+    .sort();
+}
+
 /** A change to who is on a task. */
 export interface AssignmentChange {
   add?: Assignment;

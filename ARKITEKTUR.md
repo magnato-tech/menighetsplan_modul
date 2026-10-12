@@ -185,7 +185,7 @@ Tre regler avgjør hva en besøkende ser, og hver av dem ligger ett sted:
 | Kladder | Bare administratorer får kladder og planlagte sider | Alle sider leveres til nettleseren, og skjules i visningen |
 | Stab | Én kilde for mennesker som vises utad | `/lederskap` bruker personregisteret med samtykke. `/om-oss` viser `cms_staff`, en egen liste uten samtykkelogg |
 | Forsiden | Alt innhold kommer fra CMS-et | Tre infobokser, fellesskapsseksjonen og gaveteksten står i `PublicHomePage.tsx`, og standardtekstene i innholdsmodulene (`src/utils/modulePresentation.ts`) passer ikke alle menigheter |
-| Forfall med grunn | Medlemmet skriver en grunn, lederen ser den | Datalaget lagrer `withdrawalReason`, men ingen skjerm skriver eller viser den |
+| Forfall med grunn | Medlemmet skriver en grunn, lederen ser den | Valg: grunnen lagres ikke. Opplysningen kan være privat, og tas muntlig |
 | Filstørrelse | Én komponent per fane/modal | Gjort for alle sidene over 1 000 linjer. Størst nå er redigeringsskjemaet for sider (`PageEditModal.tsx`, ca. 750 linjer) og gruppekortet i admin (`AdminGroupDetailPage.tsx`, ca. 650) |
 | Lasting | Admin og CMS lastes først når de åpnes | Offentlige ruter er statiske; admin, Min side og faner lastes ved behov. Firebase-klienten lastes på alle besøk (~710 KB) |
 | Gruppemeldinger | Testverktøyet på husfellesskapssiden sier at et nytt medlem ikke skal se eldre meldinger | Innmeldingsdato lagres (`memberJoinedAt`), men brukes ikke: et medlem ser alle meldingene i gruppen |

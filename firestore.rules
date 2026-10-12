@@ -109,6 +109,14 @@ service cloud.firestore {
         && group.get('deputyLeaderIds', []).hasAll(request.resource.data.get('deputyLeaderIds', []));
     }
 
+    // A leader or deputy of the task's group, the gathering's group, or the group the name was taken from.
+    function tendsAssignment() {
+      return leads(resource.data.gatheringGroupId)
+        || leads(resource.data.get('nameGroupId', null))
+        || (resource.data.taskId is string
+            && leads(get(/databases/$(database)/documents/tasks/$(resource.data.taskId)).data.get('groupId', null)));
+    }
+
     // Whether the one who asks leads the group the event belongs to
     function leadsEvent(gatheringId) {
       return gatheringId is string
@@ -223,9 +231,13 @@ service cloud.firestore {
       allow create: if isAdmin()
         || leads(request.resource.data.get('groupId', null))
         || leadsEvent(request.resource.data.gatheringId);
-      // The status follows from who has answered, and is written together with the answer
+      // The status follows from who has answered, and is written together with the answer.
+      // A member may not cancel a task, or change one that is already cancelled.
       allow update: if isAdmin()
-        || (isMember() && changedOnly(['status']))
+        || (isMember()
+            && changedOnly(['status'])
+            && resource.data.status != 'cancelled'
+            && request.resource.data.status != 'cancelled')
         || leads(resource.data.get('groupId', null))
         || leadsEvent(resource.data.gatheringId);
       allow delete: if isAdmin()
@@ -243,7 +255,7 @@ service cloud.firestore {
         || (isMember() && memberOf(resource.data.gatheringGroupId))
         || (isMember() && readerOf(resource.data.gatheringId));
 
-      allow create: if isAdmin()
+      allow create: if (isAdmin() && !('withdrawalReason' in request.resource.data))
         || (isMember()
             && request.resource.data.personId == me()
             && request.resource.data.personName == get(/databases/$(database)/documents/persons/$(me())).data.name
@@ -254,9 +266,13 @@ service cloud.firestore {
             && request.resource.data.personName == get(/databases/$(database)/documents/groupDirectory/$(request.resource.data.nameGroupId + '_' + request.resource.data.personId)).data.name
             && request.resource.data.keys().hasOnly(['taskId', 'personId', 'personName', 'gatheringId', 'gatheringGroupId', 'gatheringPublic', 'nameGroupId', 'response', 'assignedAt']));
 
-      allow update: if isAdmin()
-        || (isMember() && changedOnly(['response', 'respondedAt', 'withdrawalReason']));
-      allow delete: if isMember();
+      // A reason is not stored. An administrator may remove one that is already there.
+      allow update: if (isAdmin() && (
+            !request.resource.data.diff(resource.data).affectedKeys().hasAny(['withdrawalReason'])
+            || !('withdrawalReason' in request.resource.data)))
+        || (isMember() && resource.data.personId == me() && changedOnly(['response', 'respondedAt']))
+        || (tendsAssignment() && changedOnly(['response', 'respondedAt']));
+      allow delete: if isAdmin() || tendsAssignment();
     }
 
     // A name a leader asks an administrator to add. No phone, e-mail or person id.
@@ -291,8 +307,11 @@ service cloud.firestore {
     }
 
     // Whether someone is coming to an event. Each answers for themselves.
+    // A member reads their own answers, and the answers for a gathering of a group they belong to.
     match /gatheringAttendances/{attendanceId} {
-      allow read: if isMember();
+      allow read: if isAdmin()
+        || (isMember() && resource.data.personId == me())
+        || (isMember() && memberOf(get(/databases/$(database)/documents/gatherings/$(resource.data.gatheringId)).data.groupId));
       allow create, update: if isAdmin() || (isMember() && request.resource.data.personId == me());
       allow delete: if isAdmin() || (isMember() && resource.data.personId == me());
     }

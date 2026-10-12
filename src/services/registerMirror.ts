@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, onSnapshot, writeBatch } from "firebase/firestore";
+import { collection, deleteField, doc, getDoc, onSnapshot, writeBatch } from "firebase/firestore";
 import {
   COLLECTIONS,
   GATHERING_READERS_COLLECTION,
@@ -177,6 +177,15 @@ export async function deleteMemberProposals(ids: readonly string[]): Promise<voi
   for (const piece of chunk(ids, BATCH_SIZE)) {
     const batch = writeBatch(db);
     for (const id of piece) batch.delete(doc(db, COLLECTIONS.MEMBER_PROPOSALS, id));
+    await batch.commit();
+  }
+}
+
+/** Takes a stored reason off the assignments that still have one. It is not kept anywhere. */
+export async function clearWithdrawalReasons(ids: readonly string[]): Promise<void> {
+  for (const piece of chunk(ids, BATCH_SIZE)) {
+    const batch = writeBatch(db);
+    for (const id of piece) batch.update(doc(db, COLLECTIONS.ASSIGNMENTS, id), { withdrawalReason: deleteField() });
     await batch.commit();
   }
 }

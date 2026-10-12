@@ -59,7 +59,7 @@ import { useRegisterMirror } from "../hooks/useRegisterMirror";
 import { useLeadersAsMembers } from "../hooks/useLeadersAsMembers";
 import { DEMO } from "../demo";
 import type { HeadcountInput } from "../utils/headcount";
-import { AssignmentChange, applyAssignmentChange, holdsSlot, isAcuteForfall, taskStatusFor } from "../utils/staffing";
+import { absenceFields, AssignmentChange, applyAssignmentChange, holdsSlot, isAcuteForfall, taskStatusFor } from "../utils/staffing";
 
 export interface ModuleConfig {
   kalender: "on" | "off";
@@ -143,7 +143,7 @@ export interface FirebaseDataContextType {
   /** "confirmed" when the person has already said yes, "pending" to ask them. */
   assignTaskToPerson: (taskId: string, personId: string, response: "confirmed" | "pending") => ActionResult;
   /** The person pulls out of the task: a forfall if they had said yes, a no if they had only been asked. */
-  reportAbsence: (taskId: string, personId: string, reason?: string) => ActionResult;
+  reportAbsence: (taskId: string, personId: string) => ActionResult;
   updateAssignmentStatus: (assignmentId: string, response: Assignment["response"]) => ActionResult;
   removeAssignment: (assignmentId: string) => ActionResult;
   updateGroupName: (groupId: string, newName: string) => ActionResult;
@@ -420,6 +420,10 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
   const isMember = session.status === "member";
 
   const myGroupIds = useMemo(() => (memberId ? ownedGroups.map((group) => group.id).sort() : []), [memberId, ownedGroups]);
+  const groupGatheringIds = useMemo(
+    () => (memberId ? gatherings.filter((gathering) => myGroupIds.includes(gathering.groupId)).map((gathering) => gathering.id).sort() : []),
+    [memberId, gatherings, myGroupIds]
+  );
   const ledGroupIds = useMemo(
     () => (memberId ? ownedGroups.filter((group) => leadsGroup(group, memberId)).map((group) => group.id).sort() : []),
     [memberId, ownedGroups]
@@ -489,7 +493,6 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
         setTasks(list);
         setPlanningReady(true);
       }),
-      subscribeCollection<GatheringAttendance>(COLLECTIONS.GATHERING_ATTENDANCES, setAttendances),
       subscribeHeadcounts(setHeadcounts),
       subscribeVolunteerRoles(setVolunteerRoles),
     ];
@@ -538,8 +541,31 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
       );
     }
     if (myGroupIds.length === 0) setGroupMessages([]);
+    const attendanceParts = new Map<string, GatheringAttendance[]>();
+    const publishAttendances = () => {
+      const byId = new Map<string, GatheringAttendance>();
+      for (const list of attendanceParts.values()) for (const item of list) byId.set(item.id, item);
+      setAttendances([...byId.values()]);
+    };
+    if (memberId) {
+      stops.push(
+        subscribeWhere<GatheringAttendance>(COLLECTIONS.GATHERING_ATTENDANCES, "personId", "==", memberId, (list) => {
+          attendanceParts.set("self", list);
+          publishAttendances();
+        })
+      );
+    }
+    for (const gatheringId of groupGatheringIds) {
+      stops.push(
+        subscribeWhere<GatheringAttendance>(COLLECTIONS.GATHERING_ATTENDANCES, "gatheringId", "==", gatheringId, (list) => {
+          attendanceParts.set(`gathering:${gatheringId}`, list);
+          publishAttendances();
+        })
+      );
+    }
+    if (!memberId && groupGatheringIds.length === 0) setAttendances([]);
     return () => stops.forEach((stop) => stop());
-  }, [internal, isMember, fullRegister, memberId, myGroupIds.join("|"), watchedGatheringIds.join("|")]);
+  }, [internal, isMember, fullRegister, memberId, myGroupIds.join("|"), groupGatheringIds.join("|"), watchedGatheringIds.join("|")]);
 
   const watchGatheringAssignments = useCallback((gatheringId: string) => {
     if (!gatheringId || fullRegister) return () => {};
@@ -848,19 +874,12 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
         return changeAssignments(assignment.taskId, { remove: assignmentId }, "fjerne tildelingen");
       },
 
-      reportAbsence: (taskId: string, personId: string, reason?: string) => {
+      reportAbsence: (taskId: string, personId: string) => {
         const mine = assignments.filter((a) => a.taskId === taskId && a.personId === personId && holdsSlot(a));
         if (mine.length === 0) return { success: false, error: "Personen står ikke på denne oppgaven." };
-        const now = new Date();
-        const update = mine.map((a) => ({
-          id: a.id,
-          fields: {
-            response: a.response === "confirmed" ? ("withdrawn" as const) : ("declined" as const),
-            respondedAt: now.toISOString(),
-            withdrawalReason: reason?.trim() || undefined,
-          },
-        }));
-        return changeAssignments(taskId, { update }, "registrere forfallet", isAcuteNow(taskId, now));
+        const respondedAt = new Date().toISOString();
+        const update = mine.map((assignment) => ({ id: assignment.id, fields: absenceFields(assignment.response, respondedAt) }));
+        return changeAssignments(taskId, { update }, "registrere forfallet", isAcuteNow(taskId, new Date(respondedAt)));
       },
     };
   }, [tasks, assignments, gatherings, currentUser, visiblePersons, directoryCards, visibleGroups]);

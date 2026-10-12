@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
+  clearWithdrawalReasons,
   patchAssignmentAccess,
   deleteMemberProposals,
   storeGatheringReaderChanges,
@@ -17,6 +18,7 @@ import {
   subscribePublicProfiles,
 } from "../services/registerMirror";
 import type { Assignment, Gathering, Group, MemberProposal, Person, Task } from "../types";
+import { idsWithWithdrawalReason } from "../utils/staffing";
 import {
   assignmentAccessPatches,
   gatheringReadersOf,
@@ -67,11 +69,11 @@ export function useRegisterMirror(
   const [readers, setReaders] = useState<GatheringReader[] | null>(null);
   const [proposals, setProposals] = useState<MemberProposal[] | null>(null);
   // Each mirror stops on its own. A refusal of one write must not leave the others unwritten.
-  const stopped = useRef({ logins: false, copies: false, directory: false, emails: false, cards: false, readers: false, assignments: false, proposals: false });
+  const stopped = useRef({ logins: false, copies: false, directory: false, emails: false, cards: false, readers: false, assignments: false, proposals: false, reasons: false });
 
   useEffect(() => {
     if (!active) return;
-    stopped.current = { logins: false, copies: false, directory: false, emails: false, cards: false, readers: false, assignments: false, proposals: false };
+    stopped.current = { logins: false, copies: false, directory: false, emails: false, cards: false, readers: false, assignments: false, proposals: false, reasons: false };
     const unsubscribers = [
       subscribeLogins((list, settled) => setLogins(settled ? list : null)),
       subscribePublicProfiles((list, settled) => setCopies(settled ? list : null)),
@@ -156,4 +158,11 @@ export function useRegisterMirror(
     if (ids.length === 0) return;
     deleteMemberProposals(ids).catch(fail("proposals", "Gamle forslag"));
   }, [active, proposals]);
+
+  useEffect(() => {
+    if (!active || !planning.planningReady || stopped.current.reasons) return;
+    const ids = idsWithWithdrawalReason(planning.assignments);
+    if (ids.length === 0) return;
+    clearWithdrawalReasons(ids).catch(fail("reasons", "Forfallsgrunnene"));
+  }, [active, planning.planningReady, planning.assignments]);
 }

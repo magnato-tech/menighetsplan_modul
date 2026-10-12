@@ -184,7 +184,6 @@ export interface Assignment {
   response: "pending" | "confirmed" | "declined" | "withdrawn";
   assignedAt?: string;
   respondedAt?: string;
-  withdrawalReason?: string;
   /** The person's name, so a run sheet can show it without the register. */
   personName?: string;
   /** The gathering the task belongs to. Copied onto the assignment so the rules can read it. */

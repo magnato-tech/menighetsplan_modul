@@ -291,8 +291,7 @@ export function buildSimulatedChurchLife(input: SimulationInput): MockDocument[]
         personId: string,
         response: Assignment["response"],
         daysBefore: number,
-        respondedAt: number,
-        withdrawalReason?: string
+        respondedAt: number
       ) => {
         taskAssignments.push({
           id: `${SIMULATION_PREFIX}assign-${dayKey(day)}-${roleIndex}-${taskAssignments.length + 1}`,
@@ -301,7 +300,6 @@ export function buildSimulatedChurchLife(input: SimulationInput): MockDocument[]
           response,
           assignedAt: new Date(startsAt - daysBefore * DAY_MS).toISOString(),
           respondedAt: new Date(respondedAt).toISOString(),
-          withdrawalReason,
         });
       };
       /** Asked `daysBefore` the service, answered `hours` later. */
@@ -320,8 +318,7 @@ export function buildSimulatedChurchLife(input: SimulationInput): MockDocument[]
           if (second) answered(second, "confirmed", rng.between(3, 6), rng.between(1, 20));
         } else if (roll < 0.97) {
           // Said yes, then had to pull out; some of it close to the day
-          const reason = rng.pick(["Syk", "Bortreist", "Jobb"]);
-          ask(first, "withdrawn", rng.between(8, 14), startsAt - rng.between(10, 120) * HOUR_MS, reason);
+          ask(first, "withdrawn", rng.between(8, 14), startsAt - rng.between(10, 120) * HOUR_MS);
           const stand = nextPerson();
           if (stand && rng.chance(0.6)) answered(stand, "confirmed", 1, rng.between(1, 6));
         }

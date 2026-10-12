@@ -403,7 +403,7 @@ describe("Forfall og vikarbehov", () => {
     admin.result.current.assignTaskToPerson(scenario.taskSoon.id, scenario.ola.id, "confirmed");
     await waitFor(() => expect(admin.result.current.getTaskById(scenario.taskSoon.id)?.status).toBe("confirmed"));
 
-    admin.result.current.reportAbsence(scenario.taskSoon.id, scenario.ola.id, "Syk");
+    admin.result.current.reportAbsence(scenario.taskSoon.id, scenario.ola.id);
     await waitFor(() => expect(admin.result.current.getTaskById(scenario.taskSoon.id)?.status).toBe("vacant"));
 
     const ola = renderHook(() => ({ data: useFirebase(), page: useMyPage() }), { wrapper });

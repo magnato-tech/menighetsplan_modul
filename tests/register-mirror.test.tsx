@@ -36,6 +36,7 @@ vi.mock("../src/services/registerMirror", () => ({
   patchAssignmentAccess: async () => {},
   subscribeMemberProposals: () => () => {},
   deleteMemberProposals: async () => {},
+  clearWithdrawalReasons: async () => {},
 }));
 
 import { useRegisterMirror } from "../src/hooks/useRegisterMirror";

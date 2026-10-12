@@ -354,15 +354,16 @@ describe("Bemanning", () => {
     expect(data.current.getAllAssignmentsForTask("task-2")).toHaveLength(2);
   });
 
-  test("Forfall i god tid lagres med grunn, og oppgaven blir ledig", async () => {
+  test("Forfall i god tid lagres som svar, og oppgaven blir ledig", async () => {
     const data = await mountProvider();
     data.current.assignTaskToPerson("task-2", "person-3", "confirmed");
     await waitFor(() => expect(data.current.getTaskById("task-2")?.status).toBe("confirmed"));
 
-    expect(data.current.reportAbsence("task-2", "person-2", " Syk ")).toEqual({ success: true });
+    expect(data.current.reportAbsence("task-2", "person-2")).toEqual({ success: true });
     await waitFor(() => expect(data.current.getTaskById("task-2")?.status).toBe("open"));
     const saved = await stored(COLLECTIONS.ASSIGNMENTS, "assign-1");
-    expect(saved).toMatchObject({ response: "withdrawn", withdrawalReason: "Syk" });
+    expect(saved).toMatchObject({ response: "withdrawn" });
+    expect(saved).not.toHaveProperty("withdrawalReason");
     expect(isTimestamp(saved?.respondedAt)).toBe(true);
     expect((await stored(COLLECTIONS.TASKS, "task-2"))?.status).toBe("open");
   });

@@ -267,7 +267,7 @@ Regnskap er ikke en egen modul. Givertjeneste og Utleie skal registrere inntekte
 | Skjerm | Adresse | Innhold | Status |
 |---|---|---|---|
 | **Min side** | `/minside` | «Trenger svar» (forespørsler, innkallinger, ledige oppgaver i mine grupper), «Neste for deg», neste samling i kirken, mine grupper og mine oppgaver | Levert |
-| **Oppgave** | `/oppgave/:id` | Tid, sted, instruks og hvem andre som står på. Ta oppgaven, svar på forespørsel, meld forfall | Delvis: medlemmet kan ikke skrive en grunn for forfallet ennå |
+| **Oppgave** | `/oppgave/:id` | Tid, sted, instruks og hvem andre som står på. Ta oppgaven, svar på forespørsel, meld forfall | Levert. En grunn for forfallet lagres ikke: den kan være privat, og tas muntlig |
 | **Gruppeleder** | `/leder` | Gruppene jeg leder, med bemanningsstatus | Levert |
 | **Gruppe** | `/gruppe/:id` | Medlemmer, møteplan, aktiviteter og beskjeder til gruppen, med bilde | Levert |
 | **Samling** | `/samling/:id` | Kjøreplan: programmet og oppgavene på én tidslinje, med hvem som står på hva | Delvis: programmet kan ikke redigeres i løsningen ennå |
@@ -357,7 +357,6 @@ Felles begrep for enhver samling: gudstjeneste, ungdomsmøte, bønnemøte, dugna
 | `response` | `"pending" \| "confirmed" \| "declined" \| "withdrawn"` | Ja | Forespurt, akseptert, avslått eller forfall |
 | `assignedAt` | ISO 8601 | Nei | Når personen ble tildelt eller forespurt |
 | `respondedAt` | ISO 8601 | Nei | Når personen svarte eller meldte forfall |
-| `withdrawalReason` | `string` | Nei | Valgfri, privat grunn ved forfall, bare for leder og administrator. *Planlagt i skjermbildene:* feltet kan lagres, men medlemmet har ikke noe sted å skrive grunnen, og lederen ser den ikke |
 
 ### 5.4 Person (`Person`)
 
@@ -483,7 +482,7 @@ Den som har avslått eller meldt forfall, holder ingen plass.
 ### 6.2 Forfall
 
 * Et bekreftet medlem som melder forfall, lagres som **forfall**. Et nei på en forespørsel lagres som **avslått**.
-* *Planlagt:* medlemmet kan oppgi en valgfri, privat grunn som bare leder og administrator ser.
+* En grunn for forfallet lagres ikke. Det er et valg, ikke en mangel: opplysningen kan være privat, og tas muntlig.
 * Kommer forfallet eller avslaget **mindre enn 48 timer før samlingen starter**, er det **akutt**: oppgaven merkes og løftes fram i «Trenger oppfølging» til plassen er fylt igjen.
 * Hver tildeling får tidspunkt for når den ble opprettet og når den ble besvart.
 
@@ -1007,7 +1006,7 @@ Sortert etter hvor mye de betyr for en menighet som skal ta løsningen i bruk.
 
 | # | Mangel | Løses i |
 |:---:|:---|:---|
-| 1 | Koden gir ikke lenger hele personregisteret til en frivillig. Reglene som er publisert hos første menighet, gjør det fortsatt, til `firestore.rules` limes inn og publiseres på nytt. Frivillige skal ikke inviteres før det, og før en administrator har åpnet appen én gang så katalog og navn på tildelingene er skrevet. Alle i registeret kan fortsatt endre tildelinger, og en besøkende kan legge til i besøkstallene med hvilke tall som helst | Kapittel 14 |
+| 1 | Koden gir ikke lenger hele personregisteret til en frivillig. Reglene som er publisert hos første menighet, gjør det fortsatt, til `firestore.rules` limes inn og publiseres på nytt. Frivillige skal ikke inviteres før det, og før en administrator har åpnet appen én gang så katalog og navn på tildelingene er skrevet. Svar på en tildeling kan i koden bare endres av den det gjelder, av ansvarlig leder og av administrator. Det gjelder først når reglene publiseres. En besøkende kan legge til i besøkstallene med hvilke tall som helst | Kapittel 14 |
 | 2 | Kladder til nyheter, taler og stab leveres til alle nettlesere. Kladder til sider leveres bare til dem som står i registeret. I demoen leveres hele registeret til alle, som før | Fase 1 |
 | 3 | To personer som deler e-postadresse, kan ikke logge inn før adressen står på bare én av dem. Første administrator må legges inn med et skript | Trinn 7 for skriptet |
 | 4 | Forsidens tekster og menighetens navn står delvis i koden | Fase 2 |
@@ -1018,7 +1017,7 @@ Sortert etter hvor mye de betyr for en menighet som skal ta løsningen i bruk.
 | 9 | Modulvalg lagres bare i én nettleser | Fase 3 |
 | 10 | En besøkende kan ikke melde interesse for en gruppe i løsningen | Fase 3 |
 | 11 | Et nytt gruppemedlem ser hele meldingshistorikken | Fase 3 |
-| 12 | Medlemmet kan ikke oppgi grunn for et forfall, og lederen ser den ikke | Fase 3 |
+| 12 | Valg, ikke en mangel: forfallsgrunn lagres ikke. Opplysningen kan være privat, og tas muntlig | — |
 | 13 | Firebase-klienten lastes på første nettsidebesøk (~1,3 MB JavaScript utover CSS). Admin og Min side er skilt ut, men Firestore er felles datakilde for alle flater | Fase 4 |
 | 14 | Tjenesteroller, oppmøtetall, maler og besøkstall ligger fortsatt i `cms_settings`, merket med `recordType`, slik de ble lagt da reglene i drift avviste nye samlinger. De lukkede reglene kjenner merkene | Fase 1 |
 | 15 | Med de lukkede reglene kan en besøkende bare legge til i dagens besøkstall, ikke slette. Reglene kan ikke se om det som legges til, er ett besøk eller tusen | Fase 1 |
@@ -1157,9 +1156,7 @@ Gruppene kan mangle på nettsiden mellom utrullingen og fullført speiling, ford
 
 **Gruppeleder foreslår medlemmer** er skrevet i koden (`memberProposals`, `MemberProposals.tsx`). Leder og nestleder skriver et navn. Forslaget har bare gruppe, navn, hvem som sendte det, tidspunkt og status. Administrator knytter navnet til en person i registeret eller oppretter personen, og kan fortsatt legge inn medlemmer direkte. Ventende forslag vises for seg, med teksten «Venter på godkjenning», og bare for leder, nestleder og administrator. Det gjelder husgrupper og tjenestegrupper. Reglene må publiseres etter utrulling til `stabil`, i samme rekkefølge som lesetilgangen over. Før de er publisert, blir forslaget avvist.
 
-**Én leveranse står igjen.**
-
-1. *Finere skriveregler:* i dag kan enhver innlogget fortsatt endre svaret på en tildeling. Navn og person på en ny tildeling kan en frivillig bare skrive for seg selv, og en leder bare for noen i en gruppe hun leder, med navnet fra katalogen.
+**Svar på tildelinger** er skrevet i reglene. Den som står på tildelingen, svarer for seg selv. Leder, nestleder og administrator kan endre og fjerne bemanningen de har ansvar for. En frivillig kan ikke slette en tildeling, og kan ikke avlyse en oppgave. Oppmøte leses av en selv, av dem som er med i gruppen arrangementet hører til, og av administrator. Forfallsgrunn lagres ikke. Reglene må publiseres etter utrulling til `stabil`, sammen med lesetilgangen og medlemsforslagene. Inntil speilet har kjørt, kan en gammel grunn fortsatt ligge på tildelingen.
 
 Administrator er det samme som den som skal se registeret. En redaktør som endrer nettsiden uten å se registeret, er ikke bygget.
 
@@ -1188,7 +1185,7 @@ Administrator er det samme som den som skal se registeret. En redaktør som endr
 3. Modulvalg lagres for hele menigheten.
 4. «Bli med»: en besøkende melder interesse for en gruppe, og lederen ser henvendelsen.
 5. Et nytt medlem ser meldinger fra innmeldingsdatoen.
-6. Forfall med grunn: medlemmet kan skrive den, og lederen ser den.
+6. ~~Forfall med grunn.~~ **Valg:** grunnen lagres ikke. Opplysningen kan være privat, og tas muntlig.
 7. Kalender- og meldingsmodul med innhold. *Min kalender* på Min side er en mulig funksjon med avtalt innhold (kapittel 3), men er ikke prioritert.
 8. Omsorgsvarsel når samme person settes opp ofte, og varsel før en politiattest går ut.
 

@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { buildAssignment, buildMemberProposal } from "../src/data/newDocuments";
+import { buildAssignment, buildAttendance, buildMemberProposal } from "../src/data/newDocuments";
 import { documentFields, sanitizeForFirestore } from "../src/utils/firestoreData";
 import {
   assignmentAccessPatches,
@@ -8,6 +8,7 @@ import {
   groupLeaderEmailsOf,
   publicGroupCardsOf,
 } from "../src/utils/groupAccess";
+import { absenceFields } from "../src/utils/staffing";
 import type { Assignment, Gathering, Group, Person, Task } from "../src/types";
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from "vitest";
 import { assertFails, assertSucceeds, initializeTestEnvironment, type RulesTestEnvironment } from "@firebase/rules-unit-testing";
@@ -15,6 +16,7 @@ import {
   FieldPath,
   arrayRemove,
   arrayUnion,
+  deleteField,
   collection,
   deleteDoc,
   doc,
@@ -273,9 +275,13 @@ describe("Et medlem", () => {
     await assertSucceeds(getDocs(query(collection(db, "groupMessages"), where("groupId", "==", "group-lyd"))));
     await assertFails(getDoc(doc(db, "groupMessages/m2")));
     await assertFails(all(db, "groupMessages"));
-    for (const name of ["gatherings", "tasks", "gatheringAttendances", "cms_pages", "cms_settings"]) {
+    for (const name of ["gatherings", "tasks", "cms_pages", "cms_settings"]) {
       await assertSucceeds(all(db, name));
     }
+    await assertFails(all(db, "gatheringAttendances"));
+    await assertSucceeds(getDocs(query(collection(db, "gatheringAttendances"), where("gatheringId", "==", "g-apen"))));
+    await assertSucceeds(getDocs(query(collection(db, "gatheringAttendances"), where("personId", "==", "hakon"))));
+    await assertFails(getDocs(query(collection(db, "gatheringAttendances"), where("gatheringId", "==", "g-intern"))));
     for (const mark of ["volunteerRole", "gatheringHeadcount"]) await assertSucceeds(marked(db, mark));
     await assertSucceeds(getDoc(doc(db, "logins/hakon@eksempel.no")));
     await assertFails(getDoc(doc(db, "logins/kari@menigheten.no")));
@@ -682,5 +688,66 @@ describe("Forslag om nye medlemmer", () => {
     const asDeputy = storedProposal("group-lyd", "hakon", "Liv");
     await assertSucceeds(setDoc(doc(hakon(), `memberProposals/${asDeputy.built.id}`), asDeputy.fields));
     await assertSucceeds(getDocs(query(collection(hakon(), "memberProposals"), where("groupId", "==", "group-lyd"), where("status", "==", "pending"))));
+  });
+});
+
+describe("Svar på tildelinger", () => {
+  test("forfall skrives som flere svar i én sending, uten grunn", async () => {
+    await env.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore() as unknown as Firestore;
+      await setDoc(doc(db, "assignments/a-extra"), {
+        taskId: "task-1", personId: "hakon", response: "pending", personName: "Håkon Tveit",
+        gatheringId: "g-apen", gatheringGroupId: "group-lyd", gatheringPublic: true,
+      });
+    });
+    const at = "2026-10-12T12:00:00.000Z";
+    const db = hakon();
+    const batch = writeBatch(db);
+    batch.update(doc(db, "assignments/a1"), absenceFields("confirmed", at));
+    batch.update(doc(db, "assignments/a-extra"), absenceFields("pending", at));
+    batch.update(doc(db, "tasks/task-1"), { status: "open" });
+    await assertSucceeds(batch.commit());
+
+    await assertFails(updateDoc(doc(hakon(), "assignments/a-intern"), { response: "declined", respondedAt: at }));
+    await assertFails(deleteDoc(doc(hakon(), "assignments/a1")));
+    await assertSucceeds(updateDoc(doc(ola(), "assignments/a1"), absenceFields("withdrawn", at)));
+    await assertSucceeds(deleteDoc(doc(ola(), "assignments/a-extra")));
+    await assertFails(updateDoc(doc(ola(), "assignments/a-intern"), { response: "declined", respondedAt: at }));
+  });
+
+  test("en tildeling kan ikke lagres med withdrawalReason", async () => {
+    const built = buildAssignment("task-1", "hakon", "pending", {
+      personName: "Håkon Tveit",
+      gatheringId: "g-apen",
+      gatheringGroupId: "group-lyd",
+      gatheringPublic: true,
+    });
+    const fields = sanitizeForFirestore(documentFields(built));
+    await assertFails(setDoc(doc(hakon(), `assignments/${built.id}`), { ...fields, withdrawalReason: "Syk" }));
+    await assertFails(setDoc(doc(kari(), "assignments/med-grunn"), { ...fields, withdrawalReason: "Syk" }));
+    await assertFails(updateDoc(doc(hakon(), "assignments/a1"), { response: "withdrawn", respondedAt: "2026-10-12T12:00:00.000Z", withdrawalReason: "Syk" }));
+    await assertFails(updateDoc(doc(kari(), "assignments/a1"), { withdrawalReason: "Syk" }));
+    await env.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore() as unknown as Firestore;
+      await updateDoc(doc(db, "assignments/a1"), { withdrawalReason: "Syk" });
+    });
+    await assertSucceeds(updateDoc(doc(kari(), "assignments/a1"), { withdrawalReason: deleteField() }));
+  });
+
+  test("en frivillig kan ikke avlyse en oppgave", async () => {
+    await assertFails(updateDoc(doc(hakon(), "tasks/task-1"), { status: "cancelled" }));
+    await assertSucceeds(updateDoc(doc(ola(), "tasks/task-1"), { status: "cancelled" }));
+    await assertFails(updateDoc(doc(hakon(), "tasks/task-1"), { status: "open" }));
+    await assertSucceeds(updateDoc(doc(kari(), "tasks/task-1"), { status: "open" }));
+  });
+
+  test("hvem som kommer, spørres for arrangementet, ikke for hele samlingen", async () => {
+    const coming = buildAttendance("g-apen", "ola", "attending");
+    await assertSucceeds(setDoc(doc(ola(), `gatheringAttendances/${coming.id}`), sanitizeForFirestore(coming)));
+    const db = hakon();
+    await assertSucceeds(getDocs(query(collection(db, "gatheringAttendances"), where("gatheringId", "==", "g-apen"))));
+    await assertFails(all(db, "gatheringAttendances"));
+    await assertFails(getDocs(query(collection(db, "gatheringAttendances"), where("gatheringId", "==", "g-intern"))));
+    await assertSucceeds(getDocs(query(collection(db, "gatheringAttendances"), where("personId", "==", "hakon"))));
   });
 });
