@@ -3,8 +3,14 @@ import { useParams, Link } from "react-router-dom";
 import { useCms } from "../../context/CmsContext";
 import { CmsContentRenderer } from "../../components/cms/CmsContentRenderer";
 import { useResolvedMediaUrl } from "../../hooks/useMediaMap";
+import { useFirebase } from "../../context/FirebaseDataContext";
+import { isOpenCommunityGathering, locationOf } from "../../utils/gatherings";
+import { eventPath } from "../../utils/gatheringPresentation";
+import { formatNorwegianDateTime } from "../../utils/dates";
 import {
   ArrowLeft,
+  ArrowRight,
+  Calendar,
   User,
 } from "lucide-react";
 
@@ -16,6 +22,11 @@ export const PublicArticlePage: React.FC = () => {
   const found = id ? (getNewsById(id) || getNewsBySlug(id)) : undefined;
   const article = found && found.isPublished !== false ? found : undefined;
   const image = useResolvedMediaUrl(article?.imageUrl);
+
+  // The event the article is about, when it has one that is open to everyone
+  const { gatherings } = useFirebase();
+  const about = article?.gatheringRefId ? gatherings.find((gathering) => gathering.id === article.gatheringRefId) : undefined;
+  const event = about && isOpenCommunityGathering(about) ? about : undefined;
 
   const formatDate = (dateStr: string) => {
     try {
@@ -102,6 +113,30 @@ export const PublicArticlePage: React.FC = () => {
           alt=""
           className="w-full max-h-[28rem] object-cover rounded-2xl border border-stone-200"
         />
+      )}
+
+      {event && (
+        <Link
+          to={eventPath(event.id)}
+          className="flex items-center justify-between gap-3 p-4 rounded-xl bg-primary-50 border border-primary-200/70 hover:border-primary-400 transition-colors"
+        >
+          <span className="flex items-start gap-2.5">
+            <Calendar className="w-4 h-4 mt-0.5 text-primary-700 shrink-0" aria-hidden="true" />
+            <span>
+              <span className="block text-sm font-bold text-stone-900">
+                {event.title}
+                {event.cancelled && " (avlyst)"}
+              </span>
+              <span className="block text-xs text-stone-600">
+                {formatNorwegianDateTime(event.startsAt)} · {locationOf(event)}
+              </span>
+            </span>
+          </span>
+          <span className="flex items-center gap-1 text-xs font-bold text-primary-800 shrink-0">
+            Se arrangementet
+            <ArrowRight className="w-4 h-4" aria-hidden="true" />
+          </span>
+        </Link>
       )}
 
       {/* Article Body: drawn like a page, so links, buttons and headings work here too */}

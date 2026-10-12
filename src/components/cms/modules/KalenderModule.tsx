@@ -1,4 +1,8 @@
 import React, { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { eventPath } from "../../../utils/gatheringPresentation";
+import { useMediaMap } from "../../../hooks/useMediaMap";
+import { resolveMediaUrl } from "../../../utils/media";
 import { useFirebase } from "../../../context/FirebaseDataContext";
 import { useCms } from "../../../context/CmsContext";
 import { isWorshipService, locationOf, upcomingPublicGatherings } from "../../../utils/gatherings";
@@ -34,6 +38,7 @@ export const KalenderModule: React.FC<KalenderModuleProps> = ({
 }) => {
   const { gatherings } = useFirebase();
   const { settings } = useCms();
+  const mediaById = useMediaMap();
   const config = presentation || MODULE_PRESENTATION_DEFAULTS["module-kalender"];
   const defaults = MODULE_PRESENTATION_DEFAULTS["module-kalender"];
 
@@ -156,14 +161,21 @@ export const KalenderModule: React.FC<KalenderModuleProps> = ({
         </div>
       ) : view === "list" ? (
         <div className="bg-white rounded-2xl border border-stone-200/80 divide-y divide-stone-100 shadow-xs overflow-hidden">
-          {allEvents.map((item) => (
-            <div
+          {allEvents.map((item) => {
+            const thumbnail = resolveMediaUrl(item.imageUrl, mediaById, "thumb");
+            const lead = item.summary?.trim();
+            return (
+            <Link
               key={item.id}
+              to={eventPath(item.id)}
               className={`p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-3 hover:bg-stone-50/80 transition-colors ${
                 item.cancelled ? "opacity-75 bg-red-50/20" : ""
               }`}
             >
-              <div className="space-y-1">
+              {thumbnail && (
+                <img src={thumbnail} alt={item.imageAlt?.trim() || ""} loading="lazy" className="w-full md:w-40 aspect-video object-cover rounded-xl shrink-0 bg-stone-100" />
+              )}
+              <div className="space-y-1 flex-1 min-w-0">
                 <span className="text-xs font-bold uppercase tracking-wider text-primary-700 capitalize block">
                   {formatDateLong(item.startsAt)}
                 </span>
@@ -182,6 +194,7 @@ export const KalenderModule: React.FC<KalenderModuleProps> = ({
                     {item.bibleText ? ` (${item.bibleText})` : ""}
                   </p>
                 )}
+                {lead && <p className="text-sm text-stone-600 line-clamp-2">{lead}</p>}
               </div>
               <div className="flex flex-col sm:flex-row md:flex-col items-start md:items-end gap-2 text-xs text-stone-600 shrink-0">
                 <div className="flex items-center gap-1.5 font-bold text-stone-800 bg-stone-50 px-3 py-1.5 rounded-lg border border-stone-200/60">
@@ -193,8 +206,9 @@ export const KalenderModule: React.FC<KalenderModuleProps> = ({
                   <span>{locationOf(item)}</span>
                 </div>
               </div>
-            </div>
-          ))}
+            </Link>
+            );
+          })}
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-stone-200/80 shadow-xs overflow-hidden">
@@ -256,13 +270,14 @@ export const KalenderModule: React.FC<KalenderModuleProps> = ({
                 </div>
                 <div className="space-y-1">
                   {cell.events.slice(0, 3).map((event) => (
-                    <div
+                    <Link
                       key={event.id}
-                      className={`px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-semibold truncate border ${eventPillClass(event)}`}
+                      to={eventPath(event.id)}
+                      className={`block px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-semibold truncate border hover:underline ${eventPillClass(event)}`}
                       title={event.title}
                     >
                       {event.title}
-                    </div>
+                    </Link>
                   ))}
                   {cell.events.length > 3 && (
                     <div className="text-[9px] text-stone-400 font-medium px-1">

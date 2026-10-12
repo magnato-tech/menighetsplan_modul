@@ -1,4 +1,7 @@
 import type { CmsMedia, CmsNewsArticle, CmsPage, CmsSettings } from "../data/cmsData";
+import type { Gathering } from "../types";
+import { teaserOf } from "./gatheringPresentation";
+import { isOpenCommunityGathering } from "./gatherings";
 import { mediaMapFromList, resolveShareableMediaUrl } from "./media";
 import { isPagePublished, pageUrl } from "./menu";
 import { isPublicPath } from "./routes";
@@ -93,6 +96,8 @@ export interface SiteContent {
   news: CmsNewsArticle[];
   media: CmsMedia[];
   settings: Pick<CmsSettings, "churchName" | "appName" | "tagline" | "welcomeSubtext">;
+  /** The events, for the pages they each have. Left out where no event page is asked about. */
+  gatherings?: Gathering[];
 }
 
 // The built-in pages, for when no CMS page points at them
@@ -154,6 +159,16 @@ export function seoForPath(pathname: string, site: SiteContent, now: Date = new 
     return found && found.isPublished !== false
       ? { ...base, title: found.title, summary: found.summary, ogImage: found.imageUrl, type: "article" }
       : { ...base, title: "Artikkelen ble ikke funnet", notFound: true };
+  }
+
+  // An event's own page. Only an event open to everyone has one
+  const eventPage = /^\/arrangement\/([^/]+)$/.exec(path);
+  if (eventPage) {
+    const id = decoded(eventPage[1]);
+    const found = site.gatherings?.find((gathering) => gathering.id === id);
+    return found && isOpenCommunityGathering(found)
+      ? { ...base, title: found.title, summary: teaserOf(found), ogImage: found.imageUrl, type: "article" }
+      : { ...base, title: "Arrangementet ble ikke funnet", notFound: true };
   }
 
   // A CMS page, at its own address or at the built-in page its menu entry points to

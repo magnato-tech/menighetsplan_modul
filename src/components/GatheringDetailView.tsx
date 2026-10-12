@@ -482,7 +482,15 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
           </p>
         </div>
 
-        {filteredSchedule.length === 0 ? (
+        {integratedSchedule.length === 0 ? (
+          <div className="p-8 text-center bg-white rounded-2xl border border-slate-200/80 space-y-2">
+            <Info className="w-8 h-8 text-slate-300 mx-auto" />
+            <p className="text-xs font-bold text-slate-700">Arrangementet har ikke noe program ennå</p>
+            <p className="text-[11px] text-slate-400">
+              {canAdminister ? "Legg inn den første oppgaven med «Ny oppgave». Den blir første punkt i kjøreplanen." : "Ingen oppgaver eller programpunkter er lagt inn."}
+            </p>
+          </div>
+        ) : filteredSchedule.length === 0 ? (
           <div className="p-8 text-center bg-white rounded-2xl border border-slate-200/80 space-y-2">
             <Info className="w-8 h-8 text-slate-300 mx-auto" />
             <p className="text-xs font-bold text-slate-700">Ingen programpunkter matcher filteret</p>

@@ -123,8 +123,8 @@ export function toContractV1({ gathering: g, start, isWorship, tags }: PublicGat
     tittel: g.title,
     tema: g.theme || "",
     bibeltekst: g.bibleText || "",
-    // The contract has `beskrivelse` and `heldag`, but Gathering has no such fields yet.
-    beskrivelse: "",
+    // The lead written for the website. The contract also has `heldag`, which a gathering has no field for.
+    beskrivelse: g.summary?.trim() || "",
     start: toOsloIso(start),
     slutt: toOsloIso(end),
     heldag: false,

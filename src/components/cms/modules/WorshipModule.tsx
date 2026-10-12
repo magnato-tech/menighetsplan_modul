@@ -1,4 +1,6 @@
 import React, { useMemo } from "react";
+import { Link } from "react-router-dom";
+import { eventPath } from "../../../utils/gatheringPresentation";
 import { CmsResolvedLink } from "../CmsResolvedLink";
 import { useFirebase } from "../../../context/FirebaseDataContext";
 import { locationOf, pickHighlight } from "../../../utils/gatherings";
@@ -167,6 +169,12 @@ export const WorshipModule: React.FC<WorshipModuleProps> = ({
               </p>
             )}
             {nextWorship?.summary?.trim() && <p className="text-sm text-stone-600 leading-relaxed">{nextWorship.summary.trim()}</p>}
+            {nextWorship && (
+              <Link to={eventPath(nextWorship.id)} className="inline-flex items-center gap-1.5 text-sm font-bold text-primary-700 hover:text-primary-900">
+                <span>Les mer om arrangementet</span>
+                <ArrowRight className="w-4 h-4" aria-hidden="true" />
+              </Link>
+            )}
           </div>
 
           {nextWorship && (

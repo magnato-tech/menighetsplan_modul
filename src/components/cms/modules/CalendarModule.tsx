@@ -1,8 +1,9 @@
 import React, { useMemo } from "react";
+import { Link } from "react-router-dom";
 import { useFirebase } from "../../../context/FirebaseDataContext";
 import { useCms } from "../../../context/CmsContext";
 import { locationOf, upcomingPublicGatherings } from "../../../utils/gatherings";
-import { teaserOf } from "../../../utils/gatheringPresentation";
+import { eventPath, teaserOf } from "../../../utils/gatheringPresentation";
 import { useMediaMap } from "../../../hooks/useMediaMap";
 import { resolveMediaUrl } from "../../../utils/media";
 import {
@@ -18,7 +19,7 @@ export interface CalendarModuleProps {
   presentation?: ModulePresentationConfig;
 }
 
-/** «Hva skjer»: de fire neste offentlige arrangementene, uten kalender-merkelapp eller lenke. */
+/** «Hva skjer»: de fire neste offentlige arrangementene, hvert som et kort som åpner arrangementets egen side. */
 export const CalendarModule: React.FC<CalendarModuleProps> = ({ presentation }) => {
   const { gatherings } = useFirebase();
   const { settings } = useCms();
@@ -75,8 +76,9 @@ export const CalendarModule: React.FC<CalendarModuleProps> = ({ presentation }) 
             const image = resolveMediaUrl(item.imageUrl, mediaById, "web");
             const teaser = teaserOf(item);
             return (
-            <div
+            <Link
               key={item.id}
+              to={eventPath(item.id)}
               className={`bg-white rounded-xl border p-5 hover:border-primary-300 hover:shadow-md transition-all flex flex-col justify-between min-h-[180px] overflow-hidden ${
                 item.cancelled ? "border-red-200 bg-red-50/20 opacity-75" : "border-stone-200/80"
               }`}
@@ -110,7 +112,7 @@ export const CalendarModule: React.FC<CalendarModuleProps> = ({ presentation }) 
                   <span className="truncate">{locationOf(item)}</span>
                 </div>
               </div>
-            </div>
+            </Link>
             );
           })}
         </div>

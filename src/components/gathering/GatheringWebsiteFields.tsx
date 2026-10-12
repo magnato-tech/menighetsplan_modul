@@ -30,7 +30,7 @@ const GatheringWebsiteFields: React.FC<GatheringWebsiteFieldsProps> = ({ values,
         label="Bilde"
         value={values.imageUrl}
         onChange={(url) => onChange({ imageUrl: url })}
-        helpText="Liggende bilde, gjerne 16:9. Vises på kortet på forsiden."
+        helpText="Liggende bilde, gjerne 16:9. Vises på kortet på forsiden og øverst på arrangementets side."
         altValue={values.imageAlt}
         onAltChange={(alt) => onChange({ imageAlt: alt })}
       />
@@ -45,7 +45,7 @@ const GatheringWebsiteFields: React.FC<GatheringWebsiteFieldsProps> = ({ values,
         rows={2}
         value={values.summary}
         onChange={(e) => onChange({ summary: e.target.value })}
-        placeholder="En setning eller to om arrangementet. Vises på kortet på forsiden."
+        placeholder="En setning eller to om arrangementet. Vises på kortet på forsiden og i kalenderen."
         className={field}
       />
     </div>

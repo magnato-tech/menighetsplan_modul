@@ -4,7 +4,11 @@ import React from "react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { cleanup, fireEvent, render } from "@testing-library/react";
 
-const { cms } = vi.hoisted(() => ({
+const { cms, planner } = vi.hoisted(() => ({
+  planner: {
+    gatherings: [{ id: "host", title: "Høstfest", startsAt: "2026-10-18T15:00:00.000Z", groupId: "g", type: "arrangement", visibility: "offentlig" }],
+    gatheringsReady: true,
+  },
   cms: {
     pages: [
       { id: "p-forside", slug: "", title: "Velkommen", isPublished: true },
@@ -25,6 +29,7 @@ const { cms } = vi.hoisted(() => ({
   },
 }));
 vi.mock("../src/context/CmsContext", () => ({ useCms: () => cms }));
+vi.mock("../src/context/FirebaseDataContext", () => ({ useFirebase: () => planner }));
 vi.mock("../src/services/siteTraffic", () => ({
   siteTrafficRecorder: { view: vi.fn(), seconds: vi.fn(), missing: vi.fn() },
   recordTrafficAction: vi.fn(),
@@ -54,6 +59,7 @@ beforeEach(() => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-10-07T10:00:00.000Z"));
   cms.contentReady = true;
+  planner.gatheringsReady = true;
   cms.settings = { ...cms.settings, countVisits: undefined };
   cms.addons = { nettsidebesok: true };
   localStorage.clear();
@@ -105,6 +111,25 @@ describe("Besøk på nettsiden telles mens de skjer", () => {
     cms.contentReady = true;
     rerender(<Site path="/om-oss" />);
     expect(views()).toEqual([["/om-oss", { entry: true, second: false }]]);
+  });
+
+  test("siden til et arrangement er en side, og en adresse til et arrangement som ikke finnes, er det ikke", () => {
+    const { rerender } = open("/arrangement/host");
+    expect(views()).toEqual([["/arrangement/host", { entry: true, second: false }]]);
+
+    rerender(<Site path="/arrangement/borte" />);
+    expect(vi.mocked(siteTrafficRecorder.missing).mock.calls.map(([address]) => address)).toEqual(["/arrangement/borte"]);
+  });
+
+  test("siden til et arrangement telles ikke før arrangementene er hentet", () => {
+    planner.gatheringsReady = false;
+    const { rerender } = open("/arrangement/host");
+    expect(siteTrafficRecorder.view).not.toHaveBeenCalled();
+    expect(siteTrafficRecorder.missing).not.toHaveBeenCalled();
+
+    planner.gatheringsReady = true;
+    rerender(<Site path="/arrangement/host" />);
+    expect(views()).toEqual([["/arrangement/host", { entry: true, second: false }]]);
   });
 
   test("en adresse uten side telles som det, og Min side og admin telles ikke", () => {

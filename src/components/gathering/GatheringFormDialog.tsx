@@ -288,8 +288,8 @@ export const GatheringFormDialog: React.FC<GatheringFormDialogProps> = ({ isNew,
                 På nettsiden
               </h3>
               <p className="text-xs text-slate-600">
-                Bilde, ingress og tekst er valgfritt. Bildet og ingressen vises på kortet på forsiden. Egen side for arrangementet, med teksten og
-                lenken, kommer i neste del.
+                Bilde, ingress og tekst er valgfritt. Bildet og ingressen vises på kortet på forsiden og i kalenderen. Teksten og lenken vises på
+                arrangementets egen side, som kortet åpner.
               </p>
               {websiteOpen ? (
                 <Suspense fallback={<p className="text-xs text-slate-500">Laster …</p>}>

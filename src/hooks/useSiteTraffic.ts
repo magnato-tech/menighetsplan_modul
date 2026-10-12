@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useCms } from "../context/CmsContext";
+import { useFirebase } from "../context/FirebaseDataContext";
+import { isEventPath } from "../utils/gatheringPresentation";
 import { recordTrafficAction, siteTrafficRecorder } from "../services/siteTraffic";
 import { areOwnVisitsExcluded } from "../utils/ownVisits";
 import { readPreviewModeFlags } from "../utils/previewBridge";
@@ -74,7 +76,8 @@ const sameFile = (a: string, b: string): boolean => {
 /** Starts the counting for the address shown. Called once, where the app knows which address that is. */
 export function useSiteTraffic(pathname: string): void {
   const { pages, news, media, settings, sermons, contentReady, addons } = useCms();
-  const site = useMemo(() => ({ pages, news, media, settings }), [pages, news, media, settings]);
+  const { gatherings, gatheringsReady } = useFirebase();
+  const site = useMemo(() => ({ pages, news, media, settings, gatherings }), [pages, news, media, settings, gatherings]);
   const sermonsNow = useRef(sermons);
   sermonsNow.current = sermons;
 
@@ -87,11 +90,13 @@ export function useSiteTraffic(pathname: string): void {
   useEffect(() => {
     // Until the pages are fetched, a page that exists would be taken for an address without one
     if (!contentReady) return;
+    // The same goes for the page of an event, until the events are fetched
+    if (isEventPath(pathname) && !gatheringsReady) return;
     quietly(() => {
       theTracker().show(counting && isVisitCounted() ? trafficTarget(pathname, site) : null, Date.now());
       scheduleFlush();
     });
-  }, [pathname, site, contentReady, counting]);
+  }, [pathname, site, contentReady, gatheringsReady, counting]);
 
   useEffect(() => {
     const counted = () => countingNow.current && isPublicPath(window.location.pathname) && isVisitCounted();

@@ -28,6 +28,8 @@ import type { StudioData } from "../src/pages/admin/studio";
 import { newGatheringForm, type GatheringFormValues } from "../src/utils/gatheringForm";
 import { missingOnWebsite, teaserOf } from "../src/utils/gatheringPresentation";
 
+// The part of the form about the website is fetched when it is opened, which takes a moment when every test runs at once
+const SLOW = { timeout: 8000 };
 const POSTER = "https://menigheten.example/bilder/hostfest.jpg";
 const inAWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
@@ -87,7 +89,7 @@ describe("Delen «På nettsiden» i skjemaet", () => {
     show();
     fireEvent.click(screen.getByRole("button", { name: "Legg til bilde og tekst" }));
 
-    fireEvent.change(await screen.findByLabelText("Ingress"), { target: { value: "Mat, sang og lek for hele familien." } });
+    fireEvent.change(await screen.findByLabelText("Ingress", {}, SLOW), { target: { value: "Mat, sang og lek for hele familien." } });
     fireEvent.change(screen.getByLabelText("Tekst"), { target: { value: "## Program\n\nVi starter kl. 17." } });
     fireEvent.change(screen.getByLabelText("Lenke (valgfritt)"), { target: { value: "https://pamelding.example/host" } });
     fireEvent.change(screen.getByLabelText("Tekst på knappen"), { target: { value: "Meld deg på" } });
@@ -104,7 +106,7 @@ describe("Delen «På nettsiden» i skjemaet", () => {
 
   test("står åpen når arrangementet alt har bilde eller tekst", async () => {
     show({ summary: "Mat og sang." });
-    expect(((await screen.findByLabelText("Ingress")) as HTMLTextAreaElement).value).toBe("Mat og sang.");
+    expect(((await screen.findByLabelText("Ingress", {}, SLOW)) as HTMLTextAreaElement).value).toBe("Mat og sang.");
     expect(screen.queryByRole("button", { name: "Legg til bilde og tekst" })).toBeNull();
   });
 
@@ -114,7 +116,7 @@ describe("Delen «På nettsiden» i skjemaet", () => {
     Element.prototype.scrollIntoView = scrolled as unknown as typeof Element.prototype.scrollIntoView;
 
     const { unmount } = show({}, "website");
-    expect(await screen.findByLabelText("Ingress")).toBeTruthy();
+    expect(await screen.findByLabelText("Ingress", {}, SLOW)).toBeTruthy();
     expect(scrolled).toHaveBeenCalledTimes(1);
     expect(() => unmount()).not.toThrow();
   });
@@ -124,13 +126,13 @@ describe("Delen «På nettsiden» i skjemaet", () => {
     Element.prototype.scrollIntoView = scrolled as unknown as typeof Element.prototype.scrollIntoView;
 
     show({ summary: "Mat og sang." });
-    expect(await screen.findByLabelText("Ingress")).toBeTruthy();
+    expect(await screen.findByLabelText("Ingress", {}, SLOW)).toBeTruthy();
     expect(scrolled).not.toHaveBeenCalled();
   });
 
   test("en lenke som ikke er en adresse, lagres ikke", async () => {
     show({}, "website");
-    fireEvent.change(await screen.findByLabelText("Lenke (valgfritt)"), { target: { value: "pamelding" } });
+    fireEvent.change(await screen.findByLabelText("Lenke (valgfritt)", {}, SLOW), { target: { value: "pamelding" } });
     fireEvent.click(screen.getByRole("button", { name: "Lagre endringer" }));
 
     expect(screen.getByRole("alert").textContent).toBe("Lenken må starte med https:// eller /.");
@@ -181,7 +183,7 @@ describe("«Arrangementer på nettsiden» i CMS-et", () => {
 
     const form = screen.getByRole("dialog", { name: "Rediger arrangement" });
     expect((within(form).getByLabelText("Tittel") as HTMLInputElement).value).toBe("Gudstjeneste");
-    fireEvent.change(await within(form).findByLabelText("Ingress"), { target: { value: "Velkommen til gudstjeneste." } });
+    fireEvent.change(await within(form).findByLabelText("Ingress", {}, SLOW), { target: { value: "Velkommen til gudstjeneste." } });
     fireEvent.click(within(form).getByRole("button", { name: "Lagre endringer" }));
 
     expect(updateGathering).toHaveBeenCalledWith("b", expect.objectContaining({ title: "Gudstjeneste", summary: "Velkommen til gudstjeneste.", isGudstjeneste: true }));
@@ -207,7 +209,7 @@ describe("Bildet og ingressen på forsiden", () => {
         <CalendarModule />
       </MemoryRouter>
     );
-    const card = (title: string) => screen.getByRole("heading", { name: title }).closest("div.rounded-xl") as HTMLElement;
+    const card = (title: string) => screen.getByRole("heading", { name: title }).closest("a") as HTMLElement;
 
     expect(within(card("Høstfest")).getByRole("img", { name: "Plakat for høstfesten" }).getAttribute("src")).toBe(POSTER);
     expect(within(card("Høstfest")).getByText("Mat og sang.")).toBeTruthy();
@@ -215,6 +217,8 @@ describe("Bildet og ingressen på forsiden", () => {
     // An event without a picture and a lead is shown as before
     expect(card("Konsert").querySelector("img")).toBeNull();
     expect(within(card("Konsert")).getByText("Lovsang")).toBeTruthy();
+    // The whole card opens the event's own page
+    expect(card("Høstfest").getAttribute("href")).toBe("/arrangement/a");
   });
 
   test("«Neste gudstjeneste» viser bildet og ingressen til gudstjenesten", () => {

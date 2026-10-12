@@ -8,6 +8,12 @@ import { isOpenCommunityGathering } from "./gatherings";
 
 type Presented = Pick<Gathering, "imageUrl" | "summary" | "content" | "theme">;
 
+/** The address of an event's own page on the website. Every card and calendar entry for the event leads here. */
+export const eventPath = (id: string): string => `/arrangement/${encodeURIComponent(id)}`;
+
+/** Whether an address is the page of an event. */
+export const isEventPath = (pathname: string): boolean => /^\/arrangement\/[^/]+\/?$/.test(pathname);
+
 /** The line under the title on a card: the lead, or the theme when no lead is written. */
 export const teaserOf = (gathering: Pick<Gathering, "summary" | "theme">): string => gathering.summary?.trim() || gathering.theme?.trim() || "";
 

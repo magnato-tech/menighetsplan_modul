@@ -109,7 +109,7 @@ app.get('/api/offentlig/arrangementer', async (req: Request, res: Response) => {
 /**
  * Public iCal subscription for open community gatherings (same inclusion rule as the calendar module).
  */
-app.get('/api/offentlig/kalender.ics', async (_req: Request, res: Response) => {
+app.get('/api/offentlig/kalender.ics', async (req: Request, res: Response) => {
   try {
     const now = new Date();
     const gatherings: Gathering[] = [];
@@ -138,7 +138,8 @@ app.get('/api/offentlig/kalender.ics', async (_req: Request, res: Response) => {
     res.set('Content-Type', 'text/calendar; charset=utf-8');
     res.set('Content-Disposition', 'attachment; filename="kalender.ics"');
     res.set('Cache-Control', 'public, max-age=300');
-    res.send(toIcalendar(gatherings, { calendarName, now }));
+    // Each event carries the address of its own page on the website
+    res.send(toIcalendar(gatherings, { calendarName, now, siteUrl: `${req.protocol}://${req.get('host')}` }));
   } catch (err: any) {
     console.error('Error fetching /api/offentlig/kalender.ics:', err);
     res.status(500).json({ error: 'Kunne ikke hente kalenderabonnement', message: err.message });
@@ -257,9 +258,11 @@ let siteContentReadAt = 0;
 let siteContentRead: Promise<void> | null = null;
 
 async function readSiteContent(): Promise<SiteContent> {
-  const [pages, news, media, settings] = await Promise.all([
+  const [pages, news, gatherings, media, settings] = await Promise.all([
     getDocs(collection(db, CMS_COLLECTIONS.PAGES)),
     getDocs(collection(db, CMS_COLLECTIONS.NEWS)),
+    // The events, for the page each of them has. Without them an event page gets the church's own title
+    loadGatheringDocs().catch(() => []),
     getDocs(collection(db, CMS_COLLECTIONS.MEDIA)).catch(() => null),
     // The settings may be missing or unreadable; the app then shows its defaults, and so do we
     getDoc(doc(db, CMS_COLLECTIONS.SETTINGS, CMS_SETTINGS_DOC_ID)).catch(() => null),
@@ -267,6 +270,7 @@ async function readSiteContent(): Promise<SiteContent> {
   return {
     pages: pages.docs.map((d) => d.data() as CmsPage),
     news: news.docs.map((d) => d.data() as CmsNewsArticle),
+    gatherings: gatherings as Gathering[],
     media: media?.docs.map((d) => d.data() as CmsMedia) ?? [],
     settings: settings?.exists() ? (settings.data() as CmsSettings) : emptyCmsSettings,
   };

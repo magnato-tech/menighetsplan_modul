@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCms } from "../context/CmsContext";
+import { useFirebase } from "../context/FirebaseDataContext";
 import { exampleAddresses, simulateSiteTraffic } from "../data/simulatedSiteTraffic";
 import { addExampleTraffic, clearSiteTraffic, removeExampleTraffic, subscribeSiteTraffic } from "../services/siteTraffic";
 import { areOwnVisitsExcluded, setOwnVisitsExcluded } from "../utils/ownVisits";
@@ -74,7 +75,8 @@ export function useSiteTrafficBoard(periodId: TrafficPeriodId): SiteTrafficBoard
     );
   }, [since, period.to]);
 
-  const site = useMemo(() => ({ pages, news, media, settings, sermons }), [pages, news, media, settings, sermons]);
+  const { gatherings } = useFirebase();
+  const site = useMemo(() => ({ pages, news, media, settings, sermons, gatherings }), [pages, news, media, settings, sermons, gatherings]);
   // While a longer stretch is on its way, the board keeps what it showed, rather than going blank
   // or showing a long period summed from the few days it happens to have
   const covering = fetched !== null && fetched.from <= period.previousFrom && fetched.to >= period.to ? fetched.days : null;

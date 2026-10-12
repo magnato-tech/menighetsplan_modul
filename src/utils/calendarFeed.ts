@@ -1,4 +1,5 @@
 import type { Gathering } from "../types";
+import { eventPath } from "./gatheringPresentation";
 import { isOpenCommunityGathering, locationOf } from "./gatherings";
 
 const DEFAULT_DURATION_MS = 90 * 60 * 1000;
@@ -37,44 +38,52 @@ export function gatheringsForCalendarFeed<T extends Gathering>(
 export interface IcalendarOptions {
   calendarName?: string;
   now?: Date;
+  /** Where the website is, "https://menigheten.example". With it, every event carries the address of its own page. */
+  siteUrl?: string;
 }
 
-/** Build an iCalendar document for open community gatherings. */
-export function toIcalendar(gatherings: Gathering[], options: IcalendarOptions = {}): string {
-  const now = options.now || new Date();
-  const events = gatheringsForCalendarFeed(gatherings, now);
-  const calendarName = escapeIcal(options.calendarName || "Menighetsplan");
+/** One event as the lines of a calendar entry: the lead first, then the theme and the Bible text. */
+function eventLines(g: Gathering, now: Date, siteUrl?: string): string[] {
+  const start = new Date(g.startsAt);
+  const end = g.endsAt ? new Date(g.endsAt) : new Date(start.getTime() + DEFAULT_DURATION_MS);
+  const theme = [g.theme, g.bibleText].filter(Boolean).join(" — ");
+  const description = [g.summary?.trim(), theme].filter(Boolean).join("\n\n");
 
-  const lines: string[] = [
+  return [
+    "BEGIN:VEVENT",
+    `UID:${g.id}@menighetsplan`,
+    `DTSTAMP:${formatIcalUtc(now)}`,
+    `DTSTART:${formatIcalUtc(start)}`,
+    `DTEND:${formatIcalUtc(end)}`,
+    `SUMMARY:${escapeIcal(g.title || "Samling")}`,
+    `LOCATION:${escapeIcal(locationOf(g))}`,
+    ...(description ? [`DESCRIPTION:${escapeIcal(description)}`] : []),
+    ...(siteUrl ? [`URL:${siteUrl.replace(/\/+$/, "")}${eventPath(g.id)}`] : []),
+    ...(g.cancelled ? ["STATUS:CANCELLED"] : []),
+    "END:VEVENT",
+  ];
+}
+
+function calendarOf(events: Gathering[], options: IcalendarOptions): string {
+  const now = options.now || new Date();
+  return [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
     "PRODID:-//Menighetsplan//NO",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
-    `X-WR-CALNAME:${calendarName}`,
-  ];
+    `X-WR-CALNAME:${escapeIcal(options.calendarName || "Menighetsplan")}`,
+    ...events.flatMap((event) => eventLines(event, now, options.siteUrl)),
+    "END:VCALENDAR",
+  ].join("\r\n");
+}
 
-  for (const g of events) {
-    const start = new Date(g.startsAt);
-    const end = g.endsAt ? new Date(g.endsAt) : new Date(start.getTime() + DEFAULT_DURATION_MS);
-    const descriptionParts = [g.theme, g.bibleText].filter(Boolean).join(" — ");
+/** Build an iCalendar document for open community gatherings. */
+export function toIcalendar(gatherings: Gathering[], options: IcalendarOptions = {}): string {
+  return calendarOf(gatheringsForCalendarFeed(gatherings, options.now || new Date()), options);
+}
 
-    lines.push("BEGIN:VEVENT");
-    lines.push(`UID:${g.id}@menighetsplan`);
-    lines.push(`DTSTAMP:${formatIcalUtc(now)}`);
-    lines.push(`DTSTART:${formatIcalUtc(start)}`);
-    lines.push(`DTEND:${formatIcalUtc(end)}`);
-    lines.push(`SUMMARY:${escapeIcal(g.title || "Samling")}`);
-    lines.push(`LOCATION:${escapeIcal(locationOf(g))}`);
-    if (descriptionParts) {
-      lines.push(`DESCRIPTION:${escapeIcal(descriptionParts)}`);
-    }
-    if (g.cancelled) {
-      lines.push("STATUS:CANCELLED");
-    }
-    lines.push("END:VEVENT");
-  }
-
-  lines.push("END:VCALENDAR");
-  return lines.join("\r\n");
+/** One event as a calendar file, for the one who wants just that event in their own calendar. */
+export function toIcalendarEvent(gathering: Gathering, options: IcalendarOptions = {}): string {
+  return calendarOf([gathering], options);
 }

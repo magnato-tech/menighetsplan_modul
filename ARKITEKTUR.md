@@ -67,7 +67,7 @@ Ved utdatert JavaScript etter deploy: `ChunkErrorBoundary` prøver én automatis
 
 | Flate | Ruter | Hovedfiler |
 |---|---|---|
-| Offentlig nettside | `/`, `/hva-skjer`, `/taler`, `/fellesskap`, `/lederskap`, `/om-oss`, `/kontakt`, `/side/:slug`, `/artikkel/:id` | `src/pages/public/` |
+| Offentlig nettside | `/`, `/hva-skjer`, `/taler`, `/fellesskap`, `/lederskap`, `/om-oss`, `/kontakt`, `/side/:slug`, `/artikkel/:id`, `/arrangement/:id` | `src/pages/public/` |
 | Min side | `/minside`, `/leder`, `/oppgave/:id`, `/gruppe/:id`, `/samling/:id`, `/husfellesskap`, og detaljsidene under `/admin/…` | `src/pages/` |
 | Admin Studio | `/admin` (faner via `?tab=`) | `src/pages/admin/` |
 

@@ -18,6 +18,7 @@ const { cms, mode } = vi.hoisted(() => ({
   mode: { current: "demo" as "demo" | "production" | null },
 }));
 vi.mock("../src/context/CmsContext", () => ({ useCms: () => cms }));
+vi.mock("../src/context/FirebaseDataContext", () => ({ useFirebase: () => ({ gatherings: [] }) }));
 vi.mock("../src/hooks/useOperatingMode", () => ({ useOperatingMode: () => mode.current }));
 vi.mock("../src/services/siteTraffic", () => ({
   subscribeSiteTraffic: vi.fn(),

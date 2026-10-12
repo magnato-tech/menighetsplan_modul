@@ -27,6 +27,8 @@ import { PublicStaticPage } from "./pages/public/PublicStaticPage";
 import { PublicArticlePage } from "./pages/public/PublicArticlePage";
 import { PublicSermonsPage } from "./pages/public/PublicSermonsPage";
 import { PublicLeadershipPage } from "./pages/public/PublicLeadershipPage";
+import { PublicEventPage } from "./pages/public/PublicEventPage";
+import { useFirebase } from "./context/FirebaseDataContext";
 
 const AdminStudio = lazy(() =>
   import("./pages/admin/AdminStudio").then((m) => ({ default: m.AdminStudio }))
@@ -59,13 +61,14 @@ function LazyRouteFallback() {
  */
 function useSiteSeo(pathname: string) {
   const { pages, news, media, settings } = useCms();
+  const { gatherings } = useFirebase();
 
   useEffect(() => {
-    const config = seoForPath(pathname, { pages, news, media, settings });
+    const config = seoForPath(pathname, { pages, news, media, settings, gatherings });
     if (config) return injectPageSeo(config, media);
     document.title = settings.appName;
     return undefined;
-  }, [pathname, pages, news, settings, media]);
+  }, [pathname, pages, news, settings, media, gatherings]);
 }
 
 function AppContent() {
@@ -172,6 +175,7 @@ function AppContent() {
           <Route path="/side/:slug" element={<PublicStaticPage />} />
           <Route path="/:slug" element={<PublicStaticPage />} />
           <Route path="/artikkel/:id" element={<PublicArticlePage />} />
+          <Route path="/arrangement/:id" element={<PublicEventPage />} />
           <Route path="/nettside" element={<Navigate to="/" replace />} />
           <Route path="/nettside/:slug" element={<PublicStaticPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />

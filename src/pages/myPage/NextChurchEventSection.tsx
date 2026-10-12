@@ -1,6 +1,8 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { formatNorwegianDateTime } from "../../utils/dates";
+import { isOpenCommunityGathering } from "../../utils/gatherings";
+import { eventPath } from "../../utils/gatheringPresentation";
 import { MyPageModel } from "./useMyPage";
 import {
   Calendar,
@@ -55,6 +57,13 @@ export const NextChurchEventSection: React.FC<NextChurchEventSectionProps> = ({ 
               </div>
             )}
           </div>
+
+          {/* What the website says about it: picture, text and how to sign up */}
+          {isOpenCommunityGathering(nextChurchEvent) && (
+            <Link to={eventPath(nextChurchEvent.id)} className="inline-block text-[11px] font-bold text-indigo-700 hover:text-indigo-900 underline">
+              Se arrangementet på nettsiden
+            </Link>
+          )}
 
           {/* Highlight if current user is serving in this service */}
           {myTaskInChurchEvent && (

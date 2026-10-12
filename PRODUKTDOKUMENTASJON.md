@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.16 · **Sist oppdatert:** 2026-10-12
+> **Dokumentversjon:** 4.17 · **Sist oppdatert:** 2026-10-12
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -295,6 +295,7 @@ Ikke bygget. Avtalt innhold, hvis den tas inn senere:
 | Side | Adresse | Innholdet kommer fra | Status |
 |---|---|---|---|
 | **Forside** | `/` | Velkomsttekst fra innstillingene. Fremhevet samling eller neste gudstjeneste, og de fire neste samlingene, fra planleggeren. Tre siste nyheter og siste tale fra CMS-et | Delvis: tre infobokser, fellesskapsteksten og gaveteksten står fast i koden |
+| **Arrangement** | `/arrangement/<id>` | Arrangementets egen side: bilde, tid, sted, tema, ingress, tekst, knapp og «Legg i kalenderen min». Sier fra når arrangementet er avlyst eller holdt. Bare arrangementer åpne for alle har en side | Levert 12. oktober |
 | **Hva skjer** | `/hva-skjer` | Kommende offentlige samlinger fra planleggeren | Levert |
 | **Taler** | `/taler` | Talearkivet fra CMS-et, med avspilling og bildet til hver tale | Levert |
 | **Fellesskap** | `/fellesskap` | Gruppene som er satt til å vises, med møtetid og hvem man kan kontakte | Levert |
@@ -331,8 +332,8 @@ Felles begrep for enhver samling: gudstjeneste, ungdomsmøte, bønnemøte, dugna
 | `programSchedule` | `ProgramItem[]` | Nei | Program: klokkeslett, tittel, beskrivelse og eventuell kobling til en oppgave |
 | `imageUrl`, `imageAlt` | `string` | Nei | Bilde på nettsiden: en adresse eller et bilde fra mediebiblioteket, og bildeteksten for den som ikke ser bildet |
 | `summary` | `string` | Nei | Ingress: en setning eller to, vist på kortet på forsiden. Uten ingress vises temaet |
-| `content` | `string` | Nei | Lengre tekst om arrangementet, skrevet som teksten på en side. Lagres, og vises når arrangementet får egen side (kapittel 14, del A3) |
-| `linkUrl`, `linkLabel` | `string` | Nei | Lenke, for eksempel til påmelding, og teksten på knappen. Lagres, og vises på arrangementets egen side (del A3) |
+| `content` | `string` | Nei | Lengre tekst om arrangementet, skrevet som teksten på en side. Vises på arrangementets egen side |
+| `linkUrl`, `linkLabel` | `string` | Nei | Lenke, for eksempel til påmelding, og teksten på knappen («Les mer» når ingen er skrevet). Vises på arrangementets egen side, i ny fane når den går ut av nettsiden |
 | `updatedBy`, `updatedAt` | `string`, ISO 8601 | Nei | Hvem som endret sist, og når |
 
 ### 5.2 Oppgave (`Task`)
@@ -893,6 +894,26 @@ Del A2 av «Arrangement, maler og serier» (kapittel 14), og første del av A3.
 | **Lagres, men vises ikke ennå** | Den lengre teksten og lenken. De får plass på arrangementets egen side, som er neste del, og skjemaet sier det |
 | **Prøvd** | 22 nye sjekker: hva som lagres og tas bort, lenken, hva et arrangement mangler, skjemaet fra CMS-et til lagret arrangement, og kortene på forsiden |
 
+### Egen side for arrangementet (12. oktober 2026)
+
+Resten av del A3 i «Arrangement, maler og serier» (kapittel 14).
+
+| Område | Levert |
+|:---|:---|
+| **Siden** | `/arrangement/<id>`: bilde, tittel, dato, tid (med slutt, også over flere dager), sted, tema og bibeltekst, ingress, den lengre teksten, knapp med lenken, og nyhetene som hører til arrangementet |
+| **Avlyst og holdt** | Et avlyst arrangement sier det øverst, med ikon og ord. Et arrangement som er holdt, beholder siden sin, så en delt lenke virker, og sier at det er holdt |
+| **Bare åpne arrangementer** | Et internt arrangement og et møte i en gruppe har ingen side, heller ikke for den som har adressen |
+| **Veiene dit** | Kortene i «Hva skjer», lenken i «Neste gudstjeneste», radene i kalenderlisten og arrangementene i månedsvisningen åpner siden. Kalenderlisten viser også bildet og ingressen |
+| **Legg i kalenderen min** | En kalenderfil med det ene arrangementet, med adressen til siden i |
+| **Nyheter** | En nyhet som hører til et arrangement, har en faktaboks med tid og sted, og lenke til arrangementets side |
+| **Deling og søk** | Tittel, ingress og bilde følger adressen, i nettleseren og fra serveren. Besøk på siden telles som besøk på en side |
+| **Kalenderabonnementet** | Ingressen står i beskrivelsen, og hvert arrangement har adressen til siden sin |
+| **Det offentlige API-et** | `beskrivelse` har ingressen. Ingen andre nye felt er gitt ut |
+| **Min side** | «Neste i menigheten» lenker til arrangementets side |
+| **Rettet** | Et arrangement uten program sa «Ingen programpunkter matcher filteret». Nå sier det at arrangementet ikke har noe program ennå |
+| **Prøvd** | 23 nye sjekker for siden, veiene dit, kalenderfilen, delingskortet, tellingen av besøk og API-et |
+| **Ikke levert her** | Merking av tid og sted for søkemotorer utover tittel og beskrivelse |
+
 ---
 
 
@@ -988,7 +1009,7 @@ Bestilt av produkteier etter en gjennomgang av skjemaet for arrangementer i eRed
 |:---|:---|:---|
 | A1 | **Ett skjema i planleggeren.** Det raske skjemaet står, og «Flere valg» åpner det store, på en stor flate. Det samme skjemaet brukes ved redigering. Plass til mal og serie fra start | **Levert 12. oktober** (kapittel 12). Mal og serie er prøveutgaver |
 | A2 | **Bilde og tekst på arrangementet.** Feltene ligger i arrangementets eget skjema, i delen «På nettsiden»: bilde med bildetekst, ingress, lang tekst og lenke med knappetekst. «Forside-overstyring» i CMS-et er blitt «Arrangementer på nettsiden»: en oversikt som viser hva hvert arrangement mangler, og som åpner det samme skjemaet på delen om nettsiden | **Levert 12. oktober** (kapittel 12) |
-| A3 | **Nettsiden.** ~~Bilde og ingress på kortene i «Neste gudstjeneste» og «Hva skjer».~~ **Levert 12. oktober, sammen med A2.** Gjenstår, og er neste: bilde i kalenderlisten. Egen side for hvert arrangement, som alle kort åpner. Bildet og ingressen følger med ved deling og i kalenderabonnementet. En nyhet som hører til et arrangement, får en faktaboks med tid og sted | |
+| A3 | **Nettsiden.** Bilde og ingress på kortene i «Neste gudstjeneste», «Hva skjer» og kalenderlisten. Egen side for hvert arrangement, som alle kort og kalenderen åpner. Bildet og ingressen følger med ved deling og i kalenderabonnementet. En nyhet som hører til et arrangement, har en faktaboks med tid og sted | **Levert 12. oktober** (kapittel 12) |
 | A4 | **«Lag neste arrangement»** kopierer også bilde, tekst og kjøreplan. I dag kopieres oppgavene, men ikke kjøreplanen | |
 | B | **Maler.** En mal har fakta, bilde og tekst, standard bemanning (roller og antall) og kjøreplanen fra arrangementet den ble laget av, med klokkeslett som følger starttiden. «Lag mal av dette arrangementet» og «Nytt arrangement fra mal» | |
 | C | **Serier.** Fra en mal: startdato, tidspunkt, siste dato og frekvens. Datoene vises før noe opprettes, enkeltdatoer kan tas bort, og det sies fra der det alt ligger et arrangement. Hvert arrangement i serien er et vanlig arrangement, merket som del av serien | Dagene i en serie regnes ut (`src/utils/series.ts`) |
