@@ -233,8 +233,10 @@ const arrangementer: HelpArticle = {
     "Velg Ansvarlig gruppe.",
     "Huk av Dette er en gudstjeneste hvis det gjelder.",
     "Trykk Legg til i planleggeren.",
+    "Trenger arrangementet mer enn dette, trykk Flere valg. Da åpnes hele skjemaet, med det du har skrevet: sluttid, slutt en annen dag, sted, bibeltekst og hvem som ser arrangementet.",
+    "Start fra en mal og Gjenta som serie i det store skjemaet er merket Prøveutgave. Malen fyller inn tittel og klokkeslett. Serien viser dagene, men bare det første arrangementet opprettes.",
     "For å gjenta et arrangement: åpne neste arrangement, sett ny dato, og bekreft. Oppgavene kopieres uten personer.",
-    "På kjøreplanen: Rediger, Ny oppgave, Skriv ut. Overskrift: Kjøreplan & «Hvem gjør hva».",
+    "På kjøreplanen: Rediger åpner det samme store skjemaet, der arrangementet også kan avlyses. Ny oppgave, Skriv ut. Overskrift: Kjøreplan & «Hvem gjør hva».",
   ],
   knapper:
     "Plassholder tittel: «Tittel, f.eks. Søndagsgudstjeneste & dåp». Plassholder tema: «Valgfritt tema...». Tom gruppe: «Ingen grupper finnes ennå». Knapp: Legg til i planleggeren.",

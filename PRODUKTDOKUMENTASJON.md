@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.14 · **Sist oppdatert:** 2026-10-12
+> **Dokumentversjon:** 4.15 · **Sist oppdatert:** 2026-10-12
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -138,7 +138,7 @@ Adminpanelet ligger på `/admin` og har én meny med to deler. Hver fane har sin
 | Fane | Hva administratoren gjør | Status |
 |---|---|---|
 | **Oversikt** | Ser nøkkeltall og hva som haster | Levert |
-| **Arrangementer** | Oppretter, endrer og avlyser samlinger. Velger ansvarlig gruppe, synlighet og om det er en gudstjeneste. «Lag neste arrangement» kopierer oppgavene til en ny dato | Levert |
+| **Arrangementer** | Oppretter, endrer og avlyser samlinger. Det raske skjemaet tar tittel, dato, klokkeslett og tema. «Flere valg» åpner det store skjemaet, som også brukes ved redigering: slutt (også en annen dag), sted, bibeltekst, ansvarlig gruppe, gudstjeneste og synlighet. «Lag neste arrangement» kopierer oppgavene til en ny dato | Levert. Mal og serie i det store skjemaet er prøveutgaver (kapittel 14) |
 | **Trenger oppfølging** | Ser ubesatte oppgaver og akutte forfall på tvers av samlinger. Tildeler, forespør og åpner purretekst | Levert |
 | **Grupper & husfellesskap** | Oppretter grupper, setter leder og nestleder, kategori, møteplan og om gruppen vises på nettsiden | Levert |
 | **Personer & roller** | Holder personregisteret: kontaktinfo, rolle, politiattest, perioder personen er borte, og offentlig profil med samtykke | Levert |
@@ -860,6 +860,20 @@ Bestilt av produkteier samme dag: en nyhet om noe som er over, skal ikke bli st�
 | Husfellesskap & grupper | Nei. Er et banner med fast tekst og lenke til gruppesiden, og leser ikke gruppene |
 | Givertjeneste & Vipps | Nei, og skal ikke. Viser Vipps-nummer og konto fra innstillingene |
 
+### Ett skjema for arrangementer (12. oktober 2026)
+
+Del A1 av «Arrangement, maler og serier» (kapittel 14).
+
+| Område | Levert |
+|:---|:---|
+| **Det raske skjemaet** | Står som før, med knappen «Flere valg». «Legg til i planleggeren» lagrer med en gang |
+| **Det store skjemaet** | Åpnes over hele skjermen med det som er skrevet i det raske. Tittel, dato, start, slutt (også en annen dag), sted, tema, bibeltekst, ansvarlig gruppe, gudstjeneste og synlighet i tre trinn |
+| **Redigering** | «Rediger» på arrangementet åpner det samme skjemaet, der arrangementet også kan avlyses. Den lille dialogen er tatt ut. Tema og bibeltekst kan nå endres etterpå, og sted og slutt settes når arrangementet opprettes |
+| **Feil som er rettet** | Avkrysningen het «Er gudstjeneste (isGudstjeneste)». En slutt før starten ble lagret uten spørsmål |
+| **Menighetsplattform** | Ingen av skjemaene spør etter ansvarlig gruppe. Arrangementet går til gruppen som holder kalenderen |
+| **Prøveutgaver** | «Start fra en mal» og «Gjenta som serie», merket som det (kapittel 14) |
+| **Prøvd** | 37 nye sjekker: dagene i en serie over sommertid, nyttår og måneder uten femte ukedag, hva skjemaet lagrer og tar bort, og skjemaet selv fra «Flere valg» til lagret arrangement |
+
 ---
 
 
@@ -876,6 +890,7 @@ Sortert etter hvor mye de betyr for en menighet som skal ta løsningen i bruk.
 | 5 | Bilder lagres inne i sidedokumentene, og kan da ikke brukes som delebilde | Fase 2 |
 | 6 | To kilder for stab og lederskap, den ene uten samtykke | Fase 2 |
 | 7 | Programmet i kjøreplanen kan ikke redigeres | Fase 3 |
+| 7b | Mal og serie i skjemaet for arrangementer er prøveutgaver: malen er fire faste eksempler, og en serie oppretter bare det første arrangementet | «Arrangement, maler og serier», del B og C |
 | 8 | Ingen varsling: forespørsler og forfall når ingen uten at de åpner appen | Fase 3 |
 | 9 | Modulvalg lagres bare i én nettleser | Fase 3 |
 | 10 | En besøkende kan ikke melde interesse for en gruppe i løsningen | Fase 3 |
@@ -945,6 +960,28 @@ Trinnene tas i rekkefølge. Et trinn er ferdig når det er prøvd, testene er gr
 * **Menighetsplattform tilbys etter invitasjon.** Det er gratis for menigheten, men oppsett og drift koster leverandøren per menighet.
 
 Trinn 2 og 4 er det samme som fase 1 under. Fase 2–4 fortsetter som før når trinnene er på plass.
+
+### Arrangement, maler og serier *(avtalt 12. oktober 2026, pågår)*
+
+Bestilt av produkteier etter en gjennomgang av skjemaet for arrangementer i eRedaktør og av malene og seriene i en tidligere egen løsning. Et arrangement finnes ett sted. Planleggeren eier fakta (tittel, tid, sted, avlyst), og CMS-et eier presentasjonen (bilde, ingress, tekst). Hver del prøves og sendes inn for seg.
+
+| Del | Hva | Status |
+|:---|:---|:---|
+| A1 | **Ett skjema i planleggeren.** Det raske skjemaet står, og «Flere valg» åpner det store, på en stor flate. Det samme skjemaet brukes ved redigering. Plass til mal og serie fra start | **Levert 12. oktober** (kapittel 12). Mal og serie er prøveutgaver |
+| A2 | **«Arrangementer på nettsiden» i CMS-et.** Dagens «Forside-overstyring» utvides: bilde med bildetekst, ingress, lang tekst og lenke eller knapp. Listen viser hvilke arrangementer som mangler bilde eller tekst | Neste |
+| A3 | **Nettsiden.** Bilde på kortene i «Neste gudstjeneste», «Hva skjer» og kalenderlisten. Egen side for hvert arrangement, som alle kort åpner. Bildet og ingressen følger med ved deling og i kalenderabonnementet. En nyhet som hører til et arrangement, får en faktaboks med tid og sted | |
+| A4 | **«Lag neste arrangement»** kopierer også bilde, tekst og kjøreplan. I dag kopieres oppgavene, men ikke kjøreplanen | |
+| B | **Maler.** En mal har fakta, bilde og tekst, standard bemanning (roller og antall) og kjøreplanen fra arrangementet den ble laget av, med klokkeslett som følger starttiden. «Lag mal av dette arrangementet» og «Nytt arrangement fra mal» | |
+| C | **Serier.** Fra en mal: startdato, tidspunkt, siste dato og frekvens. Datoene vises før noe opprettes, enkeltdatoer kan tas bort, og det sies fra der det alt ligger et arrangement. Hvert arrangement i serien er et vanlig arrangement, merket som del av serien | Dagene i en serie regnes ut (`src/utils/series.ts`) |
+
+**Slik er det bestemt**
+
+* **Prøveutgaver i skjemaet** (produkteier, 12. oktober). «Start fra en mal» og «Gjenta som serie» står i det store skjemaet før de er bygget, merket «Prøveutgave». Malen fyller inn tittel og klokkeslett fra fire faste eksempler. Serien viser dagene, men bare det første arrangementet opprettes, og skjemaet sier det. Dette er et unntak fra regelen om at et valg i admin skal virke der det står, og det gjelder til del B og C er levert.
+* **En fast person i en mal blir forespurt** på hvert arrangement, ikke satt opp som bekreftet.
+* **Ingenting er påkrevd.** Malens bilde er standardbildet, og et arrangement uten mal og uten bilde vises uten.
+* **«Én gang i måneden»** er samme ukedag i samme uke i måneden. En måned uten en slik dag står over.
+* **Nivåene.** Skjema, bilde, tekst, maler og serier gjelder begge nivå. Bemanning og kjøreplan i en mal hører til Menighetsplan. På Menighetsplattform velges ingen ansvarlig gruppe: arrangementet går til gruppen som holder kalenderen.
+* **Ikke med her:** redigering av kjøreplanen med varighet og dra og slipp (fase 3).
 
 ### Fase 1 – Trygg i drift *(trinn 2 og 4 over)*
 1. Innlogging med Google-konto. Første administrator er produkteierens konto.

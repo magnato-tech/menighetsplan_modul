@@ -29,7 +29,11 @@ import { InstructionDialog } from "./gathering/InstructionDialog";
 import { AssignPersonDialog } from "./gathering/AssignPersonDialog";
 import { EditTaskDialog } from "./gathering/EditTaskDialog";
 import { CreateTaskDialog } from "./gathering/CreateTaskDialog";
-import { EditGatheringDialog } from "./gathering/EditGatheringDialog";
+import { GatheringFormDialog } from "./gathering/GatheringFormDialog";
+import { useFirebase } from "../context/FirebaseDataContext";
+import { useLevel } from "../hooks/useLevel";
+import { formOfGathering, gatheringUpdatesOf } from "../utils/gatheringForm";
+import { hasPlanner } from "../utils/level";
 
 interface GatheringDetailViewProps {
   gatheringId: string;
@@ -54,6 +58,10 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
     updateAssignmentStatus,
     removeAssignment,
   } = detail;
+
+  // The form the event is changed in is the one it was made in (see utils/gatheringForm.ts)
+  const { groups: allGroups } = useFirebase();
+  const withPlanner = hasPlanner(useLevel());
 
   const isExplicitAdminView = mode === "admin" || (isUserAdmin && mode !== "leader");
   const canAdminister = isUserAdmin || isExplicitAdminView;
@@ -569,10 +577,16 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
       />
 
       {isEditingGathering && (
-        <EditGatheringDialog
-          detail={detail}
-          gathering={gathering}
-          showToast={showToast}
+        <GatheringFormDialog
+          isNew={false}
+          initial={formOfGathering(gathering)}
+          groups={allGroups}
+          showGroup={withPlanner}
+          onSave={(values) => {
+            const result = detail.updateGathering(gathering.id, gatheringUpdatesOf(values, withPlanner));
+            if (result.success) showToast("Arrangementet ble oppdatert!");
+            return result;
+          }}
           onClose={() => setIsEditingGathering(false)}
         />
       )}

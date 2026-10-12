@@ -76,6 +76,7 @@ Kjør `npm run lint` og `npm test` før en endring regnes som ferdig.
 | `src/pages/myPage/` | Min side: `useMyPage.ts` regner ut alt som vises, resten er én fil per seksjon |
 | `src/pages/leaderGroup/` | Delene av gruppesiden (`LeaderGroupDetailPage.tsx`) |
 | `src/components/gathering/` | Dialogene i samlingsvisningen (`GatheringDetailView.tsx`) |
+| `src/utils/gatheringForm.ts`, `src/components/gathering/GatheringFormDialog.tsx`, `src/utils/series.ts`, `src/data/templateMockup.ts` | Skjemaet et arrangement opprettes og endres i: hva feltene holder og hva som lagres, det store skjemaet (åpnet fra «Flere valg» og fra «Rediger»), dagene i en serie, og eksemplene som står for maler til de er bygget |
 | `src/components/husfellesskap/` | Fanene og dialogene i husfellesskapsvisningen (`HusfellesskapView.tsx`) |
 | `src/pages/`, `src/components/` | Øvrige sider og komponenter |
 | `tests/` | Tester (Vitest). `assert(betingelse, navn)` fra `tests/assert.ts` registrerer én navngitt sjekk. `tests/support/offlineFirestore.ts` gir en ekte Firestore-klient uten nett til tester av datalaget |
@@ -109,6 +110,8 @@ Kjør `npm run lint` og `npm test` før en endring regnes som ferdig.
 - **`visibility` er eneste bryter** for om en samling er offentlig. Les med `isPubliclyVisible` og skriv med `visibilityFields` fra `src/utils/visibility.ts`. `isPublic` lagres bare som et speil. Hva som er kommende, hva som er en gudstjeneste og hva forsiden løfter fram, hentes fra `src/utils/gatherings.ts`.
 - **En gruppe vises utad bare når `isGroupPublic` sier det.** Det gjelder nettsiden og `server/publicApi.ts`.
 - **Ikke dikt opp innhold.** Mangler noe i databasen, vises det som manglende: ingen standardprogram, ingen navn, ingen gruppe-ID-er eller datoer fra demodataene i koden. Kjøreplanen bygges av `buildRunSheet` i `src/utils/runSheet.ts`, og en samling uten sted vises med `locationOf` fra `src/utils/gatherings.ts`.
+- **Et arrangement har ett skjema.** Nye felt på et arrangement legges i `GatheringFormValues` i `src/utils/gatheringForm.ts` og i `GatheringFormDialog.tsx`, så de finnes både når arrangementet opprettes og når det endres. Lag ikke en egen dialog for å endre noen av feltene.
+- **Mal og serie i skjemaet er prøveutgaver** (produkteier, 12. oktober 2026). De er merket «Prøveutgave», og er eneste unntak fra regelen under. Lag ikke flere. De byttes ut i del B og C i kapittel 14, og da går `src/data/templateMockup.ts`.
 - **Ikke lag skjema som ikke lagrer.** Et felt en besøkende fyller ut skal enten lagres og kunne leses av noen, eller ikke finnes. Det samme gjelder et valg i admin: det skal virke der det sier at det virker.
 - **Ingen utviklerord i skjermbildene.** Feltnavn (`isPublic`, `Group.leaderIds`), ID-er, «mock» og «prototype» hører hjemme i koden. Brukeren ser norske ord for det samme.
 - **Nettsiden bruker temafargene.** På offentlige sider (`src/pages/public/`, `src/components/public/`, `src/components/cms/`) heter hovedfargene `primary-*` og `accent-*`, aldri `indigo-*` eller `amber-*`. Da følger siden designet som er valgt i admin. Farger med fast betydning (rødt for avlyst, gult for varsel, grønt for bekreftet) er unntatt. En test feiler hvis regelen brytes.
@@ -137,6 +140,7 @@ Disse er ikke løst ennå. Rekkefølgen de skal løses i står i kapittel 14 i `
 - Innmeldingsdato i en gruppe lagres, men eldre meldinger skjules ikke for nye medlemmer.
 - De to bryterne fra før modulene (kalender, meldinger) lagres bare i nettleseren til den som endrer dem, og styrer ikke noe innhold.
 - Moduler kan slås av og på av hvem som helst i admin. Tildeling av moduler per menighet finnes ikke.
-- Nivået styrer bare menyen og fanene i admin. Min side, arrangementssiden, oversikten og gruppene på nettsiden er like på begge nivå (trinn 3c), og hos en menighet kan nivået ikke settes (trinn 4).
+- Mal og serie i skjemaet for arrangementer er prøveutgaver (kapittel 14, «Arrangement, maler og serier»).
+- Programmet i kjøreplanen Min side, arrangementssiden, oversikten og gruppene på nettsiden er like på begge nivå (trinn 3c), og hos en menighet kan nivået ikke settes (trinn 4).
 - Reglene i databasen i drift er eldre enn `firestore.rules`. Nye samlinger avvises der til reglene publiseres.
 - Besøkstallene kan endres og slettes av hvem som helst så lenge reglene er åpne. Med innlogging trenger de en egen samling der en besøkende bare kan legge til i summene.
