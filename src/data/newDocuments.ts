@@ -24,6 +24,8 @@ export interface NewPersonInput {
   name: string;
   phone?: string;
   email?: string;
+  /** A calendar day, "1980-03-12". Left out when the form is empty. */
+  birthDate?: string;
   globalRole?: "member" | "admin";
 }
 
@@ -90,6 +92,7 @@ export function buildPerson(data: NewPersonInput): Person {
     name: data.name.trim(),
     phone: data.phone?.trim() || "",
     email: data.email?.trim() || "",
+    birthDate: data.birthDate?.trim() || undefined,
     globalRole: data.globalRole || "member",
   };
 }
