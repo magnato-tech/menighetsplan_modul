@@ -240,6 +240,8 @@ describe("Veiene til arrangementets side", () => {
     expect(within(row("Høstfest")).getByRole("img", { name: "Plakat for høstfesten" }).getAttribute("src")).toBe(POSTER);
     expect(within(row("Høstfest")).getByText("Mat, sang og lek for hele familien.")).toBeTruthy();
     expect(row("Bønnemøte").querySelector("img")).toBeNull();
+    expect(screen.getByRole("button", { name: "Legg til i Google Kalender" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Kopier abonnementslenke" })).toBeTruthy();
   });
 
   test("en nyhet som hører til et arrangement, sier når og hvor, og lenker dit", () => {

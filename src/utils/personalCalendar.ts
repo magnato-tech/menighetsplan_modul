@@ -110,7 +110,4 @@ export function personalCalendarFeedUrl(origin: string, token: string, demoSite:
   return `${origin.replace(/\/+$/, "")}${PERSONAL_CALENDAR_FEED_PATH}?${personalCalendarFeedSearchParams(token, demoSite, isDemo)}`;
 }
 
-/** Opens Google Calendar's «add by URL» flow for an https iCal address. */
-export function googleCalendarSubscribeUrl(icsUrl: string): string {
-  return `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(icsUrl)}`;
-}
+export { googleCalendarSubscribeUrl } from "./calendarFeed";

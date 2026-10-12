@@ -13,17 +13,13 @@ import {
   presentationText,
 } from "../../../utils/modulePresentation";
 import { PresentationSection } from "../PresentationSection";
-import {
-  CalendarPlus,
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-  LayoutGrid,
-  List,
-  MapPin,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock, LayoutGrid, List, MapPin } from "lucide-react";
+import { DEMO } from "../../../demo";
+import { DEMO_SITE } from "../../../demoSite";
+import { CalendarSubscribeButtons } from "../../public/CalendarSubscribeButtons";
+import { publicCalendarFeedUrl } from "../../../utils/calendarFeed";
 
-export const PUBLIC_CALENDAR_FEED_PATH = "/api/offentlig/kalender.ics";
+export { PUBLIC_CALENDAR_FEED_PATH } from "../../../utils/calendarFeed";
 
 const WEEKDAY_LABELS = ["Mandag", "Tirsdag", "Onsdag", "Torsdag", "Fredag", "Lørdag", "Søndag"];
 
@@ -145,13 +141,15 @@ export const KalenderModule: React.FC<KalenderModuleProps> = ({
               Måned
             </button>
           </div>
-          <a
-            href={`${typeof window !== "undefined" ? window.location.origin : ""}${PUBLIC_CALENDAR_FEED_PATH}`}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold text-primary-700 border border-primary-200 bg-primary-50 hover:bg-primary-100"
-          >
-            <CalendarPlus className="w-4 h-4" />
-            <span>Abonner på kalenderen</span>
-          </a>
+          <CalendarSubscribeButtons
+            compact
+            tone="primary"
+            resolveFeedUrl={() =>
+              typeof window !== "undefined"
+                ? publicCalendarFeedUrl(window.location.origin, DEMO_SITE, DEMO !== null)
+                : null
+            }
+          />
         </div>
       </div>
 

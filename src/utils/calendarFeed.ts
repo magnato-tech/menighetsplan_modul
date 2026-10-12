@@ -93,3 +93,23 @@ export function toIcalendarFromGatherings(gatherings: Gathering[], options: Ical
 export function toIcalendarEvent(gathering: Gathering, options: IcalendarOptions = {}): string {
   return calendarOf([gathering], options);
 }
+
+export const PUBLIC_CALENDAR_FEED_PATH = "/api/offentlig/kalender.ics";
+
+/** Query string for the public feed (menighet in the demo). */
+export function publicCalendarFeedSearchParams(demoSite: string | null, isDemo: boolean): string {
+  if (!isDemo) return "";
+  const params = new URLSearchParams({ menighet: demoSite ?? "eksempel" });
+  return params.toString();
+}
+
+export function publicCalendarFeedUrl(origin: string, demoSite: string | null, isDemo: boolean): string {
+  const base = `${origin.replace(/\/+$/, "")}${PUBLIC_CALENDAR_FEED_PATH}`;
+  const qs = publicCalendarFeedSearchParams(demoSite, isDemo);
+  return qs ? `${base}?${qs}` : base;
+}
+
+/** Opens Google Calendar's «add by URL» flow for an https iCal address. */
+export function googleCalendarSubscribeUrl(icsUrl: string): string {
+  return `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(icsUrl)}`;
+}

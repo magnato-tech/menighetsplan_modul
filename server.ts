@@ -125,9 +125,10 @@ app.get('/api/offentlig/arrangementer', async (req: Request, res: Response) => {
  */
 app.get('/api/offentlig/kalender.ics', async (req: Request, res: Response) => {
   try {
+    const site = demoSiteFromQuery(req);
     const now = new Date();
     const gatherings: Gathering[] = [];
-    for (const doc of await loadGatheringDocs()) {
+    for (const doc of await loadGatheringDocs(site)) {
       try {
         gatherings.push(validateEvent(doc));
       } catch (err) {
@@ -140,7 +141,7 @@ app.get('/api/offentlig/kalender.ics', async (req: Request, res: Response) => {
 
     let calendarName = 'Menighetsplan';
     try {
-      const settingsSnap = await getDoc(doc(db, CMS_COLLECTIONS.SETTINGS, CMS_SETTINGS_DOC_ID));
+      const settingsSnap = await getDoc(doc(db, plannerCollection(CMS_COLLECTIONS.SETTINGS, site), CMS_SETTINGS_DOC_ID));
       const churchName = settingsSnap.data()?.churchName;
       if (typeof churchName === 'string' && churchName.trim()) {
         calendarName = churchName.trim();

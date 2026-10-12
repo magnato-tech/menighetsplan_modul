@@ -1,6 +1,13 @@
 import { describe } from "vitest";
 import { assert } from "./assert";
-import { gatheringsForCalendarFeed, toIcalendar } from "../src/utils/calendarFeed";
+import {
+  gatheringsForCalendarFeed,
+  googleCalendarSubscribeUrl,
+  publicCalendarFeedSearchParams,
+  publicCalendarFeedUrl,
+  PUBLIC_CALENDAR_FEED_PATH,
+  toIcalendar,
+} from "../src/utils/calendarFeed";
 import type { Gathering } from "../src/types";
 
 describe("Offentlig iCal-feed", () => {
@@ -66,4 +73,17 @@ describe("Offentlig iCal-feed", () => {
   assert(!ics.includes("Intern planlegging"), "Intern samling kommer ikke med");
   assert(!ics.includes("phone") && !ics.includes("email"), "Ingen personkontakt i feeden");
   assert(ics.includes("X-WR-CALNAME:Testkirken"), "Kalendernavn fra innstillinger");
+
+  assert(publicCalendarFeedSearchParams(null, false) === "", "Offentlig feed uten demo: ingen spørring");
+  assert(
+    publicCalendarFeedSearchParams("sogne", true) === "menighet=sogne",
+    "Offentlig feed i demo: menighet i spørringen"
+  );
+  assert(
+    publicCalendarFeedUrl("https://menighet.no/", "sogne", true) ===
+      `https://menighet.no${PUBLIC_CALENDAR_FEED_PATH}?menighet=sogne`,
+    "Offentlig abonnements-URL for nettsiden"
+  );
+  const publicUrl = publicCalendarFeedUrl("https://menighet.no", null, false);
+  assert(googleCalendarSubscribeUrl(publicUrl).includes(encodeURIComponent(publicUrl)), "Google-abonnement for hovedkalenderen");
 });
