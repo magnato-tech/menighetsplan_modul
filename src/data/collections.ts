@@ -47,6 +47,16 @@ export const LOGINS_COLLECTION = "logins";
  */
 export const PUBLIC_PROFILES_COLLECTION = "publicProfiles";
 
+/**
+ * What a signed-in person may know about the people in their groups, written from the register
+ * by an administrator's browser (see utils/groupAccess.ts). Not content: not part of a dataset,
+ * and not used in the demo, where anyone can open the register.
+ */
+export const GROUP_DIRECTORY_COLLECTION = "groupDirectory";
+export const GROUP_LEADER_EMAILS_COLLECTION = "groupLeaderEmails";
+export const PUBLIC_GROUP_CARDS_COLLECTION = "publicGroupCards";
+export const GATHERING_READERS_COLLECTION = "gatheringReaders";
+
 const PREFIX = collectionPrefixOf(DEMO_SITE);
 
 /** The names as the congregation being looked at has them. They keep their plain types: no code tells the two apart. */

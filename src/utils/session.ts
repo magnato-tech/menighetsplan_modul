@@ -70,7 +70,11 @@ export function sessionOf(state: AccountState, persons: Person[], registerReady:
  * What is known of the login of the account that is signed in (see utils/logins.ts): not asked
  * for yet, on its way, not there, or there with the person it belongs to.
  */
-export type LoginState = { status: "none" } | { status: "loading" } | { status: "missing" } | { status: "found"; personId: string };
+export type LoginState =
+  | { status: "none" }
+  | { status: "loading" }
+  | { status: "missing" }
+  | { status: "found"; personId: string; role: "admin" | "member" };
 
 /**
  * Who the account is, in an installation where the register is closed to those who are not in

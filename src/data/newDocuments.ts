@@ -157,7 +157,14 @@ export function buildTask(data: NewTaskInput): Task {
 export function buildAssignment(
   taskId: string,
   personId: string,
-  response: "confirmed" | "pending"
+  response: "confirmed" | "pending",
+  place?: {
+    personName: string;
+    gatheringId: string;
+    gatheringGroupId: string;
+    gatheringPublic: boolean;
+    nameGroupId?: string;
+  }
 ): Assignment {
   return {
     id: newId(`assign-${taskId}-${personId}`),
@@ -165,6 +172,15 @@ export function buildAssignment(
     personId,
     response,
     assignedAt: new Date().toISOString(),
+    ...(place
+      ? {
+          personName: place.personName,
+          gatheringId: place.gatheringId,
+          gatheringGroupId: place.gatheringGroupId,
+          gatheringPublic: place.gatheringPublic,
+          ...(place.nameGroupId ? { nameGroupId: place.nameGroupId } : {}),
+        }
+      : {}),
   };
 }
 

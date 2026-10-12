@@ -10,7 +10,12 @@ import {
   GatheringHeadcount,
   VolunteerRole,
 } from "../types";
-import { CMS_COLLECTIONS, COLLECTIONS } from "../data/collections";
+import {
+  CMS_COLLECTIONS,
+  COLLECTIONS,
+  GROUP_DIRECTORY_COLLECTION,
+  GROUP_LEADER_EMAILS_COLLECTION,
+} from "../data/collections";
 import {
   NewPersonInput,
   NewGroupInput,
@@ -33,7 +38,9 @@ import { deleteHeadcount, saveHeadcount, subscribeHeadcounts } from "../services
 import { reportWriteError } from "../services/writeErrors";
 import {
   subscribeCollection,
+  subscribeDocument,
   subscribePublicPart,
+  subscribeWhere,
   createDocument,
   updateDocument,
   deleteDocument,
@@ -44,9 +51,10 @@ import {
   setAnalyticsModuleHidden as storeAnalyticsModuleHidden,
 } from "../services/firestore";
 import { signOut as signOutOfAccount, subscribeAccount } from "../services/auth";
-import { isInGroup } from "../utils/groups";
+import { isInGroup, leadsGroup } from "../utils/groups";
+import { groupFromPublicCard, personFromCard, type GroupDirectoryCard, type GroupLeaderEmail, type PublicGroupCard } from "../utils/groupAccess";
 import { mayStandIn, sessionOf, sessionOfLogin, standInSession, type AccountState, type LoginState, type Session } from "../utils/session";
-import { readOwnLogin, subscribePublicProfiles } from "../services/registerMirror";
+import { readOwnLogin, subscribePublicGroupCards, subscribePublicProfiles } from "../services/registerMirror";
 import { useRegisterMirror } from "../hooks/useRegisterMirror";
 import { useLeadersAsMembers } from "../hooks/useLeadersAsMembers";
 import { DEMO } from "../demo";
@@ -89,7 +97,11 @@ export interface FirebaseDataContextType {
   /** Whether the events have arrived. Until then nothing can be said to be over, or missing. */
   gatheringsReady: boolean;
   allPersons: Person[];
+  /** Whether this browser holds the whole register. A member in a closed database does not. */
+  hasFullRegister: boolean;
   groups: Group[];
+  /** Loads the names on one gathering, for a member who does not hold every assignment. */
+  watchGatheringAssignments: (gatheringId: string) => () => void;
   gatherings: Gathering[];
   tasks: Task[];
   assignments: Assignment[];
@@ -234,6 +246,16 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
   // Whether what was received is the register itself, and not only the public copies of it
   const [registerWhole, setRegisterWhole] = useState(false);
   const [gatheringsReady, setGatheringsReady] = useState(false);
+  const [listsReady, setListsReady] = useState(false);
+  const [planningReady, setPlanningReady] = useState(false);
+  const [publicPersons, setPublicPersons] = useState<Person[]>([]);
+  const [ownPerson, setOwnPerson] = useState<Person | null>(null);
+  const [ownReady, setOwnReady] = useState(false);
+  const [ownedGroups, setOwnedGroups] = useState<Group[]>([]);
+  const [publicCards, setPublicCards] = useState<PublicGroupCard[]>([]);
+  const [directoryCards, setDirectoryCards] = useState<GroupDirectoryCard[]>([]);
+  const [leaderEmails, setLeaderEmails] = useState<GroupLeaderEmail[]>([]);
+  const [watchedGatheringIds, setWatchedGatheringIds] = useState<string[]>([]);
   const [standInId, setStandInId] = useState<string | null>(storedStandIn);
 
   useEffect(() => subscribeAccount(setAccountState), []);
@@ -272,7 +294,7 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
     let current = true;
     setLogin({ status: "loading" });
     readOwnLogin(signedInEmail).then(
-      (found) => current && setLogin(found ? { status: "found", personId: found.personId } : { status: "missing" }),
+      (found) => current && setLogin(found ? { status: "found", personId: found.personId, role: found.role } : { status: "missing" }),
       (error) => {
         // An address the database will not answer for, is treated as nobody's: the pages behind sign-in stay closed
         console.error("Innloggingen kunne ikke slås opp:", error);
@@ -284,79 +306,246 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
     };
   }, [signedInEmail]);
 
-  // The register, the groups and the events. Someone the database knows gets all of them.
-  // Everyone else gets what is public: the public copies of the persons who are shown on the
-  // website, and the groups and events that are marked public. A developer's own machine and
-  // the demo, where anyone can go in as a person, get all of it, as their databases allow.
-  const seesAll = CAN_STAND_IN || login.status === "found";
+  // The register, the groups and the events.
+  // An administrator, and the demo, get all of it. A member gets their own person, their own
+  // groups and the public cards. A visitor gets the public copies and the public cards.
+  const fullRegister = CAN_STAND_IN || (login.status === "found" && login.role === "admin");
+  const memberAccess = !CAN_STAND_IN && login.status === "found" && login.role === "member";
+  const memberId = memberAccess ? login.personId : null;
   useEffect(() => {
     setRegisterReady(false);
     setRegisterWhole(false);
     setGatheringsReady(false);
-    const onPersons = (list: Person[]) => {
-      setPersons(list);
-      setRegisterWhole(seesAll);
-      setRegisterReady(true);
-    };
+    setListsReady(false);
+    setOwnReady(false);
+    setOwnPerson(null);
     const onGatherings = (list: Gathering[]) => {
       setGatherings(list);
       setGatheringsReady(true);
     };
-    const unsubscribers = seesAll
-      ? [
-          subscribeCollection<Person>(COLLECTIONS.PERSONS, onPersons),
-          subscribeCollection<Group>(COLLECTIONS.GROUPS, setGroups),
-          subscribeCollection<Gathering>(COLLECTIONS.GATHERINGS, onGatherings),
-        ]
-      : [
-          subscribePublicProfiles(onPersons),
-          subscribePublicPart<Group>(COLLECTIONS.GROUPS, setGroups),
-          subscribePublicPart<Gathering>(COLLECTIONS.GATHERINGS, onGatherings),
-        ];
-    return () => unsubscribers.forEach((unsubscribe) => unsubscribe());
-  }, [seesAll]);
+    const stops: (() => void)[] = [];
+    if (fullRegister) {
+      stops.push(
+        subscribeCollection<Person>(COLLECTIONS.PERSONS, (list) => {
+          setPersons(list);
+          setRegisterWhole(true);
+          setRegisterReady(true);
+        }),
+        subscribeCollection<Group>(COLLECTIONS.GROUPS, (list) => {
+          setGroups(list);
+          setListsReady(true);
+        }),
+        subscribeCollection<Gathering>(COLLECTIONS.GATHERINGS, onGatherings)
+      );
+    } else if (memberAccess && memberId) {
+      stops.push(
+        subscribeDocument<Person>(COLLECTIONS.PERSONS, memberId, (person) => {
+          setOwnPerson(person);
+          setOwnReady(true);
+        }),
+        subscribePublicProfiles((list) => setPublicPersons(list)),
+        subscribeCollection<Gathering>(COLLECTIONS.GATHERINGS, onGatherings),
+        subscribePublicGroupCards((cards) => setPublicCards(cards))
+      );
+      const parts = new Map<string, Group[]>();
+      const publish = () => {
+        const byId = new Map<string, Group>();
+        for (const list of parts.values()) for (const group of list) byId.set(group.id, group);
+        setOwnedGroups([...byId.values()]);
+      };
+      for (const field of ["memberIds", "leaderIds", "deputyLeaderIds"] as const) {
+        stops.push(
+          subscribeWhere<Group>(COLLECTIONS.GROUPS, field, "array-contains", memberId, (list) => {
+            parts.set(field, list);
+            publish();
+            setListsReady(true);
+          })
+        );
+      }
+    } else if (login.status !== "loading") {
+      stops.push(
+        subscribePublicProfiles((list) => {
+          setPublicPersons(list);
+          setRegisterReady(true);
+        }),
+        subscribePublicGroupCards((cards) => {
+          setPublicCards(cards);
+          setListsReady(true);
+        }),
+        subscribePublicPart<Gathering>(COLLECTIONS.GATHERINGS, onGatherings)
+      );
+    }
+    return () => stops.forEach((stop) => stop());
+  }, [fullRegister, memberAccess, memberId, login.status]);
 
   // Who is using the app. Where anyone can stand in, the register decides who an account is, and
   // the stand-in is someone from it. Elsewhere the account's own login decides, and the register
   // counts only once all of it has arrived: the public copies are not the register.
+  const sessionPersons = fullRegister ? persons : ownPerson ? [ownPerson] : [];
+  const sessionReady = fullRegister ? registerReady && (CAN_STAND_IN || registerWhole) : ownReady || login.status !== "found";
   const session = useMemo<Session>(() => {
-    if (!CAN_STAND_IN) return sessionOfLogin(accountState, login, persons, registerReady && registerWhole && seesAll);
+    if (!CAN_STAND_IN) return sessionOfLogin(accountState, login, sessionPersons, sessionReady);
     const real = sessionOf(accountState, persons, registerReady);
     if (real.status === "signedOut" && standInId !== null) return standInSession(standInId, persons, registerReady);
     return real;
-  }, [accountState, login, persons, registerReady, registerWhole, seesAll, standInId]);
+  }, [accountState, login, persons, sessionPersons, sessionReady, registerReady, standInId]);
 
-  // An administrator's own browser keeps the logins and the public copies in step with the
-  // register (see hooks/useRegisterMirror.ts). Not where anyone can stand in: there the
-  // database is open, and nothing is kept beside the register.
+  const visibleGroups = useMemo(() => {
+    if (fullRegister) return groups;
+    const byId = new Map(publicCards.map((card) => [card.id, groupFromPublicCard(card)]));
+    for (const group of ownedGroups) byId.set(group.id, group);
+    return [...byId.values()];
+  }, [fullRegister, groups, publicCards, ownedGroups]);
+
+  const visiblePersons = useMemo(() => {
+    if (fullRegister) return persons;
+    const byId = new Map(publicPersons.map((person) => [person.id, person]));
+    if (ownPerson) byId.set(ownPerson.id, ownPerson);
+    return [...byId.values()];
+  }, [fullRegister, persons, publicPersons, ownPerson]);
+
+  // An administrator's own browser keeps the logins and the copies in step with the register
+  // (see hooks/useRegisterMirror.ts). Not where anyone can stand in: there the database is open.
   const keepsTheBooks = !CAN_STAND_IN && registerWhole && session.status === "member" && session.person.globalRole === "admin";
-  useRegisterMirror(persons, keepsTheBooks, signedInEmail);
+  useRegisterMirror(persons, keepsTheBooks, signedInEmail, {
+    groups,
+    gatherings,
+    tasks,
+    assignments,
+    listsReady,
+    planningReady,
+  });
   // The same browser sees to it that whoever leads a group stands among its members
   useLeadersAsMembers(groups, keepsTheBooks);
   const isMember = session.status === "member";
 
-  // Planning data, only behind the public website, and only for someone who is in the register
+  const myGroupIds = useMemo(() => (memberId ? ownedGroups.map((group) => group.id).sort() : []), [memberId, ownedGroups]);
+  const ledGroupIds = useMemo(
+    () => (memberId ? ownedGroups.filter((group) => leadsGroup(group, memberId)).map((group) => group.id).sort() : []),
+    [memberId, ownedGroups]
+  );
+
+  useEffect(() => {
+    if (!memberId) {
+      setDirectoryCards([]);
+      setLeaderEmails([]);
+      return;
+    }
+    const stops: (() => void)[] = [];
+    const cards = new Map<string, GroupDirectoryCard[]>();
+    const publishCards = () => setDirectoryCards([...cards.values()].flat());
+    for (const groupId of myGroupIds) {
+      stops.push(
+        subscribeWhere<GroupDirectoryCard>(GROUP_DIRECTORY_COLLECTION, "groupId", "==", groupId, (list) => {
+          cards.set(groupId, list);
+          publishCards();
+        })
+      );
+    }
+    if (myGroupIds.length === 0) setDirectoryCards([]);
+    const mails = new Map<string, GroupLeaderEmail[]>();
+    const publishMails = () => setLeaderEmails([...mails.values()].flat());
+    for (const groupId of ledGroupIds) {
+      stops.push(
+        subscribeWhere<GroupLeaderEmail>(GROUP_LEADER_EMAILS_COLLECTION, "groupId", "==", groupId, (list) => {
+          mails.set(groupId, list);
+          publishMails();
+        })
+      );
+    }
+    if (ledGroupIds.length === 0) setLeaderEmails([]);
+    return () => stops.forEach((stop) => stop());
+  }, [memberId, myGroupIds.join("|"), ledGroupIds.join("|")]);
+
+  // Planning data, only behind the public website, and only for someone who is in the register.
+  // A member does not subscribe to every assignment or every group message.
   useEffect(() => {
     if (!internal || !isMember) {
-      // Nothing of it is kept in the browser of someone who has signed out, or on the public website
       setTasks([]);
       setAssignments([]);
       setGroupMessages([]);
       setAttendances([]);
       setHeadcounts([]);
       setVolunteerRoles([]);
+      setPlanningReady(false);
       return;
     }
-    const unsubscribers = [
-      subscribeCollection<Task>(COLLECTIONS.TASKS, setTasks),
-      subscribeCollection<Assignment>(COLLECTIONS.ASSIGNMENTS, setAssignments),
-      subscribeCollection<GroupMessage>(COLLECTIONS.GROUP_MESSAGES, setGroupMessages),
+    if (fullRegister) {
+      const stops = [
+        subscribeCollection<Task>(COLLECTIONS.TASKS, (list) => {
+          setTasks(list);
+          setPlanningReady(true);
+        }),
+        subscribeCollection<Assignment>(COLLECTIONS.ASSIGNMENTS, setAssignments),
+        subscribeCollection<GroupMessage>(COLLECTIONS.GROUP_MESSAGES, setGroupMessages),
+        subscribeCollection<GatheringAttendance>(COLLECTIONS.GATHERING_ATTENDANCES, setAttendances),
+        subscribeHeadcounts(setHeadcounts),
+        subscribeVolunteerRoles(setVolunteerRoles),
+      ];
+      return () => stops.forEach((stop) => stop());
+    }
+    const stops: (() => void)[] = [
+      subscribeCollection<Task>(COLLECTIONS.TASKS, (list) => {
+        setTasks(list);
+        setPlanningReady(true);
+      }),
       subscribeCollection<GatheringAttendance>(COLLECTIONS.GATHERING_ATTENDANCES, setAttendances),
       subscribeHeadcounts(setHeadcounts),
       subscribeVolunteerRoles(setVolunteerRoles),
     ];
-    return () => unsubscribers.forEach((unsubscribe) => unsubscribe());
-  }, [internal, isMember]);
+    const assignmentParts = new Map<string, Assignment[]>();
+    const publishAssignments = () => {
+      const byId = new Map<string, Assignment>();
+      for (const list of assignmentParts.values()) for (const item of list) byId.set(item.id, item);
+      setAssignments([...byId.values()]);
+    };
+    if (memberId) {
+      stops.push(
+        subscribeWhere<Assignment>(COLLECTIONS.ASSIGNMENTS, "personId", "==", memberId, (list) => {
+          assignmentParts.set("self", list);
+          publishAssignments();
+        })
+      );
+    }
+    for (const groupId of myGroupIds) {
+      stops.push(
+        subscribeWhere<Assignment>(COLLECTIONS.ASSIGNMENTS, "gatheringGroupId", "==", groupId, (list) => {
+          assignmentParts.set(`group:${groupId}`, list);
+          publishAssignments();
+        })
+      );
+    }
+    for (const gatheringId of watchedGatheringIds) {
+      stops.push(
+        subscribeWhere<Assignment>(COLLECTIONS.ASSIGNMENTS, "gatheringId", "==", gatheringId, (list) => {
+          assignmentParts.set(`gathering:${gatheringId}`, list);
+          publishAssignments();
+        })
+      );
+    }
+    const messageParts = new Map<string, GroupMessage[]>();
+    const publishMessages = () => {
+      const byId = new Map<string, GroupMessage>();
+      for (const list of messageParts.values()) for (const item of list) byId.set(item.id, item);
+      setGroupMessages([...byId.values()]);
+    };
+    for (const groupId of myGroupIds) {
+      stops.push(
+        subscribeWhere<GroupMessage>(COLLECTIONS.GROUP_MESSAGES, "groupId", "==", groupId, (list) => {
+          messageParts.set(groupId, list);
+          publishMessages();
+        })
+      );
+    }
+    if (myGroupIds.length === 0) setGroupMessages([]);
+    return () => stops.forEach((stop) => stop());
+  }, [internal, isMember, fullRegister, memberId, myGroupIds.join("|"), watchedGatheringIds.join("|")]);
+
+  const watchGatheringAssignments = useCallback((gatheringId: string) => {
+    if (!gatheringId || fullRegister) return () => {};
+    setWatchedGatheringIds((prev) => (prev.includes(gatheringId) ? prev : [...prev, gatheringId]));
+    return () => setWatchedGatheringIds((prev) => prev.filter((id) => id !== gatheringId));
+  }, [fullRegister]);
 
   const currentUser = session.status === "member" ? session.person : NOBODY;
 
@@ -400,25 +589,34 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
   // Lookups, grouped by the lists they read so each group is only rebuilt when its lists change
   const personLookups = useMemo(
     () => ({
-      getPersonById: (personId: string) => persons.find((p) => p.id === personId),
+      getPersonById: (personId: string) => {
+        if (ownPerson?.id === personId) return ownPerson;
+        if (fullRegister) return persons.find((person) => person.id === personId);
+        const card = directoryCards.find((item) => item.personId === personId);
+        if (card) {
+          const email = leaderEmails.find((item) => item.personId === personId && ledGroupIds.includes(item.groupId))?.email;
+          return personFromCard(card, email);
+        }
+        return visiblePersons.find((person) => person.id === personId);
+      },
     }),
-    [persons]
+    [persons, ownPerson, fullRegister, directoryCards, leaderEmails, ledGroupIds, visiblePersons]
   );
 
   const groupLookups = useMemo(
     () => ({
-      getGroupById: (groupId: string) => groups.find((g) => g.id === groupId),
-      getUserGroups: (personId: string) => groups.filter((g) => isInGroup(g, personId)),
+      getGroupById: (groupId: string) => visibleGroups.find((g) => g.id === groupId),
+      getUserGroups: (personId: string) => visibleGroups.filter((g) => isInGroup(g, personId)),
       isPersonInGroup: (personId: string, groupId: string) => {
-        const group = groups.find((g) => g.id === groupId);
+        const group = visibleGroups.find((g) => g.id === groupId);
         return group !== undefined && isInGroup(group, personId);
       },
       getGroupNotificationsEnabled: (groupId: string, personId: string = currentUser.id) => {
-        const group = groups.find((g) => g.id === groupId);
+        const group = visibleGroups.find((g) => g.id === groupId);
         return group?.notificationPreferences?.[personId] !== false;
       },
     }),
-    [groups, currentUser.id]
+    [visibleGroups, currentUser.id]
   );
 
   const gatheringLookups = useMemo(
@@ -608,8 +806,26 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
       updateTaskNeededCount: (taskId: string, neededCount: number | undefined) =>
         updateTask(taskId, { neededCount }, "lagre bemanningsbehovet"),
 
-      assignTaskToPerson: (taskId: string, personId: string, response: "confirmed" | "pending") =>
-        changeAssignments(taskId, { add: buildAssignment(taskId, personId, response) }, "lagre tildelingen"),
+      assignTaskToPerson: (taskId: string, personId: string, response: "confirmed" | "pending") => {
+        const task = tasks.find((item) => item.id === taskId);
+        const gathering = gatherings.find((item) => item.id === task?.gatheringId);
+        const personName =
+          (personId === currentUser.id ? currentUser.name : undefined) ||
+          visiblePersons.find((person) => person.id === personId)?.name ||
+          directoryCards.find((card) => card.personId === personId)?.name ||
+          "";
+        const nameGroup = visibleGroups.find((group) => personId !== currentUser.id && leadsGroup(group, currentUser.id) && isInGroup(group, personId));
+        const place = task && gathering && personName
+          ? {
+              personName,
+              gatheringId: gathering.id,
+              gatheringGroupId: gathering.groupId,
+              gatheringPublic: gathering.isPublic === true,
+              ...(nameGroup ? { nameGroupId: nameGroup.id } : {}),
+            }
+          : undefined;
+        return changeAssignments(taskId, { add: buildAssignment(taskId, personId, response, place) }, "lagre tildelingen");
+      },
 
       updateAssignmentStatus: (assignmentId: string, response: Assignment["response"]) => {
         const assignment = assignments.find((a) => a.id === assignmentId);
@@ -647,7 +863,7 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
         return changeAssignments(taskId, { update }, "registrere forfallet", isAcuteNow(taskId, now));
       },
     };
-  }, [tasks, assignments, gatherings]);
+  }, [tasks, assignments, gatherings, currentUser, visiblePersons, directoryCards, visibleGroups]);
 
   const { getGroupNotificationsEnabled } = groupLookups;
   const toggleGroupNotifications = useCallback(
@@ -668,8 +884,10 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
       standInAs,
       registerReady,
       gatheringsReady,
-      allPersons: persons,
-      groups,
+      allPersons: visiblePersons,
+      hasFullRegister: fullRegister,
+      groups: visibleGroups,
+      watchGatheringAssignments,
       gatherings,
       tasks,
       assignments,
@@ -702,8 +920,10 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
       standInAs,
       registerReady,
       gatheringsReady,
-      persons,
-      groups,
+      visiblePersons,
+      fullRegister,
+      visibleGroups,
+      watchGatheringAssignments,
       gatherings,
       tasks,
       assignments,

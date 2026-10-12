@@ -1,7 +1,16 @@
 import { collection, doc, getDoc, onSnapshot, writeBatch } from "firebase/firestore";
-import { LOGINS_COLLECTION, PUBLIC_PROFILES_COLLECTION } from "../data/collections";
+import {
+  COLLECTIONS,
+  GATHERING_READERS_COLLECTION,
+  GROUP_DIRECTORY_COLLECTION,
+  GROUP_LEADER_EMAILS_COLLECTION,
+  LOGINS_COLLECTION,
+  PUBLIC_GROUP_CARDS_COLLECTION,
+  PUBLIC_PROFILES_COLLECTION,
+} from "../data/collections";
 import { db, handleFirestoreError, OperationType } from "../firebase";
 import type { Person } from "../types";
+import type { AssignmentAccess, GatheringReader, GroupDirectoryCard, GroupLeaderEmail, PublicGroupCard } from "../utils/groupAccess";
 import { chunk } from "../utils/chunk";
 import { sanitizeForFirestore } from "../utils/firestoreData";
 import { loginIdOf, type Login } from "../utils/logins";
@@ -80,3 +89,79 @@ export const storeLoginChanges = (changes: MirrorChanges<Login>): Promise<void> 
 
 /** Writes the public copies that are new or changed, and takes away those of persons who are no longer shown. */
 export const storePublicProfileChanges = (changes: MirrorChanges<Person>): Promise<void> => store(PUBLIC_PROFILES_COLLECTION, changes);
+
+export function subscribeGroupDirectory(onChange: (cards: GroupDirectoryCard[], settled: Settled) => void): () => void {
+  return subscribePlain(GROUP_DIRECTORY_COLLECTION, onChange, (id, data) =>
+    typeof data.groupId === "string" && typeof data.personId === "string" && typeof data.name === "string"
+      ? { id, groupId: data.groupId, personId: data.personId, name: data.name, ...(typeof data.phone === "string" ? { phone: data.phone } : {}) }
+      : null
+  );
+}
+
+export function subscribeGroupLeaderEmails(onChange: (cards: GroupLeaderEmail[], settled: Settled) => void): () => void {
+  return subscribePlain(GROUP_LEADER_EMAILS_COLLECTION, onChange, (id, data) =>
+    typeof data.groupId === "string" && typeof data.personId === "string" && typeof data.email === "string"
+      ? { id, groupId: data.groupId, personId: data.personId, email: data.email }
+      : null
+  );
+}
+
+export function subscribePublicGroupCards(onChange: (cards: PublicGroupCard[], settled: Settled) => void): () => void {
+  return subscribePlain(PUBLIC_GROUP_CARDS_COLLECTION, onChange, (id, data) => {
+    if (typeof data.name !== "string" || data.isPublic !== true || typeof data.memberCount !== "number") return null;
+    const strings = (value: unknown): string[] => (Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : []);
+    return {
+      id,
+      name: data.name,
+      isPublic: true as const,
+      memberCount: data.memberCount,
+      leaderIds: strings(data.leaderIds),
+      deputyLeaderIds: strings(data.deputyLeaderIds),
+      memberIds: strings(data.memberIds),
+      ...(typeof data.description === "string" ? { description: data.description } : {}),
+      ...(typeof data.category === "string" ? { category: data.category as PublicGroupCard["category"] } : {}),
+      ...(Array.isArray(data.tags) ? { tags: strings(data.tags) } : {}),
+      ...(data.meetingSchedule && typeof data.meetingSchedule === "object" ? { meetingSchedule: data.meetingSchedule as PublicGroupCard["meetingSchedule"] } : {}),
+    };
+  });
+}
+
+export function subscribeGatheringReaders(onChange: (readers: GatheringReader[], settled: Settled) => void): () => void {
+  return subscribePlain(GATHERING_READERS_COLLECTION, onChange, (id, data) =>
+    typeof data.gatheringId === "string" && typeof data.personId === "string" ? { id, gatheringId: data.gatheringId, personId: data.personId } : null
+  );
+}
+
+function subscribePlain<T extends { id: string }>(
+  name: string,
+  onChange: (items: T[], settled: Settled) => void,
+  read: (id: string, data: Record<string, unknown>) => T | null
+): () => void {
+  return onSnapshot(
+    collection(db, name),
+    { includeMetadataChanges: true },
+    (snapshot) =>
+      onChange(
+        snapshot.docs.flatMap((d) => read(d.id, d.data()) ?? []),
+        !snapshot.metadata.fromCache && !snapshot.metadata.hasPendingWrites
+      ),
+    (error) => handleFirestoreError(error, OperationType.GET, name)
+  );
+}
+
+export const storeGroupDirectoryChanges = (changes: MirrorChanges<GroupDirectoryCard>): Promise<void> => store(GROUP_DIRECTORY_COLLECTION, changes);
+export const storeGroupLeaderEmailChanges = (changes: MirrorChanges<GroupLeaderEmail>): Promise<void> => store(GROUP_LEADER_EMAILS_COLLECTION, changes);
+export const storePublicGroupCardChanges = (changes: MirrorChanges<PublicGroupCard>): Promise<void> => store(PUBLIC_GROUP_CARDS_COLLECTION, changes);
+export const storeGatheringReaderChanges = (changes: MirrorChanges<GatheringReader>): Promise<void> => store(GATHERING_READERS_COLLECTION, changes);
+
+/** Writes the name and the gathering onto assignments that do not have them yet. */
+export async function patchAssignmentAccess(patches: AssignmentAccess[]): Promise<void> {
+  for (const piece of chunk(patches, BATCH_SIZE)) {
+    const batch = writeBatch(db);
+    for (const patch of piece) {
+      const { id, ...fields } = patch;
+      batch.update(doc(db, COLLECTIONS.ASSIGNMENTS, id), fields);
+    }
+    await batch.commit();
+  }
+}

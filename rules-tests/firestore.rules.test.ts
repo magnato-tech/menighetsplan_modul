@@ -1,4 +1,6 @@
 import { readFileSync } from "node:fs";
+import { buildAssignment } from "../src/data/newDocuments";
+import { documentFields, sanitizeForFirestore } from "../src/utils/firestoreData";
 import { afterAll, beforeAll, beforeEach, describe, test } from "vitest";
 import { assertFails, assertSucceeds, initializeTestEnvironment, type RulesTestEnvironment } from "@firebase/rules-unit-testing";
 import {
@@ -73,7 +75,21 @@ beforeEach(async () => {
       put("gatherings/g-intern", { groupId: "group-intern", title: "Ledermøte", visibility: "intern", isPublic: false }),
       put("tasks/task-1", { gatheringId: "g-apen", groupId: "group-lyd", title: "Lydtekniker", status: "open" }),
       put("tasks/task-2", { gatheringId: "g-intern", groupId: "group-intern", title: "Referent", status: "open" }),
-      put("assignments/a1", { taskId: "task-1", personId: "hakon", response: "pending" }),
+      put("assignments/a1", {
+        taskId: "task-1", personId: "hakon", response: "pending", personName: "Håkon Tveit",
+        gatheringId: "g-apen", gatheringGroupId: "group-lyd", gatheringPublic: true,
+      }),
+      put("assignments/a-intern", {
+        taskId: "task-2", personId: "kari", response: "pending", personName: "Kari Nordmann",
+        gatheringId: "g-intern", gatheringGroupId: "group-intern", gatheringPublic: false,
+      }),
+      put("groupDirectory/group-lyd_hakon", { groupId: "group-lyd", personId: "hakon", name: "Håkon Tveit" }),
+      put("groupDirectory/group-lyd_ola", { groupId: "group-lyd", personId: "ola", name: "Ola Hansen", phone: "22 00 00 00" }),
+      put("groupLeaderEmails/group-lyd_hakon", { groupId: "group-lyd", personId: "hakon", email: "hakon@eksempel.no" }),
+      put("groupLeaderEmails/group-lyd_ola", { groupId: "group-lyd", personId: "ola", email: "ola@eksempel.no" }),
+      put("publicGroupCards/group-lyd", { name: "Lyd og bilde", isPublic: true, memberCount: 2, leaderIds: [], deputyLeaderIds: [], memberIds: [] }),
+      put("gatheringReaders/g-apen_hakon", { gatheringId: "g-apen", personId: "hakon" }),
+      put("gatheringReaders/g-apen_ola", { gatheringId: "g-apen", personId: "ola" }),
       put("groupMessages/m1", { groupId: "group-lyd", senderPersonId: "hakon", senderName: "Håkon Tveit", content: "Hei!" }),
       put("groupMessages/m2", { groupId: "group-intern", senderPersonId: "kari", senderName: "Kari Nordmann", content: "Møte" }),
       put("gatheringAttendances/att-g-apen-hakon", { gatheringId: "g-apen", personId: "hakon", status: "attending" }),
@@ -118,9 +134,12 @@ describe("En besøkende som ikke er logget inn", () => {
     for (const name of ["cms_news", "cms_sermons", "cms_staff", "cms_media", "publicProfiles"]) await assertSucceeds(all(db, name));
   });
 
-  test("leser gruppene og arrangementene som er merket offentlige, og bare dem", async () => {
+  test("leser de offentlige gruppekortene og arrangementene som er merket offentlige, og ikke gruppedokumentene", async () => {
     const db = visitor();
-    await assertSucceeds(publicPart(db, "groups"));
+    await assertSucceeds(all(db, "publicGroupCards"));
+    await assertSucceeds(getDoc(doc(db, "publicGroupCards/group-lyd")));
+    await assertFails(publicPart(db, "groups"));
+    await assertFails(getDoc(doc(db, "groups/group-lyd")));
     await assertSucceeds(publicPart(db, "gatherings"));
     await assertSucceeds(getDoc(doc(db, "gatherings/g-apen")));
     await assertFails(all(db, "groups"));
@@ -129,6 +148,8 @@ describe("En besøkende som ikke er logget inn", () => {
     await assertFails(getDoc(doc(db, "groups/group-umerket")));
     await assertFails(getDoc(doc(db, "gatherings/g-intern")));
     await assertFails(getDocs(query(collection(db, "gatherings"), where("isPublic", "==", false))));
+    await assertFails(all(db, "groupDirectory"));
+    await assertFails(all(db, "groupLeaderEmails"));
   });
 
   test("leser ikke registeret, planleggingen, kladder eller innloggingene", async () => {
@@ -153,6 +174,7 @@ describe("En besøkende som ikke er logget inn", () => {
       "cms_pages/ny", "cms_pages/p-pub", "cms_news/ny", "cms_sermons/ny", "cms_staff/ny", "cms_media/ny",
       "cms_settings/global", "cms_settings/addons", "cms_settings/operating-mode", "cms_settings/role-1", "cms_settings/ny",
       "logins/fremmed@eksempel.no", "logins/kari@menigheten.no", "publicProfiles/liv", "test/connection", "annet/ny",
+      "groupDirectory/group-lyd_hakon", "groupLeaderEmails/group-lyd_ola", "publicGroupCards/group-lyd", "gatheringReaders/g-apen_hakon",
     ];
     for (const place of places) {
       await assertFails(setDoc(doc(db, place), { name: "Innbrudd", role: "admin", personId: "kari", isPublic: true, isPublished: true }));
@@ -212,21 +234,57 @@ describe("Den som logger inn uten å stå i registeret", () => {
 
   test("store og små bokstaver i kontoens adresse spiller ingen rolle", async () => {
     const db = signedIn("Ola@Eksempel.NO");
-    await assertSucceeds(all(db, "persons"));
+    await assertFails(all(db, "persons"));
+    await assertSucceeds(getDoc(doc(db, "persons/ola")));
+    await assertFails(getDoc(doc(db, "persons/kari")));
     await assertSucceeds(getDoc(doc(db, "logins/ola@eksempel.no")));
   });
 });
 
 describe("Et medlem", () => {
-  test("leser registeret, planleggingen og kladder til sider", async () => {
+  test("leser sitt eget kort, sin egen gruppe og den gruppens navn, og ikke registeret", async () => {
     const db = hakon();
-    for (const name of ["persons", "groups", "gatherings", "tasks", "assignments", "groupMessages", "gatheringAttendances", "cms_pages", "cms_settings"]) {
+    await assertFails(all(db, "persons"));
+    await assertSucceeds(getDoc(doc(db, "persons/hakon")));
+    await assertFails(getDoc(doc(db, "persons/kari")));
+    await assertFails(getDoc(doc(db, "persons/ola")));
+    await assertFails(all(db, "groups"));
+    await assertSucceeds(getDoc(doc(db, "groups/group-lyd")));
+    await assertFails(getDoc(doc(db, "groups/group-intern")));
+    await assertSucceeds(getDocs(query(collection(db, "groups"), where("memberIds", "array-contains", "hakon"))));
+    await assertSucceeds(getDocs(query(collection(db, "groupDirectory"), where("groupId", "==", "group-lyd"))));
+    await assertFails(getDocs(query(collection(db, "groupDirectory"), where("groupId", "==", "group-intern"))));
+    await assertFails(all(db, "groupDirectory"));
+    await assertFails(getDoc(doc(db, "groupLeaderEmails/group-lyd_ola")));
+    await assertFails(all(db, "groupLeaderEmails"));
+    await assertSucceeds(getDocs(query(collection(db, "assignments"), where("personId", "==", "hakon"))));
+    await assertSucceeds(getDocs(query(collection(db, "assignments"), where("gatheringGroupId", "==", "group-lyd"))));
+    await assertFails(getDoc(doc(db, "assignments/a-intern")));
+    await assertFails(all(db, "assignments"));
+    await assertSucceeds(getDocs(query(collection(db, "groupMessages"), where("groupId", "==", "group-lyd"))));
+    await assertFails(getDoc(doc(db, "groupMessages/m2")));
+    await assertFails(all(db, "groupMessages"));
+    for (const name of ["gatherings", "tasks", "gatheringAttendances", "cms_pages", "cms_settings"]) {
       await assertSucceeds(all(db, name));
     }
     for (const mark of ["volunteerRole", "gatheringHeadcount"]) await assertSucceeds(marked(db, mark));
     await assertSucceeds(getDoc(doc(db, "logins/hakon@eksempel.no")));
     await assertFails(getDoc(doc(db, "logins/kari@menigheten.no")));
     await assertFails(all(db, "logins"));
+    await assertFails(setDoc(doc(db, "groupDirectory/group-lyd_hakon"), { groupId: "group-lyd", personId: "hakon", name: "Håkon", birthDate: "1990-01-01" }));
+  });
+
+  test("en som er tatt ut av gruppen, leser ikke katalogen selv om kortet ligger igjen", async () => {
+    await env.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore() as unknown as Firestore;
+      await updateDoc(doc(db, "groups/group-lyd"), { memberIds: [] });
+    });
+    const db = hakon();
+    await assertFails(getDocs(query(collection(db, "groupDirectory"), where("groupId", "==", "group-lyd"))));
+    await assertFails(getDoc(doc(db, "groupDirectory/group-lyd_ola")));
+    await assertFails(getDocs(query(collection(db, "groupMessages"), where("groupId", "==", "group-lyd"))));
+    await assertFails(getDocs(query(collection(db, "assignments"), where("gatheringGroupId", "==", "group-lyd"))));
+    await assertSucceeds(getDocs(query(collection(db, "assignments"), where("personId", "==", "hakon"))));
   });
 
   test("svarer på en forespørsel, og oppgavens status skrives sammen med svaret", async () => {
@@ -239,8 +297,17 @@ describe("Et medlem", () => {
 
   test("melder seg på en oppgave, og sier om de kommer", async () => {
     const db = hakon();
+    const built = buildAssignment("task-2", "hakon", "confirmed", {
+      personName: "Håkon Tveit",
+      gatheringId: "g-intern",
+      gatheringGroupId: "group-intern",
+      gatheringPublic: false,
+    });
+    // The id is the document's place. Stored inside the document, the field list rejects the write.
+    await assertFails(setDoc(doc(db, `assignments/${built.id}`), sanitizeForFirestore(built)));
     const batch = writeBatch(db);
-    batch.set(doc(db, "assignments/a-ny"), { taskId: "task-2", personId: "hakon", response: "confirmed" });
+    batch.set(doc(db, `assignments/${built.id}`), sanitizeForFirestore(documentFields(built)));
+    batch.set(doc(db, "gatheringReaders/g-intern_hakon"), { gatheringId: "g-intern", personId: "hakon" });
     batch.update(doc(db, "tasks/task-2"), { status: "confirmed" });
     await assertSucceeds(batch.commit());
     await assertSucceeds(setDoc(doc(db, "gatheringAttendances/att-g-intern-hakon"), { gatheringId: "g-intern", personId: "hakon", status: "declined" }));
@@ -256,6 +323,10 @@ describe("Et medlem", () => {
     await assertFails(updateDoc(doc(db, "groupMessages/m2"), { content: "Endret" }));
     await assertFails(deleteDoc(doc(db, "groupMessages/m2")));
     await assertSucceeds(deleteDoc(doc(db, "groupMessages/m1")));
+    await assertFails(setDoc(doc(db, "assignments/a-falsk"), {
+      taskId: "task-1", personId: "ola", personName: "Noen andre", response: "pending",
+      gatheringId: "g-apen", gatheringGroupId: "group-lyd", gatheringPublic: true,
+    }));
   });
 
   test("slår egne varsler fra en gruppe av og på, og endrer ellers ingenting i gruppen", async () => {
@@ -337,6 +408,9 @@ describe("En gruppeleder", () => {
     await assertSucceeds(deleteDoc(doc(db, "tasks/task-1")));
     await assertSucceeds(deleteDoc(doc(db, "groupMessages/m1")));
     await assertSucceeds(deleteDoc(doc(db, "gatherings/g-ny")));
+    await assertSucceeds(getDoc(doc(db, "groupLeaderEmails/group-lyd_hakon")));
+    await assertSucceeds(getDocs(query(collection(db, "groupLeaderEmails"), where("groupId", "==", "group-lyd"))));
+    await assertFails(getDocs(query(collection(db, "groupLeaderEmails"), where("groupId", "==", "group-intern"))));
   });
 
   test("rører ikke arrangementer og oppgaver i grupper de ikke leder", async () => {
@@ -370,9 +444,12 @@ describe("En administrator", () => {
 
   test("den som nettopp har fått en innlogging, slipper inn, og den som har mistet den, slipper ikke inn", async () => {
     await assertSucceeds(setDoc(doc(kari(), "logins/fremmed@eksempel.no"), { personId: "ny", role: "member" }));
-    await assertSucceeds(all(stranger(), "persons"));
+    await assertFails(all(stranger(), "persons"));
+    await assertSucceeds(getDoc(doc(stranger(), "persons/ny")));
+    await assertFails(getDoc(doc(stranger(), "persons/kari")));
     await assertSucceeds(deleteDoc(doc(kari(), "logins/hakon@eksempel.no")));
     await assertFails(all(hakon(), "persons"));
+    await assertFails(getDoc(doc(hakon(), "persons/hakon")));
     // Made an administrator: the role in the login is what counts
     await assertFails(setDoc(doc(ola(), "cms_news/ny"), { title: "Nyhet" }));
     await assertSucceeds(setDoc(doc(kari(), "logins/ola@eksempel.no"), { personId: "ola", role: "admin" }));

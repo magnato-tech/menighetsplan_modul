@@ -5,7 +5,7 @@ import { DEFAULT_LOCATION, isWorshipService } from "../src/utils/gatherings";
 
 // Firestore documents are untyped at runtime, so every field is optional until validated.
 export type GatheringDoc = Partial<Gathering>;
-export type GroupDoc = Partial<Group>;
+export type GroupDoc = Partial<Group> & { memberCount?: number };
 
 // Where an event is held when no place is given: the same word as in the app
 export { DEFAULT_LOCATION };
@@ -194,7 +194,7 @@ export function toPublicGroups(docs: GroupDoc[]) {
       category,
       moteplan: g.meetingSchedule || null,
       meetingSchedule: g.meetingSchedule || null,
-      antallMedlemmer: Array.isArray(g.memberIds) ? g.memberIds.length : undefined,
+      antallMedlemmer: typeof g.memberCount === "number" ? g.memberCount : Array.isArray(g.memberIds) ? g.memberIds.length : undefined,
     };
   });
 }

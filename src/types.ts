@@ -172,6 +172,16 @@ export interface Assignment {
   assignedAt?: string;
   respondedAt?: string;
   withdrawalReason?: string;
+  /** The person's name, so a run sheet can show it without the register. */
+  personName?: string;
+  /** The gathering the task belongs to. Copied onto the assignment so the rules can read it. */
+  gatheringId?: string;
+  /** The gathering's group. A member of that group may read the names on its tasks. */
+  gatheringGroupId?: string;
+  /** Whether the gathering is open to everyone. Copied so a member may read a public run sheet. */
+  gatheringPublic?: boolean;
+  /** The group whose directory the name was taken from, when a leader assigns someone else. */
+  nameGroupId?: string;
 }
 
 /** Named volunteer slot on a gathering, e.g. Lyd or Kjøkken, with its own instruction. */

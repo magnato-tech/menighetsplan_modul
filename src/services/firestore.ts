@@ -14,8 +14,9 @@ import {
 } from "firebase/firestore";
 import { db, handleFirestoreError, OperationType } from "../firebase";
 import { Task } from "../types";
-import { COLLECTIONS, CMS_COLLECTIONS } from "../data/collections";
-import { sanitizeForFirestore, forUpdate } from "../utils/firestoreData";
+import { COLLECTIONS, CMS_COLLECTIONS, GATHERING_READERS_COLLECTION } from "../data/collections";
+import { gatheringReaderId } from "../utils/groupAccess";
+import { sanitizeForFirestore, forUpdate, documentFields } from "../utils/firestoreData";
 import type { AssignmentChange } from "../utils/staffing";
 
 type PlanningCollection = (typeof COLLECTIONS)[keyof typeof COLLECTIONS];
@@ -50,6 +51,34 @@ export function subscribeCollection<T extends { id: string }>(
  * Both are marked with `isPublic` when they are stored (see buildGroup, and visibilityFields in
  * utils/visibility.ts). A document without the mark is not given.
  */
+/** Calls back with the documents in `name` whose `field` matches, the way a member is allowed to ask. */
+export function subscribeWhere<T extends { id: string }>(
+  name: string,
+  field: string,
+  op: "==" | "array-contains",
+  value: string,
+  onChange: (items: T[]) => void
+): () => void {
+  return onSnapshot(
+    query(collection(db, name), where(field, op, value)),
+    (snapshot) => onChange(snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as T))),
+    (error) => handleFirestoreError(error, OperationType.GET, name)
+  );
+}
+
+/** Calls back with one document, or null when it is not there. */
+export function subscribeDocument<T extends { id: string }>(
+  name: string,
+  id: string,
+  onChange: (item: T | null) => void
+): () => void {
+  return onSnapshot(
+    doc(db, name, id),
+    (snapshot) => onChange(snapshot.exists() ? ({ id: snapshot.id, ...snapshot.data() } as T) : null),
+    (error) => handleFirestoreError(error, OperationType.GET, `${name}/${id}`)
+  );
+}
+
 export function subscribePublicPart<T extends { id: string }>(
   name: typeof COLLECTIONS.GROUPS | typeof COLLECTIONS.GATHERINGS,
   onChange: (items: T[]) => void
@@ -129,7 +158,16 @@ export function setGroupNotifications(groupId: string, personId: string, enabled
 export function saveAssignmentChange(taskId: string, change: AssignmentChange, taskStatus: Task["status"]): Promise<void> {
   const batch = writeBatch(db);
   const assignmentRef = (id: string) => doc(db, COLLECTIONS.ASSIGNMENTS, id);
-  if (change.add) batch.set(assignmentRef(change.add.id), sanitizeForFirestore(change.add));
+  if (change.add) {
+    batch.set(assignmentRef(change.add.id), sanitizeForFirestore(documentFields(change.add)));
+    if (change.add.gatheringId && change.add.personId) {
+      // One's own mark names only the gathering. A leader's mark for someone else also names the group.
+      const mark = change.add.nameGroupId
+        ? { gatheringId: change.add.gatheringId, personId: change.add.personId, nameGroupId: change.add.nameGroupId }
+        : { gatheringId: change.add.gatheringId, personId: change.add.personId };
+      batch.set(doc(db, GATHERING_READERS_COLLECTION, gatheringReaderId(change.add.gatheringId, change.add.personId)), mark);
+    }
+  }
   for (const { id, fields } of change.update ?? []) batch.update(assignmentRef(id), forUpdate(fields));
   if (change.remove) batch.delete(assignmentRef(change.remove));
   batch.update(doc(db, COLLECTIONS.TASKS, taskId), { status: taskStatus });

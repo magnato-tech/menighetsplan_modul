@@ -1,6 +1,15 @@
 import { deleteField, type DocumentData, type UpdateData } from "firebase/firestore";
 
 /**
+ * The fields of a document, without its id. The id is the document's place, and is not stored
+ * again inside it. Rules that list the allowed fields (`hasOnly`) would otherwise reject the write.
+ */
+export function documentFields<T extends { id: string }>(document: T): Omit<T, "id"> {
+  const { id: _id, ...fields } = document;
+  return fields;
+}
+
+/**
  * Sanitizes object to remove undefined values since Firestore rejects them.
  */
 export function sanitizeForFirestore<T>(obj: T): T {

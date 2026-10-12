@@ -2,7 +2,8 @@
 import React from "react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { cleanup, renderHook, waitFor } from "@testing-library/react";
-import { COLLECTIONS, LOGINS_COLLECTION, PUBLIC_PROFILES_COLLECTION } from "../src/data/collections";
+import { COLLECTIONS, LOGINS_COLLECTION, PUBLIC_GROUP_CARDS_COLLECTION, PUBLIC_PROFILES_COLLECTION } from "../src/data/collections";
+import { publicGroupCardsOf } from "../src/utils/groupAccess";
 import type { Gathering, Group, Person, Task } from "../src/types";
 import { publicCopiesOf } from "../src/utils/publicProfile";
 import { clearCollections, offline, seed, stored } from "./support/offlineFirestore";
@@ -51,13 +52,14 @@ const ids = (list: { id: string }[]) => list.map((item) => item.id).sort();
 
 beforeEach(async () => {
   await offline;
-  await clearCollections([...Object.values(COLLECTIONS), LOGINS_COLLECTION, PUBLIC_PROFILES_COLLECTION]);
+  await clearCollections([...Object.values(COLLECTIONS), LOGINS_COLLECTION, PUBLIC_PROFILES_COLLECTION, PUBLIC_GROUP_CARDS_COLLECTION]);
   resetSession();
   seed(COLLECTIONS.PERSONS, register);
   seed(COLLECTIONS.GROUPS, groups);
   seed(COLLECTIONS.GATHERINGS, gatherings);
   seed(COLLECTIONS.TASKS, tasks);
   seed(PUBLIC_PROFILES_COLLECTION, publicCopiesOf(register));
+  seed(PUBLIC_GROUP_CARDS_COLLECTION, publicGroupCardsOf(groups, register));
   seed(LOGINS_COLLECTION, [
     { id: "kari@menigheten.no", personId: "kari", role: "admin" },
     { id: "ola@eksempel.no", personId: "ola", role: "member" },
@@ -113,9 +115,11 @@ describe("Den som logger inn", () => {
     await waitFor(() => expect(data.current.session.status).toBe("member"));
 
     expect(data.current.currentUser).toMatchObject({ id: "ola", name: "Ola Hansen" });
-    expect(ids(data.current.allPersons)).toEqual(["kari", "liv", "ola"]);
-    expect(data.current.allPersons.find((person) => person.id === "liv")?.phone).toBe("99 88 77 66");
-    expect(ids(data.current.groups)).toEqual(["group-apen", "group-lukket", "group-umerket"]);
+    expect(data.current.hasFullRegister).toBe(false);
+    expect(ids(data.current.allPersons)).toEqual(["liv", "ola"]);
+    expect(data.current.allPersons.find((person) => person.id === "liv")?.phone).toBeUndefined();
+    expect(data.current.allPersons.find((person) => person.id === "ola")?.email).toBe("ola@eksempel.no");
+    expect(ids(data.current.groups)).toEqual(["group-apen"]);
     expect(ids(data.current.gatherings)).toEqual(["g-apen", "g-fremhevet", "g-intern"]);
     await waitFor(() => expect(ids(data.current.tasks)).toEqual(["task-1"]));
   });
@@ -146,7 +150,7 @@ describe("Den som logger inn", () => {
 
     expect(data.current.session).toMatchObject({ status: "notInRegister", reason: "noMatch" });
     expect(ids(data.current.allPersons)).toEqual(["liv"]);
-    expect(ids(data.current.groups)).toEqual(["group-apen"]);
+    await waitFor(() => expect(ids(data.current.groups)).toEqual(["group-apen"]));
     expect(data.current.tasks).toEqual([]);
   });
 
@@ -177,7 +181,7 @@ describe("Den som logger inn", () => {
     signInWith("ola@eksempel.no");
     const { result: data } = show();
     await waitFor(() => expect(data.current.session.status).toBe("member"));
-    await waitFor(() => expect(data.current.groups.length).toBe(3));
+    await waitFor(() => expect(data.current.groups.length).toBe(1));
 
     expect((await stored(COLLECTIONS.GROUPS, "group-apen"))?.memberIds).toEqual(["ola"]);
   });

@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useFirebase } from "../context/FirebaseDataContext";
 import { Person } from "../types";
 import { resolveTaskInstruction } from "../utils/roleStaffing";
@@ -37,6 +37,7 @@ export function useTaskDetail(taskId: string | undefined) {
     getGroupById,
     getPersonById,
     getAllAssignmentsForTask,
+    watchGatheringAssignments,
     isPersonInGroup,
     assignTaskToPerson,
     updateAssignmentStatus,
@@ -47,6 +48,7 @@ export function useTaskDetail(taskId: string | undefined) {
   const task = (taskId && getTaskById(taskId)) || null;
   const group = (task?.groupId && getGroupById(task.groupId)) || null;
   const gathering = (task && getGatheringById(task.gatheringId)) || null;
+  useEffect(() => (gathering ? watchGatheringAssignments(gathering.id) : undefined), [gathering, watchGatheringAssignments]);
 
   const taskAssignments = task ? getAllAssignmentsForTask(task.id) : [];
   const freeSlots = task ? countSlots(task, taskAssignments).free : 0;

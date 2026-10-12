@@ -981,7 +981,7 @@ Bestilt av produkteier under oppsettet av første menighet.
 | **Prøvd** | 6 sjekker av dato, alder og tekst, og én av at den offentlige kopien av en person ikke har fødselsdatoen |
 | **Ikke levert her** | Fødselsdato i skjemaet for ny person og i personlisten. Fødselsdagsliste og aldersgrupper |
 
-**Hvem som kan lese den.** Bare en administrator ser og endrer feltet i appen. Men alle som står i registeret og er logget inn, får hele registeret levert til nettleseren sin, også fødselsdatoene (kapittel 13, punkt 1). Det bør strammes inn før registeret holder mer enn kontaktopplysninger.
+**Hvem som kan lese den.** Bare en administrator ser og endrer feltet. I koden leser en frivillig bare sitt eget personkort (kapittel 14). Det gjelder i databasen først når `firestore.rules` er publisert på nytt hos menigheten.
 
 ### Leder og nestleder regnes som medlemmer (12. oktober 2026)
 
@@ -1007,7 +1007,7 @@ Sortert etter hvor mye de betyr for en menighet som skal ta løsningen i bruk.
 
 | # | Mangel | Løses i |
 |:---:|:---|:---|
-| 1 | De lukkede databasereglene er publisert hos første menighet, og stenger for fremmede. Men alle som er logget inn, kan lese hele personregisteret, også fødselsdato: frivillige skal ikke inviteres inn før det er rettet (kapittel 14, «Brukernivåer som holder i databasen»). To ting til er bevisst grove: alle i registeret kan endre tildelinger, og en besøkende kan legge til i besøkstallene med hvilke tall som helst | Kapittel 14 |
+| 1 | Koden gir ikke lenger hele personregisteret til en frivillig. Reglene som er publisert hos første menighet, gjør det fortsatt, til `firestore.rules` limes inn og publiseres på nytt. Frivillige skal ikke inviteres før det, og før en administrator har åpnet appen én gang så katalog og navn på tildelingene er skrevet. Alle i registeret kan fortsatt endre tildelinger, og en besøkende kan legge til i besøkstallene med hvilke tall som helst | Kapittel 14 |
 | 2 | Kladder til nyheter, taler og stab leveres til alle nettlesere. Kladder til sider leveres bare til dem som står i registeret. I demoen leveres hele registeret til alle, som før | Fase 1 |
 | 3 | To personer som deler e-postadresse, kan ikke logge inn før adressen står på bare én av dem. Første administrator må legges inn med et skript | Trinn 7 for skriptet |
 | 4 | Forsidens tekster og menighetens navn står delvis i koden | Fase 2 |
@@ -1127,11 +1127,11 @@ git push origin origin/main:stabil
 * Reglene som er publisert hos Lillesand, er fra 12. oktober kl. 19 og mangler tillegget som lar et medlem lagre `calendarFeedToken` på seg selv. De må publiseres på nytt før det personlige kalenderabonnementet virker der.
 * Filer med personopplysninger (registeret, bemanningen) ligger utenfor repoet og skal aldri inn i det.
 
-### Brukernivåer som holder i databasen *(foreslått 12. oktober 2026, ikke godkjent og ikke bygget)*
+### Brukernivåer som holder i databasen *(avtalt 12. oktober 2026; lesetilgangen er i koden, ikke publisert i databasen ennå)*
 
-**Problemet.** Appen har tre roller (administrator, gruppeleder, medlem). De styrer skjermene og hva man får endre. Men alle som er logget inn, får hele personregisteret levert til nettleseren: reglene lar et medlem lese `persons`, og appen henter hele samlingen. En frivillig gruppeleder har dermed teknisk tilgang til alle opplysninger om alle, også fødselsdato. Det er ikke forsvarlig, og frivillige skal ikke inviteres inn hos en menighet før det er rettet. Produkteier har bedt om tre sikre nivåer.
+**Problemet.** Appen har tre roller (administrator, gruppeleder, medlem). De styrer skjermene. Lesingen av registeret var den samme for alle som var logget inn. Produkteier har bedt om tre sikre nivåer, og frivillige skal ikke inviteres inn før reglene er publisert.
 
-**Forslaget.**
+**Avtalt.**
 
 | | Frivillig | Gruppeleder og nestleder | Administrator |
 |:---|:---|:---|:---|
@@ -1142,20 +1142,16 @@ git push origin origin/main:stabil
 | Hvem som står på oppgavene på et arrangement | Bare navnet | Bare navnet | Ser alt |
 | Legge folk i gruppen | Nei | Foreslår navn, administrator godkjenner | Ja |
 
-**Hvordan det sikres i databasen, og ikke bare på skjermen.**
+**Lesetilgangen er skrevet i koden** (`src/utils/groupAccess.ts`, `firestore.rules`, `useRegisterMirror`). En frivillig henter sitt eget personkort, navn og telefon for egen gruppe, og e-post bare når hun leder gruppen. Kjøreplanen bruker navnet på tildelingen. «Legg til person» fra registeret vises bare for administrator. Gruppeleder kan fortsatt fjerne et medlem. Demoen leser hele registeret, fordi ingen logger inn der.
 
-1. `persons` leses bare av administrator. Et medlem kan hente sitt eget dokument.
-2. Hver gruppe får en egen medlemsliste med begrensede felt (navn og telefon, e-post for lederen), som bare de som er med i gruppen, kan lese. Den skrives fra registeret av nettleseren til en administrator, slik `logins` og `publicProfiles` skrives i dag (`src/hooks/useRegisterMirror.ts`).
-3. Navnet legges på tildelingen, så kjøreplanen kan vise hvem som har en oppgave uten oppslag i registeret.
-4. Appen slutter å hente hele `persons` for andre enn administrator, og bygger personlisten sin av eget dokument og gruppelistene.
+Det holder ikke før reglene er publisert. Rekkefølge hos en menighet: administrator åpner appen én gang, så skrives katalogen og navnene på tildelingene. Deretter limes `firestore.rules` inn i Firebase og publiseres. Så logger én medlemskonto inn for første gang. Hele `persons` skal ikke komme ned i nettleseren.
 
-**Tre leveranser, i rekkefølge.**
+**To leveranser står igjen.**
 
-1. *Lesetilgangen* over, med nye regler og prøver i `rules-tests/`. Etter denne kan frivillige slippes til.
-2. *Gruppeleder foreslår medlemmer:* lederen skriver navn på en liste og sender, administrator kobler navnene til personer i registeret eller oppretter dem, og listen hos lederen blir riktig. Likt for husgrupper og tjenestegrupper. I dag kan en leder av en tjenestegruppe legge til hvem som helst fra hele registeret, og en leder av en husgruppe kan ikke legge til noen. Ingen bryter per leder i første omgang.
-3. *Finere skriveregler:* i dag kan enhver innlogget endre enhver tildeling.
+1. *Gruppeleder foreslår medlemmer:* lederen skriver navn på en liste og sender, administrator kobler navnene til personer i registeret eller oppretter dem. Likt for husgrupper og tjenestegrupper.
+2. *Finere skriveregler:* i dag kan enhver innlogget fortsatt endre svaret på en tildeling. Navn og person på en ny tildeling kan en frivillig bare skrive for seg selv, og en leder bare for noen i en gruppe hun leder, med navnet fra katalogen.
 
-**Åpne valg hos produkteier.** Om frivillige skal se navnet på dem som har andre oppgaver på samme arrangement (antatt ja). Hva gruppemedlemmer ser om hverandre (foreslått navn og telefon). Om administrator er det samme som pastor, eller om det trengs et fjerde nivå, redaktør, som redigerer nettsiden uten å se registeret.
+Administrator er det samme som den som skal se registeret. En redaktør som endrer nettsiden uten å se registeret, er ikke bygget.
 
 **Kan ikke vises i demoen**, fordi ingen logger inn der. Reglene prøves lokalt (`npm run test:rules`), og med en konto til hos første menighet før adressen sendes ut.
 

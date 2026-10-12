@@ -14,7 +14,7 @@ interface GroupMembersProps {
 }
 
 export const GroupMembers: React.FC<GroupMembersProps> = ({ detail, group, showToast }) => {
-  const { hasLeaderAccess, members, availablePersonsToAdd, addGroupMember, removeGroupMember } = detail;
+  const { hasLeaderAccess, isAdmin, members, availablePersonsToAdd, addGroupMember, removeGroupMember } = detail;
 
   // Add member selector
   const [selectedPersonToAdd, setSelectedPersonToAdd] = useState<string>("");
@@ -105,7 +105,7 @@ export const GroupMembers: React.FC<GroupMembersProps> = ({ detail, group, showT
       </div>
 
       {/* Add Member form - for leaders only */}
-      {hasLeaderAccess && (
+      {hasLeaderAccess && isAdmin && (
         availablePersonsToAdd.length > 0 ? (
           <div className="pt-2 border-t border-slate-100 space-y-2">
             <label className="text-[11px] font-semibold text-slate-600 block">

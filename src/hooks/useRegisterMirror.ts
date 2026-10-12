@@ -1,24 +1,67 @@
 import { useEffect, useRef, useState } from "react";
-import { storeLoginChanges, storePublicProfileChanges, subscribeLogins, subscribePublicProfiles } from "../services/registerMirror";
-import type { Person } from "../types";
+import {
+  patchAssignmentAccess,
+  storeGatheringReaderChanges,
+  storeGroupDirectoryChanges,
+  storeGroupLeaderEmailChanges,
+  storeLoginChanges,
+  storePublicGroupCardChanges,
+  storePublicProfileChanges,
+  subscribeGatheringReaders,
+  subscribeGroupDirectory,
+  subscribeGroupLeaderEmails,
+  subscribeLogins,
+  subscribePublicGroupCards,
+  subscribePublicProfiles,
+} from "../services/registerMirror";
+import type { Assignment, Gathering, Group, Person, Task } from "../types";
+import {
+  assignmentAccessPatches,
+  gatheringReadersOf,
+  groupDirectoryOf,
+  groupLeaderEmailsOf,
+  publicGroupCardsOf,
+  type GatheringReader,
+  type GroupDirectoryCard,
+  type GroupLeaderEmail,
+  type PublicGroupCard,
+} from "../utils/groupAccess";
 import { keepingOwnLogin, loginsOf, type Login } from "../utils/logins";
 import { hasChanges, mirrorChanges } from "../utils/mirror";
 import { publicCopiesOf } from "../utils/publicProfile";
 
+export interface RegisterMirrorPlanning {
+  groups: Group[];
+  gatherings: Gathering[];
+  tasks: Task[];
+  assignments: Assignment[];
+  /** Whether the groups have arrived, so the directory is not written from an empty list. */
+  listsReady: boolean;
+  /** Whether tasks and assignments have arrived. On the public website they are not loaded. */
+  planningReady: boolean;
+}
+
 /**
- * Keeps the logins and the public copies of persons in step with the register (see
- * utils/mirror.ts), from the browser of an administrator who has the app open. An administrator
- * is the only one who changes an address, a role or a public profile, so the one who makes the
- * change is also the one whose browser writes what follows from it.
+ * Keeps what follows from the register in step with it, from the browser of an administrator
+ * who has the app open: the logins, the public copies, the group directory, the leaders'
+ * e-mail cards, the public group cards, and the names on the assignments.
  *
  * `active` is whether the one at the screen is an administrator and the whole register has
- * arrived. Nothing is written from a register that is only half there.
+ * arrived. Nothing is written from a register that is only half there. The group lists wait
+ * until the planning has arrived too, so an empty list is not written over what is stored.
  */
-export function useRegisterMirror(persons: Person[], active: boolean, ownEmail: string | null): void {
-  // What the database holds, once it has said so itself: never a copy in the browser, and never while a write of our own is on its way
+export function useRegisterMirror(
+  persons: Person[],
+  active: boolean,
+  ownEmail: string | null,
+  planning: RegisterMirrorPlanning = { groups: [], gatherings: [], tasks: [], assignments: [], listsReady: false, planningReady: false }
+): void {
   const [logins, setLogins] = useState<Login[] | null>(null);
   const [copies, setCopies] = useState<Person[] | null>(null);
-  // A write that was turned away is not tried again and again
+  const [directory, setDirectory] = useState<GroupDirectoryCard[] | null>(null);
+  const [emails, setEmails] = useState<GroupLeaderEmail[] | null>(null);
+  const [cards, setCards] = useState<PublicGroupCard[] | null>(null);
+  const [readers, setReaders] = useState<GatheringReader[] | null>(null);
   const stopped = useRef(false);
 
   useEffect(() => {
@@ -27,31 +70,76 @@ export function useRegisterMirror(persons: Person[], active: boolean, ownEmail: 
     const unsubscribers = [
       subscribeLogins((list, settled) => setLogins(settled ? list : null)),
       subscribePublicProfiles((list, settled) => setCopies(settled ? list : null)),
+      subscribeGroupDirectory((list, settled) => setDirectory(settled ? list : null)),
+      subscribeGroupLeaderEmails((list, settled) => setEmails(settled ? list : null)),
+      subscribePublicGroupCards((list, settled) => setCards(settled ? list : null)),
+      subscribeGatheringReaders((list, settled) => setReaders(settled ? list : null)),
     ];
     return () => {
       unsubscribers.forEach((unsubscribe) => unsubscribe());
       setLogins(null);
       setCopies(null);
+      setDirectory(null);
+      setEmails(null);
+      setCards(null);
+      setReaders(null);
     };
   }, [active]);
+
+  const fail = (what: string) => (error: unknown) => {
+    stopped.current = true;
+    console.warn(`${what} kunne ikke oppdateres etter registeret:`, error);
+  };
 
   useEffect(() => {
     if (!active || stopped.current || logins === null) return;
     const changes = keepingOwnLogin(mirrorChanges(loginsOf(persons), logins), ownEmail);
     if (!hasChanges(changes)) return;
-    storeLoginChanges(changes).catch((error) => {
-      stopped.current = true;
-      console.warn("Innloggingene kunne ikke oppdateres etter registeret:", error);
-    });
+    storeLoginChanges(changes).catch(fail("Innloggingene"));
   }, [active, persons, logins, ownEmail]);
 
   useEffect(() => {
     if (!active || stopped.current || copies === null) return;
     const changes = mirrorChanges(publicCopiesOf(persons), copies);
     if (!hasChanges(changes)) return;
-    storePublicProfileChanges(changes).catch((error) => {
-      stopped.current = true;
-      console.warn("De offentlige profilene kunne ikke oppdateres etter registeret:", error);
-    });
+    storePublicProfileChanges(changes).catch(fail("De offentlige profilene"));
   }, [active, persons, copies]);
+
+  useEffect(() => {
+    if (!active || !planning.listsReady || stopped.current || directory === null) return;
+    const changes = mirrorChanges(groupDirectoryOf(persons, planning.groups), directory);
+    if (!hasChanges(changes)) return;
+    storeGroupDirectoryChanges(changes).catch(fail("Gruppekatalogen"));
+  }, [active, planning.listsReady, planning.groups, persons, directory]);
+
+  useEffect(() => {
+    if (!active || !planning.listsReady || stopped.current || emails === null) return;
+    const changes = mirrorChanges(groupLeaderEmailsOf(persons, planning.groups), emails);
+    if (!hasChanges(changes)) return;
+    storeGroupLeaderEmailChanges(changes).catch(fail("E-postkortene"));
+  }, [active, planning.listsReady, planning.groups, persons, emails]);
+
+  useEffect(() => {
+    if (!active || !planning.listsReady || stopped.current || cards === null) return;
+    const changes = mirrorChanges(publicGroupCardsOf(planning.groups, persons), cards);
+    if (!hasChanges(changes)) return;
+    storePublicGroupCardChanges(changes).catch(fail("De offentlige gruppekortene"));
+  }, [active, planning.listsReady, planning.groups, persons, cards]);
+
+  useEffect(() => {
+    if (!active || !planning.planningReady || stopped.current || readers === null) return;
+    const changes = mirrorChanges(
+      gatheringReadersOf(planning.gatherings, planning.groups, planning.tasks, planning.assignments),
+      readers
+    );
+    if (!hasChanges(changes)) return;
+    storeGatheringReaderChanges(changes).catch(fail("Lesemerkene"));
+  }, [active, planning.planningReady, planning.gatherings, planning.groups, planning.tasks, planning.assignments, readers]);
+
+  useEffect(() => {
+    if (!active || !planning.planningReady || stopped.current) return;
+    const patches = assignmentAccessPatches(planning.assignments, planning.tasks, planning.gatherings, persons);
+    if (patches.length === 0) return;
+    patchAssignmentAccess(patches).catch(fail("Navnene på tildelingene"));
+  }, [active, planning.planningReady, planning.assignments, planning.tasks, planning.gatherings, persons]);
 }

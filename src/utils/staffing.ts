@@ -18,17 +18,23 @@ export interface AssignedPerson {
   response: Assignment["response"];
 }
 
-/** Each assignment with its person and how the answer reads. */
+/** Each assignment with its person and how the answer reads. The name on the assignment is used when the register is not in the browser. */
 export function describeAssignments(
   taskAssignments: Assignment[],
   getPersonById: (personId: string) => Person | undefined
 ): AssignedPerson[] {
-  return taskAssignments.map((assignment) => ({
-    assignment,
-    person: getPersonById(assignment.personId),
-    statusLabel: RESPONSE_LABELS[assignment.response],
-    response: assignment.response,
-  }));
+  return taskAssignments.map((assignment) => {
+    const known = getPersonById(assignment.personId);
+    const person = known ?? (assignment.personName
+      ? { id: assignment.personId, name: assignment.personName, globalRole: "member" as const }
+      : undefined);
+    return {
+      assignment,
+      person,
+      statusLabel: RESPONSE_LABELS[assignment.response],
+      response: assignment.response,
+    };
+  });
 }
 
 export interface TaskSlots {

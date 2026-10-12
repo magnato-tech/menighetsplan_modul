@@ -14,7 +14,7 @@ import {
   toRecurringEvents,
 } from './server/publicApi';
 import { markAsPrivate, renderSeoIntoHtml } from './server/pageMeta';
-import { CMS_COLLECTIONS, CMS_SETTINGS_DOC_ID } from './src/data/collections';
+import { CMS_COLLECTIONS, CMS_SETTINGS_DOC_ID, PUBLIC_GROUP_CARDS_COLLECTION } from './src/data/collections';
 import { type CmsMedia, type CmsNewsArticle, type CmsPage, type CmsSettings, emptyCmsSettings } from './src/data/cmsData';
 import { firebaseOptionsOf, missingInstallationSettings, readInstallationConfig } from './src/installation';
 import { isPublicPath } from './src/utils/routes';
@@ -77,6 +77,19 @@ async function loadGatheringDocs(site: string | null = null): Promise<GatheringD
     const data = docSnap.data();
     return { ...data, id: data.id || docSnap.id };
   });
+}
+
+/** Public routes prefer the cards without member ids. A demo site, and a database that has no cards yet, still read the groups. */
+async function loadGroupsForPublicApi(site: string | null): Promise<GroupDoc[]> {
+  if (site) return loadGroupDocs(site);
+  const cardsSnap = await getDocs(collection(db, PUBLIC_GROUP_CARDS_COLLECTION));
+  if (!cardsSnap.empty) {
+    return cardsSnap.docs.map((docSnap) => {
+      const data = docSnap.data();
+      return { ...data, id: (typeof data.id === "string" && data.id) || docSnap.id };
+    });
+  }
+  return loadGroupDocs(null);
 }
 
 async function loadGroupDocs(site: string | null = null): Promise<GroupDoc[]> {
@@ -246,7 +259,7 @@ app.get('/api/min/kalender.ics', async (req: Request, res: Response) => {
  */
 app.get('/api/public/gatherings', async (_req: Request, res: Response) => {
   try {
-    const [gatheringDocs, groupDocs] = await Promise.all([loadGatheringDocs(), loadGroupDocs()]);
+    const [gatheringDocs, groupDocs] = await Promise.all([loadGatheringDocs(), loadGroupsForPublicApi(null)]);
     const items = toPublicGatherings(gatheringDocs).map(toV11);
     const groups = toPublicGroups(groupDocs);
     const recurringEvents = toRecurringEvents(groupDocs);
@@ -278,7 +291,7 @@ app.get('/api/public/gatherings', async (_req: Request, res: Response) => {
  */
 app.get('/api/public/groups', async (_req: Request, res: Response) => {
   try {
-    const groups = toPublicGroups(await loadGroupDocs());
+    const groups = toPublicGroups(await loadGroupsForPublicApi(null));
     res.json({
       versjon: '1.1',
       status: 'ok',
@@ -298,7 +311,7 @@ app.get('/api/public/groups', async (_req: Request, res: Response) => {
  */
 app.get('/api/public/recurring', async (_req: Request, res: Response) => {
   try {
-    const recurringEvents = toRecurringEvents(await loadGroupDocs());
+    const recurringEvents = toRecurringEvents(await loadGroupsForPublicApi(null));
     res.json({
       versjon: '1.1',
       status: 'ok',
@@ -318,7 +331,7 @@ app.get('/api/public/recurring', async (_req: Request, res: Response) => {
  */
 app.get('/api/public/all', async (_req: Request, res: Response) => {
   try {
-    const [gatheringDocs, groupDocs] = await Promise.all([loadGatheringDocs(), loadGroupDocs()]);
+    const [gatheringDocs, groupDocs] = await Promise.all([loadGatheringDocs(), loadGroupsForPublicApi(null)]);
     res.json({
       versjon: '1.1',
       status: 'ok',

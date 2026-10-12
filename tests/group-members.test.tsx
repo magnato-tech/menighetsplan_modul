@@ -61,7 +61,7 @@ describe("Hvem som er med i en gruppe der lederen ikke står i medlemslisten", (
     await waitFor(() => expect(result.current.members.length).toBe(3));
 
     expect(names(result.current.members)).toEqual(["Gunnar Leder", "Magnar Nestleder", "Randi Medlem"]);
-    expect(names(result.current.availablePersonsToAdd)).toEqual(["Kari Nordmann", "Ulla Utenfor"]);
+    expect(result.current.availablePersonsToAdd).toEqual([]);
   });
 
   test("personsiden i admin viser gruppen på den som leder den", async () => {

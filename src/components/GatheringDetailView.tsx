@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import {
   useLeaderGatheringDetail,
@@ -50,6 +50,8 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
   mode = "leader",
 }) => {
   const detail = useLeaderGatheringDetail(gatheringId);
+  const { watchGatheringAssignments } = useFirebase();
+  useEffect(() => watchGatheringAssignments(gatheringId), [gatheringId, watchGatheringAssignments]);
   const {
     hasAccess,
     isLeader,

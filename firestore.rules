@@ -8,8 +8,9 @@ rules_version = '2';
 //     of the persons who are shown on the website. Writes nothing, except adding to the visit
 //     counts.
 //   - a member: someone who has signed in with a confirmed e-mail address that stands on
-//     exactly one person in the register. Reads the planning data and the register, answers
-//     for themselves, and leads the groups they are a leader of.
+//     exactly one person in the register. Reads their own person, the people in their own
+//     groups (name and phone; e-mail only when they lead the group), and the planning of
+//     the gatherings they can open. Answers for themselves, and leads the groups they lead.
 //   - an administrator: a member whose person is an administrator. Writes everything.
 //
 // Who someone is, is looked up in `logins` (see src/utils/logins.ts): one document per address,
@@ -61,6 +62,37 @@ service cloud.firestore {
         && leadsThis(get(/databases/$(database)/documents/groups/$(groupId)).data);
     }
 
+    function readerId(gatheringId) {
+      return gatheringId + '_' + me();
+    }
+
+    function readerOf(gatheringId) {
+      return exists(/databases/$(database)/documents/gatheringReaders/$(readerId(gatheringId)));
+    }
+
+    // Membership is read from the group document, which is what an administrator edits.
+    // A directory card that has not yet been removed does not keep anyone in.
+    function holdsPlace(group, personId) {
+      return personId in group.get('memberIds', [])
+        || personId in group.get('leaderIds', [])
+        || personId in group.get('deputyLeaderIds', []);
+    }
+
+    function inGroupData(group) {
+      return holdsPlace(group, me());
+    }
+
+    function memberOf(groupId) {
+      return groupId is string
+        && holdsPlace(get(/databases/$(database)/documents/groups/$(groupId)).data, me());
+    }
+
+    function personIn(groupId, personId) {
+      return groupId is string
+        && personId is string
+        && holdsPlace(get(/databases/$(database)/documents/groups/$(groupId)).data, personId);
+    }
+
     // Whether the one who asks leads the group the event belongs to
     function leadsEvent(gatheringId) {
       return gatheringId is string
@@ -94,7 +126,8 @@ service cloud.firestore {
     // ---------- The register and the planning ----------
 
     match /persons/{personId} {
-      allow read: if isMember();
+      allow get: if isAdmin() || (isMember() && personId == me());
+      allow list: if isAdmin();
       allow create, delete: if isAdmin();
       // A member changes nothing about themselves but how their own analysis board is laid out,
       // and the key to their own calendar subscription (src/services/personalCalendarFeed.ts)
@@ -102,8 +135,50 @@ service cloud.firestore {
         || (isMember() && personId == me() && changedOnly(['analyticsHiddenModules', 'calendarFeedToken']));
     }
 
+    // Name and phone for the people in one group. A member reads only the groups they belong to.
+    match /groupDirectory/{cardId} {
+      allow get: if isAdmin() || (isMember() && memberOf(resource.data.groupId));
+      allow list: if isAdmin() || (isMember() && memberOf(resource.data.groupId));
+      allow write: if isAdmin()
+        && request.resource.data.keys().hasOnly(['groupId', 'personId', 'name', 'phone'])
+        && request.resource.data.keys().hasAll(['groupId', 'personId', 'name']);
+    }
+
+    // E-mail for the people in one group. Only a leader or deputy of that group, besides an administrator.
+    match /groupLeaderEmails/{cardId} {
+      allow get, list: if isAdmin() || leads(resource.data.groupId);
+      allow write: if isAdmin()
+        && request.resource.data.keys().hasOnly(['groupId', 'personId', 'email'])
+        && request.resource.data.keys().hasAll(['groupId', 'personId', 'email']);
+    }
+
+    // The website's copy of a public group, without the private member list.
+    match /publicGroupCards/{groupId} {
+      allow read: if true;
+      allow write: if isAdmin()
+        && request.resource.data.keys().hasOnly(['name', 'description', 'category', 'tags', 'meetingSchedule', 'isPublic', 'memberCount', 'leaderIds', 'deputyLeaderIds', 'memberIds'])
+        && request.resource.data.isPublic == true
+        && request.resource.data.memberCount is int;
+    }
+
+    // The mark that lets one person read the names on one gathering.
+    match /gatheringReaders/{markId} {
+      allow read: if isAdmin() || (isMember() && markId == readerId(resource.data.gatheringId));
+      allow create: if isAdmin()
+        || (isMember()
+            && request.resource.data.personId == me()
+            && markId == request.resource.data.gatheringId + '_' + me()
+            && request.resource.data.keys().hasOnly(['gatheringId', 'personId']))
+        || (isMember()
+            && leads(request.resource.data.nameGroupId)
+            && personIn(request.resource.data.nameGroupId, request.resource.data.personId)
+            && markId == request.resource.data.gatheringId + '_' + request.resource.data.personId
+            && request.resource.data.keys().hasOnly(['gatheringId', 'personId', 'nameGroupId']));
+      allow update, delete: if isAdmin();
+    }
+
     match /groups/{groupId} {
-      allow read: if resource.data.isPublic == true || isMember();
+      allow read: if isAdmin() || (isMember() && inGroupData(resource.data));
       allow create, delete: if isAdmin();
       allow update: if isAdmin()
         || (isMember() && leadsThis(resource.data))
@@ -139,13 +214,34 @@ service cloud.firestore {
         || leadsEvent(resource.data.gatheringId);
     }
 
-    // Who is asked, and what they answered. Members ask each other and answer for themselves.
+    // Who is asked, and what they answered. The name is stored here so the run sheet does not
+    // open the register. A member reads their own, a public gathering, their own groups'
+    // gatherings, and a gathering they have been marked to read.
     match /assignments/{assignmentId} {
-      allow read, write: if isMember();
+      allow read: if isAdmin()
+        || (isMember() && resource.data.personId == me())
+        || (isMember() && resource.data.gatheringPublic == true)
+        || (isMember() && memberOf(resource.data.gatheringGroupId))
+        || (isMember() && readerOf(resource.data.gatheringId));
+
+      allow create: if isAdmin()
+        || (isMember()
+            && request.resource.data.personId == me()
+            && request.resource.data.personName == get(/databases/$(database)/documents/persons/$(me())).data.name
+            && request.resource.data.keys().hasOnly(['taskId', 'personId', 'personName', 'gatheringId', 'gatheringGroupId', 'gatheringPublic', 'response', 'assignedAt']))
+        || (isMember()
+            && leads(request.resource.data.nameGroupId)
+            && personIn(request.resource.data.nameGroupId, request.resource.data.personId)
+            && request.resource.data.personName == get(/databases/$(database)/documents/groupDirectory/$(request.resource.data.nameGroupId + '_' + request.resource.data.personId)).data.name
+            && request.resource.data.keys().hasOnly(['taskId', 'personId', 'personName', 'gatheringId', 'gatheringGroupId', 'gatheringPublic', 'nameGroupId', 'response', 'assignedAt']));
+
+      allow update: if isAdmin()
+        || (isMember() && changedOnly(['response', 'respondedAt', 'withdrawalReason']));
+      allow delete: if isMember();
     }
 
     match /groupMessages/{messageId} {
-      allow read: if isMember();
+      allow read: if isAdmin() || (isMember() && memberOf(resource.data.groupId));
       allow create: if isMember() && request.resource.data.senderPersonId == me();
       allow update: if isAdmin();
       allow delete: if isAdmin()

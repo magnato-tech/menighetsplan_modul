@@ -150,7 +150,7 @@ describe("Den offentlige kopien av en person", () => {
 describe("Hvem en konto er, når registeret er lukket", () => {
   const account = (email: string | null, more: Partial<Account> = {}): Account => ({ uid: `uid:${email}`, email, emailVerified: true, ...more });
   const signedIn = (email: string | null, more: Partial<Account> = {}): AccountState => ({ status: "signedIn", account: account(email, more) });
-  const found = (personId: string): LoginState => ({ status: "found", personId });
+  const found = (personId: string, role: "admin" | "member" = "member"): LoginState => ({ status: "found", personId, role });
 
   test("den som ikke er logget inn, er ingen, og det som ikke er kjent ennå, avgjøres ikke", () => {
     expect(sessionOfLogin({ status: "signedOut" }, { status: "none" }, [], false)).toEqual({ status: "signedOut" });
@@ -199,14 +199,19 @@ describe("Reglene i databasen", () => {
   });
 
   test("registeret og planleggingen leses bare av dem som står i registeret", () => {
-    for (const name of ["persons", "tasks", "assignments", "groupMessages", "gatheringAttendances"]) {
+    expect(blockOf("persons")).toContain("allow get: if isAdmin() || (isMember() && personId == me());");
+    expect(blockOf("persons")).toContain("allow list: if isAdmin();");
+    expect(blockOf("persons")).not.toContain("if true");
+    for (const name of ["tasks", "assignments", "groupMessages", "gatheringAttendances"]) {
       expect(blockOf(name)).toContain("allow read");
       expect(blockOf(name)).not.toContain("if true");
-      expect(blockOf(name)).not.toContain("isPublic");
     }
-    // Groups and events are read by anyone only when they are marked public: the condition the app asks with
-    for (const name of ["groups", "gatherings"]) {
-      expect(blockOf(name)).toContain("allow read: if resource.data.isPublic == true || isMember();");
+    expect(blockOf("groups")).toContain("allow read: if isAdmin() || (isMember() && inGroupData(resource.data));");
+    expect(blockOf("groups")).not.toContain("isPublic == true");
+    expect(blockOf("gatherings")).toContain("allow read: if resource.data.isPublic == true || isMember();");
+    for (const name of ["groupDirectory", "groupLeaderEmails", "publicGroupCards", "gatheringReaders"]) {
+      expect(blockOf(name).length).toBeGreaterThan(0);
+      expect(ALL_COLLECTIONS).not.toContain(name);
     }
   });
 

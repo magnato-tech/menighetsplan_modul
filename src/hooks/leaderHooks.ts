@@ -2,7 +2,7 @@ import { useMemo, useCallback } from "react";
 import { useFirebase } from "../context/FirebaseDataContext";
 import { Task, Person, Group, Gathering, ProgramItem } from "../types";
 import { calculateTaskStaffingStatus, describeAssignments, StaffingStatusResult, getStaffingStatus } from "../utils/staffing";
-import { isInGroup, leadsGroup } from "../utils/groups";
+import { isInGroup, leadsGroup, allGroupPersonIds } from "../utils/groups";
 
 export interface LeaderGatheringItem {
   gathering: Gathering;
@@ -22,7 +22,7 @@ export interface LeaderGroupData {
 
 // 7. Hook: useLeaderDashboard
 export function useLeaderDashboard() {
-  const { currentUser, groups, gatherings, tasks, assignments, allPersons, assignTaskToPerson } = useFirebase();
+  const { currentUser, groups, gatherings, tasks, assignments, allPersons, hasFullRegister, getPersonById, assignTaskToPerson } = useFirebase();
 
   // Groups the person leads or co-leads. Admin sees every group in Admin Studio, not here.
   const leaderGroups = useMemo(() => {
@@ -34,7 +34,9 @@ export function useLeaderDashboard() {
   const leaderData: LeaderGroupData[] = useMemo(() => {
     return leaderGroups.map((group) => {
       // Find members belonging to this group
-      const groupMembers = allPersons.filter((p) => isInGroup(group, p.id));
+      const groupMembers = hasFullRegister
+        ? allPersons.filter((p) => isInGroup(group, p.id))
+        : allGroupPersonIds(group).flatMap((id) => getPersonById(id) ?? []);
 
       // Find all tasks for this group
       const groupTasks = tasks.filter((t) => t.groupId === group.id);
@@ -72,7 +74,7 @@ export function useLeaderDashboard() {
         needsAttention: totalVacantTasks > 0,
       };
     });
-  }, [leaderGroups, gatherings, tasks, assignments, allPersons]);
+  }, [leaderGroups, gatherings, tasks, assignments, allPersons, hasFullRegister, getPersonById]);
 
   // All semester gatherings across leader's groups (consolidated)
   const allSemesterGatherings = useMemo(() => {
@@ -131,6 +133,8 @@ export function useLeaderGroupDetail(groupId: string) {
   const {
     currentUser,
     allPersons,
+    hasFullRegister,
+    getPersonById,
     gatherings,
     tasks,
     assignments,
@@ -143,7 +147,6 @@ export function useLeaderGroupDetail(groupId: string) {
     assignTaskToPerson,
     updateAssignmentStatus,
     removeAssignment,
-    getPersonById,
   } = useFirebase();
 
   const group = getGroupById(groupId);
@@ -156,25 +159,29 @@ export function useLeaderGroupDetail(groupId: string) {
   const isMember = Boolean(group && (isInGroup(group, currentUser.id) || isAdmin));
   const hasAccess = Boolean(group && (isMember || hasLeaderAccess));
 
+  const peopleOf = (ids: readonly string[]) => (hasFullRegister
+    ? allPersons.filter((person) => ids.includes(person.id))
+    : ids.flatMap((id) => getPersonById(id) ?? []));
+
   const leaders = useMemo(() => {
     if (!group) return [];
-    return allPersons.filter((p) => group.leaderIds.includes(p.id));
-  }, [group, allPersons]);
+    return peopleOf(group.leaderIds);
+  }, [group, allPersons, hasFullRegister, getPersonById]);
 
   const deputyLeaders = useMemo(() => {
     if (!group) return [];
-    return allPersons.filter((p) => group.deputyLeaderIds?.includes(p.id));
-  }, [group, allPersons]);
+    return peopleOf(group.deputyLeaderIds ?? []);
+  }, [group, allPersons, hasFullRegister, getPersonById]);
 
   const members = useMemo(() => {
     if (!group) return [];
-    return allPersons.filter((p) => isInGroup(group, p.id));
-  }, [group, allPersons]);
+    return hasFullRegister ? allPersons.filter((person) => isInGroup(group, person.id)) : peopleOf(allGroupPersonIds(group));
+  }, [group, allPersons, hasFullRegister, getPersonById]);
 
   const availablePersonsToAdd = useMemo(() => {
-    if (!group) return [];
+    if (!group || currentUser.globalRole !== "admin") return [];
     return allPersons.filter((p) => !isInGroup(group, p.id));
-  }, [group, allPersons]);
+  }, [group, allPersons, currentUser.globalRole]);
 
   const groupGatherings = useMemo(() => {
     if (!group) return [];
@@ -285,6 +292,7 @@ export function useLeaderGatheringDetail(gatheringId: string) {
     tasks,
     assignments,
     allPersons,
+    hasFullRegister,
     getGatheringById,
     getGroupById,
     getPersonById,
@@ -355,9 +363,10 @@ export function useLeaderGatheringDetail(gatheringId: string) {
 
   // Group members available for leader to assign
   const groupMembers = useMemo(() => {
-    if (!group) return allPersons;
-    return allPersons.filter((p) => isInGroup(group, p.id));
-  }, [group, allPersons]);
+    if (!group) return hasFullRegister ? allPersons : [];
+    if (hasFullRegister) return allPersons.filter((p) => isInGroup(group, p.id));
+    return allGroupPersonIds(group).flatMap((id) => getPersonById(id) ?? []);
+  }, [group, allPersons, hasFullRegister, getPersonById]);
 
   const tasksWithDetails = useMemo(() => {
     if (!gathering) return [];
