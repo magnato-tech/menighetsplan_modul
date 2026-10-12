@@ -153,10 +153,12 @@ describe("Innloggingene og de offentlige kopiene følger registeret", () => {
     await waitFor(() => expect(database.storeLogins).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(console.warn).toHaveBeenCalled());
 
-    // The database says the same again, and the register changes: still nothing more is tried
+    // The database says the same again, and the register changes: the failed mirror is not tried again.
+    // The others still write. Liv is shown on the website, so her public copy is stored.
     holdsLogins([karisLogin]);
     rerender({ register: [kari, ola, liv], on: true });
     holdsLogins([karisLogin]);
     expect(database.storeLogins).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(writtenCopies().some((change) => change.set.some((copy) => copy.id === "liv"))).toBe(true));
   });
 });

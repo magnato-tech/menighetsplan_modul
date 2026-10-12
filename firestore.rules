@@ -139,26 +139,29 @@ service cloud.firestore {
     match /groupDirectory/{cardId} {
       allow get: if isAdmin() || (isMember() && memberOf(resource.data.groupId));
       allow list: if isAdmin() || (isMember() && memberOf(resource.data.groupId));
-      allow write: if isAdmin()
+      allow create, update: if isAdmin()
         && request.resource.data.keys().hasOnly(['groupId', 'personId', 'name', 'phone'])
         && request.resource.data.keys().hasAll(['groupId', 'personId', 'name']);
+      allow delete: if isAdmin();
     }
 
     // E-mail for the people in one group. Only a leader or deputy of that group, besides an administrator.
     match /groupLeaderEmails/{cardId} {
       allow get, list: if isAdmin() || leads(resource.data.groupId);
-      allow write: if isAdmin()
+      allow create, update: if isAdmin()
         && request.resource.data.keys().hasOnly(['groupId', 'personId', 'email'])
         && request.resource.data.keys().hasAll(['groupId', 'personId', 'email']);
+      allow delete: if isAdmin();
     }
 
     // The website's copy of a public group, without the private member list.
     match /publicGroupCards/{groupId} {
       allow read: if true;
-      allow write: if isAdmin()
+      allow create, update: if isAdmin()
         && request.resource.data.keys().hasOnly(['name', 'description', 'category', 'tags', 'meetingSchedule', 'isPublic', 'memberCount', 'leaderIds', 'deputyLeaderIds', 'memberIds'])
         && request.resource.data.isPublic == true
         && request.resource.data.memberCount is int;
+      allow delete: if isAdmin();
     }
 
     // The mark that lets one person read the names on one gathering.

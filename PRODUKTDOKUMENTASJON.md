@@ -1144,7 +1144,16 @@ git push origin origin/main:stabil
 
 **Lesetilgangen er skrevet i koden** (`src/utils/groupAccess.ts`, `firestore.rules`, `useRegisterMirror`). En frivillig henter sitt eget personkort, navn og telefon for egen gruppe, og e-post bare når hun leder gruppen. Kjøreplanen bruker navnet på tildelingen. «Legg til person» fra registeret vises bare for administrator. Gruppeleder kan fortsatt fjerne et medlem. Demoen leser hele registeret, fordi ingen logger inn der.
 
-Det holder ikke før reglene er publisert. Rekkefølge hos en menighet: administrator åpner appen én gang, så skrives katalogen og navnene på tildelingene. Deretter limes `firestore.rules` inn i Firebase og publiseres. Så logger én medlemskonto inn for første gang. Hele `persons` skal ikke komme ned i nettleseren.
+Det holder ikke før reglene er publisert. Reglene som ligger hos Lillesand i dag, avviser skriving til de nye samlingene. Speilet kan derfor ikke kjøre før de nye reglene er publisert. Rekkefølgen er:
+
+1. Koden kommer til `main` etter godkjenning.
+2. Endringen prøves i demoen.
+3. Utrulling til `stabil` godkjennes.
+4. De nye Firestore-reglene publiseres straks etter utrullingen.
+5. Administrator åpner appen og lar speilet fullføre.
+6. Speilingen kontrolleres før én medlemskonto brukes til sluttkontroll. Hele `persons` skal ikke komme ned i nettleseren.
+
+Gruppene kan mangle på nettsiden mellom utrullingen og fullført speiling, fordi nettsiden leser de offentlige gruppekortene, og de skrives først når speilet er ferdig. Vanlige medlemmer skal ikke inviteres til å teste før speilingen er kontrollert.
 
 **To leveranser står igjen.**
 

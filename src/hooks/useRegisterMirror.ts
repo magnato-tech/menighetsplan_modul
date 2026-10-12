@@ -62,11 +62,12 @@ export function useRegisterMirror(
   const [emails, setEmails] = useState<GroupLeaderEmail[] | null>(null);
   const [cards, setCards] = useState<PublicGroupCard[] | null>(null);
   const [readers, setReaders] = useState<GatheringReader[] | null>(null);
-  const stopped = useRef(false);
+  // Each mirror stops on its own. A refusal of one write must not leave the others unwritten.
+  const stopped = useRef({ logins: false, copies: false, directory: false, emails: false, cards: false, readers: false, assignments: false });
 
   useEffect(() => {
     if (!active) return;
-    stopped.current = false;
+    stopped.current = { logins: false, copies: false, directory: false, emails: false, cards: false, readers: false, assignments: false };
     const unsubscribers = [
       subscribeLogins((list, settled) => setLogins(settled ? list : null)),
       subscribePublicProfiles((list, settled) => setCopies(settled ? list : null)),
@@ -86,60 +87,60 @@ export function useRegisterMirror(
     };
   }, [active]);
 
-  const fail = (what: string) => (error: unknown) => {
-    stopped.current = true;
+  const fail = (part: keyof typeof stopped.current, what: string) => (error: unknown) => {
+    stopped.current[part] = true;
     console.warn(`${what} kunne ikke oppdateres etter registeret:`, error);
   };
 
   useEffect(() => {
-    if (!active || stopped.current || logins === null) return;
+    if (!active || stopped.current.logins || logins === null) return;
     const changes = keepingOwnLogin(mirrorChanges(loginsOf(persons), logins), ownEmail);
     if (!hasChanges(changes)) return;
-    storeLoginChanges(changes).catch(fail("Innloggingene"));
+    storeLoginChanges(changes).catch(fail("logins", "Innloggingene"));
   }, [active, persons, logins, ownEmail]);
 
   useEffect(() => {
-    if (!active || stopped.current || copies === null) return;
+    if (!active || stopped.current.copies || copies === null) return;
     const changes = mirrorChanges(publicCopiesOf(persons), copies);
     if (!hasChanges(changes)) return;
-    storePublicProfileChanges(changes).catch(fail("De offentlige profilene"));
+    storePublicProfileChanges(changes).catch(fail("copies", "De offentlige profilene"));
   }, [active, persons, copies]);
 
   useEffect(() => {
-    if (!active || !planning.listsReady || stopped.current || directory === null) return;
+    if (!active || !planning.listsReady || stopped.current.directory || directory === null) return;
     const changes = mirrorChanges(groupDirectoryOf(persons, planning.groups), directory);
     if (!hasChanges(changes)) return;
-    storeGroupDirectoryChanges(changes).catch(fail("Gruppekatalogen"));
+    storeGroupDirectoryChanges(changes).catch(fail("directory", "Gruppekatalogen"));
   }, [active, planning.listsReady, planning.groups, persons, directory]);
 
   useEffect(() => {
-    if (!active || !planning.listsReady || stopped.current || emails === null) return;
+    if (!active || !planning.listsReady || stopped.current.emails || emails === null) return;
     const changes = mirrorChanges(groupLeaderEmailsOf(persons, planning.groups), emails);
     if (!hasChanges(changes)) return;
-    storeGroupLeaderEmailChanges(changes).catch(fail("E-postkortene"));
+    storeGroupLeaderEmailChanges(changes).catch(fail("emails", "E-postkortene"));
   }, [active, planning.listsReady, planning.groups, persons, emails]);
 
   useEffect(() => {
-    if (!active || !planning.listsReady || stopped.current || cards === null) return;
+    if (!active || !planning.listsReady || stopped.current.cards || cards === null) return;
     const changes = mirrorChanges(publicGroupCardsOf(planning.groups, persons), cards);
     if (!hasChanges(changes)) return;
-    storePublicGroupCardChanges(changes).catch(fail("De offentlige gruppekortene"));
+    storePublicGroupCardChanges(changes).catch(fail("cards", "De offentlige gruppekortene"));
   }, [active, planning.listsReady, planning.groups, persons, cards]);
 
   useEffect(() => {
-    if (!active || !planning.planningReady || stopped.current || readers === null) return;
+    if (!active || !planning.planningReady || stopped.current.readers || readers === null) return;
     const changes = mirrorChanges(
       gatheringReadersOf(planning.gatherings, planning.groups, planning.tasks, planning.assignments),
       readers
     );
     if (!hasChanges(changes)) return;
-    storeGatheringReaderChanges(changes).catch(fail("Lesemerkene"));
+    storeGatheringReaderChanges(changes).catch(fail("readers", "Lesemerkene"));
   }, [active, planning.planningReady, planning.gatherings, planning.groups, planning.tasks, planning.assignments, readers]);
 
   useEffect(() => {
-    if (!active || !planning.planningReady || stopped.current) return;
+    if (!active || !planning.planningReady || stopped.current.assignments) return;
     const patches = assignmentAccessPatches(planning.assignments, planning.tasks, planning.gatherings, persons);
     if (patches.length === 0) return;
-    patchAssignmentAccess(patches).catch(fail("Navnene på tildelingene"));
+    patchAssignmentAccess(patches).catch(fail("assignments", "Navnene på tildelingene"));
   }, [active, planning.planningReady, planning.assignments, planning.tasks, planning.gatherings, persons]);
 }

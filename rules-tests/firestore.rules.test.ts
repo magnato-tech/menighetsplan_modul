@@ -1,7 +1,15 @@
 import { readFileSync } from "node:fs";
 import { buildAssignment } from "../src/data/newDocuments";
 import { documentFields, sanitizeForFirestore } from "../src/utils/firestoreData";
-import { afterAll, beforeAll, beforeEach, describe, test } from "vitest";
+import {
+  assignmentAccessPatches,
+  gatheringReadersOf,
+  groupDirectoryOf,
+  groupLeaderEmailsOf,
+  publicGroupCardsOf,
+} from "../src/utils/groupAccess";
+import type { Assignment, Gathering, Group, Person, Task } from "../src/types";
+import { afterAll, beforeAll, beforeEach, describe, expect, test } from "vitest";
 import { assertFails, assertSucceeds, initializeTestEnvironment, type RulesTestEnvironment } from "@firebase/rules-unit-testing";
 import {
   FieldPath,
@@ -491,5 +499,136 @@ describe("En administrator", () => {
       for (let t = 0; t < 5; t += 1) series.set(doc(db, `tasks/serie-${n}-${t}`), { gatheringId: `serie-${n}`, title: "Oppgave", status: "open" });
     }
     await assertSucceeds(series.commit());
+  });
+});
+
+// What the administrator's browser writes the first time the mirror runs (registerMirror.store and
+// patchAssignmentAccess): the id is the document's place, and the fields are what the app builds.
+const mirrorPersons: Person[] = [
+  { id: "kari", name: "Kari Nordmann", email: "kari@menigheten.no", globalRole: "admin" },
+  { id: "ola", name: "Ola Hansen", email: "ola@eksempel.no", phone: "22 00 00 00", globalRole: "member" },
+  { id: "hakon", name: "Håkon Tveit", email: "hakon@eksempel.no", globalRole: "member" },
+  { id: "liv", name: "Liv Pastor", email: "liv.privat@eksempel.no", globalRole: "member", isPublicProfile: true },
+];
+const mirrorGroups: Group[] = [
+  { id: "group-lyd", name: "Lyd og bilde", isPublic: true, leaderIds: ["ola"], memberIds: ["hakon"] },
+  { id: "group-intern", name: "Sjelesorg", isPublic: false, leaderIds: ["kari"], memberIds: [] },
+];
+const mirrorGatherings: Pick<Gathering, "id" | "groupId" | "isPublic">[] = [
+  { id: "g-apen", groupId: "group-lyd", isPublic: true },
+  { id: "g-intern", groupId: "group-intern", isPublic: false },
+];
+const mirrorTasks: Task[] = [
+  { id: "task-1", gatheringId: "g-apen", groupId: "group-lyd", title: "Lydtekniker", status: "open" },
+  { id: "task-2", gatheringId: "g-intern", groupId: "group-intern", title: "Referent", status: "open" },
+];
+const mirrorAssignments: Assignment[] = [
+  { id: "a1", taskId: "task-1", personId: "hakon", response: "pending", personName: "Håkon Tveit", gatheringId: "g-apen", gatheringGroupId: "group-lyd", gatheringPublic: true },
+  { id: "a-intern", taskId: "task-2", personId: "kari", response: "pending", personName: "Kari Nordmann", gatheringId: "g-intern", gatheringGroupId: "group-intern", gatheringPublic: false },
+];
+
+/** The same body registerMirror.store sends: id only in the path, undefined fields gone. */
+function storedBody<T extends { id: string }>(item: T): object {
+  return sanitizeForFirestore(documentFields(item));
+}
+
+function writeMirror<T extends { id: string }>(db: Firestore, name: string, items: readonly T[]) {
+  const batch = writeBatch(db);
+  for (const item of items) batch.set(doc(db, name, item.id), storedBody(item));
+  return batch.commit();
+}
+
+describe("Den første speilingen", () => {
+  const clearDerived = async () => {
+    await env.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore() as unknown as Firestore;
+      const paths = [
+        "groupDirectory/group-lyd_hakon", "groupDirectory/group-lyd_ola",
+        "groupLeaderEmails/group-lyd_hakon", "groupLeaderEmails/group-lyd_ola",
+        "publicGroupCards/group-lyd",
+        "gatheringReaders/g-apen_hakon", "gatheringReaders/g-apen_ola",
+      ];
+      await Promise.all(paths.map((path) => deleteDoc(doc(db, path))));
+    });
+  };
+
+  test("administrator skriver katalogen, e-postkortene, gruppekortene og lesemerkene, og kan skrive dem om igjen", async () => {
+    await clearDerived();
+    const directory = groupDirectoryOf(mirrorPersons, mirrorGroups);
+    const emails = groupLeaderEmailsOf(mirrorPersons, mirrorGroups);
+    const cards = publicGroupCardsOf(mirrorGroups, mirrorPersons);
+    const readers = gatheringReadersOf(mirrorGatherings, mirrorGroups, mirrorTasks, mirrorAssignments);
+    expect(directory.map((card) => card.id).sort()).toEqual(["group-intern_kari", "group-lyd_hakon", "group-lyd_ola"]);
+    expect(storedBody(directory.find((card) => card.id === "group-lyd_ola")!)).toEqual({
+      groupId: "group-lyd", personId: "ola", name: "Ola Hansen", phone: "22 00 00 00",
+    });
+    expect(cards.map((card) => card.id)).toEqual(["group-lyd"]);
+    expect(readers.map((mark) => mark.id).sort()).toEqual(["g-apen_hakon", "g-apen_ola", "g-intern_kari"]);
+
+    const db = kari();
+    // The id belongs in the path. Stored in the document, the field list rejects the write.
+    const olaCard = directory.find((card) => card.id === "group-lyd_ola")!;
+    await assertFails(setDoc(doc(db, `groupDirectory/${olaCard.id}`), sanitizeForFirestore(olaCard)));
+
+    await assertSucceeds(writeMirror(db, "groupDirectory", directory));
+    await assertSucceeds(writeMirror(db, "groupLeaderEmails", emails));
+    await assertSucceeds(writeMirror(db, "publicGroupCards", cards));
+    await assertSucceeds(writeMirror(db, "gatheringReaders", readers));
+
+    const renamed = mirrorPersons.map((person) => (person.id === "ola" ? { ...person, phone: "11 22 33 44" } : person));
+    const again = groupDirectoryOf(renamed, mirrorGroups);
+    await assertSucceeds(writeMirror(db, "groupDirectory", again));
+    await assertSucceeds(writeMirror(db, "groupLeaderEmails", emails));
+    await assertSucceeds(writeMirror(db, "publicGroupCards", [{ ...cards[0], name: "Lyd" }]));
+    await assertSucceeds(writeMirror(db, "gatheringReaders", readers));
+
+    await assertSucceeds(deleteDoc(doc(db, "groupDirectory/group-lyd_hakon")));
+    await assertSucceeds(deleteDoc(doc(db, "groupLeaderEmails/group-lyd_hakon")));
+    await assertSucceeds(deleteDoc(doc(db, "publicGroupCards/group-lyd")));
+    await assertSucceeds(deleteDoc(doc(db, "gatheringReaders/g-apen_hakon")));
+
+    await assertFails(writeMirror(hakon(), "groupDirectory", directory));
+    await assertFails(writeMirror(hakon(), "groupLeaderEmails", emails));
+    await assertFails(writeMirror(hakon(), "publicGroupCards", cards));
+    await assertFails(setDoc(doc(hakon(), "gatheringReaders/g-intern_kari"), { gatheringId: "g-intern", personId: "kari" }));
+  });
+
+  test("oppdaterer en gammel tildeling som mangler navn, også når id ligger lagret i dokumentet", async () => {
+    await env.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore() as unknown as Firestore;
+      await setDoc(doc(db, "assignments/a-gammel"), {
+        id: "a-gammel",
+        taskId: "task-1",
+        personId: "ola",
+        response: "pending",
+      });
+    });
+    const old: Assignment = { id: "a-gammel", taskId: "task-1", personId: "ola", response: "pending" };
+    const patches = assignmentAccessPatches([old], mirrorTasks, mirrorGatherings, mirrorPersons);
+    expect(patches).toEqual([
+      { id: "a-gammel", personName: "Ola Hansen", gatheringId: "g-apen", gatheringGroupId: "group-lyd", gatheringPublic: true },
+    ]);
+
+    const db = kari();
+    const batch = writeBatch(db);
+    for (const patch of patches) {
+      const { id, ...fields } = patch;
+      batch.update(doc(db, "assignments", id), fields);
+    }
+    await assertSucceeds(batch.commit());
+
+    const stored = (await getDoc(doc(db, "assignments/a-gammel"))).data();
+    expect(stored).toMatchObject({
+      id: "a-gammel",
+      personName: "Ola Hansen",
+      gatheringId: "g-apen",
+      gatheringGroupId: "group-lyd",
+      gatheringPublic: true,
+      response: "pending",
+    });
+
+    await assertFails(updateDoc(doc(hakon(), "assignments/a-gammel"), {
+      personName: "Noen andre", gatheringId: "g-apen", gatheringGroupId: "group-lyd", gatheringPublic: true,
+    }));
   });
 });
