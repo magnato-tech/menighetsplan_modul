@@ -50,6 +50,8 @@ export interface AnalyticsPeriod {
   label: string;
   previousLabel: string;
   direction: AnalyticsDirection;
+  /** The moment the board is looked at. The end of a period that looks back, the start of one that looks ahead. */
+  now: number;
   /** The period is [from, to]. Looking back, `to` is now. Looking ahead, `from` is now. */
   from: number;
   to: number;
@@ -63,13 +65,14 @@ export function analyticsPeriod(id: AnalyticsPeriodId, now: number): AnalyticsPe
   const length = spec.days * DAY_MS;
   const weeks = Math.round(spec.days / 7);
   if (spec.direction === "ahead") {
-    return { id: spec.id, label: spec.label, previousLabel: spec.previousLabel, direction: "ahead", from: now, to: now + length, previousFrom: now, weeks };
+    return { id: spec.id, label: spec.label, previousLabel: spec.previousLabel, direction: "ahead", now, from: now, to: now + length, previousFrom: now, weeks };
   }
   return {
     id: spec.id,
     label: spec.label,
     previousLabel: spec.previousLabel,
     direction: "back",
+    now,
     from: now - length,
     to: now,
     previousFrom: now - 2 * length,
@@ -230,7 +233,7 @@ export function summarizeGatherings(data: Pick<ChurchData, "gatherings">, period
     groupMeetings,
     cancelled: data.gatherings.filter((g) => g.cancelled && within(timeOf(g.startsAt), period.from, period.to)).length,
     upcoming: data.gatherings.filter(
-      (g) => !g.cancelled && timeOf(g.startsAt) > period.to && timeOf(g.startsAt) <= period.to + UPCOMING_DAYS * DAY_MS
+      (g) => !g.cancelled && timeOf(g.startsAt) > period.now && timeOf(g.startsAt) <= period.now + UPCOMING_DAYS * DAY_MS
     ).length,
   };
 }
@@ -326,7 +329,7 @@ export function summarizeVolunteers(
   const current = staffingOf(held, data.tasks, assignmentsByTask);
   const previous = staffingOf(heldIn(data.gatherings, period.previousFrom, period.from, false), data.tasks, assignmentsByTask);
   const upcomingGatherings = data.gatherings.filter(
-    (g) => !g.cancelled && timeOf(g.startsAt) > period.to && timeOf(g.startsAt) <= period.to + UPCOMING_DAYS * DAY_MS
+    (g) => !g.cancelled && timeOf(g.startsAt) > period.now && timeOf(g.startsAt) <= period.now + UPCOMING_DAYS * DAY_MS
   );
   const upcoming = staffingOf(upcomingGatherings, data.tasks, assignmentsByTask);
 
@@ -467,7 +470,7 @@ export function summarizeGroups(
   period: AnalyticsPeriod
 ): GroupSummary {
   const held = heldIn(data.gatherings, period.from, period.to);
-  const quietSince = period.to - QUIET_GROUP_DAYS * DAY_MS;
+  const quietSince = period.now - QUIET_GROUP_DAYS * DAY_MS;
   const attendancesByGathering = new Map<string, GatheringAttendance[]>();
   for (const a of data.attendances) {
     const list = attendancesByGathering.get(a.gatheringId) ?? [];
@@ -498,9 +501,9 @@ export function summarizeGroups(
     const pastActivity = [
       ...groupMessages.map((m) => m.createdAt),
       ...data.gatherings
-        .filter((g) => g.groupId === group.id && !g.cancelled && timeOf(g.startsAt) <= period.to)
+        .filter((g) => g.groupId === group.id && !g.cancelled && timeOf(g.startsAt) <= period.now)
         .map((g) => g.startsAt),
-    ].filter((at) => timeOf(at) <= period.to);
+    ].filter((at) => timeOf(at) <= period.now);
     const lastActivityAt = pastActivity.reduce<string | null>(
       (latest, at) => (latest === null || timeOf(at) > timeOf(latest) ? at : latest),
       null
@@ -951,7 +954,7 @@ export function summarizeContent(data: Pick<ChurchData, "pages" | "news" | "serm
   const sermonsIn = (from: number, to: number, inclusiveEnd: boolean) =>
     data.sermons.filter((s) => (inclusiveEnd ? within : before)(timeOf(s.date), from, to));
   const sermons = sermonsIn(period.from, period.to, true);
-  const now = new Date(period.to);
+  const now = new Date(period.now);
   const live = data.pages.filter((p) => isPagePublished(p, now));
   const drafts = data.pages.filter((p) => p.isPublished === false || p.status === "draft");
   return {

@@ -5,7 +5,7 @@ import { MemoryRouter } from "react-router-dom";
 import { PeopleEngagementSection } from "../src/pages/admin/tabs/analytics/PeopleEngagementSection";
 import { StaffingPerGatheringSection } from "../src/pages/admin/tabs/analytics/StaffingPerGatheringSection";
 import type { Assignment, Gathering, Group, Person, Task } from "../src/types";
-import { ANALYTICS_PERIODS, analyticsPeriod, highLoadThreshold, summarizeEngagement, summarizeFullStaffing } from "../src/utils/churchAnalytics";
+import { ANALYTICS_PERIODS, analyticsPeriod, highLoadThreshold, summarizeEngagement, summarizeFullStaffing, summarizeGroups, summarizeVolunteers } from "../src/utils/churchAnalytics";
 
 // The analysis board looking ahead: what is planned from now on, counted from the tasks people
 // have said yes to. Everyone here is made up.
@@ -75,6 +75,28 @@ describe("Perioden framover", () => {
     expect(staffing.full).toBe(3);
     expect(staffing.previousRate).toBeNull();
     expect(staffing.notFull.map((row) => [row.gathering.id, row.missing, row.needed])).toEqual([["g4", 1, 2]]);
+  });
+});
+
+describe("«Nå» er nå, også når perioden går framover", () => {
+  test("de neste fire ukene telles fra i dag, ikke fra slutten av perioden", () => {
+    expect(analyticsPeriod("next6m", now).now).toBe(now);
+    expect(analyticsPeriod("12m", now).now).toBe(now);
+    const volunteers = summarizeVolunteers({ ...data, volunteerRoles: [] }, analyticsPeriod("next6m", now));
+    // g1–g4 come the next four weeks: six places, five of them said yes to
+    expect(volunteers.upcoming).toMatchObject({ slotsNeeded: 6, slotsFilled: 5, openSlots: 1 });
+    // The same number looking back: it is what comes from today in both
+    expect(summarizeVolunteers({ ...data, volunteerRoles: [] }, analyticsPeriod("4w", now)).upcoming).toEqual(volunteers.upcoming);
+  });
+
+  test("en gruppe var sist aktiv da den sist hadde noe, ikke på en samling som kommer", () => {
+    const meeting = (id: string, days: number): Gathering => ({ id, groupId: "lyd", title: "Teamkveld", startsAt: inDays(days), type: "gruppesamling", visibility: "intern" });
+    const withMeetings = { ...data, gatherings: [...gatherings, meeting("m-før", -3), meeting("m-etter", 20)], messages: [] };
+    const group = summarizeGroups(withMeetings, analyticsPeriod("next3m", now)).groups.find((row) => row.group.id === "lyd")!;
+    expect(group.lastActivityAt).toBe(inDays(-3));
+    expect(group.quiet).toBe(false);
+    // The meeting that comes, is counted as planned in the period
+    expect(group.meetings).toBe(1);
   });
 });
 

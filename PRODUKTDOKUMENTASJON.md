@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.44 · **Sist oppdatert:** 2026-10-13
+> **Dokumentversjon:** 4.45 · **Sist oppdatert:** 2026-10-13
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -1221,9 +1221,11 @@ Bestilt av produkteier: bordet viste bare det som var holdt. Før første gudstj
 | **Belastning** | «Mye» står på den som har oppgaver på flere arrangementer enn grensen bordet alt bruker: oftere enn annenhver uke, aldri færre enn tre |
 | **Bemanning per arrangement** | Hvor mange av arrangementene som kommer, er fullt bemannet, og hvilke som mangler folk, det nærmeste først |
 | **Bare de som har svart** | Den som er spurt og ikke har svart, teller ikke, verken som oppgave eller som dekket plass. Produkteier valgte det |
-| **Det som ikke vises framover** | Oppmøte, grupper, personregister, nettside og de andre delene. De viser det som er holdt, og står under periodene bakover. Det finnes heller ingen sammenligning med perioden før |
+| **De samme boksene begge veier** | Endret samme dag etter beskjed fra produkteier: framover vises alle boksene som vises bakover, og valgene under «Tilpass bordet» gjelder begge veier. Unntaket er Oppmøte, som telles når samlingene er holdt; der står en linje som sier det. Ordene i boksene følger retningen («står på», ikke «har stått på») |
+| **«Nå» er i dag** | «De neste fire ukene», hvilke grupper som er stille, når en gruppe sist var aktiv, og hvilke sider som ligger ute, regnes fra i dag, også når perioden går framover |
+| **Det som er tomt framover** | Sammenligning med perioden før finnes ikke. Meldinger og nye deltakere i gruppene telles bare bakover, og boksen sier det |
 | **Bakover** | Uendret |
-| **Prøvd** | 7 sjekker med oppdiktede personer. Ikke sett i nettleseren: analysebordet er ikke med i demoen |
+| **Prøvd** | 11 sjekker med oppdiktede personer. Ikke sett i nettleseren av utvikleren: analysebordet er ikke med i demoen. Produkteier har sett det hos første menighet |
 
 ### Tre rettelser etter første dag i bruk (13. oktober 2026)
 

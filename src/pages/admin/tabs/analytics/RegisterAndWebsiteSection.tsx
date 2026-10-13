@@ -109,7 +109,7 @@ export const RegisterAndWebsiteSection: React.FC<RegisterAndWebsiteSectionProps>
       <AnalyticsSection
         id="analyse-nettside"
         title="Nettsiden"
-        description={`Hva som er publisert ${period.label.toLowerCase()}.`}
+        description={period.direction === "ahead" ? `Hva som er satt opp til publisering ${period.label.toLowerCase()}, og sidene som ligger ute i dag.` : `Hva som er publisert ${period.label.toLowerCase()}.`}
         icon={<Globe2 className="w-5 h-5" />}
         onHide={onHideWebsite}
       >

@@ -36,7 +36,8 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ showFeedback, onTabC
   const { analytics, websiteVisits, registerHeadcount, removeHeadcount, hiddenModules, canCustomize, setModuleHidden, showAllModules } =
     useAdminAnalytics(periodId);
   const { period } = analytics;
-  // Looking ahead, the board shows what can be known beforehand: who has said yes to what
+  // Looking ahead, the board has the same boxes, counted for what is planned. Attendance is the
+  // one that is not there: it is counted when a gathering has been held.
   const ahead = period.direction === "ahead";
   const customizeButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -61,7 +62,7 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ showFeedback, onTabC
           <h1 className="text-2xl sm:text-3xl font-black text-[var(--studio-text)] tracking-tight">Analysebord</h1>
           <p className="text-xs sm:text-sm text-[var(--studio-muted)] mt-1 max-w-2xl">
             {ahead
-              ? "Det som er planlagt: hvor godt arrangementene som kommer er bemannet, og hvor mange oppgaver hver enkelt har sagt ja til."
+              ? "Det som er planlagt: bemanningen på arrangementene som kommer, hvor mange oppgaver hver enkelt har sagt ja til, og gruppenes planer. Bare et ja teller."
               : "Menighetens liv i tall: oppmøte, frivillighet, grupper og nettside, sammenlignet med perioden før."}
           </p>
         </div>
@@ -102,19 +103,11 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ showFeedback, onTabC
         </div>
       </div>
 
-      {ahead && (
-        <>
-          <StaffingPerGatheringSection period={period} staffing={analytics.fullStaffing} />
-          <PeopleEngagementSection engagement={analytics.engagement} ahead highLoadFrom={analytics.volunteers.highLoadThreshold} />
-          <p className="text-xs text-[var(--studio-muted)] text-center">
-            Oppmøte, grupper, nettside og de andre delene av bordet viser det som er holdt. Velg en periode bakover for å se dem.
-          </p>
-        </>
-      )}
-      {!ahead && (
-        <>
       {shown("nokkeltall") && <KeyFigures analytics={analytics} />}
-      {shown("oppmote") && (
+      {ahead && shown("oppmote") && (
+        <p className="text-xs text-[var(--studio-muted)]">Oppmøte vises ikke framover: det telles når samlingene er holdt. Velg en periode bakover for å se det.</p>
+      )}
+      {!ahead && shown("oppmote") && (
         <AttendanceSection
           period={period}
           attendance={analytics.attendance}
@@ -124,11 +117,18 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ showFeedback, onTabC
         />
       )}
       {shown("bemanning") && <StaffingPerGatheringSection period={period} staffing={analytics.fullStaffing} onHide={hide("bemanning")} />}
-      {shown("flere-oppgaver") && <MultiTaskSection multiTasks={analytics.multiTasks} onHide={hide("flere-oppgaver")} />}
+      {shown("flere-oppgaver") && <MultiTaskSection multiTasks={analytics.multiTasks} ahead={ahead} onHide={hide("flere-oppgaver")} />}
       {shown("per-maned") && <MonthlyEngagementSection engagement={analytics.engagement} onHide={hide("per-maned")} />}
-      {shown("hver-enkelt") && <PeopleEngagementSection engagement={analytics.engagement} onHide={hide("hver-enkelt")} />}
+      {shown("hver-enkelt") && (
+        <PeopleEngagementSection
+          engagement={analytics.engagement}
+          ahead={ahead}
+          highLoadFrom={ahead ? analytics.volunteers.highLoadThreshold : undefined}
+          onHide={hide("hver-enkelt")}
+        />
+      )}
       {shown("frivillighet") && <VolunteerSection period={period} volunteers={analytics.volunteers} onHide={hide("frivillighet")} />}
-      {shown("grupper") && <GroupSection period={period} groups={analytics.groups} now={period.to} onHide={hide("grupper")} />}
+      {shown("grupper") && <GroupSection period={period} groups={analytics.groups} now={period.now} onHide={hide("grupper")} />}
       {(shown("personregister") || shown("nettside")) && (
         <RegisterAndWebsiteSection
           period={period}
@@ -147,10 +147,7 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ showFeedback, onTabC
         <CoverageSection coverage={analytics.coverage} onOpenDatabase={() => onTabChange("database-admin")} onHide={hide("datagrunnlag")} />
       )}
 
-        </>
-      )}
-
-      {!ahead && hiddenCount > 0 && (
+      {hiddenCount > 0 && (
         <p className="text-xs text-[var(--studio-muted)] text-center">
           {hiddenCount} {hiddenCount === 1 ? "modul er skjult" : "moduler er skjult"}.{" "}
           <button type="button" onClick={() => setCustomizing(true)} className="font-bold text-[var(--studio-link)] hover:text-[var(--studio-link-hover)] cursor-pointer">

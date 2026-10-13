@@ -29,7 +29,11 @@ export const GroupSection: React.FC<GroupSectionProps> = ({ period, groups, now,
     <AnalyticsSection
       id="analyse-grupper"
       title="Grupper og fellesskap"
-      description="Hvem som hører til i en gruppe, og hvor mye som skjer i gruppene: samlinger, svar på samlingene og meldinger."
+      description={
+        period.direction === "ahead"
+          ? "Hvem som hører til i en gruppe, og hva gruppene har planlagt i perioden: samlinger og svar på dem. Meldinger og nye deltakere telles bare bakover."
+          : "Hvem som hører til i en gruppe, og hvor mye som skjer i gruppene: samlinger, svar på samlingene og meldinger."
+      }
       icon={<UsersRound className="w-5 h-5" />}
       onHide={onHide}
     >

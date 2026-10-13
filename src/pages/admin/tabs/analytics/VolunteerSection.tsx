@@ -44,12 +44,17 @@ const LoadBars: React.FC<{ load: VolunteerSummary["load"] }> = ({ load }) => {
 export const VolunteerSection: React.FC<VolunteerSectionProps> = ({ period, volunteers, onHide }) => {
   const roles = volunteers.roles.slice(0, 6);
   const { upcoming } = volunteers;
+  const ahead = period.direction === "ahead";
 
   return (
     <AnalyticsSection
       id="analyse-frivillige"
       title="Frivillighet og bemanning"
-      description="Oppgavene på samlingene som er holdt i perioden: hvem som sa ja, forfall og hvor ofte hver enkelt har stått på."
+      description={
+        ahead
+          ? "Oppgavene på arrangementene som kommer i perioden: hvem som har sagt ja, forfall så langt, og hvor mange arrangementer hver enkelt står på."
+          : "Oppgavene på samlingene som er holdt i perioden: hvem som sa ja, forfall og hvor ofte hver enkelt har stått på."
+      }
       icon={<HandHeart className="w-5 h-5" />}
       onHide={onHide}
     >
@@ -79,9 +84,9 @@ export const VolunteerSection: React.FC<VolunteerSectionProps> = ({ period, volu
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="space-y-3">
-          <h3 className="text-xs font-bold text-[var(--studio-text)]">Hvor ofte de frivillige har stått på</h3>
+          <h3 className="text-xs font-bold text-[var(--studio-text)]">{ahead ? "Hvor ofte de frivillige står på" : "Hvor ofte de frivillige har stått på"}</h3>
           {!volunteers.activeVolunteers ? (
-            <p className="text-xs text-[var(--studio-muted)]">Ingen har tjenestegjort på samlinger i perioden.</p>
+            <p className="text-xs text-[var(--studio-muted)]">{ahead ? "Ingen har sagt ja til en oppgave i perioden ennå." : "Ingen har tjenestegjort på samlinger i perioden."}</p>
           ) : (
             <LoadBars load={volunteers.load} />
           )}
@@ -129,7 +134,7 @@ export const VolunteerSection: React.FC<VolunteerSectionProps> = ({ period, volu
             Kan trenge avlastning
           </h3>
           <p className="text-[11px] text-[var(--studio-muted)]">
-            Har stått på {volunteers.highLoadThreshold} samlinger eller flere i perioden ({period.label.toLowerCase()}).
+            {ahead ? "Står på" : "Har stått på"} {volunteers.highLoadThreshold} samlinger eller flere i perioden ({period.label.toLowerCase()}).
           </p>
           {volunteers.highLoad.length === 0 ? (
             <p className="text-xs text-[var(--studio-muted)]">Ingen står på oftere enn annenhver uke.</p>
@@ -148,12 +153,14 @@ export const VolunteerSection: React.FC<VolunteerSectionProps> = ({ period, volu
         </div>
 
         <div className="p-4 rounded-xl bg-[var(--studio-row)] border border-[var(--studio-border)] space-y-2">
-          <h3 className="text-xs font-bold text-[var(--studio-text)]">Ikke brukt i perioden</h3>
+          <h3 className="text-xs font-bold text-[var(--studio-text)]">{ahead ? "Uten oppgave i perioden" : "Ikke brukt i perioden"}</h3>
           <p className="text-[11px] text-[var(--studio-muted)]">
-            Deltakere i tjenestegrupper som ikke har hatt en oppgave på samlingene i perioden.
+            {ahead
+              ? "Deltakere i tjenestegrupper som ikke har sagt ja til en oppgave på arrangementene som kommer."
+              : "Deltakere i tjenestegrupper som ikke har hatt en oppgave på samlingene i perioden."}
           </p>
           {volunteers.unused.length === 0 ? (
-            <p className="text-xs text-[var(--studio-muted)]">Alle i tjenestegruppene har vært i bruk.</p>
+            <p className="text-xs text-[var(--studio-muted)]">{ahead ? "Alle i tjenestegruppene har minst én oppgave." : "Alle i tjenestegruppene har vært i bruk."}</p>
           ) : (
             <p className="text-xs leading-relaxed">
               {volunteers.unused.slice(0, NAMES_SHOWN).map((person, index) => (
