@@ -1542,6 +1542,7 @@ I tillegg dekker menylinjen nederst det første kortet i kalenderen før man har
 * **Den gule handlingsboksen vises bare på fanen «Mine oppgaver»** (bestemt av produkteier 13. oktober 2026). Den tas bort fra «Mine grupper» og «Kalender». Dette erstatter det som står i `MyPageTabs.tsx` om at boksen står over alle fanene.
 * **Boksen skal bare si «Ta oppgave (68)».** Overskriften «Dette trenger din handling», det runde merket med tallet og forklaringsteksten («Du har forespørsler, ubesvarte innkallinger …») tas bort. Antallet står i parentes etter teksten. Knappen åpner det samme som «Se og håndter» gjør i dag.
 * Det siste kortet på fanen skal kunne scrolles helt fram over menylinjen nederst.
+* **«Slik bruker du Min side» blir et spørsmålstegn** (bestemt av produkteier 13. oktober 2026). Den hvite boksen som i dag står på alle fanene (`VolunteerHelp.tsx`), tas bort. I stedet står et lite «?»-ikon øverst, ved overskriften. Et trykk åpner veiledningen i et vindu (popup) som lukkes med kryss, med «Lukk» eller ved å trykke utenfor. Teksten i veiledningen er den samme som i dag.
 
 **Oppdater også kapittel 3.** Tabellen og avsnittet «Mulig funksjon: Min kalender» sier at kalenderen ikke er bygget, men den finnes som fane på Min side.
 
