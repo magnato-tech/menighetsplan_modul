@@ -13,6 +13,10 @@ export interface Person {
   email?: string;
   /** The date of birth, a calendar day: "1980-03-12" (see utils/birthDate.ts). Never part of what the website shows. */
   birthDate?: string;
+  /** Whether the person belongs to this congregation. Absent means they do not. Only on the register. */
+  congregationMember?: boolean;
+  /** Whether the person belongs to its denomination. Absent means they do not. Only on the register. */
+  denominationMember?: boolean;
   globalRole: "member" | "admin";
   policeCertificateValidUntil?: string; // ISO date YYYY-MM-DD
   unavailablePeriods?: UnavailablePeriod[];

@@ -18,12 +18,15 @@ import { useGroupProposals } from "../hooks/useMemberProposals";
 import {
   acceptProposal,
   acceptProposalAsNew,
+  createPersonInGroup,
   dismissProposal,
   proposeMember,
   withdrawProposal,
 } from "../services/memberProposals";
 import { reportWriteError } from "../services/writeErrors";
 import { leadsGroup, withLeaders } from "../utils/groups";
+import { birthDateError, todayInNorway } from "../utils/birthDate";
+import { emailError, membershipValue, personEntryError } from "../utils/personForm";
 import {
   studioDetailCard,
   studioDetailSection,
@@ -79,6 +82,13 @@ export const AdminGroupDetailPage: React.FC = () => {
   const [time, setTime] = useState<string>("11:00");
   const [frequency, setFrequency] = useState<"hver uke" | "annenhver uke" | "hver måned">("hver uke");
   const [selectedPersonToAdd, setSelectedPersonToAdd] = useState<string>("");
+  const [addingNew, setAddingNew] = useState(false);
+  const [freshName, setFreshName] = useState("");
+  const [freshEmail, setFreshEmail] = useState("");
+  const [freshPhone, setFreshPhone] = useState("");
+  const [freshBirthDate, setFreshBirthDate] = useState("");
+  const [freshCongregation, setFreshCongregation] = useState(false);
+  const [freshDenomination, setFreshDenomination] = useState(false);
 
   const [feedback, setFeedback] = useTimedMessage<{ text: string; type: "success" | "error" }>();
 
@@ -565,6 +575,58 @@ export const AdminGroupDetailPage: React.FC = () => {
               }}
             />
           )}
+
+          <div className="pt-2">
+            <button type="button" id="btn-add-new-person-to-group" onClick={() => setAddingNew((open) => !open)} className="text-xs font-bold text-indigo-700 cursor-pointer">
+              {addingNew ? "Lukk" : "Legg til ny person"}
+            </button>
+            {addingNew && group && (
+              <form
+                className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  const wrong = personEntryError({ name: freshName, email: freshEmail, birthDate: freshBirthDate });
+                  if (wrong) {
+                    showFeedback(wrong, "error");
+                    return;
+                  }
+                  createPersonInGroup(
+                    {
+                      name: freshName.trim(),
+                      email: freshEmail.trim() || undefined,
+                      phone: freshPhone.trim() || undefined,
+                      birthDate: freshBirthDate || undefined,
+                      congregationMember: membershipValue(freshCongregation),
+                      denominationMember: membershipValue(freshDenomination),
+                    },
+                    group.id
+                  )
+                    .then(() => {
+                      setFreshName("");
+                      setFreshEmail("");
+                      setFreshPhone("");
+                      setFreshBirthDate("");
+                      setFreshCongregation(false);
+                      setFreshDenomination(false);
+                      setAddingNew(false);
+                      showFeedback(`${freshName.trim()} er lagt inn i gruppen.`);
+                    })
+                    .catch((error) => reportWriteError("legge inn personen", error));
+                }}
+              >
+                <input id="input-group-new-name" value={freshName} onChange={(event) => setFreshName(event.target.value)} placeholder="Navn" className={studioDetailInput} />
+                <input id="input-group-new-email" value={freshEmail} onChange={(event) => setFreshEmail(event.target.value)} placeholder="E-post" className={studioDetailInput} />
+                <input id="input-group-new-phone" value={freshPhone} onChange={(event) => setFreshPhone(event.target.value)} placeholder="Telefon" className={studioDetailInput} />
+                <input id="input-group-new-birthdate" type="date" max={todayInNorway()} value={freshBirthDate} onChange={(event) => setFreshBirthDate(event.target.value)} className={studioDetailInput} />
+                <label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={freshCongregation} onChange={(event) => setFreshCongregation(event.target.checked)} /> Medlem i menigheten</label>
+                <label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={freshDenomination} onChange={(event) => setFreshDenomination(event.target.checked)} /> Medlem i kirkesamfunnet</label>
+                {(emailError(freshEmail) || birthDateError(freshBirthDate)) && (
+                  <p className="sm:col-span-2 text-[11px] text-red-700">{emailError(freshEmail) || birthDateError(freshBirthDate)}</p>
+                )}
+                <button type="submit" className="sm:col-span-2 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-bold cursor-pointer w-fit">Legg inn i gruppen</button>
+              </form>
+            )}
+          </div>
 
           {/* Add member selector */}
           {availablePersonsToAdd.length > 0 && (

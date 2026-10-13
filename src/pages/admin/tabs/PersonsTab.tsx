@@ -24,13 +24,10 @@ import {
 import { PersonsTable } from "./persons/PersonsTable";
 import { studioSecondaryButton } from "../studioTheme";
 import { birthDateError, todayInNorway } from "../../../utils/birthDate";
-import { loginIdOf, sharedAddresses } from "../../../utils/logins";
-
-const emailError = (value: string): string | null => {
-  const trimmed = value.trim();
-  if (trimmed === "") return null;
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed) ? null : "E-postadressen ser ikke riktig ut.";
-};
+import { emailError, membershipValue, personEntryError, sharedEmailWarnings } from "../../../utils/personForm";
+import { personListFile } from "../../../utils/personListFile";
+import { createPersonInGroup } from "../../../services/memberProposals";
+import { reportWriteError } from "../../../services/writeErrors";
 
 interface PersonsTabProps {
   studio: StudioData;
@@ -38,12 +35,17 @@ interface PersonsTabProps {
 }
 
 export const PersonsTab: React.FC<PersonsTabProps> = ({ studio, showFeedback }) => {
-  const { adminPersons, addPerson } = studio;
+  const { adminPersons, adminGroups, addPerson } = studio;
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [newPhone, setNewPhone] = useState("");
   const [newBirthDate, setNewBirthDate] = useState("");
+  const [newCongregation, setNewCongregation] = useState(false);
+  const [newDenomination, setNewDenomination] = useState(false);
+  const [newGroupId, setNewGroupId] = useState("");
+  const [onlyCongregation, setOnlyCongregation] = useState(false);
+  const [onlyDenomination, setOnlyDenomination] = useState(false);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [isPopulating, setIsPopulating] = useState<boolean>(false);
   const [view, setView] = useState<"cards" | "table">("table");
@@ -67,18 +69,20 @@ export const PersonsTab: React.FC<PersonsTabProps> = ({ studio, showFeedback }) 
     }
   };
 
-  const sharedEmails = useMemo(() => {
-    const addresses = sharedAddresses(adminPersons.map((row) => row.person));
-    return addresses.map((address) => ({
-      address,
-      names: adminPersons.filter((row) => loginIdOf(row.person.email) === address).map((row) => row.person.name),
-    }));
-  }, [adminPersons]);
+  const sharedEmails = useMemo(
+    () => sharedEmailWarnings(adminPersons.map((row) => row.person)),
+    [adminPersons]
+  );
 
   const visiblePersons = useMemo(() => {
-    const filtered = adminPersons.filter((row) => matchesPersonSearch(row, searchTerm));
+    const filtered = adminPersons.filter((row) => {
+      if (!matchesPersonSearch(row, searchTerm)) return false;
+      if (onlyCongregation && row.person.congregationMember !== true) return false;
+      if (onlyDenomination && row.person.denominationMember !== true) return false;
+      return true;
+    });
     return sortPersonRows(filtered, sortKey, sortDirection);
-  }, [adminPersons, searchTerm, sortKey, sortDirection]);
+  }, [adminPersons, searchTerm, sortKey, sortDirection, onlyCongregation, onlyDenomination]);
 
   const handleCreatePerson = (event: React.FormEvent) => {
     event.preventDefault();
@@ -86,23 +90,45 @@ export const PersonsTab: React.FC<PersonsTabProps> = ({ studio, showFeedback }) 
       showFeedback?.("Personen må ha et navn", "error");
       return;
     }
-    const wrongEmail = emailError(newEmail);
-    const wrongBirthDate = birthDateError(newBirthDate);
-    if (wrongEmail || wrongBirthDate) return;
-    const result = addPerson({
+    const wrong = personEntryError({ name: newName, email: newEmail, birthDate: newBirthDate });
+    if (wrong) {
+      showFeedback?.(wrong, "error");
+      return;
+    }
+    const input = {
       name: newName.trim(),
       email: newEmail.trim() || undefined,
       phone: newPhone.trim() || undefined,
       birthDate: newBirthDate || undefined,
-    });
-    if (result.success) {
+      congregationMember: membershipValue(newCongregation),
+      denominationMember: membershipValue(newDenomination),
+    };
+    const done = () => {
       setNewName("");
       setNewEmail("");
       setNewPhone("");
       setNewBirthDate("");
+      setNewCongregation(false);
+      setNewDenomination(false);
+      setNewGroupId("");
       setCreating(false);
-      showFeedback?.(`${newName.trim()} er lagt inn i registeret.`);
+      showFeedback?.(`${input.name} er lagt inn i registeret.`);
+    };
+    if (newGroupId) {
+      createPersonInGroup(input, newGroupId).then(done).catch((error) => reportWriteError("legge inn personen", error));
+      return;
     }
+    if (addPerson(input).success) done();
+  };
+
+  const downloadList = () => {
+    const file = personListFile(visiblePersons.map((row) => row.person));
+    const url = URL.createObjectURL(new Blob([file], { type: "text/csv;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "personer.csv";
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
   const handleSort = (key: PersonSortKey) => {
@@ -198,6 +224,30 @@ export const PersonsTab: React.FC<PersonsTabProps> = ({ studio, showFeedback }) 
               <span className="block font-normal text-[var(--studio-muted)]">Valgfritt. Vises ikke på nettsiden.</span>
             )}
           </label>
+          <label className="sm:col-span-2 flex items-center gap-2 text-xs text-[var(--studio-text)]">
+            <input id="check-new-congregation" type="checkbox" checked={newCongregation} onChange={(event) => setNewCongregation(event.target.checked)} />
+            Medlem i menigheten
+          </label>
+          <label className="sm:col-span-2 flex items-center gap-2 text-xs text-[var(--studio-text)]">
+            <input id="check-new-denomination" type="checkbox" checked={newDenomination} onChange={(event) => setNewDenomination(event.target.checked)} />
+            Medlem i kirkesamfunnet
+          </label>
+          <label className="sm:col-span-2 space-y-1 text-xs font-semibold text-[var(--studio-muted)]">
+            Legg i gruppe
+            <select
+              id="select-new-person-group"
+              value={newGroupId}
+              onChange={(event) => setNewGroupId(event.target.value)}
+              className="w-full px-3 py-2 rounded-xl bg-[var(--studio-input)] border border-[var(--studio-border)] text-[var(--studio-input-text)] font-normal"
+            >
+              <option value="">Ikke legg i en gruppe</option>
+              {adminGroups.map((row) => (
+                <option key={row.group.id} value={row.group.id}>
+                  {row.group.name}
+                </option>
+              ))}
+            </select>
+          </label>
           <div className="sm:col-span-2 flex justify-end">
             <button type="submit" className="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold cursor-pointer">
               Legg inn
@@ -245,6 +295,20 @@ export const PersonsTab: React.FC<PersonsTabProps> = ({ studio, showFeedback }) 
           </ul>
         </div>
       )}
+
+      <div className="flex flex-wrap items-center gap-4 text-xs text-[var(--studio-text)]">
+        <label className="flex items-center gap-2">
+          <input id="filter-congregation" type="checkbox" checked={onlyCongregation} onChange={(event) => setOnlyCongregation(event.target.checked)} />
+          Medlem i menigheten
+        </label>
+        <label className="flex items-center gap-2">
+          <input id="filter-denomination" type="checkbox" checked={onlyDenomination} onChange={(event) => setOnlyDenomination(event.target.checked)} />
+          Medlem i kirkesamfunnet
+        </label>
+        <button type="button" id="btn-download-persons" onClick={downloadList} className="font-bold text-indigo-700 cursor-pointer">
+          Last ned listen
+        </button>
+      </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">

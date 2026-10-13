@@ -1,6 +1,6 @@
 import { arrayUnion, doc, setDoc, writeBatch, FieldPath } from "firebase/firestore";
 import { COLLECTIONS } from "../data/collections";
-import { buildMemberProposal, buildPerson } from "../data/newDocuments";
+import { buildMemberProposal, buildPerson, type NewPersonInput } from "../data/newDocuments";
 import { db } from "../firebase";
 import { documentFields, sanitizeForFirestore } from "../utils/firestoreData";
 import { deleteDocument, updateDocument } from "./firestore";
@@ -45,19 +45,31 @@ export async function acceptProposal(proposalId: string, groupId: string, person
   await batch.commit();
 }
 
-/** The new person, the membership and the outcome land together, or not at all. */
-export async function acceptProposalAsNew(proposalId: string, groupId: string, name: string): Promise<void> {
-  const person = buildPerson({ name });
+/**
+ * Creates a person and, when a group is given, puts them in it, in one write.
+ * When a proposal is given, that proposal is marked dealt with in the same write.
+ */
+export async function createPersonInGroup(input: NewPersonInput, groupId?: string, proposalId?: string): Promise<void> {
+  const person = buildPerson(input);
   const decidedAt = decided();
   const batch = writeBatch(db);
   batch.set(doc(db, COLLECTIONS.PERSONS, person.id), sanitizeForFirestore(person));
-  batch.update(
-    doc(db, COLLECTIONS.GROUPS, groupId),
-    "memberIds",
-    arrayUnion(person.id),
-    new FieldPath("memberJoinedAt", person.id),
-    decidedAt
-  );
-  batch.update(doc(db, COLLECTIONS.MEMBER_PROPOSALS, proposalId), { status: "added", decidedAt });
+  if (groupId) {
+    batch.update(
+      doc(db, COLLECTIONS.GROUPS, groupId),
+      "memberIds",
+      arrayUnion(person.id),
+      new FieldPath("memberJoinedAt", person.id),
+      decidedAt
+    );
+  }
+  if (proposalId) {
+    batch.update(doc(db, COLLECTIONS.MEMBER_PROPOSALS, proposalId), { status: "added", decidedAt });
+  }
   await batch.commit();
+}
+
+/** The new person, the membership and the outcome land together, or not at all. */
+export function acceptProposalAsNew(proposalId: string, groupId: string, name: string): Promise<void> {
+  return createPersonInGroup({ name }, groupId, proposalId);
 }
