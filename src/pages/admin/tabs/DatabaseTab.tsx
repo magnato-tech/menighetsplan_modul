@@ -13,6 +13,7 @@ import { ShowFeedback, StudioData } from "../studio";
 import { DatabaseTestdataTab } from "../../../components/admin/DatabaseTestdataTab";
 import { SimulationPanel } from "../../../components/admin/SimulationPanel";
 import { DatasetPanel } from "../../../components/admin/DatasetPanel";
+import { ChatResetPanel } from "../../../components/admin/ChatResetPanel";
 import { ChurchPickerPanel } from "../../../components/admin/ChurchPickerPanel";
 import { OperatingModePanel } from "../../../components/admin/OperatingModePanel";
 import { useOperatingMode } from "../../../hooks/useOperatingMode";
@@ -374,6 +375,9 @@ export const DatabaseTab: React.FC<DatabaseTabProps> = ({ showFeedback }) => {
 
       {/* Datasett: last ned alt innholdet som én fil, eller hent inn en slik fil */}
       <DatasetPanel showFeedback={showFeedback} />
+
+      {/* Emptying the group chats is ordinary upkeep, and is there also when the app is in production */}
+      <ChatResetPanel showFeedback={showFeedback} />
 
       {/* Seksjon 2: Populeringsvelger */}
       <section className="space-y-4">

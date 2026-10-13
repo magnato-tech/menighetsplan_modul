@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.45 · **Sist oppdatert:** 2026-10-13
+> **Dokumentversjon:** 4.46 · **Sist oppdatert:** 2026-10-13
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -1254,6 +1254,20 @@ Bestilt av produkteier: en som er med i mange grupper, fikk 68 saker i én liste
 | **Vises ikke** | Når listen bare har én rolle, er det ingenting å velge mellom |
 | **Boksen på Min side** | Med tre saker eller flere står bare tallet oppe til høyre. Overskriften «N saker venter på deg» er tatt ut: den ble for voldsom med mange saker |
 | **Prøvd** | 5 sjekker. Sett i nettleseren i telefonbredde med demoens oppdiktede personer: seks tagger, to trykket inn, og listen viste de to |
+
+### Nullstill gruppechat (13. oktober 2026)
+
+Bestilt av produkteier: administrator vil kunne tømme gruppenes chat, for eksempel før hvert semester.
+
+| Område | Levert |
+|:---|:---|
+| **Hvor** | Admin → Database, i en egen seksjon «Nullstill gruppechat». Den er der også når appen står i produksjon |
+| **Hva som kan nullstilles** | Chatten til alle gruppene, eller til én gruppe. Listen viser hvor mange meldinger hver gruppe har, og bare gruppene som har noen |
+| **Bekreftelse** | Ingenting slettes før administrator har svart ja på et spørsmål som sier hvor mange meldinger det gjelder, og at det ikke kan angres |
+| **Det som slettes** | Bare meldingene. Gruppene, deltakerne, samlingene og oppgavene røres ikke |
+| **Ikke levert her** | Sikkerhetskopi av meldingene før de slettes. Den som vil ta vare på dem, laster ned et datasett først. At en gruppeleder kan nullstille sin egen gruppes chat |
+| **Regler** | Uendret. En ny regelsjekk viser at administrator kan lese og slette alle meldingene, og at en frivillig ikke får lest dem alle |
+| **Prøvd** | 5 sjekker og én regelsjekk i emulatoren. Ikke sett i nettleseren: Database-fanen er ikke med i demoen |
 
 ---
 

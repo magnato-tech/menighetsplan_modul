@@ -520,6 +520,22 @@ describe("En administrator", () => {
     await assertSucceeds(deleteDoc(doc(db, "cms_settings/headcount-g-apen")));
   });
 
+  test("nullstiller gruppenes chat: leser alle meldingene og sletter dem; en frivillig får ikke lest dem alle", async () => {
+    // What the app does (deleteGroupMessages in src/services/chatReset.ts)
+    const reset = async (db: Firestore) => {
+      const found = await getDocs(collection(db, "groupMessages"));
+      const batch = writeBatch(db);
+      for (const message of found.docs) batch.delete(message.ref);
+      await batch.commit();
+      return found.size;
+    };
+    await assertFails(reset(hakon()));
+    expect(await reset(kari())).toBe(2);
+    expect((await getDocs(collection(kari(), "groupMessages"))).size).toBe(0);
+    // The groups and who is in them, stand
+    expect((await getDoc(doc(kari(), "groups/group-lyd"))).data()).toMatchObject({ name: "Lyd og bilde", memberIds: ["hakon"] });
+  });
+
   test("sletter en gruppe med meldingene, og tar den av rollen som pekte på den; det kan ikke gruppens leder", async () => {
     await env.withSecurityRulesDisabled(async (context) => {
       const db = context.firestore() as unknown as Firestore;
