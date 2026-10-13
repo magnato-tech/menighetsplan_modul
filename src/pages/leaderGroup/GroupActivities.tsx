@@ -127,6 +127,10 @@ export const GroupActivities: React.FC<GroupActivitiesProps> = ({ detail, showTo
     }, 0);
   }, [groupGatherings]);
 
+  // Activities that lack people, and those where everybody is asked and not all have answered
+  const lackingCount = groupGatherings.filter((item) => item.staffing.color === "red").length;
+  const waitingCount = groupGatherings.filter((item) => item.staffing.color === "yellow").length;
+
   return (
     <section
       id="section-group-gatherings"
@@ -161,6 +165,28 @@ export const GroupActivities: React.FC<GroupActivitiesProps> = ({ detail, showTo
             className="text-[11px] font-bold text-red-700 hover:text-red-900 bg-red-100 hover:bg-red-200 px-2.5 py-1 rounded-lg transition-colors cursor-pointer shrink-0"
           >
             Filtrer forfall →
+          </button>
+        </div>
+      ) : lackingCount > 0 || waitingCount > 0 ? (
+        <div id="group-status-not-covered" className="px-3.5 py-2.5 bg-amber-50 rounded-xl border border-amber-200 flex items-center justify-between gap-2 shadow-2xs">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+            <span className="text-xs font-bold text-amber-900">
+              {lackingCount > 0
+                ? `${lackingCount} ${lackingCount === 1 ? "aktivitet mangler folk" : "aktiviteter mangler folk"}`
+                : `Venter på svar på ${waitingCount} ${waitingCount === 1 ? "aktivitet" : "aktiviteter"}`}
+            </span>
+          </div>
+          <button
+            type="button"
+            id="btn-group-filter-not-covered"
+            onClick={() => {
+              setSelectedStatusFilter(lackingCount > 0 ? "red" : "yellow");
+              setSelectedMonth("all");
+            }}
+            className="text-[11px] font-bold text-amber-800 hover:text-amber-950 bg-amber-100 hover:bg-amber-200 px-2.5 py-1 rounded-lg transition-colors cursor-pointer shrink-0"
+          >
+            Vis dem →
           </button>
         </div>
       ) : (

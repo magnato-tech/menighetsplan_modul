@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { isServiceGroup } from "../utils/personDirectory";
 import { useFirebase } from "../context/FirebaseDataContext";
 import { groupsToJoin } from "../utils/groupChoice";
+import { personTaskOverview, type PersonTaskRow } from "../utils/personTasks";
+import { formatNorwegianDateTime } from "../utils/dates";
 import { Link } from "react-router-dom";
 import { useAdminDetailRoute } from "../utils/adminStudioRoutes";
 import { useAdminPersonDetail } from "../hooks/useAppHooks";
@@ -51,7 +53,6 @@ export const AdminPersonDetailPage: React.FC = () => {
     currentUser,
     person,
     personGroups,
-    personTasks,
     updatePerson,
   } = useAdminPersonDetail(personId || "");
   // «Frivillig» is said of the one who is in a service group (see utils/personDirectory.ts)
@@ -109,7 +110,26 @@ export const AdminPersonDetailPage: React.FC = () => {
   const showFeedback = (text: string, type: "success" | "error" = "success") => setFeedback({ text, type });
 
   // Putting the person into a group, and taking them out, from the person's own card
-  const { groups: allGroups, gatherings: allGatherings, addGroupMember, removeGroupMember } = useFirebase();
+  const { groups: allGroups, gatherings: allGatherings, tasks: allTasks, assignments: allAssignments, volunteerRoles, addGroupMember, removeGroupMember } = useFirebase();
+  // What the person has taken on, by role: on the events that come, and on those held lately
+  const taskOverview = personTaskOverview(person?.id ?? "", { assignments: allAssignments, tasks: allTasks, gatherings: allGatherings, roles: volunteerRoles });
+  const taskLine = (row: PersonTaskRow) => (
+    <div key={row.assignmentId} className={studioDetailRow}>
+      <Link to={`/admin/samling/${row.gatheringId}`} className="min-w-0">
+        <span className="block font-semibold text-[var(--studio-text)]">{row.role}</span>
+        <span className="block text-[11px] text-[var(--studio-muted)]">
+          {row.gatheringTitle} · {formatNorwegianDateTime(row.startsAt)}
+        </span>
+      </Link>
+      <span
+        className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded border ${
+          row.response === "confirmed" ? "bg-emerald-100 text-emerald-800 border-emerald-200" : "bg-amber-100 text-amber-900 border-amber-200"
+        }`}
+      >
+        {row.response === "confirmed" ? "Bekreftet" : "Spurt"}
+      </span>
+    </div>
+  );
   const [groupToJoin, setGroupToJoin] = useState("");
   const joinChoices = person ? groupsToJoin(allGroups, allGatherings, person.id) : [];
   const handleJoinGroup = () => {
@@ -804,45 +824,57 @@ export const AdminPersonDetailPage: React.FC = () => {
           )}
         </section>
 
-        {/* Assigned Tasks Summary */}
-        <section
-          id="person-tasks-section"
-          className={studioDetailSection}
-        >
+        {/* What the person has taken on */}
+        <section id="person-tasks-section" className={studioDetailSection}>
           <div className="flex items-center justify-between border-b border-[var(--studio-border)] pb-2">
             <span className="text-xs font-bold text-[var(--studio-text)] flex items-center gap-1.5">
               <CheckSquare className="w-4 h-4 text-emerald-600" />
-              Tildelte oppgaver ({personTasks.length})
+              Oppgaver
             </span>
-            <span className="text-[10px] text-[var(--studio-muted)] font-medium">Assignment</span>
+            <span className="text-[11px] text-[var(--studio-muted)] font-medium">
+              {taskOverview.comingCount} framover · {taskOverview.heldCount} holdt siste 3 måneder
+              {taskOverview.askedCount > 0 ? ` · ${taskOverview.askedCount} spurt, ikke svart` : ""}
+            </span>
           </div>
 
-          {personTasks.length === 0 ? (
-            <p className="text-xs text-[var(--studio-muted)] italic py-1">
-              Ingen aktive oppgaver tildelt denne personen for øyeblikket.
-            </p>
+          {taskOverview.byRole.length > 0 && (
+            <table className="w-full text-xs">
+              <caption className="sr-only">Oppgaver personen har sagt ja til, per rolle</caption>
+              <thead>
+                <tr className="text-left text-[11px] text-[var(--studio-muted)]">
+                  <th className="py-1 pr-3 font-bold">Rolle</th>
+                  <th className="py-1 pr-3 font-bold text-right">Kommer</th>
+                  <th className="py-1 font-bold text-right">Holdt siste 3 mnd.</th>
+                </tr>
+              </thead>
+              <tbody>
+                {taskOverview.byRole.map((line) => (
+                  <tr key={line.role} className="border-t border-[var(--studio-border)]">
+                    <td className="py-1.5 pr-3 font-semibold text-[var(--studio-text)]">{line.role}</td>
+                    <td className="py-1.5 pr-3 text-right tabular-nums text-[var(--studio-text)]">{line.coming}</td>
+                    <td className="py-1.5 text-right tabular-nums text-[var(--studio-text)]">{line.held}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+
+          {taskOverview.coming.length === 0 && taskOverview.held.length === 0 ? (
+            <p className="text-xs text-[var(--studio-muted)] italic py-1">Personen har ingen oppgaver framover, og hadde ingen de siste 3 månedene.</p>
           ) : (
-            <div className="space-y-1.5 pt-1">
-              {personTasks.map((task) => (
-                <div
-                  key={task.id}
-                  className={studioDetailRow}
-                >
-                  <span className="text-slate-200 font-medium">{task.title}</span>
-                  <span
-                    className={`text-[9px] font-bold px-1.5 py-0.2 rounded ${
-                      task.status === "confirmed"
-                        ? "bg-emerald-50 text-emerald-700"
-                        : task.status === "vacant"
-                        ? "bg-red-50 text-red-700"
-                        : "bg-amber-50 text-amber-800"
-                    }`}
-                  >
-                    {task.status === "confirmed" ? "Bekreftet" : task.status}
-                  </span>
+            <>
+              {taskOverview.coming.length > 0 && (
+                <div className="space-y-1.5 pt-1" role="list" aria-label="Oppgaver som kommer">
+                  {taskOverview.coming.map(taskLine)}
                 </div>
-              ))}
-            </div>
+              )}
+              {taskOverview.held.length > 0 && (
+                <details className="pt-1">
+                  <summary className="text-xs font-bold text-[var(--studio-text)] cursor-pointer">Holdt siste 3 måneder ({taskOverview.held.length})</summary>
+                  <div className="space-y-1.5 pt-2">{taskOverview.held.map(taskLine)}</div>
+                </details>
+              )}
+            </>
           )}
         </section>
       </div>

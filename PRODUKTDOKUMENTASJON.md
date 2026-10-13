@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.39 · **Sist oppdatert:** 2026-10-13
+> **Dokumentversjon:** 4.40 · **Sist oppdatert:** 2026-10-13
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -1195,7 +1195,7 @@ Bestilt av produkteier: filteret het «Forfall / Trenger vikar», mens kortene d
 |:---|:---|
 | **Rødt valg** | «Mangler / Forfall». Det viser aktivitetene som mangler folk, enten ingen har meldt seg eller noen har meldt forfall |
 | **Gult valg** | «Venter på svar». Det het «Mangler frivillig», men viser aktivitetene der alle er spurt og ikke alle har svart |
-| **Ikke levert her** | Den grønne linjen «Alle oppgaver er dekket for planlagte aktiviteter» vises så lenge ingen har meldt forfall, også når aktiviteter mangler folk. Den er ikke endret |
+| **Statuslinjen** | Rettet samme dag, se «Tre rettelser etter første dag i bruk» |
 
 ### Feil rettet: en frivillig kunne ikke ta to oppgaver på samme arrangement (13. oktober 2026)
 
@@ -1224,6 +1224,19 @@ Bestilt av produkteier: bordet viste bare det som var holdt. Før første gudstj
 | **Det som ikke vises framover** | Oppmøte, grupper, personregister, nettside og de andre delene. De viser det som er holdt, og står under periodene bakover. Det finnes heller ingen sammenligning med perioden før |
 | **Bakover** | Uendret |
 | **Prøvd** | 7 sjekker med oppdiktede personer. Ikke sett i nettleseren: analysebordet er ikke med i demoen |
+
+### Tre rettelser etter første dag i bruk (13. oktober 2026)
+
+Bestilt av produkteier etter at de første frivillige hadde prøvd løsningen.
+
+| Område | Levert |
+|:---|:---|
+| **Personkortet: «Oppgaver»** | Boksen het «Tildelte oppgaver». Den viser nå en linje med totalen (framover, holdt siste 3 måneder, og spurt uten svar), en tabell per rolle med «Kommer» og «Holdt siste 3 mnd.», og listen under med rolle, arrangement, dato og «Bekreftet» eller «Spurt» |
+| **Bare et ja teller** | Som på analysebordet. Den som er spurt og ikke har svart, står i listen og ikke i tallene. Avlyste arrangementer og strøkne oppgaver er ikke med |
+| **Feil rettet i samme boks** | Navnene på oppgavene sto med lys tekst på lys bakgrunn. Det sto ikke når oppgaven var. Statusen var oppgavens, ikke personens svar, og sto delvis på engelsk («open», «Assignment») |
+| **Lenken til nettsiden** | Den fantes øverst på Min side, med liten og blek tekst («Gå til offentlig nettside»), og ble ikke sett. Den heter nå «Til nettsiden», i hvit, understreket tekst |
+| **Statuslinjen hos gruppelederen** | Den sa «Alle oppgaver er dekket for planlagte aktiviteter» så lenge ingen hadde meldt forfall, også når aktiviteter manglet folk. Den sier nå «N aktiviteter mangler folk», eller «Venter på svar på N aktiviteter», med knappen «Vis dem». Grønn er den bare når alt er dekket |
+| **Prøvd** | 9 sjekker. Sett i nettleseren med demoens oppdiktede personer: oppgaveboksen med tabell og lesbar tekst, og lenken «Til nettsiden». Statuslinjen er prøvd i sjekkene, siden ingen gruppe i demoen mangler folk |
 
 ---
 

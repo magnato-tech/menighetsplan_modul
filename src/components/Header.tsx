@@ -22,10 +22,11 @@ export const Header: React.FC = () => {
       <div className="bg-slate-900 text-slate-300 px-4 py-1.5 text-xs flex items-center justify-between">
         <Link
           to="/"
-          className="flex items-center gap-1.5 text-indigo-300 hover:text-white font-semibold transition-colors"
+          id="link-to-website"
+          className="flex items-center gap-1.5 text-white hover:text-indigo-200 font-bold underline underline-offset-2 transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Gå til offentlig nettside</span>
+          <span>Til nettsiden</span>
         </Link>
         <span className="text-[11px] text-slate-400 hidden sm:inline">
           Min Side · Planlegger & Frivilligportal
