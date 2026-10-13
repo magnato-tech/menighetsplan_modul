@@ -6,6 +6,7 @@ import { countSlots } from "../../utils/staffing";
 import { useFirebase } from "../../context/FirebaseDataContext";
 import { Task, GroupMessage, Gathering, Group } from "../../types";
 import { AttentionItem } from "./attention";
+import { asksForAnswerNow, nextGatheringOf } from "../../utils/meetingPlan";
 import { useTimedMessage } from "../../hooks/useTimedMessage";
 
 /**
@@ -90,9 +91,13 @@ export function useMyPage() {
 
     // B) Ubesvarte innkallinger til kommende samlinger i brukerens grupper
     myGroups.forEach((group) => {
-      getGatheringsForGroup(group.id).forEach((gathering) => {
+      const ofGroup = getGatheringsForGroup(group.id);
+      const next = nextGatheringOf(ofGroup);
+      ofGroup.forEach((gathering) => {
         const invited = gathering.invitationSent || gathering.invitationSentAt;
         if (!invited || !isUpcoming(gathering.startsAt)) return;
+        // A whole season planned at once asks about the next gathering only
+        if (!asksForAnswerNow(gathering, next)) return;
         if (getPersonAttendance(gathering.id, currentUser.id)) return;
         items.push({
           type: "unanswered_invitation",

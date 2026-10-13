@@ -17,7 +17,7 @@ interface EditMeetingDialogProps {
 }
 
 export const EditMeetingDialog: React.FC<EditMeetingDialogProps> = ({ model, activeMeeting, showToast, onClose }) => {
-  const { members, updateMeeting, deleteMeeting, allPersons } = model;
+  const { members, updateMeeting, deleteMeeting, deleteRestOfPlan, allPersons } = model;
 
   // The form starts from the meeting as it is when the dialog opens
   const [formTitle, setFormTitle] = useState(activeMeeting.title || "Husfellesskap");
@@ -63,6 +63,20 @@ export const EditMeetingDialog: React.FC<EditMeetingDialogProps> = ({ model, act
         onClose();
         showToast("Møtet ble slettet.");
       }
+    }
+  };
+
+  const handleDeleteRest = async () => {
+    if (!activeMeeting) return;
+    if (!window.confirm("Vil du slette denne samlingen og alle senere i samme plan? Samlinger noen har svart på, blir stående.")) return;
+    const res = await deleteRestOfPlan(activeMeeting.id);
+    if (res.success) {
+      onClose();
+      showToast(
+        res.kept > 0
+          ? `${res.removed} samlinger ble slettet. ${res.kept} står igjen fordi noen har svart på dem.`
+          : `${res.removed} samlinger ble slettet.`
+      );
     }
   };
 
@@ -202,6 +216,16 @@ export const EditMeetingDialog: React.FC<EditMeetingDialogProps> = ({ model, act
               <Trash2 className="w-4 h-4" />
               <span>Slett møte</span>
             </button>
+            {activeMeeting?.seriesId && (
+              <button
+                type="button"
+                id="btn-delete-rest-of-plan"
+                onClick={handleDeleteRest}
+                className="p-2 text-red-600 hover:bg-red-50 rounded-xl transition-colors text-xs font-semibold cursor-pointer"
+              >
+                Slett denne og alle senere
+              </button>
+            )}
 
             <div className="flex items-center gap-2">
               <button

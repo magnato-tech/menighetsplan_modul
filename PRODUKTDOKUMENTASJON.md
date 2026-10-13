@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.23 · **Sist oppdatert:** 2026-10-12
+> **Dokumentversjon:** 4.24 · **Sist oppdatert:** 2026-10-13
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -996,6 +996,24 @@ Funnet av produkteier hos første menighet: Min side viste to i en husgruppe, me
 | **Databasen rettes av seg selv** | Når en administrator har appen åpen i en menighets egen installasjon, skrives ledere og nestledere som mangler i listen over deltakere til gruppen sin, inn i den. Ingenting annet i gruppen røres |
 | **Ubesatte oppgaver** | En oppgave som er satt til «trengs ikke» på et arrangement, telles ikke lenger som ubesatt i admin |
 | **Prøvd** | 9 sjekker, med en gruppe slik datasettet hadde den |
+
+### Gruppelederen planlegger semesteret (13. oktober 2026)
+
+Bestilt av produkteier: en husgruppe møtes gjerne i fast rytme, og det skal være like enkelt å sette opp her som i en kalender.
+
+| Område | Levert |
+|:---|:---|
+| **Skjemaet «Planlegg samling»** | Det samme skjemaet som før, med valget «Gjenta»: bare denne gangen, hver uke, annenhver uke eller én gang i måneden |
+| **Forslag fra gruppen** | Har gruppen fast møtetid, er ukedag, klokkeslett og hyppighet fylt ut. Første dato er neste gang ukedagen kommer |
+| **Til og med** | Foreslås til slutten av semesteret: 30. juni om våren, 20. desember om høsten. Kan flyttes |
+| **Dagene vises først** | Listen over dagene står i skjemaet før noe opprettes. En dag som ikke passer, tas ut med haken. En dag der gruppen alt har en samling, er merket og opprettes ikke en gang til |
+| **Vert** | Kan stå åpen («Avtales senere»), som er utgangspunktet i en plan. Én vert kan settes for alle, en annen på enkeltdager, og «Bytt på» lar deltakerne ha hver sin gang |
+| **Sted, tema og bibeltekst** | Uten adresse er samlingen hos verten. Tema og bibeltekst gjelder den første samlingen. Resten legges inn på hver samling når det nærmer seg |
+| **Innkalling** | Deltakerne spørres bare om de kommer til gruppens neste samling. De senere står i kalenderen til det er deres tur. En samling planlagt for seg selv spør med en gang, som før |
+| **Etterpå** | Hver samling er en vanlig samling, og kan flyttes, endres og slettes for seg. «Slett denne og alle senere» fjerner resten av planen. Samlinger noen har svart på, blir stående |
+| **Regler** | Uendret. En leder oppretter samlinger i sin egen gruppe, som før |
+| **Prøvd** | 28 sjekker av dagene, verter på omgang, hvem som spørres, og skjemaet. Prøvd i demoen: to samlinger opprettet og slettet igjen |
+| **Ikke levert her** | En egen semesterliste på gruppesiden. At en endring kan gjelde «denne og alle senere». Varsel før en samling. At samlingene kommer i hver deltakers egen kalender hos en menighet (det personlige abonnementet trenger en tjener som ikke kjører der) |
 
 ---
 

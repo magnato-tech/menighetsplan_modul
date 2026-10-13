@@ -2,6 +2,8 @@ import { useMemo, useState, useCallback } from "react";
 import { useFirebase } from "../context/FirebaseDataContext";
 import { Person, Gathering } from "../types";
 import { isInGroup, allGroupPersonIds } from "../utils/groups";
+import { newId } from "../utils/id";
+import { restOfSeries } from "../utils/series";
 
 export function useHusfellesskap(explicitGroupId?: string, explicitGatheringId?: string) {
   const {
@@ -166,6 +168,57 @@ export function useHusfellesskap(explicitGroupId?: string, explicitGatheringId?:
     [group, createGathering]
   );
 
+  /**
+   * Creates the gatherings of a plan: the same gathering on each of the days given, each with
+   * its own host and place. More than one are marked as one plan, so the rest of it can be
+   * taken away later. The theme and the Bible text are the first gathering's own.
+   */
+  const createMeetings = useCallback(
+    async (
+      data: { title: string; theme?: string; bibleText?: string; sendInvitationImmediately?: boolean },
+      occurrences: { startsAt: string; hostPersonId?: string; location?: string }[]
+    ): Promise<{ success: boolean; error?: string; created: number }> => {
+      if (!group) return { success: false, error: "Ingen gruppe valgt", created: 0 };
+      if (occurrences.length === 0) return { success: false, error: "Velg minst én dag.", created: 0 };
+      const seriesId = occurrences.length > 1 ? newId("serie") : undefined;
+      let firstId: string | null = null;
+      let created = 0;
+      for (const [index, occurrence] of occurrences.entries()) {
+        const res = createGathering({
+          groupId: group.id,
+          type: "gruppesamling",
+          title: data.title,
+          sendInvitationImmediately: data.sendInvitationImmediately,
+          ...(index === 0 ? { theme: data.theme, bibleText: data.bibleText } : {}),
+          ...occurrence,
+          seriesId,
+        });
+        if (!res.success || !res.gathering) return { success: false, error: res.error, created };
+        firstId ??= res.gathering.id;
+        created += 1;
+      }
+      if (firstId) setSelectedMeetingId(firstId);
+      return { success: true, created };
+    },
+    [group, createGathering]
+  );
+
+  /**
+   * Takes away the gathering and those after it in the same plan. A gathering somebody has
+   * answered for, is left standing, so nobody's answer disappears with it.
+   */
+  const deleteRestOfPlan = useCallback(
+    async (gatheringId: string): Promise<{ success: boolean; removed: number; kept: number }> => {
+      const from = gatherings.find((gathering) => gathering.id === gatheringId);
+      if (!from?.seriesId) return { success: false, removed: 0, kept: 0 };
+      const { remove, kept } = restOfSeries(gatherings, from, (event) => attendances.some((answer) => answer.gatheringId === event.id));
+      for (const event of remove) deleteGathering(event.id);
+      if (remove.some((event) => event.id === selectedMeetingId)) setSelectedMeetingId(null);
+      return { success: true, removed: remove.length, kept: kept.length };
+    },
+    [gatherings, attendances, deleteGathering, selectedMeetingId]
+  );
+
   const updateMeeting = useCallback(
     async (gatheringId: string, updates: Partial<Gathering>) => {
       return updateGathering(gatheringId, updates);
@@ -243,8 +296,10 @@ export function useHusfellesskap(explicitGroupId?: string, explicitGatheringId?:
     currentUserAttendance,
     respond,
     createMeeting,
+    createMeetings,
     updateMeeting,
     deleteMeeting,
+    deleteRestOfPlan,
     sendInvitation,
     messages,
     sendMessage,
