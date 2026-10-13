@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.43 · **Sist oppdatert:** 2026-10-13
+> **Dokumentversjon:** 4.44 · **Sist oppdatert:** 2026-10-13
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -1235,7 +1235,7 @@ Bestilt av produkteier etter at de første frivillige hadde prøvd løsningen.
 | **Bare et ja teller** | Som på analysebordet. Den som er spurt og ikke har svart, står i listen og ikke i tallene. Avlyste arrangementer og strøkne oppgaver er ikke med |
 | **Feil rettet i samme boks** | Navnene på oppgavene sto med lys tekst på lys bakgrunn. Det sto ikke når oppgaven var. Statusen var oppgavens, ikke personens svar, og sto delvis på engelsk («open», «Assignment») |
 | **Lenken til nettsiden** | Den fantes øverst på Min side, med liten og blek tekst («Gå til offentlig nettside»), og ble ikke sett. Den heter nå «Til nettsiden», i hvit, understreket tekst. På en bred skjerm sto den helt ute ved kanten av vinduet, langt fra siden; den står nå i samme kolonne som resten |
-| **Menighetens navn øverst** | Overskriften øverst på Min side er menighetens navn, og fører til nettsiden. «Menighetsplan» står ikke lenger der |
+| **Menighetens navn øverst** | Overskriften øverst på Min side er menighetens navn, og fører til nettsiden. «Menighetsplan» står ikke lenger der. Den mørke stripen over, med lenken «Til nettsiden», ble tatt ut samme dag: navnet er veien til nettsiden |
 | **Statuslinjen hos gruppelederen** | Den sa «Alle oppgaver er dekket for planlagte aktiviteter» så lenge ingen hadde meldt forfall, også når aktiviteter manglet folk. Den sier nå «N aktiviteter mangler folk», eller «Venter på svar på N aktiviteter», med knappen «Vis dem». Grønn er den bare når alt er dekket |
 | **Prøvd** | 9 sjekker. Sett i nettleseren med demoens oppdiktede personer: oppgaveboksen med tabell og lesbar tekst, og lenken «Til nettsiden». Statuslinjen er prøvd i sjekkene, siden ingen gruppe i demoen mangler folk |
 

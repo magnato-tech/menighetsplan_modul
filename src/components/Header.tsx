@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { AccountMenu } from "./AccountMenu";
 import { useCms } from "../context/CmsContext";
 import { useLeaderDashboard } from "../hooks/useAppHooks";
-import { ArrowLeft, Shield } from "lucide-react";
+import { Shield } from "lucide-react";
 
 export const Header: React.FC = () => {
   const { settings } = useCms();
@@ -18,23 +18,6 @@ export const Header: React.FC = () => {
 
   return (
     <header className="sticky top-[var(--demo-strip,0px)] z-40 bg-white border-b border-slate-200/80 shadow-xs">
-      {/* Top Banner with link back to public website. It is held to the same column as the page under it: on a wide screen a link at the edge of the window is far from where anyone looks. */}
-      <div className="bg-slate-900 text-slate-300 py-1.5 text-xs">
-        <div className="max-w-md mx-auto px-5 flex items-center justify-between">
-        <Link
-          to="/"
-          id="link-to-website"
-          className="flex items-center gap-1.5 text-white hover:text-indigo-200 font-bold underline underline-offset-2 transition-colors"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Til nettsiden</span>
-        </Link>
-        <span className="text-[11px] text-slate-400 hidden sm:inline">
-          Min Side · Planlegger & Frivilligportal
-        </span>
-        </div>
-      </div>
-
       <div className="max-w-md mx-auto px-5 pt-3 pb-2">
         <div className="flex items-center justify-between">
           {/* The congregation's own name, which leads to its website. The name of the product is not written here. */}
