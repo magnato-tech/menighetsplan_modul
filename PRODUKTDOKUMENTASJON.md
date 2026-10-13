@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.47 · **Sist oppdatert:** 2026-10-13
+> **Dokumentversjon:** 4.48 · **Sist oppdatert:** 2026-10-13
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -1276,8 +1276,25 @@ Funnet av produkteier hos første menighet: knappen «Populer testdata (32 perso
 | Område | Levert |
 |:---|:---|
 | **Knappen og boksen** | «Populer testdata (32 personer)» og boksen «Få et fyldig testmiljø med 32 personer» vises bare når appen står i demo under «Driftsmodus» |
+| **Database-fanen** | Det samme gjelder alt som lager eller tømmer testdata der: generatoren, «Populer 32 testpersoner», simulert historikk og «Tilbakestilling & Sletting». I produksjon står det én linje som sier at de ikke vises. Datasett og «Nullstill gruppechat» står som før |
 | **I produksjon** | Vises ikke. Det gjelder også når driftsmodusen ikke er kjent |
 | **Prøvd** | Én sjekk |
+
+### Slett kontakt, og blyant i personlisten (13. oktober 2026)
+
+Bestilt av produkteier. En person kunne ikke slettes fra admin, og kolonnen «Handling» i personlisten hadde en knapp «Åpne» på hver linje.
+
+| Område | Levert |
+|:---|:---|
+| **Blyanten** | Kolonnen «Handling» står tom til pekeren er over linjen. Da vises en blyant som åpner personkortet. På telefon og nettbrett, der det ikke finnes noen peker, og når lenken har tastaturet, vises den hele tiden |
+| **«Slett kontakt»** | Rød knapp nederst på personkortet. Produkteier valgte at slettingen står der, ikke i listen |
+| **Advarselen** | Sier hva som skjer før noe slettes, med tall for personen: hvilke grupper personen tas ut av, hvor mange oppgaver som kommer personen tas av, og at innloggingen forsvinner. «Det kan ikke angres» |
+| **Det som slettes** | Personkortet med alle opplysninger, medlemskapet i gruppene, personens oppgaver på arrangementer som kommer (som blir ledige igjen), og svar på samlinger som kommer. Innloggingen og kortene i gruppenes katalog fjernes av administrators nettleser, som for alt annet som følger registeret |
+| **Det som blir stående** | Oppgaver personen hadde på arrangementer som er holdt, og meldinger personen har skrevet i gruppenes chat. De står med navnet, så historikken ikke skrives om |
+| **Kan ikke slettes** | Den som er leder eller nestleder i en gruppe, før gruppen har en annen. Administrator selv. Den eneste administratoren |
+| **Ikke levert her** | «Slett alle spor», der også navnet på gamle oppgaver og meldinger fjernes. Det trengs når noen krever sletting etter personvernreglene, og er ikke bygget |
+| **Regler** | Uendret. En ny regelsjekk viser at administrator kan gjøre sendingen, og at verken gruppens leder eller personen selv kan |
+| **Prøvd** | 6 sjekker og én regelsjekk i emulatoren |
 
 ---
 

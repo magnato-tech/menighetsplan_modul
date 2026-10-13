@@ -379,6 +379,13 @@ export const DatabaseTab: React.FC<DatabaseTabProps> = ({ showFeedback }) => {
       {/* Emptying the group chats is ordinary upkeep, and is there also when the app is in production */}
       <ChatResetPanel showFeedback={showFeedback} />
 
+      {/* Made-up data and the reset belong in a demo. Where the app is in production, or it is not known which it is, none of it is shown: one press must not put invented persons among the real ones. */}
+      {deletionLocked ? (
+        <p id="test-tools-hidden" className="text-xs text-[var(--studio-muted)]">
+          Testdata og tilbakestilling vises ikke når appen står i produksjon.
+        </p>
+      ) : (
+        <>
       {/* Seksjon 2: Populeringsvelger */}
       <section className="space-y-4">
         {/* Modus-velger */}
@@ -766,6 +773,9 @@ export const DatabaseTab: React.FC<DatabaseTabProps> = ({ showFeedback }) => {
           </div>
         </div>
       </section>
+
+        </>
+      )}
 
       {/* Bekreftelsesdialog for tømming av kun planlegger-data */}
       {confirmClearPlannerDialog && (

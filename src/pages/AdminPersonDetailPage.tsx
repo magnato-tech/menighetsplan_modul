@@ -3,8 +3,13 @@ import { isServiceGroup } from "../utils/personDirectory";
 import { useFirebase } from "../context/FirebaseDataContext";
 import { groupsToJoin } from "../utils/groupChoice";
 import { personTaskOverview, type PersonTaskRow } from "../utils/personTasks";
+import { personDeletion } from "../utils/personDeletion";
+import { deletePersonWithTraces } from "../services/personDeletion";
+import { reportWriteError } from "../services/writeErrors";
+import { DeletePersonDialog } from "./admin/DeletePersonDialog";
+import { studioTabUrl } from "./admin/studio";
 import { formatNorwegianDateTime } from "../utils/dates";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAdminDetailRoute } from "../utils/adminStudioRoutes";
 import { useAdminPersonDetail } from "../hooks/useAppHooks";
 import { AdminAccessRequired } from "../components/AdminAccessRequired";
@@ -111,6 +116,28 @@ export const AdminPersonDetailPage: React.FC = () => {
 
   // Putting the person into a group, and taking them out, from the person's own card
   const { groups: allGroups, gatherings: allGatherings, tasks: allTasks, assignments: allAssignments, volunteerRoles, addGroupMember, removeGroupMember } = useFirebase();
+  // Deleting the person from the register: what it means is worked out here, and shown first
+  const navigate = useNavigate();
+  const { allPersons: everyone, currentUser: signedIn } = useFirebase();
+  const [deleting, setDeleting] = useState(false);
+  const [deleteWorking, setDeleteWorking] = useState(false);
+  const deletion = person
+    ? personDeletion(person, { persons: everyone, groups: allGroups, gatherings: allGatherings, tasks: allTasks, assignments: allAssignments, administratorId: signedIn.id })
+    : null;
+  const handleDeletePerson = async () => {
+    if (!person || !deletion || deletion.blockedBy.length > 0) return;
+    setDeleteWorking(true);
+    try {
+      await deletePersonWithTraces(person.id, deletion);
+      navigate(studioTabUrl("planlegger-personer"));
+    } catch (error) {
+      setDeleting(false);
+      setDeleteWorking(false);
+      reportWriteError("slette personen", error);
+      showFeedback("Personen kunne ikke slettes. Prøv igjen.", "error");
+    }
+  };
+
   // What the person has taken on, by role: on the events that come, and on those held lately
   const taskOverview = personTaskOverview(person?.id ?? "", { assignments: allAssignments, tasks: allTasks, gatherings: allGatherings, roles: volunteerRoles });
   const taskLine = (row: PersonTaskRow) => (
@@ -877,7 +904,34 @@ export const AdminPersonDetailPage: React.FC = () => {
             </>
           )}
         </section>
+
+        {/* Deleting the contact: last on the card, where nobody presses it on the way to something else */}
+        <section className="rounded-2xl border border-red-200 bg-red-50/60 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="text-xs">
+            <p className="font-bold text-red-900">Slett kontakten</p>
+            <p className="text-red-800/80">Du får se hva som skjer før noe slettes.</p>
+          </div>
+          <button
+            type="button"
+            id="btn-delete-person"
+            onClick={() => setDeleting(true)}
+            className="px-4 py-2 rounded-xl bg-red-700 hover:bg-red-600 text-white text-xs font-bold cursor-pointer shrink-0"
+          >
+            Slett kontakt
+          </button>
+        </section>
       </div>
+
+      {deleting && deletion && (
+        <DeletePersonDialog
+          personName={person.name}
+          hasEmail={Boolean(person.email)}
+          deletion={deletion}
+          working={deleteWorking}
+          onConfirm={handleDeletePerson}
+          onClose={() => setDeleting(false)}
+        />
+      )}
     </StudioDetailShell>
   );
 };

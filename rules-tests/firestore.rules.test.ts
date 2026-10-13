@@ -520,6 +520,32 @@ describe("En administrator", () => {
     await assertSucceeds(deleteDoc(doc(db, "cms_settings/headcount-g-apen")));
   });
 
+  test("sletter en person: ut av gruppen, av oppgaven som kommer, svaret på samlingen og personen, i én sending", async () => {
+    // What the app sends (deletePersonWithTraces in src/services/personDeletion.ts)
+    const sending = async (db: Firestore) => {
+      const answers = await getDocs(query(collection(db, "gatheringAttendances"), where("personId", "==", "hakon")));
+      const batch = writeBatch(db);
+      for (const answer of answers.docs) batch.delete(answer.ref);
+      batch.update(doc(db, "groups/group-lyd"), "memberIds", arrayRemove("hakon"), new FieldPath("notificationPreferences", "hakon"), deleteField(), new FieldPath("memberJoinedAt", "hakon"), deleteField());
+      batch.delete(doc(db, "assignments/a1"));
+      batch.update(doc(db, "tasks/task-1"), { status: "open" });
+      batch.delete(doc(db, "persons/hakon"));
+      return batch.commit();
+    };
+    // Not a leader of the group, and not the person themselves
+    await assertFails(sending(ola()));
+    await assertFails(sending(hakon()));
+    await assertSucceeds(sending(kari()));
+
+    const db = kari();
+    expect((await getDoc(doc(db, "persons/hakon"))).exists()).toBe(false);
+    expect((await getDoc(doc(db, "assignments/a1"))).exists()).toBe(false);
+    expect((await getDoc(doc(db, "gatheringAttendances/att-g-apen-hakon"))).exists()).toBe(false);
+    expect((await getDoc(doc(db, "groups/group-lyd"))).data()).toMatchObject({ memberIds: [], leaderIds: ["ola"] });
+    // What he wrote in the chat, stands with his name
+    expect((await getDoc(doc(db, "groupMessages/m1"))).data()).toMatchObject({ senderName: "Håkon Tveit" });
+  });
+
   test("nullstiller gruppenes chat: leser alle meldingene og sletter dem; en frivillig får ikke lest dem alle", async () => {
     // What the app does (deleteGroupMessages in src/services/chatReset.ts)
     const reset = async (db: Firestore) => {

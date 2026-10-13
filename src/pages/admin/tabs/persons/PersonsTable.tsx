@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { ArrowDown, ArrowUp } from "lucide-react";
+import { ArrowDown, ArrowUp, Pencil } from "lucide-react";
 import {
   PERSON_ACCESS_LABEL,
   PersonDirectoryRow,
@@ -9,7 +9,6 @@ import {
   personAccess,
   personGroupNames,
 } from "../../../../utils/personDirectory";
-import { studioSecondaryButton } from "../../studioTheme";
 
 interface PersonsTableProps {
   rows: PersonDirectoryRow[];
@@ -76,7 +75,7 @@ export const PersonsTable: React.FC<PersonsTableProps> = ({ rows, sortKey, sortD
             const access = personAccess(row);
             const groups = personGroupNames(row);
             return (
-              <tr key={row.person.id} className="border-b border-[var(--studio-border)] hover:bg-[var(--studio-surface)]">
+              <tr key={row.person.id} className="group border-b border-[var(--studio-border)] hover:bg-[var(--studio-surface)]">
                 <td className="px-3 py-3">
                   <div className="flex items-center gap-2.5">
                     {row.person.avatarUrl ? (
@@ -114,11 +113,14 @@ export const PersonsTable: React.FC<PersonsTableProps> = ({ rows, sortKey, sortD
                   {row.person.phone || <span className="text-[var(--studio-muted)]">–</span>}
                 </td>
                 <td className="px-3 py-3 text-right">
+                  {/* Shown when the pointer is over the line, or the link has the keyboard. Always shown where there is no pointer to hold over anything (a phone, a tablet). */}
                   <Link
                     to={`/admin/person/${row.person.id}`}
-                    className={`${studioSecondaryButton} inline-block`}
+                    aria-label={`Åpne og rediger ${row.person.name}`}
+                    title="Åpne og rediger"
+                    className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-[var(--studio-border)] bg-[var(--studio-bg)] text-[var(--studio-muted)] hover:text-[var(--studio-text)] transition-opacity [@media(hover:hover)]:opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
                   >
-                    Åpne
+                    <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
                   </Link>
                 </td>
               </tr>
