@@ -138,6 +138,27 @@ describe("Analysebord", () => {
     expect(screen.getByRole("button", { name: "Siste 12 måneder" }).getAttribute("aria-pressed")).toBe("true");
   });
 
+  test("bordet kan se framover: da vises bemanningen og hver enkelt, og resten står under perioder bakover", () => {
+    renderTab();
+    const ahead = screen.getByRole("group", { name: "Periode framover" });
+    expect(within(ahead).getAllByRole("button").map((button) => button.textContent)).toEqual(["Neste 4 uker", "Neste 3 måneder", "Neste halvår"]);
+    expect(within(screen.getByRole("group", { name: "Periode bakover" })).getAllByRole("button")).toHaveLength(3);
+
+    fireEvent.click(within(ahead).getByRole("button", { name: "Neste 3 måneder" }));
+    expect(requestedPeriods[requestedPeriods.length - 1]).toBe("next3m");
+    expect(screen.getByText(/Det som er planlagt: hvor godt arrangementene som kommer er bemannet/)).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Bemanning per arrangement" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Hver enkelt" })).toBeTruthy();
+    expect(screen.getByText(/oppgaver de har sagt ja til i perioden som kommer/)).toBeTruthy();
+    for (const gone of ["Flere oppgaver på samme samling", "Oppgaver og aktiviteter per måned"]) expect(screen.queryByRole("heading", { name: gone })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Vis som tabell" })).toBeNull();
+    expect(screen.getByText(/Velg en periode bakover for å se dem/)).toBeTruthy();
+
+    // And back again: the whole board
+    fireEvent.click(screen.getByRole("button", { name: "Siste 3 måneder" }));
+    expect(screen.getByRole("heading", { name: "Flere oppgaver på samme samling" })).toBeTruthy();
+  });
+
   test("de nye modulene vises: bemanning per arrangement, flere oppgaver, per måned og hver enkelt", () => {
     renderTab();
     expect(screen.getByRole("heading", { name: "Bemanning per arrangement" })).toBeTruthy();

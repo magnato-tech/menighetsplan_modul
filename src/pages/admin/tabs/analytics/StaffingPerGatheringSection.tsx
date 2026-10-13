@@ -16,19 +16,26 @@ const SHOWN = 8;
 
 /** How many gatherings had every slot filled, and which did not. */
 export const StaffingPerGatheringSection: React.FC<StaffingPerGatheringSectionProps> = ({ period, staffing, onHide }) => {
-  const change = describeChange(staffing.rate, staffing.previousRate, "rate");
+  const ahead = period.direction === "ahead";
+  const change = ahead ? null : describeChange(staffing.rate, staffing.previousRate, "rate");
   const total = staffing.gatherings.length;
+  // Looking ahead, the nearest event that lacks people comes first
+  const notFull = ahead ? [...staffing.notFull].reverse() : staffing.notFull;
 
   return (
     <AnalyticsSection
       id="analyse-bemanning"
       title="Bemanning per arrangement"
-      description="Samlinger som er holdt i perioden og hadde oppgaver. Fullt bemannet betyr at alle plasser i alle oppgavene var bekreftet."
+      description={
+        ahead
+          ? "Arrangementer som kommer i perioden og har oppgaver. Fullt bemannet betyr at alle plasser i alle oppgavene er bekreftet. Den som er spurt og ikke har svart, teller ikke."
+          : "Samlinger som er holdt i perioden og hadde oppgaver. Fullt bemannet betyr at alle plasser i alle oppgavene var bekreftet."
+      }
       icon={<ClipboardCheck className="w-5 h-5" />}
       onHide={onHide}
     >
       {total === 0 ? (
-        <p className="text-xs text-[var(--studio-muted)]">Ingen samlinger i perioden hadde oppgaver.</p>
+        <p className="text-xs text-[var(--studio-muted)]">{ahead ? "Ingen arrangementer i perioden har oppgaver." : "Ingen samlinger i perioden hadde oppgaver."}</p>
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -43,7 +50,7 @@ export const StaffingPerGatheringSection: React.FC<StaffingPerGatheringSectionPr
               {staffing.worship.withTasks > 0 ? formatPercent(staffing.worship.rate) : "ingen gudstjenester med oppgaver"}
             </MiniStat>
             <MiniStat label="Ikke fullt bemannet" value={String(staffing.notFull.length)}>
-              {staffing.missingSlots > 0 ? `${staffing.missingSlots} plasser manglet til sammen` : "ingen plasser manglet"}
+              {staffing.missingSlots > 0 ? `${staffing.missingSlots} plasser ${ahead ? "mangler" : "manglet"} til sammen` : `ingen plasser ${ahead ? "mangler" : "manglet"}`}
             </MiniStat>
           </div>
 
@@ -51,14 +58,14 @@ export const StaffingPerGatheringSection: React.FC<StaffingPerGatheringSectionPr
             <div className="h-2.5 rounded-full bg-[var(--viz-track)] overflow-hidden">
               <div className="h-full rounded-full bg-[var(--viz-1)]" style={{ width: `${(staffing.rate ?? 0) * 100}%` }} />
             </div>
-            <p className="text-[11px] text-[var(--studio-muted)]">Andel av samlingene med oppgaver som var fullt bemannet</p>
+            <p className="text-[11px] text-[var(--studio-muted)]">{ahead ? "Andel av arrangementene med oppgaver som er fullt bemannet" : "Andel av samlingene med oppgaver som var fullt bemannet"}</p>
           </div>
 
-          {staffing.notFull.length > 0 && (
+          {notFull.length > 0 && (
             <div className="space-y-2">
               <h3 className="text-xs font-bold text-[var(--studio-text)]">Ikke fullt bemannet</h3>
               <ul className="space-y-1.5">
-                {staffing.notFull.slice(0, SHOWN).map((row) => (
+                {notFull.slice(0, SHOWN).map((row) => (
                   <li key={row.gathering.id} className="flex items-center justify-between gap-3 text-xs">
                     <Link
                       to={`/admin/samling/${row.gathering.id}`}

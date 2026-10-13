@@ -36,6 +36,8 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ showFeedback, onTabC
   const { analytics, websiteVisits, registerHeadcount, removeHeadcount, hiddenModules, canCustomize, setModuleHidden, showAllModules } =
     useAdminAnalytics(periodId);
   const { period } = analytics;
+  // Looking ahead, the board shows what can be known beforehand: who has said yes to what
+  const ahead = period.direction === "ahead";
   const customizeButtonRef = useRef<HTMLButtonElement>(null);
 
   const shown = (id: AnalyticsModuleId) => isModuleShown(hiddenModules, id);
@@ -58,29 +60,34 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ showFeedback, onTabC
         <div>
           <h1 className="text-2xl sm:text-3xl font-black text-[var(--studio-text)] tracking-tight">Analysebord</h1>
           <p className="text-xs sm:text-sm text-[var(--studio-muted)] mt-1 max-w-2xl">
-            Menighetens liv i tall: oppmøte, frivillighet, grupper og nettside, sammenlignet med perioden før.
+            {ahead
+              ? "Det som er planlagt: hvor godt arrangementene som kommer er bemannet, og hvor mange oppgaver hver enkelt har sagt ja til."
+              : "Menighetens liv i tall: oppmøte, frivillighet, grupper og nettside, sammenlignet med perioden før."}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 self-start lg:self-auto">
-          <div
-            role="group"
-            aria-label="Periode"
-            className="flex items-center gap-1 p-1 rounded-xl bg-[var(--studio-surface)] border border-[var(--studio-border)]"
-          >
-            {ANALYTICS_PERIODS.map((option) => (
-              <button
-                key={option.id}
-                type="button"
-                aria-pressed={periodId === option.id}
-                onClick={() => setPeriodId(option.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-colors ${
-                  periodId === option.id ? "bg-indigo-600 text-white shadow-sm" : "text-[var(--studio-muted)] hover:text-[var(--studio-text)]"
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
+          {(["back", "ahead"] as const).map((direction) => (
+            <div
+              key={direction}
+              role="group"
+              aria-label={direction === "back" ? "Periode bakover" : "Periode framover"}
+              className="flex items-center gap-1 p-1 rounded-xl bg-[var(--studio-surface)] border border-[var(--studio-border)]"
+            >
+              {ANALYTICS_PERIODS.filter((option) => option.direction === direction).map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  aria-pressed={periodId === option.id}
+                  onClick={() => setPeriodId(option.id)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-colors ${
+                    periodId === option.id ? "bg-indigo-600 text-white shadow-sm" : "text-[var(--studio-muted)] hover:text-[var(--studio-text)]"
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          ))}
           <button
             ref={customizeButtonRef}
             type="button"
@@ -95,6 +102,17 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ showFeedback, onTabC
         </div>
       </div>
 
+      {ahead && (
+        <>
+          <StaffingPerGatheringSection period={period} staffing={analytics.fullStaffing} />
+          <PeopleEngagementSection engagement={analytics.engagement} ahead highLoadFrom={analytics.volunteers.highLoadThreshold} />
+          <p className="text-xs text-[var(--studio-muted)] text-center">
+            Oppmøte, grupper, nettside og de andre delene av bordet viser det som er holdt. Velg en periode bakover for å se dem.
+          </p>
+        </>
+      )}
+      {!ahead && (
+        <>
       {shown("nokkeltall") && <KeyFigures analytics={analytics} />}
       {shown("oppmote") && (
         <AttendanceSection
@@ -129,7 +147,10 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ showFeedback, onTabC
         <CoverageSection coverage={analytics.coverage} onOpenDatabase={() => onTabChange("database-admin")} onHide={hide("datagrunnlag")} />
       )}
 
-      {hiddenCount > 0 && (
+        </>
+      )}
+
+      {!ahead && hiddenCount > 0 && (
         <p className="text-xs text-[var(--studio-muted)] text-center">
           {hiddenCount} {hiddenCount === 1 ? "modul er skjult" : "moduler er skjult"}.{" "}
           <button type="button" onClick={() => setCustomizing(true)} className="font-bold text-[var(--studio-link)] hover:text-[var(--studio-link-hover)] cursor-pointer">

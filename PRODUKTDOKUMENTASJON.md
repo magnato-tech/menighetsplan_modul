@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.38 · **Sist oppdatert:** 2026-10-13
+> **Dokumentversjon:** 4.39 · **Sist oppdatert:** 2026-10-13
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -1209,6 +1209,21 @@ Funnet hos første menighet da den første frivillige prøvde: den andre oppgave
 | **Regler** | Uendret. Rettelsen virker med reglene som er publisert |
 | **Hvorfor testene ikke fant den** | Regelsjekken for å ta en oppgave brukte et arrangement der personen ikke hadde merke fra før. Den er nå utvidet: oppgave på et arrangement der merket finnes, og to oppgaver etter hverandre på samme arrangement |
 | **Prøvd** | Feilen ble gjenskapt i emulatoren før rettelsen, og samme sjekk går gjennom etter. 38 regelsjekker og én ny sjekk i dataleverandøren |
+
+### Analysebordet kan se framover (13. oktober 2026)
+
+Bestilt av produkteier: bordet viste bare det som var holdt. Før første gudstjeneste, mens folk melder seg på, sto alt i null, og det var ikke mulig å se hvor mye hver enkelt har tatt på seg.
+
+| Område | Levert |
+|:---|:---|
+| **Periode framover** | Ved siden av «Siste 4 uker», «Siste 3 måneder» og «Siste 12 måneder» står «Neste 4 uker», «Neste 3 måneder» og «Neste halvår» |
+| **Hver enkelt** | Oppgaver personen har sagt ja til på arrangementene som kommer, hvor mange av gudstjenestene de står på, hvor ofte de har flere oppgaver på samme arrangement, og grupper |
+| **Belastning** | «Mye» står på den som har oppgaver på flere arrangementer enn grensen bordet alt bruker: oftere enn annenhver uke, aldri færre enn tre |
+| **Bemanning per arrangement** | Hvor mange av arrangementene som kommer, er fullt bemannet, og hvilke som mangler folk, det nærmeste først |
+| **Bare de som har svart** | Den som er spurt og ikke har svart, teller ikke, verken som oppgave eller som dekket plass. Produkteier valgte det |
+| **Det som ikke vises framover** | Oppmøte, grupper, personregister, nettside og de andre delene. De viser det som er holdt, og står under periodene bakover. Det finnes heller ingen sammenligning med perioden før |
+| **Bakover** | Uendret |
+| **Prøvd** | 7 sjekker med oppdiktede personer. Ikke sett i nettleseren: analysebordet er ikke med i demoen |
 
 ---
 

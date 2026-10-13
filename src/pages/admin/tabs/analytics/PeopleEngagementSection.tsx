@@ -9,6 +9,10 @@ import { studioSecondaryButton } from "../../studioTheme";
 interface PeopleEngagementSectionProps {
   engagement: EngagementSummary;
   onHide?: () => void;
+  /** The numbers are of what is planned: tasks the person has said yes to on events that come. */
+  ahead?: boolean;
+  /** On this many events or more in the period, a person carries much (see highLoadThreshold). Marked when given. */
+  highLoadFrom?: number;
 }
 
 const SHOWN = 15;
@@ -25,7 +29,7 @@ const SORTS: { id: string; label: string; compare: (a: PersonEngagement, b: Pers
 const byName = (a: PersonEngagement, b: PersonEngagement) => a.person.name.localeCompare(b.person.name, "nb");
 
 /** Each person in the register: how much they serve, and where they belong. */
-export const PeopleEngagementSection: React.FC<PeopleEngagementSectionProps> = ({ engagement, onHide }) => {
+export const PeopleEngagementSection: React.FC<PeopleEngagementSectionProps> = ({ engagement, onHide, ahead = false, highLoadFrom }) => {
   const [sortId, setSortId] = useState(SORTS[0].id);
   const [onlyActive, setOnlyActive] = useState(false);
   const [showAll, setShowAll] = useState(false);
@@ -39,7 +43,7 @@ export const PeopleEngagementSection: React.FC<PeopleEngagementSectionProps> = (
     <AnalyticsSection
       id="analyse-hver-enkelt"
       title="Hver enkelt"
-      description={`Alle i personregisteret: oppgaver i perioden, på hvor mange av de ${engagement.worshipHeld} gudstjenestene de hadde en oppgave, hvor ofte de hadde flere oppgaver på samme samling, grupper, og aktiviteter (oppgaver og gruppesamlinger) per måned.`}
+      description={ahead ? `Alle i personregisteret: oppgaver de har sagt ja til i perioden som kommer, på hvor mange av de ${engagement.worshipHeld} gudstjenestene de har en oppgave, hvor ofte de har flere oppgaver på samme arrangement, og grupper. Den som er spurt og ikke har svart, teller ikke.${highLoadFrom ? ` «Mye» står på den som har oppgaver på ${highLoadFrom} arrangementer eller flere.` : ""}` : `Alle i personregisteret: oppgaver i perioden, på hvor mange av de ${engagement.worshipHeld} gudstjenestene de hadde en oppgave, hvor ofte de hadde flere oppgaver på samme samling, grupper, og aktiviteter (oppgaver og gruppesamlinger) per måned.`}
       icon={<UserRound className="w-5 h-5" />}
       onHide={onHide}
       actions={
@@ -60,7 +64,7 @@ export const PeopleEngagementSection: React.FC<PeopleEngagementSectionProps> = (
           </label>
           <label className="flex items-center gap-1.5 text-[11px] font-bold text-[var(--studio-muted)] cursor-pointer">
             <input type="checkbox" checked={onlyActive} onChange={(e) => setOnlyActive(e.target.checked)} className="accent-indigo-600" />
-            Bare de som har vært med
+            {ahead ? "Bare de som har oppgaver" : "Bare de som har vært med"}
           </label>
         </>
       }
@@ -94,7 +98,12 @@ export const PeopleEngagementSection: React.FC<PeopleEngagementSectionProps> = (
                     {row.person.name}
                   </Link>
                 </td>
-                <td className="py-2 pr-3 text-right tabular-nums font-bold">{row.tasks}</td>
+                <td className="py-2 pr-3 text-right tabular-nums font-bold whitespace-nowrap">
+                  {highLoadFrom !== undefined && row.gatheringsServed >= highLoadFrom && (
+                    <span className="mr-1.5 text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-950/80 border border-amber-800 text-amber-300">Mye</span>
+                  )}
+                  {row.tasks}
+                </td>
                 <td className="py-2 pr-3 text-right tabular-nums whitespace-nowrap">
                   {engagement.worshipHeld > 0 ? `${row.worshipServed} av ${engagement.worshipHeld} (${formatPercent(row.worshipShare)})` : "–"}
                 </td>
