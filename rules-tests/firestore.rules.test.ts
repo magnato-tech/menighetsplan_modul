@@ -491,6 +491,36 @@ describe("En administrator", () => {
     await assertSucceeds(deleteDoc(doc(db, "cms_settings/headcount-g-apen")));
   });
 
+  test("sletter en gruppe med meldingene, og tar den av rollen som pekte på den; det kan ikke gruppens leder", async () => {
+    await env.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore() as unknown as Firestore;
+      await updateDoc(doc(db, "cms_settings/role-1"), { groupId: "group-lyd" });
+      await setDoc(doc(db, "memberProposals/forslag-1"), { groupId: "group-lyd", name: "Ny Person", proposedBy: "ola", proposedAt: "2026-10-13T10:00:00.000Z", status: "pending" });
+    });
+    // The sending the app makes (deleteGroupWithTraces in src/services/groupDeletion.ts)
+    const sending = async (db: Firestore) => {
+      const found = await Promise.all(["groupMessages", "memberProposals"].map((name) => getDocs(query(collection(db, name), where("groupId", "==", "group-lyd")))));
+      const batch = writeBatch(db);
+      for (const snapshot of found) for (const document of snapshot.docs) batch.delete(document.ref);
+      batch.update(doc(db, "cms_settings/role-1"), { groupId: deleteField(), updatedAt: "2026-10-13T10:00:00.000Z" });
+      batch.delete(doc(db, "groups/group-lyd"));
+      return batch.commit();
+    };
+    await assertFails(sending(ola()));
+    await assertFails(sending(hakon()));
+    await assertSucceeds(sending(kari()));
+
+    const db = kari();
+    expect((await getDoc(doc(db, "groups/group-lyd"))).exists()).toBe(false);
+    expect((await getDoc(doc(db, "groupMessages/m1"))).exists()).toBe(false);
+    expect((await getDoc(doc(db, "memberProposals/forslag-1"))).exists()).toBe(false);
+    expect((await getDoc(doc(db, "cms_settings/role-1"))).data()).toMatchObject({ name: "Møtevert", recordType: "volunteerRole" });
+    expect((await getDoc(doc(db, "cms_settings/role-1"))).data()).not.toHaveProperty("groupId");
+    // The other group, its message and the persons stand
+    expect((await getDoc(doc(db, "groupMessages/m2"))).exists()).toBe(true);
+    expect((await getDoc(doc(db, "persons/hakon"))).exists()).toBe(true);
+  });
+
   test("sletter et arrangement med oppgavene og alle som står på dem i én sending, og det kan ingen frivillig", async () => {
     // The sending the app makes (deleteGatheringAndStaffing in src/services/firestore.ts)
     const sending = (db: Firestore) => {

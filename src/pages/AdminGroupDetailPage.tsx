@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAdminDetailRoute } from "../utils/adminStudioRoutes";
 import {
   useAdminGroupDetail,
@@ -24,6 +24,12 @@ import {
   withdrawProposal,
 } from "../services/memberProposals";
 import { reportWriteError } from "../services/writeErrors";
+import { useFirebase } from "../context/FirebaseDataContext";
+import { useGatheringTemplates } from "../hooks/useGatheringTemplates";
+import { deleteGroupWithTraces } from "../services/groupDeletion";
+import { groupDeletion } from "../utils/groupDeletion";
+import { studioTabUrl } from "./admin/studio";
+import { DeleteGroupDialog } from "./admin/DeleteGroupDialog";
 import { leadsGroup, withLeaders } from "../utils/groups";
 import { birthDateError, todayInNorway } from "../utils/birthDate";
 import { emailError, membershipValue, personEntryError } from "../utils/personForm";
@@ -91,6 +97,24 @@ export const AdminGroupDetailPage: React.FC = () => {
   const [freshDenomination, setFreshDenomination] = useState(false);
 
   const [feedback, setFeedback] = useTimedMessage<{ text: string; type: "success" | "error" }>();
+
+  // Deleting the group: what it means is worked out here, and shown before anything is deleted
+  const navigate = useNavigate();
+  const { gatherings, tasks, volunteerRoles } = useFirebase();
+  const { templates } = useGatheringTemplates();
+  const [deleting, setDeleting] = useState(false);
+  const deletion = group ? groupDeletion(group, { gatherings, tasks, roles: volunteerRoles, templates }) : null;
+  const handleDeleteGroup = async () => {
+    if (!group || !deletion || deletion.blockedBy.length > 0) return;
+    try {
+      await deleteGroupWithTraces(group.id, { roleIds: deletion.roles.map((role) => role.id), templateIds: deletion.templates.map((template) => template.id) });
+      navigate(studioTabUrl("planlegger-grupper"));
+    } catch (error) {
+      setDeleting(false);
+      reportWriteError("slette gruppen", error);
+      setFeedback({ text: "Gruppen kunne ikke slettes. Prøv igjen.", type: "error" });
+    }
+  };
 
   useEffect(() => {
     if (group) {
@@ -760,7 +784,27 @@ export const AdminGroupDetailPage: React.FC = () => {
             </div>
           )}
         </section>
+
+        {/* Deleting the group: last on the page, where nobody presses it on the way to something else */}
+        <section className="rounded-2xl border border-red-200 bg-red-50/60 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="text-xs">
+            <p className="font-bold text-red-900">Slett gruppen</p>
+            <p className="text-red-800/80">Du får se hva som skjer før noe slettes. Personene i gruppen blir stående i registeret.</p>
+          </div>
+          <button
+            type="button"
+            id="btn-delete-group"
+            onClick={() => setDeleting(true)}
+            className="px-4 py-2 rounded-xl bg-red-700 hover:bg-red-600 text-white text-xs font-bold cursor-pointer shrink-0"
+          >
+            Slett gruppe
+          </button>
+        </section>
       </div>
+
+      {deleting && deletion && (
+        <DeleteGroupDialog groupId={group.id} groupName={group.name} deletion={deletion} onConfirm={handleDeleteGroup} onClose={() => setDeleting(false)} />
+      )}
     </StudioDetailShell>
   );
 };

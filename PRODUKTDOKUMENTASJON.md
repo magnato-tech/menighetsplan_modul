@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.33 · **Sist oppdatert:** 2026-10-13
+> **Dokumentversjon:** 4.34 · **Sist oppdatert:** 2026-10-13
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -1148,6 +1148,22 @@ Bestilt av produkteier: alle i registeret sto som «Frivillig», også de som ik
 | **Tilgangen er uendret** | Alle i registeret med e-post kan logge inn som før. På personkortet heter valget nå «Vanlig tilgang (standard)», ikke «Frivillig» |
 | **Ikke levert her** | Den som bare står på en enkeltoppgave uten å være i en tjenestegruppe, regnes ikke som frivillig. Listen som lastes ned, har ikke kolonne for dette |
 | **Prøvd** | 6 sjekker, med oppdiktede personer |
+
+### Slett en gruppe (13. oktober 2026)
+
+Bestilt av produkteier: en gruppe kunne ikke slettes fra admin, og en gruppe som var erstattet av en annen, ble stående.
+
+| Område | Levert |
+|:---|:---|
+| **«Slett gruppe»** | Rød knapp nederst på gruppens side i admin. Bare administrator |
+| **Advarselen** | Sier hva som skjer før noe slettes, med tall for gruppen: hvor mange som ikke lenger er med, hvor mange meldinger og forslag som slettes, og hvilke roller og maler som mister gruppen. «Det kan ikke angres» |
+| **Personene** | Blir stående i registeret. De er bare ikke med i gruppen lenger |
+| **Gruppe med arrangementer eller oppgaver** | Kan ikke slettes. Advarselen sier hvor mange det gjelder, og at de må flyttes eller slettes først. Gruppen som holder kalenderen, er vernet av det samme |
+| **Det som følger gruppen ut** | Meldingene i gruppen og forslag om nye deltakere. Roller og maler som pekte på gruppen, står uten gruppe etterpå |
+| **Rekkefølgen** | Gruppen selv slettes i siste sending. Går noe galt underveis, står det igjen en gruppe som kan slettes på nytt, ikke løse tråder uten gruppe |
+| **Ikke levert her** | Å flytte arrangementer og oppgaver til en annen gruppe i samme trykk |
+| **Regler** | Uendret. En ny regelsjekk viser at administrator kan gjøre sendingen, og at gruppens leder ikke kan |
+| **Prøvd** | 8 sjekker og én regelsjekk i emulatoren. Sett i nettleseren mot demoens data med nettet slått av: en gruppe med arrangementer ble nektet med riktige tall, en gruppe uten ble slettet og rollen mistet teamet, og etter ny lasting sto alt som før i databasen |
 
 ---
 
