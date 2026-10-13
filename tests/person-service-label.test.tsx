@@ -10,6 +10,8 @@ import { isInServiceGroup, isServiceGroup, matchesPersonSearch, personAccess, PE
 
 vi.mock("../src/firebase", async () => (await import("./support/offlineFirestore")).firebaseModuleMock);
 vi.mock("../src/context/FirebaseDataContext", () => ({ useFirebase: () => ({}) }));
+const operating = vi.hoisted(() => ({ mode: "production" as "demo" | "production" | null }));
+vi.mock("../src/hooks/useOperatingMode", () => ({ useOperatingMode: () => operating.mode }));
 
 import { PersonsTab } from "../src/pages/admin/tabs/PersonsTab";
 import type { StudioData } from "../src/pages/admin/studio";
@@ -30,7 +32,10 @@ const admin = row(person("5", "Eva Eier", { globalRole: "admin" }));
 const leadsHouse = row(person("6", "Frode Fører"), [houseGroup], [houseGroup]);
 const everyone = [serves, oldServes, onlyHouse, nowhere, admin, leadsHouse];
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  operating.mode = "production";
+});
 
 describe("Hvem som er frivillig", () => {
   test("den som er i en tjenestegruppe, er det; husgruppe alene teller ikke", () => {
@@ -78,6 +83,26 @@ describe("Personregisteret i admin", () => {
     expect(names).toHaveLength(4);
     for (const name of ["Cecilie Celle", "David Ledig", "Eva Eier", "Frode Fører"]) expect(names.some((text) => text.includes(name))).toBe(true);
     expect(names.some((text) => text.includes("Anne Aktiv"))).toBe(false);
+  });
+
+  test("oppdiktede testpersoner tilbys ikke når løsningen er i produksjon, eller når det ikke er kjent", () => {
+    const few = { ...studio, adminPersons: everyone.slice(0, 2) } as unknown as StudioData;
+    const offered = () => screen.queryAllByRole("button", { name: /testdata|32 personer/i }).length;
+    const draw = () => render(<MemoryRouter><PersonsTab studio={few} /></MemoryRouter>);
+
+    draw();
+    expect(offered()).toBe(0);
+    expect(screen.queryByText(/testmiljø med 32 personer/)).toBeNull();
+    cleanup();
+
+    operating.mode = null;
+    draw();
+    expect(offered()).toBe(0);
+    cleanup();
+
+    operating.mode = "demo";
+    draw();
+    expect(offered()).toBe(2);
   });
 
   test("kortene har samme merkelapp som tabellen", () => {

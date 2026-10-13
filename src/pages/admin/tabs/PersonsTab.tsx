@@ -31,6 +31,7 @@ import { personListFile } from "../../../utils/personListFile";
 import { createPersonInGroup } from "../../../services/memberProposals";
 import { reportWriteError } from "../../../services/writeErrors";
 import { DEMO } from "../../../demo";
+import { useOperatingMode } from "../../../hooks/useOperatingMode";
 import { CornerstoneImportDialog } from "../CornerstoneImportDialog";
 
 interface PersonsTabProps {
@@ -58,8 +59,11 @@ export const PersonsTab: React.FC<PersonsTabProps> = ({ studio, showFeedback }) 
   const [sortKey, setSortKey] = useState<PersonSortKey>("name");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
+  // Made-up persons belong in a demo. Where the app is in production, or it is not known which it
+  // is, they are not offered: a real register must never be filled with them.
+  const testDataAllowed = useOperatingMode() === "demo";
   const handlePopulateTestData = async () => {
-    if (isPopulating) return;
+    if (isPopulating || !testDataAllowed) return;
     setIsPopulating(true);
     try {
       const result = await populateDemoPersons();
@@ -179,6 +183,7 @@ export const PersonsTab: React.FC<PersonsTabProps> = ({ studio, showFeedback }) 
             <span>Hent inn fra Cornerstone</span>
           </button>
         )}
+        {testDataAllowed && (
         <button
           type="button"
           onClick={handlePopulateTestData}
@@ -193,6 +198,7 @@ export const PersonsTab: React.FC<PersonsTabProps> = ({ studio, showFeedback }) 
           )}
           <span>{isPopulating ? "Fyller testdata..." : "Populer testdata (32 personer)"}</span>
         </button>
+        )}
       </div>
 
       {importing && (
@@ -286,7 +292,7 @@ export const PersonsTab: React.FC<PersonsTabProps> = ({ studio, showFeedback }) 
         </form>
       )}
 
-      {adminPersons.length < 5 && (
+      {testDataAllowed && adminPersons.length < 5 && (
         <div className="p-4 rounded-2xl bg-[var(--studio-accent-bg)] border border-[var(--studio-accent-border)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
           <div className="flex items-start gap-2.5">
             <Sparkles className="w-5 h-5 text-[var(--studio-icon)] shrink-0 mt-0.5" />

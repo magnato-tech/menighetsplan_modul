@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.46 · **Sist oppdatert:** 2026-10-13
+> **Dokumentversjon:** 4.47 · **Sist oppdatert:** 2026-10-13
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -1268,6 +1268,16 @@ Bestilt av produkteier: administrator vil kunne tømme gruppenes chat, for eksem
 | **Ikke levert her** | Sikkerhetskopi av meldingene før de slettes. Den som vil ta vare på dem, laster ned et datasett først. At en gruppeleder kan nullstille sin egen gruppes chat |
 | **Regler** | Uendret. En ny regelsjekk viser at administrator kan lese og slette alle meldingene, og at en frivillig ikke får lest dem alle |
 | **Prøvd** | 5 sjekker og én regelsjekk i emulatoren. Ikke sett i nettleseren: Database-fanen er ikke med i demoen |
+
+### Testpersoner tilbys ikke i produksjon (13. oktober 2026)
+
+Funnet av produkteier hos første menighet: knappen «Populer testdata (32 personer)» sto øverst i personregisteret, ved siden av «Ny person».
+
+| Område | Levert |
+|:---|:---|
+| **Knappen og boksen** | «Populer testdata (32 personer)» og boksen «Få et fyldig testmiljø med 32 personer» vises bare når appen står i demo under «Driftsmodus» |
+| **I produksjon** | Vises ikke. Det gjelder også når driftsmodusen ikke er kjent |
+| **Prøvd** | Én sjekk |
 
 ---
 
