@@ -180,7 +180,11 @@ export function saveAssignmentChange(taskId: string, change: AssignmentChange, t
       const mark = change.add.nameGroupId
         ? { gatheringId: change.add.gatheringId, personId: change.add.personId, nameGroupId: change.add.nameGroupId }
         : { gatheringId: change.add.gatheringId, personId: change.add.personId };
-      batch.set(doc(db, GATHERING_READERS_COLLECTION, gatheringReaderId(change.add.gatheringId, change.add.personId)), mark);
+      // The mark is sent on its own, and a refusal is not an error. The person very often has the
+      // mark already (they are in the gathering's group, or stand on another task there), and
+      // only an administrator may write over one that exists. Sent together with the answer, that
+      // refusal stopped the whole sending: nobody could take a second task on the same gathering.
+      void setDoc(doc(db, GATHERING_READERS_COLLECTION, gatheringReaderId(change.add.gatheringId, change.add.personId)), mark).catch(() => undefined);
     }
   }
   for (const { id, fields } of change.update ?? []) batch.update(assignmentRef(id), forUpdate(fields));

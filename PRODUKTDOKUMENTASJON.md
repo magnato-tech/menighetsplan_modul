@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.37 · **Sist oppdatert:** 2026-10-13
+> **Dokumentversjon:** 4.38 · **Sist oppdatert:** 2026-10-13
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -1196,6 +1196,19 @@ Bestilt av produkteier: filteret het «Forfall / Trenger vikar», mens kortene d
 | **Rødt valg** | «Mangler / Forfall». Det viser aktivitetene som mangler folk, enten ingen har meldt seg eller noen har meldt forfall |
 | **Gult valg** | «Venter på svar». Det het «Mangler frivillig», men viser aktivitetene der alle er spurt og ikke alle har svart |
 | **Ikke levert her** | Den grønne linjen «Alle oppgaver er dekket for planlagte aktiviteter» vises så lenge ingen har meldt forfall, også når aktiviteter mangler folk. Den er ikke endret |
+
+### Feil rettet: en frivillig kunne ikke ta to oppgaver på samme arrangement (13. oktober 2026)
+
+Funnet hos første menighet da den første frivillige prøvde: den andre oppgaven på samme gudstjeneste ga «Kunne ikke lagre tildelingen».
+
+| Område | Forklaring |
+|:---|:---|
+| **Årsak** | Når noen tar en oppgave, skrives også et lesemerke som lar dem se navnene på arrangementet. Merket fantes fra før for den som alt sto på en oppgave der, eller var med i arrangementets gruppe, og reglene lar bare administrator skrive over et merke som finnes. Merket lå i samme sending som svaret, så nektelsen stoppet hele sendingen |
+| **Hvem det rammet** | Frivillige som tok en oppgave nummer to på samme arrangement, og gruppeledere som spurte en person som alt hadde merket |
+| **Rettet** | Merket sendes for seg, og en nektelse der er ikke en feil. Svaret og oppgavens status lagres som før |
+| **Regler** | Uendret. Rettelsen virker med reglene som er publisert |
+| **Hvorfor testene ikke fant den** | Regelsjekken for å ta en oppgave brukte et arrangement der personen ikke hadde merke fra før. Den er nå utvidet: oppgave på et arrangement der merket finnes, og to oppgaver etter hverandre på samme arrangement |
+| **Prøvd** | Feilen ble gjenskapt i emulatoren før rettelsen, og samme sjekk går gjennom etter. 38 regelsjekker og én ny sjekk i dataleverandøren |
 
 ---
 

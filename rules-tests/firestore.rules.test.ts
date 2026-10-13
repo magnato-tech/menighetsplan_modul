@@ -322,13 +322,42 @@ describe("Et medlem", () => {
     await assertFails(setDoc(doc(db, `assignments/${built.id}`), sanitizeForFirestore(built)));
     const batch = writeBatch(db);
     batch.set(doc(db, `assignments/${built.id}`), sanitizeForFirestore(documentFields(built)));
-    batch.set(doc(db, "gatheringReaders/g-intern_hakon"), { gatheringId: "g-intern", personId: "hakon" });
     batch.update(doc(db, "tasks/task-2"), { status: "confirmed" });
     await assertSucceeds(batch.commit());
+    // The mark that lets him read the other names there, sent on its own
+    await assertSucceeds(setDoc(doc(db, "gatheringReaders/g-intern_hakon"), { gatheringId: "g-intern", personId: "hakon" }));
     await assertSucceeds(setDoc(doc(db, "gatheringAttendances/att-g-intern-hakon"), { gatheringId: "g-intern", personId: "hakon", status: "declined" }));
     await assertSucceeds(setDoc(doc(db, "gatheringAttendances/att-g-apen-hakon"), { gatheringId: "g-apen", personId: "hakon", status: "declined" }));
     // Not for someone else
     await assertFails(setDoc(doc(db, "gatheringAttendances/att-g-apen-ola"), { gatheringId: "g-apen", personId: "ola", status: "attending" }));
+  });
+
+  test("tar en oppgave til på et arrangement de alt står på, eller der gruppen deres har ansvaret", async () => {
+    // The sending the app makes when a volunteer takes a task (saveAssignmentChange). The mark is
+    // not in it: a mark that exists may only be written over by an administrator, and with the
+    // mark in the sending, that refusal stopped the answer too (found at the first congregation
+    // on 13 October 2026, when a volunteer could not take a task).
+    const take = (db: Firestore, taskId: string, gatheringId: string, groupId: string, isPublic: boolean) => {
+      const built = buildAssignment(taskId, "hakon", "confirmed", { personName: "Håkon Tveit", gatheringId, gatheringGroupId: groupId, gatheringPublic: isPublic });
+      const batch = writeBatch(db);
+      batch.set(doc(db, `assignments/${built.id}`), sanitizeForFirestore(documentFields(built)));
+      batch.update(doc(db, `tasks/${taskId}`), { status: "confirmed" });
+      return batch.commit();
+    };
+    const mark = (db: Firestore, gatheringId: string) => setDoc(doc(db, `gatheringReaders/${gatheringId}_hakon`), { gatheringId, personId: "hakon" });
+    // A mark that is there, cannot be written again by the person. That is why it is sent alone.
+    await assertFails(mark(hakon(), "g-apen"));
+    // Håkon has a mark on g-apen already: he is in its group, and is asked for a task there
+    await assertSucceeds(take(hakon(), "task-1", "g-apen", "group-lyd", true));
+    // A gathering he has no mark on: the first task, and then one more
+    await env.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore() as unknown as Firestore;
+      await setDoc(doc(db, "tasks/task-3"), { gatheringId: "g-intern", groupId: "group-intern", title: "Kaffe", status: "open" });
+    });
+    await assertSucceeds(take(hakon(), "task-2", "g-intern", "group-intern", false));
+    await assertSucceeds(mark(hakon(), "g-intern"));
+    await assertSucceeds(take(hakon(), "task-3", "g-intern", "group-intern", false));
+    await assertFails(mark(hakon(), "g-intern"));
   });
 
   test("skriver meldinger i eget navn, og sletter bare sine egne", async () => {

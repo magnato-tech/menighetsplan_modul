@@ -389,6 +389,17 @@ describe("Bemanning", () => {
     expect(data.current.getTaskById("task-1")?.status).toBe("open");
   });
 
+  test("To oppgaver på samme arrangement kan tas av samme person, og lesemerket skrives ved siden av", async () => {
+    const data = await mountProvider();
+    expect(data.current.assignTaskToPerson("task-1", "person-3", "confirmed")).toEqual({ success: true });
+    expect(data.current.assignTaskToPerson("task-2", "person-3", "confirmed")).toEqual({ success: true });
+    await waitFor(() => expect(data.current.getAllAssignmentsForTask("task-1")).toHaveLength(1));
+    await waitFor(() => expect(data.current.getAllAssignmentsForTask("task-2").map((a) => a.personId)).toContain("person-3"));
+    // One mark for the gathering, however many tasks there
+    expect(await stored("gatheringReaders", "gathering-1_person-3")).toEqual({ gatheringId: "gathering-1", personId: "person-3" });
+    expect(getWriteError()).toBeNull();
+  });
+
   test("Mange personer legges inn i én sending, slik en liste fra et annet register kommer", async () => {
     const data = await mountProvider();
     const list = Array.from({ length: 450 }, (_, at) => ({ name: `Person ${at + 1}`, email: at === 0 ? "forste@eksempel.no" : "", birthDate: at === 1 ? "2013-06-05" : undefined, congregationMember: at === 0 }));
