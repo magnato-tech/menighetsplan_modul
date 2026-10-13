@@ -4,6 +4,7 @@ import {
   formatNorwegianDateTime,
   combineDateAndTimeToIso,
   parseIsoToDateAndTime,
+  moveByDays,
   AdminGatheringItem,
 } from "../../../hooks/useAppHooks";
 import {
@@ -16,6 +17,7 @@ import {
   CalendarPlus,
   SlidersHorizontal,
   Repeat,
+  CalendarClock,
   Trash2,
 } from "lucide-react";
 import { StudioData, ShowFeedback } from "../studio";
@@ -23,7 +25,8 @@ import { visibilityOf } from "../../../utils/visibility";
 import { DEFAULT_LOCATION, isWorshipService, locationOf } from "../../../utils/gatherings";
 import { NewGatheringDialog } from "../NewGatheringDialog";
 import { useFirebase } from "../../../context/FirebaseDataContext";
-import { restOfSeries } from "../../../utils/series";
+import { movedRestOfSeries, restOfSeries } from "../../../utils/series";
+import { MoveSeriesDialog } from "../MoveSeriesDialog";
 import { useLevel } from "../../../hooks/useLevel";
 import { defaultGroupId, newGatheringForm, type GatheringFormValues } from "../../../utils/gatheringForm";
 import { hasPlanner } from "../../../utils/level";
@@ -139,6 +142,21 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
       studio.deleteGathering(event.id);
     }
     showFeedback(`${remove.length} arrangementer i serien ble slettet`);
+  };
+
+  // The rest of a series moved to other days, when the rhythm turned out to be a week off.
+  // Everything on the events follows: programme, tasks and the people on them.
+  const [movingFrom, setMovingFrom] = useState<AdminGatheringItem | null>(null);
+  const moveRestOfSeries = (item: AdminGatheringItem, days: number) => {
+    const moved = movedRestOfSeries(
+      adminGatherings.map((other) => other.gathering),
+      item.gathering,
+      days,
+      moveByDays
+    );
+    for (const { id, ...times } of moved) studio.updateGathering(id, times);
+    setMovingFrom(null);
+    showFeedback(`${moved.length} ${moved.length === 1 ? "arrangement" : "arrangementer"} i serien ble flyttet`);
   };
 
   const handleDeleteGathering = (item: AdminGatheringItem) => {
@@ -355,6 +373,17 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
                   {g.seriesId && (
                     <button
                       type="button"
+                      onClick={() => setMovingFrom(item)}
+                      className="px-3 py-1.5 rounded-lg bg-[var(--studio-bg)] hover:bg-[var(--studio-accent-bg)] text-[var(--studio-muted)] hover:text-[var(--studio-text)] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer border border-[var(--studio-border)]"
+                      title="Flytter dette arrangementet og de som kommer etter i serien, like mange dager"
+                    >
+                      <CalendarClock className="w-3.5 h-3.5" />
+                      <span>Flytt resten av serien</span>
+                    </button>
+                  )}
+                  {g.seriesId && (
+                    <button
+                      type="button"
                       onClick={() => handleRemoveRestOfSeries(item)}
                       className="px-3 py-1.5 rounded-lg bg-[var(--studio-bg)] hover:bg-red-950 text-[var(--studio-muted)] hover:text-red-400 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer border border-[var(--studio-border)]"
                       title="Sletter dette arrangementet og de som kommer etter i serien"
@@ -405,6 +434,23 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
 
       {fullForm && (
         <NewGatheringDialog studio={studio} showFeedback={showFeedback} initial={fullForm} onCreated={emptyQuickForm} onClose={() => setFullForm(null)} />
+      )}
+
+      {movingFrom && (
+        <MoveSeriesDialog
+          from={movingFrom.gathering}
+          gatherings={adminGatherings.map((other) => other.gathering)}
+          staffedCount={
+            adminGatherings.filter(
+              (other) =>
+                other.gathering.seriesId === movingFrom.gathering.seriesId &&
+                new Date(other.gathering.startsAt).getTime() >= new Date(movingFrom.gathering.startsAt).getTime() &&
+                other.tasks.some((task) => assignments.some((assignment) => assignment.taskId === task.id))
+            ).length
+          }
+          onMove={(days) => moveRestOfSeries(movingFrom, days)}
+          onClose={() => setMovingFrom(null)}
+        />
       )}
 
       {/* ========================================================= */}

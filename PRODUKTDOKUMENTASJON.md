@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.24 · **Sist oppdatert:** 2026-10-13
+> **Dokumentversjon:** 4.25 · **Sist oppdatert:** 2026-10-13
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -1014,6 +1014,19 @@ Bestilt av produkteier: en husgruppe møtes gjerne i fast rytme, og det skal væ
 | **Regler** | Uendret. En leder oppretter samlinger i sin egen gruppe, som før |
 | **Prøvd** | 28 sjekker av dagene, verter på omgang, hvem som spørres, og skjemaet. Prøvd i demoen: to samlinger opprettet og slettet igjen |
 | **Ikke levert her** | En egen semesterliste på gruppesiden. At en endring kan gjelde «denne og alle senere». Varsel før en samling. At samlingene kommer i hver deltakers egen kalender hos en menighet (det personlige abonnementet trenger en tjener som ikke kjører der) |
+
+### Flytt resten av en serie (13. oktober 2026)
+
+Bestilt av produkteier hos første menighet: gudstjenestene etter jul var lagt på feil uker, og skulle flyttes én uke.
+
+| Område | Levert |
+|:---|:---|
+| **«Flytt resten av serien»** | Knapp på hvert arrangement som er del av en serie, ved siden av «Slett resten av serien» |
+| **Slik brukes den** | Administrator gir arrangementet en ny dato. Det og de som kommer etter i serien, flyttes like mange dager, fram eller tilbake |
+| **Det som følger med** | Klokkeslett, sluttid, program, oppgaver og de som står på dem. Arrangementene før, andre serier og enkeltarrangementer røres ikke |
+| **Vises før noe flyttes** | De nye datoene står i skjemaet, og det sies fra når noen er spurt eller står på en oppgave: de blir stående, på den nye datoen |
+| **Regler** | Uendret |
+| **Prøvd** | 11 sjekker, også over skiftet til sommertid |
 
 ---
 

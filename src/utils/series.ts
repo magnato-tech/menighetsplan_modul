@@ -45,6 +45,33 @@ export function restOfSeries<T extends { id: string; seriesId?: string; startsAt
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
+
+/** The whole days from one calendar day to another: from "2027-01-03" to "2027-01-10" is 7. Null when either is not a day. */
+export function daysBetween(from: string, to: string): number | null {
+  if (!DAY.test(from) || !DAY.test(to)) return null;
+  const days = (Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / DAY_MS;
+  return Number.isFinite(days) ? Math.round(days) : null;
+}
+
+/**
+ * The rest of a series, from one of its events on, moved a number of whole days: what each
+ * event's start and end become. Every event from that one on is moved, also those somebody has
+ * answered for: the people stay on their tasks, on the new day. `move` moves one moment (see
+ * moveByDays in utils/dates.ts).
+ */
+export function movedRestOfSeries<T extends { id: string; seriesId?: string; startsAt: string; endsAt?: string }>(
+  events: readonly T[],
+  from: Pick<T, "seriesId" | "startsAt">,
+  days: number,
+  move: (moment: string, days: number) => string
+): { id: string; startsAt: string; endsAt?: string }[] {
+  if (!from.seriesId || !Number.isFinite(days) || days === 0) return [];
+  const start = new Date(from.startsAt).getTime();
+  return events
+    .filter((event) => event.seriesId === from.seriesId && new Date(event.startsAt).getTime() >= start)
+    .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())
+    .map((event) => ({ id: event.id, startsAt: move(event.startsAt, days), ...(event.endsAt ? { endsAt: move(event.endsAt, days) } : {}) }));
+}
 const WEEKS: Record<Exclude<SeriesFrequency, "monthly">, number> = { weekly: 1, every2: 2, every3: 3, every4: 4 };
 
 const parse = (day: string): number => (DAY.test(day) ? Date.parse(`${day}T00:00:00Z`) : NaN);

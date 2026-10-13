@@ -84,6 +84,18 @@ export function combineDateAndTimeToIso(dateStr: string, timeStr: string): strin
   }
 }
 
+/**
+ * A stored moment moved a number of whole days, at the same time of day for the person looking:
+ * 11:00 stays 11:00, also across a change between summer and winter time. A text that is not a
+ * moment is given back as it is.
+ */
+export function moveByDays(isoString: string, days: number): string {
+  const d = parse(isoString);
+  if (!d || !Number.isFinite(days)) return isoString;
+  d.setDate(d.getDate() + Math.round(days));
+  return d.toISOString();
+}
+
 /** The month a moment falls in for the person looking, as "2026-10". Empty when the text is not a date. */
 export function monthKeyOf(isoString: string): string {
   return parseIsoToDateAndTime(isoString).date.slice(0, 7);
