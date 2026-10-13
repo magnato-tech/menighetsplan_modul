@@ -239,6 +239,8 @@ export interface CmsSettings {
   heroImageUrl?: string;
   /** The congregation's logo, kept as text in the settings (see utils/logo.ts). Shown in place of the name written out. */
   logoUrl?: string;
+  /** The logo is kept off the top of the website, and the name is written out there. It still stands on the sign-in page. */
+  hideLogoInMenu?: boolean;
   address: string;
   phone: string;
   email: string;

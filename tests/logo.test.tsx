@@ -3,7 +3,7 @@ import React from "react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { LOGO_MAX_BYTES, logoFileError, logoOf } from "../src/utils/logo";
+import { LOGO_MAX_BYTES, logoFileError, logoOf, menuLogoOf } from "../src/utils/logo";
 
 // A tiny picture as it is kept in the settings
 const LOGO = "data:image/png;base64,iVBORw0KGgo=";
@@ -81,6 +81,25 @@ describe("Logoen på nettsiden og innloggingssiden", () => {
     expect(screen.queryByText("Et sted å høre til")).toBeNull();
   });
 
+  test("logoen kan tas av toppen av nettsiden: da står navnet skrevet ut der, og logoen står på innloggingssiden", () => {
+    cms.settings.logoUrl = LOGO;
+    cms.settings.hideLogoInMenu = true;
+    expect(menuLogoOf(cms.settings)).toBeUndefined();
+    expect(menuLogoOf({ logoUrl: LOGO })).toBe(LOGO);
+    expect(menuLogoOf({ logoUrl: LOGO, hideLogoInMenu: false })).toBe(LOGO);
+
+    inRouter(<PublicNavbar />);
+    expect(screen.queryByRole("img", { name: "Sentrumskirken" })).toBeNull();
+    // The congregation's own name, once, and not the name of the product
+    expect(screen.getAllByText("Sentrumskirken")).toHaveLength(1);
+    expect(screen.queryByText("Menighetsplan")).toBeNull();
+    expect(screen.getByText("Et sted å høre til")).toBeTruthy();
+    cleanup();
+
+    inRouter(<SignInPage />, "/logg-inn");
+    expect(screen.getByRole("img", { name: "Sentrumskirken" }).getAttribute("src")).toBe(LOGO);
+  });
+
   test("innloggingssiden viser logoen når det er en, og ellers navnet", () => {
     inRouter(<SignInPage />, "/logg-inn");
     expect(screen.getByText("Sentrumskirken")).toBeTruthy();
@@ -127,6 +146,24 @@ describe("Logoen i innstillingene", () => {
     await waitFor(() => expect(cms.saveSettings).toHaveBeenCalledTimes(1));
     expect(cms.saveSettings.mock.calls[0][0].logoUrl).toMatch(/^data:image\/png;base64,/);
     expect(cms.saveSettings.mock.calls[0][0].churchName).toBe("Sentrumskirken");
+  });
+
+  test("valget om logoen øverst på nettsiden står bare når det er en logo, er på til det tas av, og lagres", async () => {
+    inRouter(<SiteSettingsTab />);
+    expect(screen.queryByLabelText("Vis logoen øverst på nettsiden")).toBeNull();
+    cleanup();
+
+    cms.settings.logoUrl = LOGO;
+    inRouter(<SiteSettingsTab />);
+    const choice = screen.getByLabelText("Vis logoen øverst på nettsiden") as HTMLInputElement;
+    expect(choice.checked).toBe(true);
+    fireEvent.click(choice);
+    expect(choice.checked).toBe(false);
+    expect(screen.getByText("Navnet står skrevet ut øverst på nettsiden. Logoen vises på innloggingssiden.")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Lagre alle innstillinger" }));
+    await waitFor(() => expect(cms.saveSettings).toHaveBeenCalledTimes(1));
+    expect(cms.saveSettings.mock.calls[0][0]).toMatchObject({ logoUrl: LOGO, hideLogoInMenu: true });
   });
 
   test("en fil som ikke kan være logo, sies fra om, og logoen som var, står", async () => {

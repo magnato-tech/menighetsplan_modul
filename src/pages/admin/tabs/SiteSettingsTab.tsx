@@ -113,7 +113,7 @@ export const SiteSettingsTab: React.FC = () => {
           <div className="space-y-2 text-xs">
             <p className="font-semibold text-[var(--studio-muted)]">Logo</p>
             <p className="text-[var(--studio-muted)]">
-              Vises øverst på nettsiden og på innloggingssiden, i stedet for navnet. Bruk en liggende logo i PNG eller SVG, på lys bakgrunn.
+              Vises på innloggingssiden, og øverst på nettsiden når du vil, i stedet for navnet. Bruk en liggende logo i PNG eller SVG, på lys bakgrunn.
             </p>
             {logo && (
               <div className="inline-flex items-center rounded-xl bg-white border border-[var(--studio-border)] px-4 py-3">
@@ -144,6 +144,19 @@ export const SiteSettingsTab: React.FC = () => {
                 </button>
               )}
             </div>
+            {logo && (
+              <label className="flex items-center gap-2 text-[var(--studio-text)] cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={settingsForm.hideLogoInMenu !== true}
+                  onChange={(event) => setSettingsForm({ ...settingsForm, hideLogoInMenu: event.target.checked ? undefined : true })}
+                />
+                <span>Vis logoen øverst på nettsiden</span>
+              </label>
+            )}
+            {logo && settingsForm.hideLogoInMenu === true && (
+              <p className="text-[var(--studio-muted)]">Navnet står skrevet ut øverst på nettsiden. Logoen vises på innloggingssiden.</p>
+            )}
             {logoError && (
               <p role="alert" className="flex items-center gap-1.5 font-semibold text-rose-500">
                 <AlertCircle className="w-4 h-4 shrink-0" aria-hidden="true" />

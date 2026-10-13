@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.35 · **Sist oppdatert:** 2026-10-13
+> **Dokumentversjon:** 4.36 · **Sist oppdatert:** 2026-10-13
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -1175,6 +1175,17 @@ Bestilt av produkteier: en person kunne bare legges i en gruppe fra gruppens sid
 | **«Ta ut»** | Ved hver gruppe personen er deltaker i. Leder og nestleder byttes på gruppens side, der den neste velges |
 | **Ikke i menyen** | Gruppen som bare holder kalenderen |
 | **Prøvd** | 4 sjekker. Sett i nettleseren med demoens oppdiktede personer og nettet slått av: menyen viste gruppene sort for sort, en person ble lagt til og tatt ut igjen, og tallet i overskriften fulgte med |
+
+### Logoen kan tas av toppen av nettsiden (13. oktober 2026)
+
+Bestilt av produkteier: logoen sto på en lys plate over forsidebildet og brøt med stilen, og mange menigheter har ikke logoen øverst på forsiden.
+
+| Område | Levert |
+|:---|:---|
+| **«Vis logoen øverst på nettsiden»** | Avkryssing under logoen i Nettside-innstillinger. Den står på til den tas av, så ingen menighet får noe endret uten å velge det |
+| **Uten haken** | Menighetens navn står skrevet ut øverst på nettsiden, med slagordet under. Logoen står fortsatt på innloggingssiden |
+| **Navnet, ikke produktet** | Når logoen er tatt av toppen, står menighetens eget navn der, ikke «Menighetsplan» |
+| **Prøvd** | 2 nye sjekker. Sett i nettleseren med nettet slått av: uten haken sto «Lillesand Misjonskirke» øverst uten bilde, og innloggingssiden hadde logoen |
 
 ---
 

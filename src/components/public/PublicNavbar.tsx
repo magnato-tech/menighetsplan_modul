@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useCms } from "../../context/CmsContext";
 import { useFirebase } from "../../context/FirebaseDataContext";
 import { buildPublicMenu, pageUrl } from "../../utils/menu";
-import { logoOf } from "../../utils/logo";
+import { menuLogoOf } from "../../utils/logo";
 import {
   Menu,
   X,
@@ -65,7 +65,9 @@ export const PublicNavbar: React.FC = () => {
     [pages, location.pathname]
   );
 
-  const logo = logoOf(settings);
+  const logo = menuLogoOf(settings);
+  // A congregation that keeps its logo off the top, has its own name written there, not the product's
+  const nameInPlaceOfLogo = settings.hideLogoInMenu === true && settings.churchName.trim() !== "";
 
   return (
     <header
@@ -92,11 +94,13 @@ export const PublicNavbar: React.FC = () => {
             <div>
               <div className="flex items-center gap-2">
                 <span className={`text-lg font-black tracking-tight transition-colors ${overlay ? "text-white" : "text-slate-900 group-hover:text-primary-950"}`}>
-                  {settings.appName || "Menighetsplan"}
+                  {nameInPlaceOfLogo ? settings.churchName : settings.appName || "Menighetsplan"}
                 </span>
+                {!nameInPlaceOfLogo && (
                 <span className="hidden md:inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-primary-50 text-primary-700 border border-primary-200/60">
                   {settings.churchName}
                 </span>
+                )}
               </div>
               {settings.tagline && (
                 <p className={`text-xs hidden sm:block font-medium ${overlay ? "text-stone-200" : "text-stone-500"}`}>

@@ -1,5 +1,7 @@
 // The congregation's logo: one picture, shown at the top of the website and on the sign-in page
-// in place of the name written out.
+// in place of the name written out. The congregation can keep it off the top of the website,
+// where it stands on a light plate over the front page's picture, and still have it on the
+// sign-in page.
 //
 // It is kept as text inside the settings document (a data address), so it follows the settings
 // wherever they go: into a dataset, and to every visitor together with the name of the
@@ -23,4 +25,9 @@ export function logoFileError(file: { type: string; size: number }): string | nu
 export function logoOf(settings: { logoUrl?: string }): string | undefined {
   const url = settings.logoUrl?.trim();
   return url && (url.startsWith("data:image/") || url.startsWith("https://")) ? url : undefined;
+}
+
+/** The logo at the top of the website: the logo, unless the congregation has taken it off there. */
+export function menuLogoOf(settings: { logoUrl?: string; hideLogoInMenu?: boolean }): string | undefined {
+  return settings.hideLogoInMenu === true ? undefined : logoOf(settings);
 }
