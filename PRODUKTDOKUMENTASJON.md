@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.36 · **Sist oppdatert:** 2026-10-13
+> **Dokumentversjon:** 4.37 · **Sist oppdatert:** 2026-10-13
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -1186,6 +1186,16 @@ Bestilt av produkteier: logoen sto på en lys plate over forsidebildet og brøt 
 | **Uten haken** | Menighetens navn står skrevet ut øverst på nettsiden, med slagordet under. Logoen står fortsatt på innloggingssiden |
 | **Navnet, ikke produktet** | Når logoen er tatt av toppen, står menighetens eget navn der, ikke «Menighetsplan» |
 | **Prøvd** | 2 nye sjekker. Sett i nettleseren med nettet slått av: uten haken sto «Lillesand Misjonskirke» øverst uten bilde, og innloggingssiden hadde logoen |
+
+### Samme ord i filteret som på kortene hos gruppelederen (13. oktober 2026)
+
+Bestilt av produkteier: filteret het «Forfall / Trenger vikar», mens kortene det viste, sto med «Mangler».
+
+| Område | Levert |
+|:---|:---|
+| **Rødt valg** | «Mangler / Forfall». Det viser aktivitetene som mangler folk, enten ingen har meldt seg eller noen har meldt forfall |
+| **Gult valg** | «Venter på svar». Det het «Mangler frivillig», men viser aktivitetene der alle er spurt og ikke alle har svart |
+| **Ikke levert her** | Den grønne linjen «Alle oppgaver er dekket for planlagte aktiviteter» vises så lenge ingen har meldt forfall, også når aktiviteter mangler folk. Den er ikke endret |
 
 ---
 

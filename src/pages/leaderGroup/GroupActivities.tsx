@@ -208,8 +208,9 @@ export const GroupActivities: React.FC<GroupActivitiesProps> = ({ detail, showTo
               className="bg-transparent text-xs font-bold text-slate-800 focus:outline-none cursor-pointer pr-1"
             >
               <option value="all">Alle statuser</option>
-              <option value="red">🔴 Forfall / Trenger vikar</option>
-              <option value="yellow">🟡 Mangler frivillig</option>
+              {/* The same words as on the cards: red is an activity that lacks people, also after someone has pulled out. Yellow is one where everybody is asked and not all have answered (see getStaffingStatus). */}
+              <option value="red">🔴 Mangler / Forfall</option>
+              <option value="yellow">🟡 Venter på svar</option>
               <option value="green">🟢 Fullt dekket</option>
             </select>
           </div>
