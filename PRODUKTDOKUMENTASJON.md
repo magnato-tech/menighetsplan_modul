@@ -1559,6 +1559,14 @@ Administrator er det samme som den som skal se registeret. En redaktør som endr
 
 * Det siste kortet på en fane skal kunne scrolles helt fram over menylinjen nederst.
 
+**Innloggingen når e-postadressen ikke finnes i registeret (`SignInPage.tsx`, `notInRegister`)**
+
+* I dag står det «Du er logget inn som …, men står ikke i personregisteret til …». Det skal ikke stå at man er logget inn når man ikke kommer inn.
+* I stedet står det kort: «Vi fant deg ikke. Send en e-post til post@lillesandmisjonskirke.no og be om hjelp til å logge inn.» Adressen er en lenke (`mailto:`), gjerne med emnet «Hjelp til å logge inn» ferdig utfylt.
+* Adressen hentes fra menighetens innstillinger (`settings.email`, den samme som står i bunnen av nettsiden), aldri fra koden. Hos Lillesand Misjonskirke skal den være post@lillesandmisjonskirke.no. Mangler adressen i innstillingene, står det «Ta kontakt med menigheten og be om hjelp til å logge inn».
+* Under står én knapp: «Prøv en annen e-postadresse», som logger ut kontoen og viser innloggingen på nytt.
+* Det samme gjelder når flere personer har samme adresse (`severalMatches`): samme tekst og samme knapp. Brukeren trenger ikke vite årsaken.
+
 **Oppdater også kapittel 3.** Tabellen og avsnittet «Mulig funksjon: Min kalender» sier at kalenderen ikke er bygget, men den finnes som fane på Min side. Beskriv Min side slik den blir etter dette.
 
 ### Fase 1 – Trygg i drift *(trinn 2 og 4 over)*
