@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.34 · **Sist oppdatert:** 2026-10-13
+> **Dokumentversjon:** 4.35 · **Sist oppdatert:** 2026-10-13
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -1164,6 +1164,17 @@ Bestilt av produkteier: en gruppe kunne ikke slettes fra admin, og en gruppe som
 | **Ikke levert her** | Å flytte arrangementer og oppgaver til en annen gruppe i samme trykk |
 | **Regler** | Uendret. En ny regelsjekk viser at administrator kan gjøre sendingen, og at gruppens leder ikke kan |
 | **Prøvd** | 8 sjekker og én regelsjekk i emulatoren. Sett i nettleseren mot demoens data med nettet slått av: en gruppe med arrangementer ble nektet med riktige tall, en gruppe uten ble slettet og rollen mistet teamet, og etter ny lasting sto alt som før i databasen |
+
+### Legg en person i en gruppe fra personkortet (13. oktober 2026)
+
+Bestilt av produkteier: en person kunne bare legges i en gruppe fra gruppens side.
+
+| Område | Levert |
+|:---|:---|
+| **«Legg til i gruppe»** | Nedtrekksmeny i boksen «Gruppetilhørighet» på personkortet, med gruppene personen ikke er med i. Tjenestegruppene står først, så husgruppene og de andre, hver sort etter navn |
+| **«Ta ut»** | Ved hver gruppe personen er deltaker i. Leder og nestleder byttes på gruppens side, der den neste velges |
+| **Ikke i menyen** | Gruppen som bare holder kalenderen |
+| **Prøvd** | 4 sjekker. Sett i nettleseren med demoens oppdiktede personer og nettet slått av: menyen viste gruppene sort for sort, en person ble lagt til og tatt ut igjen, og tallet i overskriften fulgte med |
 
 ---
 

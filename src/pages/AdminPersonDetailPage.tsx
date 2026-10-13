@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { isServiceGroup } from "../utils/personDirectory";
+import { useFirebase } from "../context/FirebaseDataContext";
+import { groupsToJoin } from "../utils/groupChoice";
 import { Link } from "react-router-dom";
 import { useAdminDetailRoute } from "../utils/adminStudioRoutes";
 import { useAdminPersonDetail } from "../hooks/useAppHooks";
@@ -105,6 +107,25 @@ export const AdminPersonDetailPage: React.FC = () => {
   }, [person]);
 
   const showFeedback = (text: string, type: "success" | "error" = "success") => setFeedback({ text, type });
+
+  // Putting the person into a group, and taking them out, from the person's own card
+  const { groups: allGroups, gatherings: allGatherings, addGroupMember, removeGroupMember } = useFirebase();
+  const [groupToJoin, setGroupToJoin] = useState("");
+  const joinChoices = person ? groupsToJoin(allGroups, allGatherings, person.id) : [];
+  const handleJoinGroup = () => {
+    const chosen = allGroups.find((candidate) => candidate.id === groupToJoin);
+    if (!person || !chosen) return;
+    const result = addGroupMember(chosen.id, person.id);
+    setGroupToJoin("");
+    if (result.success) showFeedback(`${person.name} er lagt til i ${chosen.name}.`);
+    else showFeedback(result.error || "Kunne ikke legge personen til i gruppen", "error");
+  };
+  const handleLeaveGroup = (groupId: string, groupName: string) => {
+    if (!person) return;
+    const result = removeGroupMember(groupId, person.id);
+    if (result.success) showFeedback(`${person.name} er tatt ut av ${groupName}.`);
+    else showFeedback(result.error || "Kunne ikke ta personen ut av gruppen", "error");
+  };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -729,14 +750,56 @@ export const AdminPersonDetailPage: React.FC = () => {
                         </span>
                       )}
                       {!isLeader && !isDeputy && (
-                        <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-slate-200 text-[var(--studio-text)]">
-                          Deltaker
-                        </span>
+                        <>
+                          <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-slate-200 text-[var(--studio-text)]">
+                            Deltaker
+                          </span>
+                          {/* A leader or deputy is changed on the group's own page, where the next one is chosen */}
+                          <button
+                            type="button"
+                            onClick={() => handleLeaveGroup(group.id, group.name)}
+                            aria-label={`Ta ut av ${group.name}`}
+                            className="text-[10px] font-bold text-red-700 hover:text-red-900 cursor-pointer"
+                          >
+                            Ta ut
+                          </button>
+                        </>
                       )}
                     </div>
                   </div>
                 );
               })}
+            </div>
+          )}
+
+          {joinChoices.length > 0 && (
+            <div className="flex flex-col sm:flex-row gap-2 pt-1">
+              <select
+                id="person-join-group"
+                aria-label="Legg til i gruppe"
+                value={groupToJoin}
+                onChange={(event) => setGroupToJoin(event.target.value)}
+                className={`${studioDetailInput} sm:flex-1`}
+              >
+                <option value="">Legg til i gruppe …</option>
+                {joinChoices.map((choice) => (
+                  <optgroup key={choice.label} label={choice.label}>
+                    {choice.groups.map((candidate) => (
+                      <option key={candidate.id} value={candidate.id}>
+                        {candidate.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={handleJoinGroup}
+                disabled={groupToJoin === ""}
+                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold cursor-pointer shrink-0"
+              >
+                Legg til
+              </button>
             </div>
           )}
         </section>
