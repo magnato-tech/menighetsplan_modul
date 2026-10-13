@@ -34,19 +34,16 @@ export const AttentionSection: React.FC<AttentionSectionProps> = ({ page, onShow
             <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-200/90 text-amber-900 px-2.5 py-0.5 rounded-md">
               Dette trenger din handling
             </span>
+            {/* Only the number: a long list is not made heavier by being spelled out */}
             <span className="text-xs font-black bg-amber-800 text-white px-2.5 py-0.5 rounded-full">
-              {attentionItems.length} saker
+              {attentionItems.length}
+              <span className="sr-only"> saker</span>
             </span>
           </div>
 
-          <div>
-            <h3 className="text-sm font-bold text-slate-900">
-              {attentionItems.length} saker venter på deg
-            </h3>
-            <p className="text-xs text-slate-600 mt-0.5">
-              Du har forespørsler, ubesvarte innkallinger eller ledige oppgaver i dine grupper.
-            </p>
-          </div>
+          <p className="text-xs text-slate-600">
+            Du har forespørsler, ubesvarte innkallinger eller ledige oppgaver i dine grupper.
+          </p>
 
           <button
             type="button"

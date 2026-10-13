@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.41 · **Sist oppdatert:** 2026-10-13
+> **Dokumentversjon:** 4.42 · **Sist oppdatert:** 2026-10-13
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -1249,6 +1249,7 @@ Bestilt av produkteier: en som er med i mange grupper, fikk 68 saker i én liste
 | **Rolle, ikke gruppe** | Produkteier valgte det: noen er interessert i bare én rolle i en gruppe. En oppgave uten rolle står med sin egen tittel |
 | **Overskriften** | Viser «N av M» når listen er snevret inn |
 | **Vises ikke** | Når listen bare har én rolle, er det ingenting å velge mellom |
+| **Boksen på Min side** | Med tre saker eller flere står bare tallet oppe til høyre. Overskriften «N saker venter på deg» er tatt ut: den ble for voldsom med mange saker |
 | **Prøvd** | 5 sjekker. Sett i nettleseren i telefonbredde med demoens oppdiktede personer: seks tagger, to trykket inn, og listen viste de to |
 
 ---
