@@ -169,14 +169,20 @@ export function onDay(values: GatheringFormValues, day: string): GatheringFormVa
   return { ...values, date: day, endDate: new Date(dayNumber(day) + length).toISOString().slice(0, 10) };
 }
 
-type GroupLike = { id: string; memberIds?: string[]; leaderIds?: string[] };
+type GroupLike = { id: string; memberIds?: string[]; leaderIds?: string[]; deputyLeaderIds?: string[] };
 
 /**
- * The group a new event belongs to before anyone has chosen one. With the planner it is the
- * first group. Without it nobody chooses, and the event goes to the group that only holds the
- * calendar (one with no members and no leaders), or to the first group when there is no such.
+ * The group a new event belongs to before anyone has chosen one: the group that only holds the
+ * calendar, so that no group is made responsible for an event by standing first in a list. That
+ * group has no members and no leaders. A service group nobody has been put in yet, looks the
+ * same, so of several the one with the most events is taken. Where there is no such group, the
+ * event goes to the first group.
  */
-export function defaultGroupId(groups: readonly GroupLike[], withPlanner: boolean): string {
-  const calendar = withPlanner ? undefined : groups.find((group) => !group.memberIds?.length && !group.leaderIds?.length);
-  return (calendar ?? groups[0])?.id ?? "";
+export function defaultGroupId(groups: readonly GroupLike[], gatherings: readonly { groupId: string }[] = []): string {
+  const eventsOf = (group: GroupLike) => gatherings.filter((gathering) => gathering.groupId === group.id).length;
+  const holdingOnlyTheCalendar = groups
+    .filter((group) => !group.memberIds?.length && !group.leaderIds?.length && !group.deputyLeaderIds?.length)
+    .map((group) => ({ group, events: eventsOf(group) }))
+    .sort((a, b) => b.events - a.events);
+  return (holdingOnlyTheCalendar[0]?.group ?? groups[0])?.id ?? "";
 }

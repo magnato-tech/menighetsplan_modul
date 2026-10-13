@@ -229,11 +229,10 @@ const arrangementer: HelpArticle = {
   formal: "Legge inn en samling og åpne kjøreplanen for oppgaver den dagen.",
   hvor: "Sidemeny, Arrangementer & Bemanning, Arrangementer. Overskrift: Gudstjenester & Møter. Kjøreplan merkes Kjøreplan. Tilbake-lenke: Tilbake til arrangementer.",
   steg: [
-    "Under Opprett ny samling: skriv tittel, dato og klokkeslett. Tema er valgfritt.",
-    "Velg Ansvarlig gruppe.",
+    "Under Opprett ny samling: skriv tittel, dato og klokkeslett. Tema og sted er valgfritt. Står stedet tomt, brukes menighetens faste sted.",
     "Huk av Dette er en gudstjeneste hvis det gjelder.",
     "Trykk Legg til i planleggeren.",
-    "Trenger arrangementet mer enn dette, trykk Flere valg. Da åpnes hele skjemaet, med det du har skrevet: sluttid, slutt en annen dag, sted, bibeltekst og hvem som ser arrangementet.",
+    "Trenger arrangementet mer enn dette, trykk Flere valg. Da åpnes hele skjemaet, med det du har skrevet: sluttid, slutt en annen dag, bibeltekst, ansvarlig gruppe og hvem som ser arrangementet. Et arrangement ligger i kalenderen uten ansvarlig gruppe til du velger en der.",
     "Start fra en mal i det store skjemaet fyller ut skjemaet, og arrangementet får malens program og oppgaver. På et arrangement som allerede finnes bruker du Hent fra mal i kjøreplanen. Rediger malen (penn på malen, eller Rediger malen før du oppretter) åpner malen før arrangementet lages. Malene lages under Maler i menyen, eller med Lag mal på et arrangement som alt er satt opp.",
     "Gjenta som serie: velg hvor ofte og siste dato. Dagene vises med hake, og en dag kan tas ut før serien opprettes. Flytt resten av serien står på hvert arrangement i en serie. Arrangementer slettes ett om gangen: står det folk på oppgavene, kommer en advarsel som sier hvem, og ett trykk tar alle av og sletter arrangementet.",
     "For å gjenta et arrangement: åpne neste arrangement, sett ny dato, og bekreft. Oppgavene kopieres uten personer.",
@@ -242,7 +241,7 @@ const arrangementer: HelpArticle = {
   knapper:
     "Plassholder tittel: «Tittel, f.eks. Søndagsgudstjeneste & dåp». Plassholder tema: «Valgfritt tema...». Tom gruppe: «Ingen grupper finnes ennå». Knapp: Legg til i planleggeren.",
   etterLagring:
-    "«Ny samling opprettet og synkronisert til kalenderen!» Ved kopi: «Nytt arrangement opprettet for [dato] med [antall] oppgaver klonet!» «Tittel og dato må fylles ut». «Opprett en gruppe først. En samling må ha en ansvarlig gruppe.»",
+    "«Ny samling opprettet og synkronisert til kalenderen!» Ved kopi: «Nytt arrangement opprettet for [dato] med [antall] oppgaver klonet!» «Tittel og dato må fylles ut». «Opprett en gruppe først. Arrangementene må ha en gruppe å ligge i.»",
 };
 
 const oppgaver: HelpArticle = {

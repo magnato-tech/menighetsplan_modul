@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.31 · **Sist oppdatert:** 2026-10-13
+> **Dokumentversjon:** 4.32 · **Sist oppdatert:** 2026-10-13
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -138,7 +138,7 @@ Adminpanelet ligger på `/admin` og har én meny med to deler. Hver fane har sin
 | Fane | Hva administratoren gjør | Status |
 |---|---|---|
 | **Oversikt** | Ser nøkkeltall og hva som haster | Levert |
-| **Arrangementer** | Oppretter, endrer og avlyser samlinger. Det raske skjemaet tar tittel, dato, klokkeslett og tema. «Flere valg» åpner det store skjemaet, som også brukes ved redigering: slutt (også en annen dag), sted, bibeltekst, ansvarlig gruppe, gudstjeneste og synlighet. «Lag neste arrangement» kopierer oppgavene til en ny dato | Levert. Mal og serie i det store skjemaet er prøveutgaver (kapittel 14) |
+| **Arrangementer** | Oppretter, endrer og avlyser samlinger. Det raske skjemaet tar tittel, dato, klokkeslett, tema og sted, og gjør ingen gruppe ansvarlig: arrangementet legges i kalenderen. «Flere valg» åpner det store skjemaet, som også brukes ved redigering: slutt (også en annen dag), sted, bibeltekst, ansvarlig gruppe (kalenderen til en annen velges), gudstjeneste og synlighet. «Lag neste arrangement» kopierer oppgavene til en ny dato | Levert. Mal og serie i det store skjemaet er prøveutgaver (kapittel 14) |
 | **Maler** | Holder malene for arrangementer som gjentas: tid, sted, bilde og tekst, program med roller, og oppgavene som skal bemannes. Legger inn standardmalen for gudstjeneste, og planlegger en serie fra en mal | Levert 12. oktober |
 | **Trenger oppfølging** | Ser ubesatte oppgaver og akutte forfall på tvers av samlinger. Tildeler, forespør og åpner purretekst | Levert |
 | **Grupper & husfellesskap** | Oppretter grupper, setter leder og nestleder, kategori, møteplan og om gruppen vises på nettsiden | Levert |
@@ -1120,6 +1120,20 @@ Bestilt av produkteier: rollene hos første menighet var lagt inn uten instruks.
 | **Hva som skjer** | Rollene som mangler instruks, får standardinstruksen. Skjermen sier hvilke roller det gjelder før noe gjøres |
 | **Røres ikke** | Roller som alt har en instruks, og roller standardsettet ikke kjenner. Teksten kan endres etterpå, rolle for rolle |
 | **Prøvd** | 2 sjekker |
+
+### Sted i det raske skjemaet, og ingen ansvarlig gruppe som forslag (13. oktober 2026)
+
+Bestilt av produkteier: det er ikke alltid en gruppe som har ansvaret for et helt arrangement, og bemanningen løses oppgave for oppgave i kjøreplanen. Det raske skjemaet foreslo likevel første gruppe i listen som ansvarlig.
+
+| Område | Levert |
+|:---|:---|
+| **Det raske skjemaet** | «Sted» står der «Ansvarlig gruppe» sto. Står feltet tomt, brukes menighetens faste sted |
+| **Ingen gruppe gjøres ansvarlig** | Et nytt arrangement legges i gruppen som bare holder kalenderen, også på Menighetsplan. Før gikk det til første gruppe i listen |
+| **Det store skjemaet** | «Ansvarlig gruppe» står der fortsatt, og viser kalenderen til en annen gruppe velges. Det samme gjelder et arrangement som planlegges fra en mal |
+| **Hvilken gruppe som holder kalenderen** | Den uten deltakere, leder og nestleder. Er det flere slike (en tjenestegruppe ingen er lagt i ennå), tas den med flest arrangementer. Finnes ingen, går arrangementet til første gruppe, som før |
+| **Følge** | Et arrangement i kalenderen kan bare administrator endre. Gruppeledere bemanner egne oppgaver som før |
+| **Ikke levert her** | At en enkeltperson kan stå som ansvarlig for et arrangement. Løsningen har ikke felt for det |
+| **Prøvd** | 4 sjekker |
 
 ---
 

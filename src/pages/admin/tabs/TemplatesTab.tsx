@@ -171,7 +171,7 @@ export const TemplatesTab: React.FC<TemplatesTabProps> = ({ studio, showFeedback
         <NewGatheringDialog
           studio={studio}
           showFeedback={showFeedback}
-          initial={formValuesFromTemplate(planning, newGatheringForm({ groupId: defaultGroupId(groups, withPlanner) }))}
+          initial={formValuesFromTemplate(planning, newGatheringForm({ groupId: defaultGroupId(groups, studio.adminGatherings.map((item) => item.gathering)) }))}
           initialTemplateId={planning.id}
           initialRepeat
           onClose={() => setPlanning(null)}

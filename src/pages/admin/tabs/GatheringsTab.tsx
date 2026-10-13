@@ -32,9 +32,7 @@ import { DeleteGatheringDialog, type StaffedTask } from "../DeleteGatheringDialo
 import { MoveSeriesDialog } from "../MoveSeriesDialog";
 import { GatheringsTable } from "./gatherings/GatheringsTable";
 import { nextGatheringSort, sortGatherings, type GatheringSortDirection, type GatheringSortKey } from "../../../utils/gatheringList";
-import { useLevel } from "../../../hooks/useLevel";
 import { defaultGroupId, newGatheringForm, type GatheringFormValues } from "../../../utils/gatheringForm";
-import { hasPlanner } from "../../../utils/level";
 
 interface GatheringsTabProps {
   studio: StudioData;
@@ -99,13 +97,12 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
   const [newGatheringDate, setNewGatheringDate] = useState("");
   const [newGatheringTime, setNewGatheringTime] = useState("11:00");
   const [newGatheringTheme, setNewGatheringTheme] = useState("");
-  const [newGatheringGroupId, setNewGatheringGroupId] = useState("");
+  const [newGatheringLocation, setNewGatheringLocation] = useState("");
   const [newGatheringIsWorship, setNewGatheringIsWorship] = useState(true);
-  // Every gathering has a responsible group. One is chosen until the admin picks another, and on
-  // the level without the planner nobody picks: the event goes to the group that holds the calendar.
-  const withPlanner = hasPlanner(useLevel());
+  // An event is not handed to a group here. It goes to the group that holds the calendar, and who
+  // does what, is settled task by task on the run sheet. The full form can still name a group.
   const groups = adminGroups.map(({ group }) => group);
-  const responsibleGroupId = (withPlanner && newGatheringGroupId) || defaultGroupId(groups, withPlanner);
+  const responsibleGroupId = defaultGroupId(groups, adminGatherings.map((item) => item.gathering));
 
   // The full form, opened with what has been written in the quick one
   const [fullForm, setFullForm] = useState<GatheringFormValues | null>(null);
@@ -116,6 +113,7 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
         date: newGatheringDate,
         time: newGatheringTime,
         theme: newGatheringTheme,
+        location: newGatheringLocation,
         groupId: responsibleGroupId,
         isGudstjeneste: newGatheringIsWorship,
       })
@@ -124,6 +122,7 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
     setNewGatheringTitle("");
     setNewGatheringDate("");
     setNewGatheringTheme("");
+    setNewGatheringLocation("");
   };
 
   const { assignments, deleteGatheringWithStaffing, getPersonById } = useFirebase();
@@ -202,7 +201,7 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
       return;
     }
     if (!responsibleGroupId) {
-      showFeedback("Opprett en gruppe først. En samling må ha en ansvarlig gruppe.", "error");
+      showFeedback("Opprett en gruppe først. Arrangementene må ha en gruppe å ligge i.", "error");
       return;
     }
 
@@ -212,6 +211,7 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
       groupId: responsibleGroupId,
       startsAt: iso,
       type: "arrangement",
+      location: newGatheringLocation.trim() || undefined,
       theme: newGatheringTheme.trim() || undefined,
       isGudstjeneste: newGatheringIsWorship,
     });
@@ -219,6 +219,7 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
     setNewGatheringTitle("");
     setNewGatheringDate("");
     setNewGatheringTheme("");
+    setNewGatheringLocation("");
     showFeedback("Ny samling opprettet og synkronisert til kalenderen!");
   };
 
@@ -280,23 +281,16 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
                 className="w-full px-3 py-2 rounded-xl bg-[var(--studio-input)] border border-[var(--studio-border)] text-[var(--studio-input-text)]"
               />
             </div>
-            {withPlanner && (
             <div className="sm:col-span-2">
-              <select
-                value={responsibleGroupId}
-                onChange={(e) => setNewGatheringGroupId(e.target.value)}
-                aria-label="Ansvarlig gruppe"
+              <input
+                type="text"
+                value={newGatheringLocation}
+                onChange={(e) => setNewGatheringLocation(e.target.value)}
+                aria-label="Sted"
+                placeholder={`Sted (${DEFAULT_LOCATION} når feltet står tomt)`}
                 className="w-full px-3 py-2 rounded-xl bg-[var(--studio-input)] border border-[var(--studio-border)] text-[var(--studio-input-text)]"
-              >
-                {adminGroups.length === 0 && <option value="">Ingen grupper finnes ennå</option>}
-                {adminGroups.map(({ group }) => (
-                  <option key={group.id} value={group.id}>
-                    Ansvarlig gruppe: {group.name}
-                  </option>
-                ))}
-              </select>
+              />
             </div>
-            )}
           </div>
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1">
             <label className="flex items-center gap-2 text-xs text-[var(--studio-muted)] cursor-pointer">

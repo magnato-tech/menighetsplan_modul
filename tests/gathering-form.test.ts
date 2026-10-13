@@ -201,17 +201,20 @@ describe("Gruppen et nytt arrangement hører til før noen har valgt", () => {
     { id: "kalender", memberIds: [], leaderIds: [] },
   ];
 
-  test("med planleggeren er det den første gruppen", () => {
-    expect(defaultGroupId(groups, true)).toBe("lovsang");
+  test("det er gruppen som bare holder kalenderen, ikke den som står først, og ellers den første", () => {
+    expect(defaultGroupId(groups)).toBe("kalender");
+    expect(defaultGroupId([groups[0]])).toBe("lovsang");
   });
 
-  test("uten planleggeren er det gruppen som bare holder kalenderen, og ellers den første", () => {
-    expect(defaultGroupId(groups, false)).toBe("kalender");
-    expect(defaultGroupId([groups[0]], false)).toBe("lovsang");
+  test("en tjenestegruppe ingen er lagt i ennå, tas ikke for kalenderen: den med flest arrangementer er kalenderen", () => {
+    const withEmptyTeam = [{ id: "forbedere", memberIds: [], leaderIds: [] }, ...groups, { id: "nestleder", memberIds: [], leaderIds: [], deputyLeaderIds: ["p3"] }];
+    const gatherings = [{ groupId: "kalender" }, { groupId: "kalender" }, { groupId: "lovsang" }, { groupId: "lovsang" }, { groupId: "lovsang" }];
+    expect(defaultGroupId(withEmptyTeam, gatherings)).toBe("kalender");
+    // A group with only a deputy leader is somebody's group, not the calendar
+    expect(defaultGroupId([withEmptyTeam[3], groups[0]], gatherings)).toBe("nestleder");
   });
 
   test("uten grupper er det ingen", () => {
-    expect(defaultGroupId([], true)).toBe("");
-    expect(defaultGroupId([], false)).toBe("");
+    expect(defaultGroupId([])).toBe("");
   });
 });

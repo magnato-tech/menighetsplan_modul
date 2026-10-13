@@ -296,14 +296,15 @@ describe("Arrangementer i admin", () => {
     const form = openFullForm();
     expect((within(form).getByLabelText("Tittel") as HTMLInputElement).value).toBe("Høstfest");
     expect((within(form).getByLabelText("Tema (valgfritt)") as HTMLInputElement).value).toBe("Takk");
-    expect((within(form).getByLabelText("Ansvarlig gruppe") as HTMLSelectElement).value).toBe("lovsang");
+    // No group is suggested as responsible: the event lies in the calendar until one is chosen
+    expect((within(form).getByLabelText("Ansvarlig gruppe") as HTMLSelectElement).value).toBe("kalender");
 
     fireEvent.change(within(form).getByLabelText("Dato"), { target: { value: "2026-10-18" } });
     fireEvent.change(within(form).getByLabelText("Sted"), { target: { value: "Storsalen" } });
     fireEvent.click(within(form).getByRole("button", { name: "Opprett arrangement" }));
 
     expect(createGathering).toHaveBeenCalledTimes(1);
-    expect(stored.gatherings[0]).toMatchObject({ title: "Høstfest", theme: "Takk", location: "Storsalen", groupId: "lovsang", startsAt: combineDateAndTimeToIso("2026-10-18", "11:00"), visibility: "offentlig" });
+    expect(stored.gatherings[0]).toMatchObject({ title: "Høstfest", theme: "Takk", location: "Storsalen", groupId: "kalender", startsAt: combineDateAndTimeToIso("2026-10-18", "11:00"), visibility: "offentlig" });
     expect(stored.gatherings[0].seriesId).toBeUndefined();
     expect(createTask).not.toHaveBeenCalled();
     expect(screen.queryByRole("dialog")).toBeNull();
@@ -315,10 +316,27 @@ describe("Arrangementer i admin", () => {
     show();
     fireEvent.change(quickTitle(), { target: { value: "Gudstjeneste" } });
     fireEvent.change(document.querySelector('input[type="date"]') as HTMLInputElement, { target: { value: "2026-10-18" } });
+    fireEvent.change(screen.getByLabelText("Sted"), { target: { value: " Torget " } });
     fireEvent.click(screen.getByRole("button", { name: "Legg til i planleggeren" }));
 
-    expect(createGathering).toHaveBeenCalledWith(expect.objectContaining({ title: "Gudstjeneste", groupId: "lovsang" }));
+    // With the place, and in the calendar: no group is made responsible from here
+    expect(createGathering).toHaveBeenCalledWith(expect.objectContaining({ title: "Gudstjeneste", location: "Torget", groupId: "kalender" }));
     expect(screen.queryByRole("dialog")).toBeNull();
+    expect((screen.getByLabelText("Sted") as HTMLInputElement).value).toBe("");
+  });
+
+  test("det raske skjemaet spør om sted og ikke om ansvarlig gruppe, og et tomt sted lagres ikke", () => {
+    show();
+    expect(screen.queryByLabelText("Ansvarlig gruppe")).toBeNull();
+    expect((screen.getByLabelText("Sted") as HTMLInputElement).placeholder).toBe("Sted (Kirken når feltet står tomt)");
+    fireEvent.change(quickTitle(), { target: { value: "Årsmøte" } });
+    fireEvent.change(document.querySelector('input[type="date"]') as HTMLInputElement, { target: { value: "2027-01-19" } });
+    fireEvent.click(screen.getByRole("button", { name: "Legg til i planleggeren" }));
+    expect(vi.mocked(createGathering).mock.calls[0][0].location).toBeUndefined();
+
+    // What is written, follows into the full form
+    fireEvent.change(screen.getByLabelText("Sted"), { target: { value: "Bedehuset" } });
+    expect((within(openFullForm()).getByLabelText("Sted") as HTMLInputElement).value).toBe("Bedehuset");
   });
 
   test("et arrangement fra en mal får malens program og oppgaver", () => {
