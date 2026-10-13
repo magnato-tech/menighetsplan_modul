@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.52 · **Sist oppdatert:** 2026-10-13
+> **Dokumentversjon:** 4.53 · **Sist oppdatert:** 2026-10-14
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -266,7 +266,7 @@ Regnskap er ikke en egen modul. Givertjeneste og Utleie skal registrere inntekte
 
 | Skjerm | Adresse | Innhold | Status |
 |---|---|---|---|
-| **Min side** | `/minside` | «Trenger svar» (forespørsler, innkallinger, ledige oppgaver i mine grupper), «Neste for deg», neste samling i kirken, mine grupper og mine oppgaver | Levert |
+| **Min side** | `/minside` | Tre faner: «Mine oppgaver» (knappen «Ta oppgave» og oppgavene en har sagt ja til), «Mine grupper» og «Kalender» | Levert |
 | **Oppgave** | `/oppgave/:id` | Tid, sted, instruks og hvem andre som står på. Ta oppgaven, svar på forespørsel, meld forfall | Levert. En grunn for forfallet lagres ikke: den kan være privat, og tas muntlig |
 | **Gruppeleder** | `/leder` | Gruppene jeg leder, med bemanningsstatus | Levert |
 | **Gruppe** | `/gruppe/:id` | Deltakere, møteplan, aktiviteter og beskjeder til gruppen, med bilde | Levert |
@@ -274,20 +274,26 @@ Regnskap er ikke en egen modul. Givertjeneste og Utleie skal registrere inntekte
 | **Husfellesskap** | `/husfellesskap` | Neste møte med vert, tema og bibeltekst. «Kommer» / «Kommer ikke». Deltakerliste | Levert |
 | Meldinger | `/meldinger` | Valgfri modul for meldinger på tvers av grupper | Planlagt: i dag en plassholderside |
 | Kalender | – | Valgfri modul med felles kalender | Planlagt: modulen kan slås på, men har ingen side |
-| **Min kalender** | – | Personlig oversikt på Min side | Mulig funksjon, ikke prioritert. Se under |
+| **Kalender** | `/minside?view=kalender` | Fanen «Kalender» på Min side: det som kommer i menigheten og i egne grupper | Levert |
 
-Min side ligger bak innlogging (kapittel 10.1). Øverst står hvem som er logget inn, rollen og «Logg ut». En frivillig ser bare det som gjelder egne grupper. Løsningen kan installeres på mobilen som app (PWA).
+Min side ligger bak innlogging (kapittel 10.1). Øverst til høyre står et rundt merke med initialene til den som er logget inn. Et trykk viser navnet, rollen og «Logg ut». En frivillig ser bare det som gjelder egne grupper. Løsningen kan installeres på mobilen som app (PWA).
 
-### Mulig funksjon: Min kalender
+### Min side, slik den er
 
-Ikke bygget. Avtalt innhold, hvis den tas inn senere:
+Min side viser så lite som mulig. Overskriften er navnet på fanen som er åpen. På mobil står de tre fanene fast nederst på skjermen, på bredere skjerm rett under overskriften. Siden åpner i «Mine oppgaver».
 
-* Kildebasert, ikke bare det den frivillige har bekreftet. Den viser offentlige arrangementer i menigheten, pluss kommende samlinger i gruppene den frivillige er med i.
-* Hver kilde (menigheten og hver gruppe) kan slås av og på med et øyeikon. Standard er at alle kilder er på.
-* «Kommer ikke» skjuler den ene samlingen. En bekreftet oppgave legges på samlingen den hører til, og lager ikke en egen hendelse.
-* Husfellesskap vises bare når innkalling er sendt, eller den frivillige allerede har svart. Andre grupper viser alle kommende gruppesamlinger så lenge kilden er på.
-* Den erstatter «Neste for deg» og «Neste i menigheten» på Min side. «Trenger svar», gruppene og oppgavene blir stående.
-* Personlig kalenderabonnement (iCal) tilbys ikke: tjenesten som lager filen, kjører ikke der løsningen er satt i drift (se kapittel 13). Abonnement på menighetens offentlige kalender står på nettsiden.
+| Fane | Hva som står der |
+|---|---|
+| **Mine oppgaver** | Knappen «Ta oppgave (68)» når tre eller flere saker venter (forespørsler, innkallinger og ledige oppgaver i egne grupper). Den åpner listen, som kan snevres inn med tagger. Venter én eller to saker, står kortene rett på siden. Under står oppgavene personen har sagt ja til, den nærmeste først |
+| **Mine grupper** | Gruppekortene, med neste samling, siste beskjed og vei inn til gruppa |
+| **Kalender** | Filtrene Alle / Menigheten / Mine grupper, og hendelsene under. Viser offentlige arrangementer i menigheten og kommende samlinger i gruppene personen er med i |
+
+Veiledningen «Slik bruker du Min side» ligger bak et «?» ved overskriften, og åpnes i et vindu.
+
+Ikke bygget i kalenderen:
+
+* Å slå hver kilde (menigheten og hver gruppe) av og på for seg.
+* Personlig kalenderabonnement (iCal): tjenesten som lager filen, kjører ikke der løsningen er satt i drift (se kapittel 13). Abonnement på menighetens offentlige kalender står på nettsiden.
 
 ---
 
@@ -1355,6 +1361,28 @@ Administratoren kan sende e-post til lederne og de frivillige fra siden «Send e
 
 **Ikke med.** Automatiske påminnelser før tjeneste, varsel ved forespørsel, SMS og avmelding fra e-post. Resend må føres som underleverandør i databehandleravtalen, siden tjenesten får navn og e-postadresser.
 
+### Min side, forenklet (14. oktober 2026)
+
+Bygget etter bestillingen i kapittel 14. Prinsippet er enkelhet først: det som gjentar noe, forklarer noe som kan ses, eller ikke kan trykkes på, er tatt bort.
+
+| Del | Hva som er levert |
+|---|---|
+| **Toppen** | Navn, rolle og «Logg ut» ligger i en meny bak et rundt merke med initialene. Menighetens navn og de tre flatene får plass i mobilbredde uten å kuttes |
+| **Overskriften** | Navnet på fanen som er åpen: «Mine oppgaver», «Mine grupper» eller «Kalender». «Oversikt for …» og «7 grupper» er tatt bort |
+| **Veiledningen** | Et «?» ved overskriften. Åpner samme tekst i et vindu, som lukkes med kryss, «Lukk», Escape eller et trykk utenfor |
+| **Mine oppgaver** | Handlingsboksen står bare her, og er én knapp: «Ta oppgave (68)». Tallet på fanen i menylinjen er tatt bort |
+| **Mine grupper** | Overskriften «Mine grupper (7)» og merket «Deltakelse» er tatt bort: fanens navn sier det |
+| **Kalender** | Filtrene og hendelsene står rett på siden, uten ramme og egen overskrift. «Neste i menigheten» og «Neste for deg» er tatt bort |
+| **Kortene** | Merkelappen over tittelen vises ikke når tittelen sier det samme («Gudstjeneste & Storsamling» over «Gudstjeneste») |
+| **Nederst** | Det siste kortet kan scrolles helt fram over menylinjen på mobil |
+| **Innloggingen** | Den registeret ikke kjenner, får «Vi fant deg ikke. Send en e-post til … og be om hjelp til å logge inn.», med adressen fra menighetens innstillinger som lenke, og knappen «Prøv en annen e-postadresse». Uten adresse i innstillingene: «Ta kontakt med menigheten og be om hjelp til å logge inn.» |
+
+**Tre valg som ikke sto i bestillingen:**
+
+* Med én eller to saker som venter, står kortene fortsatt rett på siden med svarknappene, uten overskrift. Knappen «Ta oppgave (N)» kommer fra tre saker og opp.
+* En konto med ubekreftet e-postadresse får samme tekst som de to andre tilfellene. Årsaken sies ikke.
+* I kalenderen står «Menigheten» fortsatt over menighetens arrangementer, så de skilles fra gruppenes når filteret er «Alle».
+
 ---
 
 
@@ -1521,7 +1549,9 @@ Administrator er det samme som den som skal se registeret. En redaktør som endr
 
 **Kan ikke vises i demoen**, fordi ingen logger inn der. Reglene prøves lokalt (`npm run test:rules`), og med en konto til hos første menighet før adressen sendes ut.
 
-### Min side, forenklet *(bestemt av produkteier 13. oktober 2026, ikke løst)*
+### Min side, forenklet *(bestemt av produkteier 13. oktober 2026, bygget 14. oktober 2026)*
+
+**Status: bygget.** Alt under er gjort, og kapittel 3 er oppdatert. Se «Min side, forenklet» i kapittel 12 for hva som ble levert og de tre valgene som ble tatt underveis.
 
 **Prinsipp: enkelhet først.** Min side skal vise så lite som mulig. Alt som gjentar noe, forklarer noe som kan ses, eller ikke kan trykkes på, tas bort. Dette gjelder Min side på mobil først, og det samme gjelder på stor skjerm.
 

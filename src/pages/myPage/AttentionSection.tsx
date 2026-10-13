@@ -2,6 +2,7 @@ import React from "react";
 import { formatNorwegianDateTime } from "../../utils/dates";
 import { MyPageModel } from "./useMyPage";
 import { attentionText } from "./attention";
+import { repeatsTitle } from "../../utils/labels";
 import {
   Check,
   ChevronRight,
@@ -25,49 +26,19 @@ export const AttentionSection: React.FC<AttentionSectionProps> = ({ page, onShow
       className="space-y-2.5 animate-in fade-in duration-200"
     >
       {attentionItems.length >= 3 ? (
-        /* 3+ handlinger: Én samlet, kompakt boks */
-        <div
-          id="card-consolidated-attention"
-          className="p-4 bg-gradient-to-br from-amber-50 to-amber-100/70 border border-amber-300 rounded-2xl shadow-xs space-y-3"
+        /* Three or more: one button, with how many there are. The list opens in a window. */
+        <button
+          type="button"
+          id="btn-see-and-handle-attention"
+          onClick={() => onShowAll()}
+          className="w-full py-3 px-4 bg-amber-700 hover:bg-amber-800 text-white text-sm font-bold rounded-2xl flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer"
         >
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-200/90 text-amber-900 px-2.5 py-0.5 rounded-md">
-              Dette trenger din handling
-            </span>
-            {/* Only the number: a long list is not made heavier by being spelled out */}
-            <span className="text-xs font-black bg-amber-800 text-white px-2.5 py-0.5 rounded-full">
-              {attentionItems.length}
-              <span className="sr-only"> saker</span>
-            </span>
-          </div>
-
-          <p className="text-xs text-slate-600">
-            Du har forespørsler, ubesvarte innkallinger eller ledige oppgaver i dine grupper.
-          </p>
-
-          <button
-            type="button"
-            id="btn-see-and-handle-attention"
-            onClick={() => onShowAll()}
-            className="w-full py-2.5 px-3 bg-amber-700 hover:bg-amber-800 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
-          >
-            <span>Se og håndter</span>
-            <ChevronRight className="w-4 h-4 stroke-[2.5]" />
-          </button>
-        </div>
+          <span>Ta oppgave ({attentionItems.length})</span>
+          <ChevronRight className="w-4 h-4 stroke-[2.5]" />
+        </button>
       ) : (
-        /* 1–2 handlinger: Vises direkte på Min side */
+        /* One or two: the cards themselves, ready to be answered */
         <>
-          <div className="flex items-center justify-between px-0.5">
-            <h2 className="text-xs font-black text-amber-800 uppercase tracking-wider flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-              <span>Trenger din oppmerksomhet</span>
-            </h2>
-            <span className="text-[10px] font-bold text-amber-900 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-200/60">
-              {attentionItems.length} {attentionItems.length === 1 ? "sak" : "saker"}
-            </span>
-          </div>
-
           <div className="space-y-3">
             {attentionItems.map((item) => {
               const text = attentionText(item);
@@ -82,7 +53,7 @@ export const AttentionSection: React.FC<AttentionSectionProps> = ({ page, onShow
                       <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-200/80 text-amber-900 px-2 py-0.5 rounded-md">
                         {text.label}
                       </span>
-                      {item.groupName && (
+                      {item.groupName && !repeatsTitle(item.groupName, item.title) && (
                         <span className="text-xs font-semibold text-slate-700">
                           {item.groupName}
                         </span>

@@ -1,7 +1,7 @@
 import React from "react";
 import { Calendar, ListTodo, Users } from "lucide-react";
 
-// The three parts of Min side. What needs one's action stands above them, whichever is open.
+// The three parts of Min side. The name of the one that is open, is the heading of the page.
 
 export type MyPageTab = "oppgaver" | "grupper" | "kalender";
 
@@ -19,16 +19,14 @@ export function toMyPageTab(value: string | null): MyPageTab {
 interface MyPageTabsProps {
   active: MyPageTab;
   onChange: (tab: MyPageTab) => void;
-  /** How many tasks the person has said yes to. Shown on the tab. */
-  taskCount: number;
 }
 
 /**
  * The tabs twice, one of them shown at a time: under the heading on a wide screen, and fixed to
- * the bottom of a phone, where a thumb reaches them.
+ * the bottom of a phone, where a thumb reaches them. No number stands on a tab: the tasks are
+ * counted where they are listed, and two numbers for the same thing only confuse.
  */
-export const MyPageTabs: React.FC<MyPageTabsProps> = ({ active, onChange, taskCount }) => {
-  const count = (tab: MyPageTab) => (tab === "oppgaver" && taskCount > 0 ? taskCount : null);
+export const MyPageTabs: React.FC<MyPageTabsProps> = ({ active, onChange }) => {
   return (
     <>
       <div role="tablist" aria-label="Min side" className="hidden sm:flex items-center gap-1 p-1 rounded-2xl bg-white border border-slate-200/80">
@@ -45,7 +43,6 @@ export const MyPageTabs: React.FC<MyPageTabsProps> = ({ active, onChange, taskCo
           >
             <Icon className="w-4 h-4" />
             <span>{label}</span>
-            {count(id) !== null && <span className={`text-[10px] px-1.5 rounded-full ${active === id ? "bg-emerald-900/40" : "bg-slate-200 text-slate-700"}`}>{count(id)}</span>}
           </button>
         ))}
       </div>
@@ -68,9 +65,6 @@ export const MyPageTabs: React.FC<MyPageTabsProps> = ({ active, onChange, taskCo
           >
             <Icon className={`w-5 h-5 ${active === id ? "text-emerald-700" : "text-slate-500"}`} />
             <span className="text-[11px] tracking-tight">{label}</span>
-            {count(id) !== null && (
-              <span className="absolute top-0.5 left-1/2 ml-2 text-[9px] font-black min-w-4 px-1 rounded-full bg-emerald-700 text-white">{count(id)}</span>
-            )}
           </button>
         ))}
       </nav>

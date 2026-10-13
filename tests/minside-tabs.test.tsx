@@ -6,6 +6,16 @@ import { MemoryRouter } from "react-router-dom";
 import { MyPageTabs, MY_PAGE_TABS, toMyPageTab } from "../src/pages/myPage/MyPageTabs";
 import { MyTasksTab } from "../src/pages/myPage/MyTasksTab";
 import type { MyPageModel } from "../src/pages/myPage/useMyPage";
+import { AttentionSection } from "../src/pages/myPage/AttentionSection";
+import { AccountMenu, initialsOf } from "../src/components/AccountMenu";
+import { repeatsTitle } from "../src/utils/labels";
+
+const account = vi.hoisted(() => ({
+  session: { status: "member", person: { id: "kari", name: "Kari Nordmann", globalRole: "member" } },
+  groups: [],
+  signOut: vi.fn(async () => undefined),
+}));
+vi.mock("../src/context/FirebaseDataContext", () => ({ useFirebase: () => account }));
 
 afterEach(cleanup);
 
@@ -20,10 +30,11 @@ describe("Fanene på Min side", () => {
 
   test("fanene står både øverst og nederst, og et trykk bytter fane", () => {
     const onChange = vi.fn();
-    render(<MyPageTabs active="oppgaver" onChange={onChange} taskCount={3} />);
+    render(<MyPageTabs active="oppgaver" onChange={onChange} />);
 
     const top = screen.getByRole("tablist");
-    expect(within(top).getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["Mine oppgaver3", "Mine grupper", "Kalender"]);
+    // No number on a tab: the tasks are counted where they are listed
+    expect(within(top).getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["Mine oppgaver", "Mine grupper", "Kalender"]);
     expect(within(top).getByRole("tab", { selected: true }).textContent).toContain("Mine oppgaver");
 
     const bottom = screen.getByRole("navigation", { name: "Min side" });
@@ -40,9 +51,10 @@ describe("Fanene på Min side", () => {
     expect(onChange).toHaveBeenCalledWith("grupper");
   });
 
-  test("uten oppgaver står det ikke noe tall på fanen", () => {
-    render(<MyPageTabs active="grupper" onChange={() => undefined} taskCount={0} />);
-    expect(screen.getAllByText("Mine oppgaver")[0].parentElement?.textContent).toBe("Mine oppgaver");
+  test("heller ikke menylinjen nederst har noe tall", () => {
+    render(<MyPageTabs active="grupper" onChange={() => undefined} />);
+    const bottom = screen.getByRole("navigation", { name: "Min side" });
+    expect(within(bottom).getAllByRole("button").map((button) => button.textContent)).toEqual(["Mine oppgaver", "Mine grupper", "Kalender"]);
   });
 
   test("oppgavene står rett på siden, med arrangement og tidspunkt, og fører til oppgaven", () => {
@@ -81,13 +93,86 @@ describe("Fanene på Min side", () => {
     expect(screen.getByText("Du har ingen oppgaver framover")).toBeTruthy();
   });
 
-  test("Min side har fanene under det som trenger handling, og ingen egen bunnmeny eller oppgaveliste i et vindu", () => {
+  test("Min side er forenklet: overskriften er fanens navn, og handlingsboksen står bare på oppgavene", () => {
     const page = readFileSync("src/pages/MyPage.tsx", "utf8");
-    expect(page.indexOf("<AttentionSection")).toBeGreaterThan(0);
-    expect(page.indexOf("<MyPageTabs")).toBeGreaterThan(page.indexOf("<AttentionSection"));
-    expect(page).toContain("<MyCalendarPanel inline />");
-    expect(page).not.toContain("MobileBottomNav");
-    expect(page).not.toContain("MyTasksModal");
-    expect(page).not.toContain("Vis oppgaveliste");
+    // The heading is the name of the open tab, never «Min side» on all three
+    expect(page).toContain("{heading}");
+    expect(page).not.toMatch(/<span>Min side<\/span>|Oversikt for|grupper"\}/);
+    // The action box and the note about service groups are inside the tasks tab
+    const tasks = page.slice(page.indexOf('{tab === "oppgaver" && ('), page.indexOf('{tab === "grupper"'));
+    expect(tasks).toContain("<AttentionSection");
+    expect(tasks).toContain("<MyTasksTab");
+    expect(page.split("<AttentionSection").length).toBe(2);
+    // The calendar is the first and only thing on its tab
+    expect(page).toContain('{tab === "kalender" && <MyCalendarPanel />}');
+    expect(page).not.toMatch(/NextChurchEventSection|NextForYouSection|MobileBottomNav|MyTasksModal|Vis oppgaveliste/);
+    // Room for the last card above the menu at the bottom of a phone
+    expect(page).toContain("pb-[calc(6.5rem+env(safe-area-inset-bottom))]");
+  });
+});
+
+describe("Det som er tatt bort fra Min side", () => {
+  const attention = (count: number) =>
+    ({
+      attentionItems: Array.from({ length: count }, (_, index) => ({ id: `a${index}`, type: "open_task", title: "Gudstjeneste", groupName: index === 0 ? "Gudstjeneste & Storsamling" : "Lyd og bilde", startsAt: "2027-01-10T11:00:00" })),
+      handleAttentionAnswer: vi.fn(),
+    }) as unknown as MyPageModel;
+
+  test("handlingsboksen er én knapp med antallet i parentes", () => {
+    const onShowAll = vi.fn();
+    render(<AttentionSection page={attention(68)} onShowAll={onShowAll} />);
+    const box = document.getElementById("section-trenger-oppmerksomhet")!;
+    expect(box.textContent).toBe("Ta oppgave (68)");
+    fireEvent.click(screen.getByRole("button", { name: "Ta oppgave (68)" }));
+    expect(onShowAll).toHaveBeenCalledTimes(1);
+  });
+
+  test("med én eller to saker står kortene rett på siden, uten overskrift, og gruppa nevnes bare når tittelen ikke sier det samme", () => {
+    render(<AttentionSection page={attention(2)} onShowAll={() => undefined} />);
+    const box = document.getElementById("section-trenger-oppmerksomhet")!;
+    expect(box.textContent).not.toMatch(/Trenger din oppmerksomhet|saker|Dette trenger din handling/);
+    expect(screen.queryByText("Gudstjeneste & Storsamling")).toBeNull();
+    expect(screen.getByText("Lyd og bilde")).toBeTruthy();
+  });
+
+  test("en merkelapp som bare gjentar tittelen, sier ingenting", () => {
+    expect(repeatsTitle("Gudstjeneste & Storsamling", "Gudstjeneste")).toBe(true);
+    expect(repeatsTitle("Gudstjeneste", "Gudstjeneste & dåp")).toBe(true);
+    expect(repeatsTitle("gudstjeneste", "GUDSTJENESTE")).toBe(true);
+    expect(repeatsTitle("", "Gudstjeneste")).toBe(true);
+    expect(repeatsTitle("Menigheten", "Gudstjeneste")).toBe(false);
+    expect(repeatsTitle("Lyd og bilde", "Gudstjeneste")).toBe(false);
+    // Part of a word is not the same word
+    expect(repeatsTitle("Ung", "Ungdomskveld")).toBe(false);
+  });
+
+  test("kalenderen har ingen egen ramme med overskrift, og gruppene ingen overskrift som gjentar fanen", () => {
+    const calendar = readFileSync("src/pages/myPage/MyCalendarPanel.tsx", "utf8");
+    expect(calendar).not.toMatch(/>Min kalender<|Lukk kalender|modal-my-calendar/);
+    expect(calendar).toContain("repeatsTitle(label, event.gathering.title)");
+    expect(readFileSync("src/pages/myPage/MyGroupsSection.tsx", "utf8")).not.toMatch(/Mine grupper \(|Deltakelse/);
+  });
+
+  test("navn, rolle og «Logg ut» ligger bak et rundt merke med initialene", () => {
+    expect(initialsOf("Magnar Totland")).toBe("MT");
+    expect(initialsOf("  kari  anne   nordmann ")).toBe("KN");
+    expect(initialsOf("Ola")).toBe("O");
+    expect(initialsOf("")).toBe("?");
+
+    render(<AccountMenu />);
+    const mark = screen.getByRole("button", { name: "Konto: Kari Nordmann" });
+    expect(mark.textContent).toBe("KN");
+    expect(screen.queryByText("Kari Nordmann")).toBeNull();
+    expect(screen.queryByText("Logg ut")).toBeNull();
+
+    fireEvent.click(mark);
+    const menu = screen.getByRole("menu", { name: "Konto" });
+    expect(within(menu).getByText("Kari Nordmann")).toBeTruthy();
+    expect(within(menu).getByText("Frivillig")).toBeTruthy();
+    fireEvent.click(within(menu).getByRole("menuitem", { name: "Logg ut" }));
+    expect(account.signOut).toHaveBeenCalledTimes(1);
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("menu")).toBeNull();
   });
 });

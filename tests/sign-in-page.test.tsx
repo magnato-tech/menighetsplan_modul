@@ -26,7 +26,9 @@ const { app, auth } = vi.hoisted(() => ({
   },
 }));
 vi.mock("../src/context/FirebaseDataContext", () => ({ useFirebase: () => app }));
-vi.mock("../src/context/CmsContext", () => ({ useCms: () => ({ settings: { churchName: "Sentrumskirken" } }) }));
+const CONTACT = "post@sentrumskirken.example";
+const cms = vi.hoisted(() => ({ settings: { churchName: "Sentrumskirken", email: "post@sentrumskirken.example" } }));
+vi.mock("../src/context/CmsContext", () => ({ useCms: () => cms }));
 vi.mock("../src/services/auth", () => auth);
 
 import { SignInPage } from "../src/pages/SignInPage";
@@ -162,28 +164,39 @@ describe("Den som er logget inn", () => {
     expect(screen.getByText("Kom til: /minside")).toBeTruthy();
   });
 
-  test("uten å stå i registeret, får vite det, hvorfor, og kan logge ut", () => {
+  test("den registeret ikke kjenner, får ikke høre at den er logget inn, men hvem den skal skrive til", () => {
     app.session = { status: "notInRegister", account: { uid: "u", email: "fremmed@eksempel.no", emailVerified: true }, reason: "noMatch" };
     open();
 
-    expect(screen.getByText("fremmed@eksempel.no")).toBeTruthy();
-    expect(screen.getByText(/står ikke i personregisteret til\s+Sentrumskirken/)).toBeTruthy();
-    expect(screen.getByText(/Ingen i personregisteret har denne e-postadressen/)).toBeTruthy();
+    const box = document.getElementById("sign-in-not-found")!;
+    expect(box.textContent).toBe(`Vi fant deg ikke. Send en e-post til ${CONTACT} og be om hjelp til å logge inn.Prøv en annen e-postadresse`);
+    expect(box.textContent).not.toMatch(/logget inn som|personregisteret|fremmed@eksempel\.no/);
+    const link = screen.getByRole("link", { name: CONTACT });
+    expect(link.getAttribute("href")).toBe(`mailto:${CONTACT}?subject=Hjelp%20til%20%C3%A5%20logge%20inn`);
     expect(screen.queryByRole("button", { name: "Fortsett med Google" })).toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: "Logg ut og prøv en annen konto" }));
+    fireEvent.click(screen.getByRole("button", { name: "Prøv en annen e-postadresse" }));
     expect(app.signOut).toHaveBeenCalledTimes(1);
   });
 
-  test("med en adresse flere deler, eller en som ikke er bekreftet, får vite akkurat det", () => {
-    app.session = { status: "notInRegister", account: { uid: "u", email: "familien@berg.no", emailVerified: true }, reason: "severalMatches" };
-    const { unmount } = open();
-    expect(screen.getByText(/Flere personer i registeret har denne e-postadressen/)).toBeTruthy();
-    unmount();
+  test("årsaken sies ikke: en adresse flere deler, eller en som ikke er bekreftet, gir samme tekst", () => {
+    for (const reason of ["severalMatches", "unverified"] as const) {
+      app.session = { status: "notInRegister", account: { uid: "u", email: "familien@berg.no", emailVerified: reason !== "unverified" }, reason };
+      const { unmount } = open();
+      expect(document.getElementById("sign-in-not-found")!.textContent).toContain(`Vi fant deg ikke. Send en e-post til ${CONTACT}`);
+      expect(screen.queryByText(/Flere personer|ikke bekreftet/)).toBeNull();
+      unmount();
+    }
+  });
 
-    app.session = { status: "notInRegister", account: { uid: "u", email: "ola@eksempel.no", emailVerified: false }, reason: "unverified" };
+  test("har menigheten ingen e-postadresse i innstillingene, står det at en skal ta kontakt", () => {
+    app.session = { status: "notInRegister", account: { uid: "u", email: "fremmed@eksempel.no", emailVerified: true }, reason: "noMatch" };
+    const address = cms.settings.email;
+    cms.settings.email = " ";
     open();
-    expect(screen.getByText(/er ikke bekreftet/)).toBeTruthy();
+    cms.settings.email = address;
+    expect(document.getElementById("sign-in-not-found")!.textContent).toBe("Vi fant deg ikke. Ta kontakt med menigheten og be om hjelp til å logge inn.Prøv en annen e-postadresse");
+    expect(document.querySelector('a[href^="mailto:"]')).toBeNull();
   });
 
   test("mens det ikke er kjent hvem som spør, vises ingen veier inn", () => {

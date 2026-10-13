@@ -4,7 +4,7 @@ import { LogIn, Mail } from "lucide-react";
 import { useCms } from "../context/CmsContext";
 import { useFirebase } from "../context/FirebaseDataContext";
 import { completeSignInLink, describeSignInError, isSignInLink, sendSignInLink, signInWithGoogle } from "../services/auth";
-import { destinationAfterSignIn, signInUrl, type NotInRegisterReason } from "../utils/session";
+import { destinationAfterSignIn, signInUrl } from "../utils/session";
 import { DEMO } from "../demo";
 import { DemoDoor } from "./DemoDoor";
 import { whereDoorLeads } from "../utils/demoDoor";
@@ -18,16 +18,13 @@ const secondaryButton =
 const input =
   "w-full px-3 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500";
 
-const NOT_IN_REGISTER: Record<NotInRegisterReason, string> = {
-  unverified: "E-postadressen på kontoen er ikke bekreftet, så den kan ikke brukes til å logge inn her.",
-  noMatch: "Ingen i personregisteret har denne e-postadressen. Ta kontakt med menigheten for å bli lagt inn, eller logg inn med adressen menigheten har registrert på deg.",
-  severalMatches: "Flere personer i registeret har denne e-postadressen, så den sier ikke hvem du er. Be menigheten rette det.",
-};
+/** The link that opens an e-mail to the congregation, asking for help to get in. */
+export const helpToSignInLink = (address: string): string => `mailto:${address}?subject=${encodeURIComponent("Hjelp til å logge inn")}`;
 
 /**
  * The way in to Min side and the admin: a Google account, or a link sent to an e-mail address.
- * Who gets in is decided by the register (see utils/session.ts), so the page also says so to
- * someone who is signed in without being in it.
+ * Who gets in is decided by the register (see utils/session.ts). Someone the register does not
+ * know, is not told they are signed in, nor why they were not found: they are told who to ask.
  *
  * In the demo installation nobody signs in: the page is the way in, with what to look at as the
  * choice. Someone who is inside already comes here to choose again.
@@ -104,14 +101,23 @@ export const SignInPage: React.FC = () => {
         {session.status === "loading" && <p className="text-sm text-slate-500">Laster …</p>}
 
         {session.status === "notInRegister" && (
-          <div className="space-y-4">
+          <div id="sign-in-not-found" className="space-y-4">
             <p className="text-sm text-slate-700">
-              Du er logget inn som <strong>{session.account.email ?? "en konto uten e-postadresse"}</strong>, men står ikke i personregisteret til{" "}
-              {settings.churchName}.
+              <strong>Vi fant deg ikke.</strong>{" "}
+              {settings.email?.trim() ? (
+                <>
+                  Send en e-post til{" "}
+                  <a href={helpToSignInLink(settings.email.trim())} className="font-bold text-indigo-700 underline underline-offset-2 break-all">
+                    {settings.email.trim()}
+                  </a>{" "}
+                  og be om hjelp til å logge inn.
+                </>
+              ) : (
+                "Ta kontakt med menigheten og be om hjelp til å logge inn."
+              )}
             </p>
-            <p className="text-sm text-slate-600">{NOT_IN_REGISTER[session.reason]}</p>
             <button type="button" onClick={() => void signOut()} className={secondaryButton}>
-              Logg ut og prøv en annen konto
+              Prøv en annen e-postadresse
             </button>
           </div>
         )}

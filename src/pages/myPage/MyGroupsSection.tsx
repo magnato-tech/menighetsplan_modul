@@ -18,16 +18,6 @@ export const MyGroupsSection: React.FC<MyGroupsSectionProps> = ({ page }) => {
 
   return (
     <section id="section-mine-grupper" className="space-y-2">
-      <div className="flex items-center justify-between px-0.5">
-        <h2 className="text-xs font-black text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
-          <Users className="w-3.5 h-3.5 text-emerald-600" />
-          <span>Mine grupper ({myGroups.length})</span>
-        </h2>
-        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
-          Deltakelse
-        </span>
-      </div>
-
       {myGroups.length > 0 ? (
         <div className="space-y-2.5">
           {myGroups.map((group) => {

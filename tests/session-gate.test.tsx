@@ -129,15 +129,18 @@ describe("Hvem som er logget inn, står øverst på Min side", () => {
     use(member(ola));
     render(<AccountMenu />);
 
+    // Behind the round mark with the initials
+    fireEvent.click(screen.getByRole("button", { name: "Konto: Ola Hansen" }));
     expect(screen.getByText("Ola Hansen")).toBeTruthy();
     expect(screen.getByText("Gruppeleder")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Logg ut" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Logg ut" }));
     expect(app.signOut).toHaveBeenCalledTimes(1);
   });
 
   test("en administrator står som administrator, og uten innlogging vises ingenting", () => {
     use(member(kari));
     const { unmount } = render(<AccountMenu />);
+    fireEvent.click(screen.getByRole("button", { name: /^Konto: / }));
     expect(screen.getByText("Administrator")).toBeTruthy();
     unmount();
 

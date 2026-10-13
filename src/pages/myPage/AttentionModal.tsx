@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { formatNorwegianDateTime } from "../../utils/dates";
 import { MyPageModel } from "./useMyPage";
 import { attentionTags, attentionText, withAttentionTags } from "./attention";
+import { repeatsTitle } from "../../utils/labels";
 import {
   AlertCircle,
   Check,
@@ -99,7 +100,7 @@ export const AttentionModal: React.FC<AttentionModalProps> = ({ page, onClose })
                     <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-900 px-2 py-0.5 rounded-md">
                       {text.label}
                     </span>
-                    {item.groupName && (
+                    {item.groupName && !repeatsTitle(item.groupName, item.title) && (
                       <span className="text-xs font-semibold text-slate-600">
                         {item.groupName}
                       </span>

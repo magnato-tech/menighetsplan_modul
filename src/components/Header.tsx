@@ -18,8 +18,8 @@ export const Header: React.FC = () => {
 
   return (
     <header className="sticky top-[var(--demo-strip,0px)] z-40 bg-white border-b border-slate-200/80 shadow-xs">
-      <div className="max-w-md mx-auto px-5 pt-3 pb-2">
-        <div className="flex items-center justify-between">
+      <div className="max-w-md mx-auto px-4 pt-3 pb-2">
+        <div className="flex items-center justify-between gap-3">
           {/* The congregation's own name, which leads to its website. The name of the product is not written here. */}
           <Link
             to="/"
@@ -27,12 +27,12 @@ export const Header: React.FC = () => {
             title="Til nettsiden"
             className="min-w-0 group transition-opacity hover:opacity-90"
           >
-            <h1 className="text-lg font-bold text-slate-800 tracking-tight leading-tight group-hover:underline underline-offset-2">
+            <p className="text-lg font-bold text-slate-800 tracking-tight leading-tight truncate group-hover:underline underline-offset-2">
               {settings.churchName || "Menighetsplan"}
-            </h1>
+            </p>
           </Link>
 
-          {/* Who is signed in, and the way out */}
+          {/* Who is signed in, and the way out: behind the round mark with the initials */}
           <AccountMenu />
         </div>
 
@@ -41,7 +41,7 @@ export const Header: React.FC = () => {
           <Link
             to="/minside"
             id="nav-tab-min-side"
-            className={`text-xs font-bold px-3 py-1.5 rounded-xl whitespace-nowrap transition-all cursor-pointer ${
+            className={`text-xs font-bold px-2.5 py-1.5 rounded-xl whitespace-nowrap transition-all cursor-pointer ${
               isMyPagePath
                 ? "bg-slate-900 text-white shadow-xs"
                 : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
@@ -54,7 +54,7 @@ export const Header: React.FC = () => {
             <Link
               to="/leder"
               id="nav-tab-leder"
-              className={`text-xs font-bold px-3 py-1.5 rounded-xl whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`text-xs font-bold px-2.5 py-1.5 rounded-xl whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
                 isLeaderPath
                   ? "bg-emerald-700 text-white shadow-xs"
                   : "text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/60"
@@ -76,7 +76,7 @@ export const Header: React.FC = () => {
             <Link
               to="/admin"
               id="nav-tab-admin"
-              className={`text-xs font-bold px-3 py-1.5 rounded-xl whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`text-xs font-bold px-2.5 py-1.5 rounded-xl whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
                 isAdminPath
                   ? "bg-indigo-700 text-white shadow-xs"
                   : "text-indigo-700 bg-indigo-50/80 hover:bg-indigo-100 border border-indigo-200/60"
