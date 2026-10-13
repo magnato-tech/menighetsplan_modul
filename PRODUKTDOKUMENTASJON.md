@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.49 · **Sist oppdatert:** 2026-10-13
+> **Dokumentversjon:** 4.50 · **Sist oppdatert:** 2026-10-13
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -1118,7 +1118,10 @@ Bestilt av produkteier: rollene hos første menighet var lagt inn uten instruks.
 |:---|:---|
 | **«Legg inn standardinstrukser»** | Under Roller i admin, når minst én rolle står uten instruks og standardsettet har en instruks for en rolle med det navnet |
 | **Hva som skjer** | Rollene som mangler instruks, får standardinstruksen. Skjermen sier hvilke roller det gjelder før noe gjøres |
-| **Røres ikke** | Roller som alt har en instruks, og roller standardsettet ikke kjenner. Teksten kan endres etterpå, rolle for rolle |
+| **Røres ikke** | Roller med en instruks menigheten har skrevet eller endret selv, og roller standardsettet ikke kjenner. Teksten kan endres etterpå, rolle for rolle |
+| **Avstemt mot menighetens ark** | 13. oktober 2026 ble standardinstruksene sammenlignet med arket produkteier limte inn. Fem roller avvek og er rettet: Møteleder (tre punkter manglet), Barnekirke (to manglet), Kjøkken (tre manglet), Lovsang og Møtevert (ett punkt for mye i hver). De sju andre var like |
+| **Eldre standardtekst byttes** | En rolle som fortsatt har den eldre standardinstruksen, urørt, tilbys den nye med samme knapp |
+| **«Leder»** | En rolle som heter «Leder» eller «Gudstjenesteleder», får instruksen til Møteleder |
 | **Prøvd** | 2 sjekker |
 
 ### Sted i det raske skjemaet, og ingen ansvarlig gruppe som forslag (13. oktober 2026)

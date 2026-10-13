@@ -53,6 +53,9 @@ export const DEFAULT_VOLUNTEER_ROLE_INSTRUCTIONS: Partial<Record<DefaultVoluntee
     "Ha skrevet ut en kjøreplan som deles ut, slik at alle vet hva som skjer når",
     "Holde styr på tida og si ifra til lovsangsleder at de skal begynne gudstjenesten",
     "Lede menigheten gjennom gudstjenesten (Bli leda av Gud, observere menigheten. Vær åpen for at kjøreplanen kan endres underveis - i samarbeid med lovsangsleder)",
+    "Legge til rette for å sitte igjen i salen når gudstjenesten er ferdig hvis du ønsker det",
+    "Ting som skal være med i gudstjenesten som du har ansvar for: Velkommen, bønn, søndagens info, informere om nattverd og bønnevandring, informere om kollekt, avslutning og sendelse, informere om kirkekaffe",
+    "Ting som kan være med i gudstjenesten som du eventuelt har ansvar for: Bibellesning, vitnesbyrd, bønn for taleren, informere om at det skal være rolig i salen etter møtet hvis du ønsker det, eventuelt andre ting som du ønsker skal være med (Instrumental, solosang, dramastykke, stillhet, delestund e.l.)",
   ]
     .map((line) => `• ${line}`)
     .join("\n"),
@@ -78,9 +81,11 @@ export const DEFAULT_VOLUNTEER_ROLE_INSTRUCTIONS: Partial<Record<DefaultVoluntee
     "Rigge klart det du trenger til opplegget du skal ha",
     "Finne frem tegnesaker til barna på et av bordene i møtesalen",
     "Eventuelt samarbeide med møtevert/gudstjenesteleder om bønnestasjon tilpasset barna",
+    "Husk at du må ha hentet alt du trenger oppefra før kl. 10.00 (For å ikke forstyrre bønnemøtet)",
+    "Bli med på bønnemøtet kl. 10.30 (Du kan gjerne komme fra kl. 10.00)",
+    "Være med på gjennomgang av gudstjenesten kl. 10.45",
     "Ha samling/undervisning med barna under talen",
     "Sørge for at barna er tilbake i møtesalen innen nattverden",
-    "Husk at du må ha hentet alt du trenger oppefra før kl. 10.00 (For å ikke forstyrre bønnemøtet)",
     "Rigge ned alt du har rigga opp",
   ]
     .map((line) => `• ${line}`)
@@ -90,7 +95,6 @@ export const DEFAULT_VOLUNTEER_ROLE_INSTRUCTIONS: Partial<Record<DefaultVoluntee
     "Ta kontakt med taler om tema",
     "Ta kontakt med møteleder om hva han/hun vil med gudstjenesten, og være i dialog om setliste og kjøreplan",
     "Lage setliste, fikse blekker i riktig toneart og sende dette til de som skal spille (Helst en uke før eller tidligere, senest 5 dager før)",
-    "Bli med på bønnemøtet kl. 10.30 (Du kan gjerne komme fra kl. 10.00)",
     "Organisere øving og oppmøtetidspunkt på søndagen",
     "Ta kontakt med lydmann om oppmøte på søndagen (Senest lørdag ettermiddag)",
     "Sende setliste til den som skal styre bildet den gjeldende søndagen (Senest når?) (Si ifra hvis det er noen nye sanger vi ikke har hatt før)",
@@ -127,7 +131,6 @@ export const DEFAULT_VOLUNTEER_ROLE_INSTRUCTIONS: Partial<Record<DefaultVoluntee
   Møtevert: [
     "Ønske velkommen i døra fra kl. 10.40 til kl. 11.10 (Det er flere som kan finne på å komme litt seint)",
     "Eventuelt hjelpe til med praktiske oppgaver som oppstår underveis i gudstjenesten",
-    "Se over møtesalen etter brukte kaffekopper og nattverdsglass når gudstjenesten er ferdig",
   ]
     .map((line) => `• ${line}`)
     .join("\n"),
@@ -144,7 +147,10 @@ export const DEFAULT_VOLUNTEER_ROLE_INSTRUCTIONS: Partial<Record<DefaultVoluntee
     "Rigge klart nattverdsbordet (Bord, duk, glass, juice i karaffel, nattverdsoblater + bord, duk og brett til å sette brukte glass på)",
     "Koke kaffe og tevann ferdig til senest kl. 10.30 + sette frem te, kakao og twist/annet godt",
     "Sette frem diverse mat og drikke til kirkekaffen (Kaffe, te, kakao, saft, vann, mat og kaker)",
+    "Ta ansvar for oppvask i etterkant av kirkekaffen",
+    "Se over møtesalen etter brukte kaffekopper og nattverdsglass når gudstjenesten er ferdig",
     "Rydde på plass alt du har funnet frem",
+    "Rydde brettene med nattverdsglass ut på kjøkkenet når nattverden er ferdig",
   ]
     .map((line) => `• ${line}`)
     .join("\n"),
@@ -173,15 +179,97 @@ export const DEFAULT_VOLUNTEER_ROLE_INSTRUCTIONS: Partial<Record<DefaultVoluntee
 };
 
 /**
- * The roles that have no instruction of their own, but a name the standard set has one for, each
- * with that instruction. A role that already has an instruction is never among them: what the
- * congregation has written, stands.
+ * Standard instructions that have been replaced by the ones above (13 October 2026, when the
+ * instructions were checked against the congregation's own sheet). A role that still has one of
+ * these, has the standard text untouched, and can be given the new one. A text the congregation
+ * has written or changed itself, is never one of these.
+ */
+const SUPERSEDED_VOLUNTEER_ROLE_INSTRUCTIONS: Partial<Record<DefaultVolunteerRoleName, string[][]>> = {
+  Møteleder: [
+    [
+      "Snakke med taler om tema",
+      "Lytte til Gud og finne ut hvor du vil med gudstjenesten",
+      "Ha dialog med lovsangsleder om setliste",
+      "Sy sammen gudstjenesten og lage en kjøreplan",
+      "Spørre Lars eller Magnar om en av de kan forrette nattverden og lyse velsignelsen, evt. finne noen andre som kan gjøre det",
+      "Være med på å dele ut nattverden eller finne noen andre til å gjøre det",
+      "Sette deg inn i søndagens info og kollekt",
+      "Eventuelt lage ekstra bønnevandringsposter hvis du vil (Bønnekrukke, noe tilpasset barna, takkevegg e. l.)",
+      "Forberede deg åndelig",
+      "Lede bønnemøtet på søndag kl. 10.00 - 10.45. Sett Gud på tronen, vær i bønn og bruk gjerne lovsang (Kl. 10.30 kommer de andre som skal bidra i gudstjenesten for å være med å be)",
+      "Ha en gjennomgang av gudstjenesten med taler, lovsangsleder og teknikere kl. 10.45",
+      "Ha skrevet ut en kjøreplan som deles ut, slik at alle vet hva som skjer når",
+      "Holde styr på tida og si ifra til lovsangsleder at de skal begynne gudstjenesten",
+      "Lede menigheten gjennom gudstjenesten (Bli leda av Gud, observere menigheten. Vær åpen for at kjøreplanen kan endres underveis - i samarbeid med lovsangsleder)",
+    ],
+  ],
+  Barnekirke: [
+    [
+      "Rigge klart det du trenger til opplegget du skal ha",
+      "Finne frem tegnesaker til barna på et av bordene i møtesalen",
+      "Eventuelt samarbeide med møtevert/gudstjenesteleder om bønnestasjon tilpasset barna",
+      "Ha samling/undervisning med barna under talen",
+      "Sørge for at barna er tilbake i møtesalen innen nattverden",
+      "Husk at du må ha hentet alt du trenger oppefra før kl. 10.00 (For å ikke forstyrre bønnemøtet)",
+      "Rigge ned alt du har rigga opp",
+    ],
+  ],
+  Lovsang: [
+    [
+      "Passe på at du får med deg iPadene hjem fra gudstjenesten",
+      "Ta kontakt med taler om tema",
+      "Ta kontakt med møteleder om hva han/hun vil med gudstjenesten, og være i dialog om setliste og kjøreplan",
+      "Lage setliste, fikse blekker i riktig toneart og sende dette til de som skal spille (Helst en uke før eller tidligere, senest 5 dager før)",
+      "Bli med på bønnemøtet kl. 10.30 (Du kan gjerne komme fra kl. 10.00)",
+      "Organisere øving og oppmøtetidspunkt på søndagen",
+      "Ta kontakt med lydmann om oppmøte på søndagen (Senest lørdag ettermiddag)",
+      "Sende setliste til den som skal styre bildet den gjeldende søndagen (Senest når?) (Si ifra hvis det er noen nye sanger vi ikke har hatt før)",
+      "Forberede deg åndelig (Lovsynge, be, lese Bibelen, lytte til Gud o.l.)",
+      "Passe på at du har med iPadene med blekker i riktig toneart, og at de er ladet opp (Både til øvelse og selve gudstjenesten)",
+      "Kunne sangene godt nok til at du kan lede teamet, være i tilbedelse selv og lede salen inn i det",
+      "Være ferdig med å øve i salen senest kl. 10.30 og bli med på bønnemøtet som starter da",
+      "Være med på gjennomgang av gudstjenesten kl. 10.45",
+      "Holde styr på tida, og være klar over når dere skal opp og ned på scenen",
+      "Lede menigheten i lovsang og tilbedelse (Bli leda av Gud, observere menigheten. Vær åpen for at kjøreplanen kan endres underveis - i samarbeid med møteleder)",
+    ],
+  ],
+  Møtevert: [
+    [
+      "Ønske velkommen i døra fra kl. 10.40 til kl. 11.10 (Det er flere som kan finne på å komme litt seint)",
+      "Eventuelt hjelpe til med praktiske oppgaver som oppstår underveis i gudstjenesten",
+      "Se over møtesalen etter brukte kaffekopper og nattverdsglass når gudstjenesten er ferdig",
+    ],
+  ],
+  Kjøkken: [
+    [
+      "Rigge klart nattverdsbordet (Bord, duk, glass, juice i karaffel, nattverdsoblater + bord, duk og brett til å sette brukte glass på)",
+      "Koke kaffe og tevann ferdig til senest kl. 10.30 + sette frem te, kakao og twist/annet godt",
+      "Sette frem diverse mat og drikke til kirkekaffen (Kaffe, te, kakao, saft, vann, mat og kaker)",
+      "Rydde på plass alt du har funnet frem",
+    ],
+  ],
+};
+
+/** The names a standard role is also known by: the role that leads a service is called «Leder» by some. */
+const ROLE_ALIASES: Record<string, DefaultVolunteerRoleName> = { leder: "Møteleder", gudstjenesteleder: "Møteleder" };
+
+const sameText = (text: string): string => text.replace(/[•\s]+/g, " ").trim();
+
+/**
+ * The roles that can be given the standard instruction, each with that instruction: a role
+ * without an instruction, and a role that still has an earlier standard instruction untouched.
+ * A role with a text of its own is never among them: what the congregation has written, stands.
  */
 export function rolesMissingStandardInstruction<T extends Pick<VolunteerRole, "name" | "instruction">>(roles: readonly T[]): { role: T; instruction: string }[] {
-  const byName = new Map(Object.entries(DEFAULT_VOLUNTEER_ROLE_INSTRUCTIONS).map(([name, instruction]) => [name.toLocaleLowerCase("nb"), instruction]));
+  const names = Object.keys(DEFAULT_VOLUNTEER_ROLE_INSTRUCTIONS) as DefaultVolunteerRoleName[];
   return roles.flatMap((role) => {
-    const instruction = (role.instruction ?? "").trim() === "" ? byName.get(role.name.trim().toLocaleLowerCase("nb")) : undefined;
-    return instruction ? [{ role, instruction }] : [];
+    const wanted = role.name.trim().toLocaleLowerCase("nb");
+    const name = names.find((candidate) => candidate.toLocaleLowerCase("nb") === wanted) ?? ROLE_ALIASES[wanted];
+    const instruction = name ? DEFAULT_VOLUNTEER_ROLE_INSTRUCTIONS[name] : undefined;
+    if (!name || !instruction) return [];
+    const current = (role.instruction ?? "").trim();
+    const earlier = (SUPERSEDED_VOLUNTEER_ROLE_INSTRUCTIONS[name] ?? []).some((lines) => sameText(lines.join("\n")) === sameText(current));
+    return current === "" || earlier ? [{ role, instruction }] : [];
   });
 }
 

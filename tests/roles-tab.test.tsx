@@ -69,8 +69,8 @@ describe("RolesTab", () => {
 
     patchVolunteerRole.mockClear();
     render(<RolesTab studio={{ ...studio, adminVolunteerRoles: roles } as unknown as StudioData} showFeedback={showFeedback} />);
-    expect(screen.getByText("2 roller mangler instruks")).toBeTruthy();
-    expect(screen.getByText(/kan legges inn på kjøkken , Taler\./)).toBeTruthy();
+    expect(screen.getByText("2 roller kan få standardinstruksen")).toBeTruthy();
+    expect(screen.getByText(/Gjelder kjøkken , Taler: de mangler instruks/)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Legg inn standardinstrukser" }));
 
     await waitFor(() => expect(showFeedback).toHaveBeenCalledWith("Standardinstruks er lagt inn på 2 roller."));
@@ -78,6 +78,36 @@ describe("RolesTab", () => {
       ["role-2", { instruction: DEFAULT_VOLUNTEER_ROLE_INSTRUCTIONS.Kjøkken }],
       ["role-3", { instruction: DEFAULT_VOLUNTEER_ROLE_INSTRUCTIONS.Taler }],
     ]);
+  });
+
+  test("en eldre standardinstruks som står urørt, byttes ut; en tekst menigheten har endret, står", () => {
+    // What the standard said for Møtevert before 13 October 2026
+    const earlier = [
+      "• Ønske velkommen i døra fra kl. 10.40 til kl. 11.10 (Det er flere som kan finne på å komme litt seint)",
+      "• Eventuelt hjelpe til med praktiske oppgaver som oppstår underveis i gudstjenesten",
+      "• Se over møtesalen etter brukte kaffekopper og nattverdsglass når gudstjenesten er ferdig",
+    ].join("\n");
+    const roles = [
+      { name: "Møtevert", instruction: earlier },
+      { name: "Møtevert", instruction: earlier + "\n• Låse døra til slutt" },
+      { name: "Møtevert", instruction: DEFAULT_VOLUNTEER_ROLE_INSTRUCTIONS.Møtevert },
+    ];
+    const offered = rolesMissingStandardInstruction(roles);
+    expect(offered.map(({ role }) => roles.indexOf(role))).toEqual([0]);
+    expect(offered[0].instruction).toBe(DEFAULT_VOLUNTEER_ROLE_INSTRUCTIONS.Møtevert);
+    expect(DEFAULT_VOLUNTEER_ROLE_INSTRUCTIONS.Møtevert).not.toContain("kaffekopper");
+  });
+
+  test("standarden følger menighetens eget ark, og rollen som leder en gudstjeneste, kjennes også som «Leder»", () => {
+    const leader = DEFAULT_VOLUNTEER_ROLE_INSTRUCTIONS.Møteleder!;
+    expect(leader.split("\n")).toHaveLength(17);
+    expect(leader).toContain("• Legge til rette for å sitte igjen i salen når gudstjenesten er ferdig hvis du ønsker det");
+    expect(DEFAULT_VOLUNTEER_ROLE_INSTRUCTIONS.Kjøkken).toContain("• Ta ansvar for oppvask i etterkant av kirkekaffen");
+    expect(DEFAULT_VOLUNTEER_ROLE_INSTRUCTIONS.Barnekirke!.split("\n")).toHaveLength(9);
+    expect(DEFAULT_VOLUNTEER_ROLE_INSTRUCTIONS.Lovsang!.split("\n")).toHaveLength(14);
+
+    const offered = rolesMissingStandardInstruction([{ name: "Leder", instruction: "" }, { name: "Vaktmester", instruction: "" }]);
+    expect(offered).toEqual([{ role: { name: "Leder", instruction: "" }, instruction: leader }]);
   });
 
   test("når ingen rolle mangler en instruks standarden har, tilbys ingenting", () => {

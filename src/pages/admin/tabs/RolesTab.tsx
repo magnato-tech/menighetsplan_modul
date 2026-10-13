@@ -205,11 +205,11 @@ export const RolesTab: React.FC<RolesTabProps> = ({ studio, showFeedback }) => {
             <FileText className="w-5 h-5 text-[var(--studio-icon)] shrink-0 mt-0.5" />
             <div>
               <p className="font-bold text-[var(--studio-text)]">
-                {missingInstructions.length} {missingInstructions.length === 1 ? "rolle mangler" : "roller mangler"} instruks
+                {missingInstructions.length} {missingInstructions.length === 1 ? "rolle kan få" : "roller kan få"} standardinstruksen
               </p>
               <p className="text-[var(--studio-muted)]">
-                Standardinstruksen kan legges inn på {missingInstructions.map(({ role }) => role.name).join(", ")}. Roller som alt har en instruks, røres ikke, og
-                du kan endre teksten etterpå.
+                Gjelder {missingInstructions.map(({ role }) => role.name).join(", ")}: de mangler instruks, eller har en eldre standardinstruks som ikke er endret.
+                En instruks dere har skrevet eller endret selv, røres ikke, og du kan endre teksten etterpå.
               </p>
             </div>
           </div>
