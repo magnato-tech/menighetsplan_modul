@@ -101,6 +101,21 @@ export function createDocument<T extends { id: string }>(name: CollectionName, d
   return setDocument(name, document.id, document);
 }
 
+/**
+ * Stores many new documents in one collection. A sending holds 400 at most, so a long list goes
+ * in several. They are all started at once: each is in the browser's own copy straight away, also
+ * when the network is slow, and the promise is of them all having reached the database.
+ */
+export function createDocuments<T extends { id: string }>(name: CollectionName, documents: readonly T[]): Promise<void> {
+  const sendings: Promise<void>[] = [];
+  for (let start = 0; start < documents.length; start += 400) {
+    const batch = writeBatch(db);
+    for (const document of documents.slice(start, start + 400)) batch.set(doc(db, name, document.id), sanitizeForFirestore(document));
+    sendings.push(batch.commit());
+  }
+  return Promise.all(sendings).then(() => undefined);
+}
+
 /** Stores the whole document under the given id, replacing what was there. */
 export function setDocument(name: CollectionName, id: string, document: object): Promise<void> {
   return setDoc(doc(db, name, id), sanitizeForFirestore(document));

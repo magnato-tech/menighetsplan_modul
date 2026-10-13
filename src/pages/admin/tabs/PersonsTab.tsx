@@ -5,6 +5,7 @@ import {
   Shield,
   CalendarX,
   Database,
+  FileUp,
   LayoutGrid,
   Loader2,
   Search,
@@ -28,6 +29,8 @@ import { emailError, membershipValue, personEntryError, sharedEmailWarnings } fr
 import { personListFile } from "../../../utils/personListFile";
 import { createPersonInGroup } from "../../../services/memberProposals";
 import { reportWriteError } from "../../../services/writeErrors";
+import { DEMO } from "../../../demo";
+import { CornerstoneImportDialog } from "../CornerstoneImportDialog";
 
 interface PersonsTabProps {
   studio: StudioData;
@@ -37,6 +40,7 @@ interface PersonsTabProps {
 export const PersonsTab: React.FC<PersonsTabProps> = ({ studio, showFeedback }) => {
   const { adminPersons, adminGroups, addPerson } = studio;
   const [creating, setCreating] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [newPhone, setNewPhone] = useState("");
@@ -160,6 +164,18 @@ export const PersonsTab: React.FC<PersonsTabProps> = ({ studio, showFeedback }) 
           <UserPlus className="w-4 h-4" />
           <span>{creating ? "Lukk skjema" : "Ny person"}</span>
         </button>
+        {/* Not in the demo: its database is open to everyone, and a real register must never be put there */}
+        {DEMO === null && (
+          <button
+            type="button"
+            id="btn-import-cornerstone"
+            onClick={() => setImporting(true)}
+            className="px-3.5 py-2 rounded-xl bg-[var(--studio-surface)] border border-[var(--studio-border)] text-[var(--studio-text)] text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+          >
+            <FileUp className="w-4 h-4" />
+            <span>Hent inn fra Cornerstone</span>
+          </button>
+        )}
         <button
           type="button"
           onClick={handlePopulateTestData}
@@ -175,6 +191,17 @@ export const PersonsTab: React.FC<PersonsTabProps> = ({ studio, showFeedback }) 
           <span>{isPopulating ? "Fyller testdata..." : "Populer testdata (32 personer)"}</span>
         </button>
       </div>
+
+      {importing && (
+        <CornerstoneImportDialog
+          register={adminPersons.map((row) => row.person)}
+          onDone={(count) => {
+            setImporting(false);
+            showFeedback?.(`${count} ${count === 1 ? "person" : "personer"} er hentet inn fra Cornerstone.`);
+          }}
+          onClose={() => setImporting(false)}
+        />
+      )}
 
       {creating && (
         <form onSubmit={handleCreatePerson} className="p-5 rounded-2xl bg-[var(--studio-surface)] border border-[var(--studio-border)] grid grid-cols-1 sm:grid-cols-2 gap-3">

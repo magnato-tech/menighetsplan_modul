@@ -49,6 +49,7 @@ import {
   setGroupNotifications,
   saveAssignmentChange,
   deleteGatheringAndStaffing,
+  createDocuments,
   setAnalyticsModuleHidden as storeAnalyticsModuleHidden,
 } from "../services/firestore";
 import { signOut as signOutOfAccount, subscribeAccount } from "../services/auth";
@@ -153,6 +154,8 @@ export interface FirebaseDataContextType {
   updateGroup: (groupId: string, updates: Partial<Group>) => ActionResult;
   createGroup: (data: NewGroupInput) => ActionResult & { group?: Group };
   addPerson: (data: NewPersonInput) => ActionResult & { person?: Person };
+  /** Adds many persons at once, as when a list is brought in from another register. */
+  addPersons: (list: NewPersonInput[]) => ActionResult & { persons: Person[] };
   updatePerson: (personId: string, updates: Partial<Person>) => ActionResult;
   addGroupMember: (groupId: string, personId: string) => ActionResult;
   removeGroupMember: (groupId: string, personId: string) => ActionResult;
@@ -736,6 +739,10 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
       addPerson: (data: NewPersonInput) => {
         const person = buildPerson(data);
         return { ...save("lagre personen", () => createDocument(COLLECTIONS.PERSONS, person)), person };
+      },
+      addPersons: (list: NewPersonInput[]) => {
+        const added = list.map(buildPerson);
+        return { ...save("lagre personene", () => createDocuments(COLLECTIONS.PERSONS, added)), persons: added };
       },
       updatePerson: (personId: string, updates: Partial<Person>) =>
         save("lagre endringene i personen", () => updateDocument(COLLECTIONS.PERSONS, personId, updates)),

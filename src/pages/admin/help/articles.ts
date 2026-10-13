@@ -296,6 +296,7 @@ const personer: HelpArticle = {
     "Oppdater navn, telefon, e-post, tilgang, Politiattest (gyldig til dato) og fravær.",
     "Under Offentlig profil på nettsiden bestemmer du hva som kan vises utad.",
     "Trykk Lagre alle personopplysninger & tilganger.",
+    "For å hente inn mange fra Cornerstone: eksporter personene som CSV, trykk Hent inn fra Cornerstone og velg filen. Du ser hvem som blir lagt inn før noe lagres. Bare navn, e-post, telefon, fødselsdato og medlemskap hentes. Er filen en Excel-fil, lagrer du den som CSV i Excel først.",
   ],
   knapper:
     "Søk: «Søk etter navn, gruppe, tilgang eller kontaktinfo...» Kolonner: Navn, Tilgang, Grupper, E-post, Telefon, Handling. Tilgangsmerker: GRUPPELEDER, NESTLEDER, FRIVILLIG, ADMINISTRATOR.",

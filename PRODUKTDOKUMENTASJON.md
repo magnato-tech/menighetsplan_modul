@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.28 · **Sist oppdatert:** 2026-10-13
+> **Dokumentversjon:** 4.29 · **Sist oppdatert:** 2026-10-13
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -1076,6 +1076,28 @@ Bestilt av produkteier etter at «Legg til i Google Kalender» ga feil hos førs
 | **Andre adresser under `/api`** | Svarer «finnes ikke» i stedet for å vise nettsiden |
 | **Vakt** | En sjekk feiler om en skjerm igjen lenker til en adresse under `/api` |
 | **Prøvd** | 14 sjekker. Den pakkede funksjonen er kjørt mot databasen til første menighet og mot demoens, uten innlogging: 30 og 13 arrangementer, med riktig navn på kalenderen |
+
+### Hent inn personer fra Cornerstone (13. oktober 2026)
+
+Bestilt av produkteier. Menigheter som har medlemsregisteret sitt i Cornerstone, skal kunne hente personene inn selv, uten at noen andre enn administrator ser filen. Regelen produkteier ga: bare det løsningen har felt for, hentes.
+
+| Område | Levert |
+|:---|:---|
+| **«Hent inn fra Cornerstone»** | Knapp under Personer i admin. Administrator velger en CSV-fil eksportert fra Cornerstone |
+| **Leses i nettleseren** | Filen leses der administrator sitter, og går ingen andre steder enn til menighetens egen database |
+| **Det som hentes** | Navn (fornavn, mellomnavn, etternavn), e-post 1, telefonnummer 1, fødselsdato, og om personen er medlem i menigheten og i kirkesamfunnet (innmeldt dato fylt ut, utmeldt dato tom) |
+| **Det som aldri hentes** | Alt annet i filen: adresse, kjønn, sivilstatus, yrke, kommentar, foreldre, grupper, dåp, konfirmasjon, begravelse og Cornerstone-ID. Kolonnene leses ikke |
+| **Fødselsnummer** | Lagres aldri og vises aldri. Har en person ingen fødselsdato i filen, tas datoen ut av fødselsnummeret, og nummeret går ikke videre |
+| **Vises før noe lagres** | Hvor mange som blir lagt inn, hvor mange som har e-post, fødselsdato og medlemskap, og hvem som hoppes over og hvorfor |
+| **Hoppes over** | Den som finnes i registeret fra før (samme navn, eller samme fornavn og e-post, og ikke ulik fødselsdato), den som står to ganger i filen, den som står med dødsdato, og rader uten navn |
+| **Barn** | Hentes inn som alle andre |
+| **Delt e-post** | En adresse kan bare logge inn én person. Deler flere en adresse, blir den stående på den som har den i registeret fra før, eller på den eldste i filen. De andre legges inn uten e-post, og skjemaet sier hvem |
+| **Ikke CSV** | En Excel-fil eller en annen fil gir beskjed om å lagre som CSV i Excel først. Det gjelder også en Excel-fil som bare har fått navnet .csv |
+| **Tegnsett og skilletegn** | Æ, ø og å leses riktig både fra Cornerstones egen fil og fra en fil lagret i Excel. Semikolon, komma og tabulator godtas |
+| **Demoen** | Knappen vises ikke. Demoens database er åpen for alle, og et ekte register skal aldri dit |
+| **Ikke levert her** | Grupper fra filen. Oppdatering av personer som finnes fra før (for eksempel fødselsdato som mangler). Angre: personer som er hentet inn, slettes én og én |
+| **Regler** | Uendret. Administrator kunne alt skrive mange personer i én sending |
+| **Prøvd** | 20 sjekker med oppdiktede personer. Sett i nettleseren med en oppdiktet fil og nettet slått av: Excel-fil ble avvist, forhåndsvisningen stemte, to personer ble lagt inn uten fødselsnummer eller adresse, og demodatabasen var urørt etterpå. Ikke prøvd med en ekte fil fra Cornerstone: det gjør administrator selv |
 
 ---
 

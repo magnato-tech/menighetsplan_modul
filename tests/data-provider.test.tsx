@@ -389,6 +389,21 @@ describe("Bemanning", () => {
     expect(data.current.getTaskById("task-1")?.status).toBe("open");
   });
 
+  test("Mange personer legges inn i én sending, slik en liste fra et annet register kommer", async () => {
+    const data = await mountProvider();
+    const list = Array.from({ length: 450 }, (_, at) => ({ name: `Person ${at + 1}`, email: at === 0 ? "forste@eksempel.no" : "", birthDate: at === 1 ? "2013-06-05" : undefined, congregationMember: at === 0 }));
+    const result = data.current.addPersons(list);
+    expect(result.success).toBe(true);
+    expect(result.persons).toHaveLength(450);
+    await waitFor(() => expect(data.current.allPersons).toHaveLength(persons.length + 450));
+
+    const first = await stored(COLLECTIONS.PERSONS, result.persons[0].id);
+    expect(first).toMatchObject({ name: "Person 1", email: "forste@eksempel.no", congregationMember: true, globalRole: "member" });
+    expect(await stored(COLLECTIONS.PERSONS, result.persons[1].id)).toMatchObject({ name: "Person 2", birthDate: "2013-06-05" });
+    expect(await stored(COLLECTIONS.PERSONS, result.persons[449].id)).toMatchObject({ name: "Person 450" });
+    expect(getWriteError()).toBeNull();
+  });
+
   test("Et arrangement slettes med oppgavene og alle som står på dem, og resten står urørt", async () => {
     const data = await mountProvider();
     data.current.assignTaskToPerson("task-1", "person-3", "pending");
