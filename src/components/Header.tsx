@@ -18,8 +18,9 @@ export const Header: React.FC = () => {
 
   return (
     <header className="sticky top-[var(--demo-strip,0px)] z-40 bg-white border-b border-slate-200/80 shadow-xs">
-      {/* Top Banner with link back to public website */}
-      <div className="bg-slate-900 text-slate-300 px-4 py-1.5 text-xs flex items-center justify-between">
+      {/* Top Banner with link back to public website. It is held to the same column as the page under it: on a wide screen a link at the edge of the window is far from where anyone looks. */}
+      <div className="bg-slate-900 text-slate-300 py-1.5 text-xs">
+        <div className="max-w-md mx-auto px-5 flex items-center justify-between">
         <Link
           to="/"
           id="link-to-website"
@@ -31,23 +32,22 @@ export const Header: React.FC = () => {
         <span className="text-[11px] text-slate-400 hidden sm:inline">
           Min Side · Planlegger & Frivilligportal
         </span>
+        </div>
       </div>
 
       <div className="max-w-md mx-auto px-5 pt-3 pb-2">
         <div className="flex items-center justify-between">
-          {/* Brand Logo & Name */}
+          {/* The congregation's own name, which leads to its website. The name of the product is not written here. */}
           <Link
-            to="/minside"
+            to="/"
             id="app-logo-link"
-            className="flex flex-col group transition-opacity hover:opacity-90"
+            title="Til nettsiden"
+            className="flex flex-col items-start gap-0.5 min-w-0 group transition-opacity hover:opacity-90"
           >
-            <h1 className="text-xl font-bold text-slate-800 tracking-tight flex items-center gap-1.5">
-              <span>Menighetsplan</span>
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">
-                Min Side
-              </span>
+            <h1 className="text-lg font-bold text-slate-800 tracking-tight leading-tight group-hover:underline underline-offset-2">
+              {settings.churchName || "Menighetsplan"}
             </h1>
-            <p className="text-[11px] text-slate-500 font-medium">{settings.churchName}</p>
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">Min Side</span>
           </Link>
 
           {/* Who is signed in, and the way out */}
