@@ -80,6 +80,22 @@ describe("Arrangementene som tabell", () => {
     expect(within(lines()[2]).getByText("Tema: Søndag for de forfulgte")).toBeTruthy();
   });
 
+  test("et arrangement uten oppgaver står med «Ingen oppgaver», ikke som dekket eller som noe som mangler", () => {
+    render(
+      <MemoryRouter>
+        <GatheringsTable
+          rows={[{ ...row("uten", "2026-11-11", "Menighetsmøte", "Bjørkeveien 11B", 0), totalTasks: 0, coveredTasksCount: 0 } as AdminGatheringItem, rows[1]]}
+          sortKey="date"
+          sortDirection="asc"
+          {...handlers}
+        />
+      </MemoryRouter>
+    );
+    expect(lines()[0].textContent).toMatch(/Menighetsmøte.*Ingen oppgaver/);
+    expect(lines()[0].textContent).not.toMatch(/Dekket|Mangler|Venter/);
+    expect(lines()[1].textContent).toMatch(/Mangler 2/);
+  });
+
   test("kolonnen som er valgt, er merket, og et trykk på en overskrift ber om sortering", () => {
     handlers.onSort.mockClear();
     show();

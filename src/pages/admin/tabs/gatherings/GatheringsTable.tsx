@@ -77,19 +77,20 @@ export const GatheringsTable: React.FC<GatheringsTableProps> = ({ rows, sortKey,
                 </td>
                 <td className="px-3 py-2.5 text-[var(--studio-muted)]">{locationOf(g)}</td>
                 <td className="px-3 py-2.5 whitespace-nowrap">
-                  {item.staffing.color === "green" && (
+                  {item.totalTasks === 0 && <span className="text-[var(--studio-muted)]">Ingen oppgaver</span>}
+                  {item.totalTasks !== 0 && item.staffing.color === "green" && (
                     <span className="inline-flex items-center gap-1 font-bold text-emerald-400">
                       <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" />
                       Dekket ({item.coveredTasksCount}/{item.totalTasks})
                     </span>
                   )}
-                  {item.staffing.color === "yellow" && (
+                  {item.totalTasks !== 0 && item.staffing.color === "yellow" && (
                     <span className="inline-flex items-center gap-1 font-bold text-amber-400">
                       <Clock className="w-3.5 h-3.5" aria-hidden="true" />
                       Venter på svar
                     </span>
                   )}
-                  {item.staffing.color === "red" && (
+                  {item.totalTasks !== 0 && item.staffing.color === "red" && (
                     <span className="inline-flex items-center gap-1 font-bold text-rose-400">
                       <AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />
                       Mangler {item.missingStaffingCount}

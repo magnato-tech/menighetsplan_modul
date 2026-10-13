@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.29 · **Sist oppdatert:** 2026-10-13
+> **Dokumentversjon:** 4.30 · **Sist oppdatert:** 2026-10-13
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -1098,6 +1098,17 @@ Bestilt av produkteier. Menigheter som har medlemsregisteret sitt i Cornerstone,
 | **Ikke levert her** | Grupper fra filen. Oppdatering av personer som finnes fra før (for eksempel fødselsdato som mangler). Angre: personer som er hentet inn, slettes én og én |
 | **Regler** | Uendret. Administrator kunne alt skrive mange personer i én sending |
 | **Prøvd** | 20 sjekker med oppdiktede personer. Sett i nettleseren med en oppdiktet fil og nettet slått av: Excel-fil ble avvist, forhåndsvisningen stemte, to personer ble lagt inn uten fødselsnummer eller adresse, og demodatabasen var urørt etterpå. Ikke prøvd med en ekte fil fra Cornerstone: det gjør administrator selv |
+
+### Arrangement uten oppgaver (13. oktober 2026)
+
+Bestilt av produkteier: et menighetsmøte uten oppgaver sto med gul boks og «Mangler bemanning på noen oppgaver», 0/0. Et arrangement uten oppgaver mangler ingen; det ordnes på andre måter, for eksempel av vertskapet.
+
+| Område | Levert |
+|:---|:---|
+| **Kjøreplanen** | Boksen om bemanning vises ikke når arrangementet ikke har noen oppgaver |
+| **Listen over arrangementer** | Slike arrangementer står med «Ingen oppgaver», både på kortene og i tabellen. Før sto de som «Dekket (0/0)» i grønt |
+| **Arrangementer med oppgaver** | Som før |
+| **Prøvd** | Én sjekk av tabellen. Sett i nettleseren mot demoens data: tre arrangementer uten oppgaver sto med «Ingen oppgaver» i begge visninger, kjøreplanen til ett av dem hadde ingen boks, og et arrangement med oppgaver hadde boksen som før |
 
 ---
 

@@ -381,7 +381,8 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
           </div>
         </div>
 
-        {/* Staffing Barometer / Status Banner */}
+        {/* Staffing Barometer / Status Banner. Not for an event without tasks: nobody is lacking where nobody is asked for */}
+        {totalTasks > 0 && (
         <div
           id="gathering-staffing-barometer"
           className={`p-3 rounded-2xl border flex items-center justify-between gap-3 text-xs ${
@@ -429,6 +430,7 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
             </span>
           </div>
         </div>
+        )}
 
         {/* View Filter Controls - hidden in print */}
         <div className="space-y-2 pt-1 print:hidden">

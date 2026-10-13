@@ -398,19 +398,24 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
                     )}
 
                     {/* Staffing Status with SVG icon (WCAG AA) */}
-                    {staffing.color === "green" && (
+                    {item.totalTasks === 0 && (
+                      <span className="text-[10px] font-bold text-[var(--studio-muted)] bg-[var(--studio-bg)] border border-[var(--studio-border)] px-2 py-0.5 rounded">
+                        Ingen oppgaver
+                      </span>
+                    )}
+                    {item.totalTasks !== 0 && staffing.color === "green" && (
                       <span className="text-[10px] font-bold text-emerald-300 bg-emerald-950/80 border border-emerald-800 px-2 py-0.5 rounded flex items-center gap-1">
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                         Dekket ({item.coveredTasksCount}/{item.totalTasks})
                       </span>
                     )}
-                    {staffing.color === "yellow" && (
+                    {item.totalTasks !== 0 && staffing.color === "yellow" && (
                       <span className="text-[10px] font-bold text-amber-300 bg-amber-950/80 border border-amber-800 px-2 py-0.5 rounded flex items-center gap-1">
                         <Clock className="w-3.5 h-3.5 text-amber-400" />
                         Venter på svar
                       </span>
                     )}
-                    {staffing.color === "red" && (
+                    {item.totalTasks !== 0 && staffing.color === "red" && (
                       <span className="text-[10px] font-bold text-rose-300 bg-rose-950/80 border border-rose-800 px-2 py-0.5 rounded flex items-center gap-1">
                         <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
                         Mangler {item.missingStaffingCount} frivillige
