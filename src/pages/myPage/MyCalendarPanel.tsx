@@ -1,18 +1,13 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Calendar, Clock, MapPin, X } from "lucide-react";
-import { CalendarSubscribeButtons } from "../../components/public/CalendarSubscribeButtons";
 import { useFirebase } from "../../context/FirebaseDataContext";
 import { useCurrentUser } from "../../hooks/memberHooks";
-import { DEMO } from "../../demo";
-import { DEMO_SITE } from "../../demoSite";
-import { ensurePersonalCalendarFeedToken } from "../../services/personalCalendarFeed";
 import { formatNorwegianDateTime } from "../../utils/dates";
 import { locationOf } from "../../utils/gatherings";
 import {
   filterPersonalCalendarEvents,
   personalCalendarEvents,
-  personalCalendarFeedUrl,
   PersonalCalendarFilter,
 } from "../../utils/personalCalendar";
 
@@ -29,13 +24,8 @@ const FILTERS: { id: PersonalCalendarFilter; label: string }[] = [
 export const MyCalendarPanel: React.FC<MyCalendarPanelProps> = ({ onClose }) => {
   const navigate = useNavigate();
   const { currentUser, userGroups } = useCurrentUser();
-  const { gatherings, getPersonAttendance, updatePerson } = useFirebase();
+  const { gatherings, getPersonAttendance } = useFirebase();
   const [filter, setFilter] = useState<PersonalCalendarFilter>("alle");
-  const [feedToken, setFeedToken] = useState<string | null>(currentUser.calendarFeedToken ?? null);
-
-  useEffect(() => {
-    if (currentUser.calendarFeedToken) setFeedToken(currentUser.calendarFeedToken);
-  }, [currentUser.calendarFeedToken, currentUser.id]);
 
   const from = useMemo(() => Date.now(), []);
 
@@ -57,20 +47,9 @@ export const MyCalendarPanel: React.FC<MyCalendarPanelProps> = ({ onClose }) => 
     navigate(`/samling/${gatheringId}`);
   };
 
-  const resolveFeedToken = (): string | null => {
-    if (feedToken) return feedToken;
-    if (currentUser.calendarFeedToken) return currentUser.calendarFeedToken;
-    const ensured = ensurePersonalCalendarFeedToken(currentUser, updatePerson);
-    if (!ensured.success) return null;
-    setFeedToken(ensured.token);
-    return ensured.token;
-  };
-
-  const feedUrlFor = () => {
-    const token = resolveFeedToken();
-    if (!token) return null;
-    return personalCalendarFeedUrl(window.location.origin, token, DEMO_SITE, DEMO !== null);
-  };
+  // No subscription is offered here: the personal calendar file needs a service that reads what
+  // only the person may read, and none runs where the app is hosted (PRODUKTDOKUMENTASJON.md
+  // chapter 13). What it would be made from, is kept in utils/personalCalendar.ts.
 
   return (
     <div
@@ -94,13 +73,6 @@ export const MyCalendarPanel: React.FC<MyCalendarPanelProps> = ({ onClose }) => 
         </div>
 
         <div className="px-4 pt-3 pb-2 bg-white border-b border-slate-200 space-y-2">
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50/80 p-3 space-y-2">
-            <p className="text-[11px] text-slate-700 leading-relaxed">
-              Abonner på det du ser her i Google Kalender eller annen kalenderapp. Oppdateringen skjer automatisk, ofte med noen
-              timers mellomrom.
-            </p>
-            <CalendarSubscribeButtons tone="emerald" resolveFeedUrl={feedUrlFor} />
-          </div>
           <div className="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-0.5 w-full">
             {FILTERS.map((item) => (
               <button

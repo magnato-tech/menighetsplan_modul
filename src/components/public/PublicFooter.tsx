@@ -7,7 +7,6 @@ import {
   Phone,
   Mail,
   Clock,
-  ExternalLink,
   Shield,
   LayoutDashboard,
 } from "lucide-react";
@@ -167,16 +166,6 @@ export const PublicFooter: React.FC = () => {
             <Link to="/kontakt" className="hover:text-stone-300">Kontakt</Link>
             <span>·</span>
             <Link to="/minside" className="hover:text-stone-300">Min Side</Link>
-            <span>·</span>
-            <a
-              href="/api/offentlig/arrangementer"
-              target="_blank"
-              rel="noreferrer"
-              className="hover:text-stone-300 flex items-center gap-1"
-            >
-              <span>Åpent API</span>
-              <ExternalLink className="w-3 h-3" />
-            </a>
           </div>
         </div>
       </div>

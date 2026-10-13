@@ -12,6 +12,7 @@
     "lint": "tsc --noEmit",
     "test": "vitest run",
     "test:rules": "npm --prefix rules-tests test",
+    "build:api": "tsx scripts/build-api.ts",
     "first-admin": "tsx scripts/first-admin.ts",
     "reset-demo": "tsx scripts/reset-demo.ts"
   },

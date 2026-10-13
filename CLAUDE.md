@@ -42,7 +42,8 @@ Kjør `npm run lint` og `npm test` før en endring regnes som ferdig.
 ## 3. Hvor ting ligger
 | Sti | Innhold |
 |---|---|
-| `server.ts`, `server/publicApi.ts`, `server/pageMeta.ts` | Express-server, de rene funksjonene bak det offentlige API-et, og tittel og delingskort i HTML-en som sendes |
+| `server.ts`, `server/publicApi.ts`, `server/pageMeta.ts` | Express-server, de rene funksjonene bak det offentlige API-et, og tittel og delingskort i HTML-en som sendes. Serveren kjører ikke der løsningen er i drift (Vercel) |
+| `server/vercel/kalender.ts`, `server/publicCalendarFeed.ts`, `server/firestoreRest.ts`, `scripts/build-api.ts`, `api/kalender.js`, `vercel.json` | Kalenderabonnementet der løsningen er i drift: en funksjon på Vercel for `/api/offentlig/kalender.ics`. Den leser de offentlige arrangementene uten innlogging og uten Firebase-klienten. `api/kalender.js` er pakket av `npm run build:api` og skal ikke redigeres for hånd: kjør kommandoen etter en endring i kilden eller i noe den bruker (`src/utils/calendarFeed.ts`, `gatherings.ts`, `visibility.ts`, `validation.ts`, `installation.ts`). En knapp eller lenke til en adresse under `/api` legges bare inn når adressen svarer der løsningen er i drift |
 | `src/App.tsx` | Ruter og de tre layoutene |
 | `src/firebase.ts` | Oppstart av Firebase |
 | `src/services/firestore.ts` | Lesing og skriving mot Firestore, uten React |

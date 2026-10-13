@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.27 · **Sist oppdatert:** 2026-10-13
+> **Dokumentversjon:** 4.28 · **Sist oppdatert:** 2026-10-13
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -287,7 +287,7 @@ Ikke bygget. Avtalt innhold, hvis den tas inn senere:
 * «Kommer ikke» skjuler den ene samlingen. En bekreftet oppgave legges på samlingen den hører til, og lager ikke en egen hendelse.
 * Husfellesskap vises bare når innkalling er sendt, eller den frivillige allerede har svart. Andre grupper viser alle kommende gruppesamlinger så lenge kilden er på.
 * Den erstatter «Neste for deg» og «Neste i menigheten» på Min side. «Trenger svar», gruppene og oppgavene blir stående.
-* Personlig kalenderabonnement (iCal) venter til innlogging finnes. Abonnement på menighetens offentlige kalender hører hjemme på nettsiden, ikke her.
+* Personlig kalenderabonnement (iCal) tilbys ikke: tjenesten som lager filen, kjører ikke der løsningen er satt i drift (se kapittel 13). Abonnement på menighetens offentlige kalender står på nettsiden.
 
 ---
 
@@ -625,6 +625,8 @@ Serveren leverer et åpent JSON-API som eksterne nettsider kan lese. Bare hvitel
 | `GET /api/public/groups` | v1.1: grupper som vises utad |
 | `GET /api/public/recurring` | v1.1: faste møtetider |
 | `GET /api/public/all` | v1.1: alt samlet |
+
+**Der løsningen er satt i drift (Vercel), kjører ikke denne serveren.** Der svarer bare kalenderabonnementet, `GET /api/offentlig/kalender.ics`, som er en egen liten funksjon (se «Kalenderabonnementet der løsningen er i drift» i kapittel 12). Andre adresser under `/api` svarer «finnes ikke». JSON-endepunktene over finnes bare der `server.ts` kjøres.
 
 Kontrakten står i `INTEGRASJON-MENIGHETSPLAN.md`. Det eksterne CMS-et (`menighetsplan_ClaudeCMS`) er en egen løsning som leser dette API-et. Koden for det hører ikke hjemme i dette repoet.
 
@@ -1057,6 +1059,24 @@ Bestilt av produkteier: «Slett resten av serien» var for farlig, fordi et helt
 | **Regler** | Uendret. En ny regelsjekk viser at administrator kan gjøre sendingen, og at en frivillig ikke kan |
 | **Prøvd** | 8 sjekker av slettingen i admin, én av sendingen i dataleverandøren og én regelsjekk i emulatoren. Sett i nettleseren mot demoens data med nettet slått av i fanen: advarselen viste oppgaven og navnet, «Avbryt» lot alt stå, og etter «Fjern alle og slett arrangementet» var arrangementet, oppgaven og tildelingen borte og resten urørt. Etter ny lasting sto alt som før i databasen |
 
+### Kalenderabonnementet der løsningen er i drift (13. oktober 2026)
+
+Bestilt av produkteier etter at «Legg til i Google Kalender» ga feil hos første menighet. Knappene pekte på en adresse som bare serveren i `server.ts` svarte på, og den kjører ikke på Vercel. Google fikk nettsiden tilbake i stedet for en kalender. Regelen produkteier ga: en knapp skal virke, eller tas bort.
+
+| Område | Levert |
+|:---|:---|
+| **Den offentlige kalenderen** | `/api/offentlig/kalender.ics` svarer nå med en kalenderfil der løsningen er i drift. «Legg til i Google Kalender» og «Kopier abonnementslenke» på nettsidens kalender bruker den |
+| **Det som er med** | Det en besøkende ser i kalenderen på nettsiden: arrangementene som er merket offentlige, fra 30 dager tilbake til ett år fram, med sted, ingress, tema og adressen til arrangementets side. Gruppenes egne samlinger er ikke med. Kalenderen har menighetens navn |
+| **Slik leser den** | Uten innlogging og uten nøkler, med samme spørsmål som nettsiden stiller for en besøkende. Reglene i databasen avgjør hva som kommer tilbake. Reglene er uendret |
+| **Demoen** | `?menighet=` velger menighet, som før. Hos en menighet ses det bort fra |
+| **Slik er den bygget** | Kilden står i `server/vercel/kalender.ts`, `server/publicCalendarFeed.ts` og `server/firestoreRest.ts`. `npm run build:api` pakker den til `api/kalender.js`, som er filen Vercel leser. En sjekk feiler når den pakkede filen ikke er laget av kilden slik den er |
+| **Tatt bort: «Åpent API»** | Lenken nederst på nettsiden pekte på `/api/offentlig/arrangementer`, som ikke svarer der løsningen er i drift |
+| **Tatt bort: abonnement i «Min kalender»** | Boksen med «Legg til i Google Kalender» og «Kopier abonnementslenke» på Min side. Den personlige kalenderfilen må lages av en tjeneste som kan lese det bare personen selv får lese, og den finnes ikke i drift. Selve kalenderen i «Min kalender» står som før |
+| **Tatt bort: «Test API-endepunkt nå»** | Avsnittet «Offentlig Nettside & CMS-integrasjon» i Database-fanen i admin. Knappen spurte `/api/public/gatherings`, som ikke svarer der løsningen er i drift |
+| **Andre adresser under `/api`** | Svarer «finnes ikke» i stedet for å vise nettsiden |
+| **Vakt** | En sjekk feiler om en skjerm igjen lenker til en adresse under `/api` |
+| **Prøvd** | 14 sjekker. Den pakkede funksjonen er kjørt mot databasen til første menighet og mot demoens, uten innlogging: 30 og 13 arrangementer, med riktig navn på kalenderen |
+
 ---
 
 
@@ -1089,6 +1109,7 @@ Sortert etter hvor mye de betyr for en menighet som skal ta løsningen i bruk.
 | 21 | Hos en ekte menighet i demoen har planleggeren nesten ingen oppgaver: bemanningen i eksempelet hører til eksempelmenighetens gudstjenester | Ikke planlagt |
 | 22 | Settene i demoen er laget av menighetenes åpne nettsider, og vises i en demo alle kan endre. Bildene av de ansatte er tatt ut, men navnene deres står, og andre bilder på nettsidene kan vise personer. Eieren slår en menighet på i lista når den har sagt ja. En menighet som er av, kan fortsatt åpnes av den som har lenken | Produkteier |
 | 23 | Eierkoden til demoen beskytter skjermen, ikke databasen. Demoens database har åpne regler | Ikke planlagt |
+| 24 | Der løsningen er i drift, finnes ikke det personlige kalenderabonnementet og ikke JSON-API-et i kapittel 9. Knappene og lenkene som pekte dit, er tatt bort. Det personlige abonnementet trenger en tjeneste med egen nøkkel til databasen | Ikke planlagt |
 
 ---
 

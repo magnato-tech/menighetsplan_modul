@@ -118,8 +118,6 @@ export const DatabaseTab: React.FC<DatabaseTabProps> = ({ showFeedback }) => {
   const [isWorking, setIsWorking] = useState<boolean>(false);
   const [confirmDeleteDialog, setConfirmDeleteDialog] = useState<boolean>(false);
   const [confirmClearPlannerDialog, setConfirmClearPlannerDialog] = useState<boolean>(false);
-  const [apiTestResponse, setApiTestResponse] = useState<string | null>(null);
-  const [isTestingApi, setIsTestingApi] = useState<boolean>(false);
 
   const applyPreset = (preset: PresetPackage) => {
     setActivePreset(preset.id);
@@ -254,23 +252,6 @@ export const DatabaseTab: React.FC<DatabaseTabProps> = ({ showFeedback }) => {
     }
   };
 
-  const handleTestApi = async () => {
-    setIsTestingApi(true);
-    setApiTestResponse(null);
-    try {
-      const res = await fetch("/api/public/gatherings");
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      setApiTestResponse(`Suksess: Mottok ${data.gatherings?.length ?? 0} offentlige samlinger fra API.`);
-      showFeedback("API-endepunktet svarer som forventet!");
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "API-feil";
-      setApiTestResponse(`Feil: ${msg}`);
-      showFeedback(`Kunne ikke nå API-endepunkt: ${msg}`, "error");
-    } finally {
-      setIsTestingApi(false);
-    }
-  };
 
   const totalDocuments =
     allPersons.length +
@@ -686,50 +667,6 @@ export const DatabaseTab: React.FC<DatabaseTabProps> = ({ showFeedback }) => {
 
       {/* Simulert historikk for Analysebord: only while the board it is made for is turned on */}
       {isAddonOn(addons, "analysebord") && <SimulationPanel showFeedback={showFeedback} />}
-
-      {/* Seksjon 4: Offentlig API-endepunkt & Integrasjon */}
-      <section className="p-5 sm:p-6 rounded-2xl bg-[var(--studio-surface)] border border-[var(--studio-border)] space-y-4">
-        <div>
-          <h3 className="text-base font-bold text-[var(--studio-text)] flex items-center gap-2">
-            <Radio className="w-4 h-4 text-sky-400" />
-            <span>Offentlig Nettside & CMS-integrasjon</span>
-          </h3>
-          <p className="text-xs text-[var(--studio-muted)] mt-0.5">
-            Nettside-CMS-et henter offentlige samlinger og gudstjenester direkte fra Menighetsplan.
-          </p>
-        </div>
-
-        <div className="p-4 rounded-xl bg-[var(--studio-row)] border border-[var(--studio-border)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-mono font-bold text-sky-300">GET /api/public/gatherings</span>
-              <span className="text-[10px] text-[var(--studio-muted)]">JSON API</span>
-            </div>
-            <p className="text-xs text-[var(--studio-muted)]">
-              Leverer sanitert JSON-format i henhold til API-kontrakten. Kun samlinger merket som offentlige deles.
-            </p>
-            {apiTestResponse && (
-              <p
-                className={`text-xs font-mono pt-1 ${
-                  apiTestResponse.startsWith("Suksess") ? "text-emerald-400" : "text-red-400"
-                }`}
-              >
-                {apiTestResponse}
-              </p>
-            )}
-          </div>
-
-          <button
-            type="button"
-            onClick={handleTestApi}
-            disabled={isTestingApi}
-            className="px-4 py-2 rounded-xl bg-sky-950/80 hover:bg-sky-900 border border-sky-800 text-sky-300 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
-          >
-            {isTestingApi ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-            <span>Test API-endepunkt nå</span>
-          </button>
-        </div>
-      </section>
 
       {/* Seksjon 5: Administrasjon & Sletting av testdata (Farefelt) */}
       <section className="p-5 sm:p-6 rounded-2xl bg-red-950/20 border border-red-900/40 space-y-4">
