@@ -151,8 +151,40 @@ describe("Funksjonen slik Vercel leser den", () => {
   const normal = (file: string) => file.replace(/\r\n/g, "\n");
 
   test("api/kalender.js er pakket fra kilden slik den er nå (kjør «npm run build:api» etter en endring)", async () => {
-    expect(Object.keys(API_FUNCTIONS)).toEqual(["kalender"]);
+    expect(Object.keys(API_FUNCTIONS)).toContain("kalender");
     expect(normal(readFileSync(packedPathOf("kalender"), "utf8"))).toBe(normal(await packFunction("kalender")));
+  });
+
+  test("det samme gjelder alle funksjonene, også e-postutsendingen i api/epost.js", async () => {
+    expect(Object.keys(API_FUNCTIONS)).toEqual(["kalender", "epost"]);
+    for (const name of Object.keys(API_FUNCTIONS) as (keyof typeof API_FUNCTIONS)[]) {
+      expect(normal(readFileSync(packedPathOf(name), "utf8")), `api/${name}.js`).toBe(normal(await packFunction(name)));
+    }
+  });
+
+  test("den pakkede e-postfunksjonen tar bare imot POST, og svarer nei uten innlogging", async () => {
+    vi.stubGlobal("process", { ...process, env: { ...env, RESEND_API_KEY: "re_test" } });
+    const asked = vi.fn();
+    vi.stubGlobal("fetch", asked);
+    const { default: handler } = (await import(/* @vite-ignore */ pathToFileURL(packedPathOf("epost")).href)) as {
+      default: (request: unknown, response: unknown) => Promise<void>;
+    };
+    const answerTo = async (request: object) => {
+      const headers: Record<string, string> = {};
+      const response = { statusCode: 0, body: "", setHeader: (name: string, value: string) => void (headers[name] = value), end(body: string) { this.body = body; } };
+      await handler(request, response);
+      return { status: response.statusCode, headers, body: JSON.parse(response.body) as { ok: boolean; reason?: string } };
+    };
+
+    const read = await answerTo({ method: "GET", url: "/api/epost", headers: { host: "menigheten.example" } });
+    expect(read.status).toBe(405);
+    expect(read.headers.Allow).toBe("POST");
+
+    const anonymous = await answerTo({ method: "POST", url: "/api/epost", headers: { host: "menigheten.example" }, body: { mode: "test", subject: "Prøve", text: "Hei", link: "minside" } });
+    expect(anonymous.status).toBe(401);
+    expect(anonymous.body).toMatchObject({ ok: false, reason: "not-signed-in" });
+    expect(anonymous.headers["Cache-Control"]).toBe("no-store");
+    expect(asked).not.toHaveBeenCalled();
   });
 
   test("adressen knappene bruker, fører til funksjonen, og resten av /api er ikke nettsiden", () => {

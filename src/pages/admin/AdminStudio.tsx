@@ -60,6 +60,7 @@ import {
   LazyTemplatesTab,
 
   LazyYearWheelTab,
+  LazyEmailTab,
 
   LazySermonsTab,
 
@@ -519,6 +520,10 @@ function AdminStudioContent() {
 
         <StudioTabPanel tab="arshjul" activeTab={activeTab} visited={visitedTabs.includes("arshjul")}>
           <LazyYearWheelTab showFeedback={showFeedback} />
+        </StudioTabPanel>
+
+        <StudioTabPanel tab="epost" activeTab={activeTab} visited={visitedTabs.includes("epost")}>
+          <LazyEmailTab studio={studio} showFeedback={showFeedback} />
         </StudioTabPanel>
 
 

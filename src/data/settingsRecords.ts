@@ -35,6 +35,10 @@ export function isHeadcountRecord(data: { recordType?: unknown }): boolean {
 export const YEAR_WHEEL_RECORD = "yearWheel";
 export const YEAR_WHEEL_DOC_ID = "year-wheel";
 
+/** What the page «Send e-post» keeps: where answers go, and the log of what has been sent (see services/email.ts). */
+export const EMAIL_RECORD = "email";
+export const EMAIL_DOC_ID = "email";
+
 export type OperatingMode = "demo" | "production";
 
 export const OPERATING_MODE_RECORD = "operatingMode";

@@ -226,8 +226,8 @@ async function readWhereTrue(database, collectionId, field, ask) {
   if (failed?.error) throw new FirestoreRestError(failed.error.message || `Databasen svarte med en feil for ${collectionId}`, failed.error.code ?? 502);
   return rows.flatMap((row) => row.document ? [decodeDocument(row.document)] : []);
 }
-async function readDocument(database, path, ask) {
-  const response = await ask(`${documentsOf(database)}/${path}`);
+async function readDocument(database, path, ask, headers) {
+  const response = await ask(`${documentsOf(database)}/${path}`, headers ? { headers } : void 0);
   if (!response.ok) return null;
   return decodeDocument(await response.json());
 }

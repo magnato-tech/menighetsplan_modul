@@ -23,6 +23,7 @@ import {
   Badge,
   LayoutTemplate,
   CalendarRange,
+  Mail,
   Images,
   CircleHelp,
   Puzzle,
@@ -453,6 +454,23 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({ studio, activeTab,
               <CalendarRange className="w-4 h-4" />
               <span>Årshjul</span>
             </button>
+
+            {/* E-mail goes to the people in the groups, so it is part of the planner */}
+            {hasPlanner(level) && (
+            <button
+              type="button"
+              {...tabPrefetchHandlers("epost")}
+              onClick={() => onTabChange("epost")}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
+                activeTab === "epost"
+                  ? "bg-indigo-600 text-white shadow-sm"
+                  : "text-[var(--studio-muted)] hover:text-[var(--studio-text)] hover:bg-[var(--studio-bg)]"
+              }`}
+            >
+              <Mail className="w-4 h-4" />
+              <span>Send e-post</span>
+            </button>
+            )}
 
             {hasPlanner(level) && (
             <button

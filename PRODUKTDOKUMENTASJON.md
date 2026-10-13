@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.51 · **Sist oppdatert:** 2026-10-13
+> **Dokumentversjon:** 4.52 · **Sist oppdatert:** 2026-10-13
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -1329,6 +1329,31 @@ Oppgavene lå bak en knapp nederst på Min side, og kalenderen bak et lite ikon.
 | **Kalender** | «Neste i menigheten», «Neste for deg» og Min kalender, rett på siden |
 | **Det som trenger handling** | Står over fanene, uansett hvilken fane som er åpen |
 | **Tatt bort** | Den gamle bunnmenyen på mobil (Min side, Grupper, Oppgaver, Meldinger), kalenderikonet øverst og raden «Dine oppgaver – Vis oppgaveliste». Meldinger nås fra hvert gruppekort |
+
+### E-post fra admin (13. oktober 2026)
+
+Administratoren kan sende e-post til lederne og de frivillige fra siden «Send e-post» i admin, for eksempel ved semesterstart. E-posten sendes gjennom tjenesten Resend.
+
+| Del | Hva som er levert |
+|---|---|
+| **Siden «Send e-post»** | Under Arrangementer & bemanning i admin. Velg en ferdig tekst eller en tom e-post, velg hvem som skal ha den, se hvordan den ser ut, og send |
+| **Mottakere** | «Ledere og nestledere i tjenestegruppene», «Alle i tjenestegruppene» eller én gruppe. Siden sier hvor mange som får e-posten, og nevner dem som mangler e-postadresse |
+| **Ferdige tekster** | «Semesterstart: til lederne» (knapp til gruppelederens side) og «Oppgavene er klare: til de frivillige» (knapp til Min side). Hvert ord kan endres før sending |
+| **Én e-post per person** | Hver adresse får sin egen e-post med hilsen på fornavn. Ingen ser andres adresser. Deler to personer én adresse, får adressen én e-post uten navn |
+| **Svaradresse** | E-posten sendes fra en adresse ingen leser (`ikke-svar@menighetsplan.no` om ikke annet er satt). Svar går til adressen menigheten har lagret på siden. Uten lagret svaradresse sendes ingenting |
+| **Prøve først** | «Send prøve til meg» sender bare til adressen administratoren er logget inn med |
+| **Bekreftelse** | En utsending må bekreftes med antallet. Samme emne til de samme innen et døgn gir et ekstra spørsmål først |
+| **Logg** | Når noe ble sendt, emnet, hvem det gikk til og hvor mange. Loggen har ingen navn, adresser eller tekst |
+| **Stoppet utsending** | Tar ikke Resend imot flere (dagsgrensen), står det hvor mange som gjenstår, og de kan få e-posten med «Send til dem som gjenstår» |
+| **Demoen** | Siden vises, men demoen sender aldri e-post |
+
+**Slik er det sikret.** Nøkkelen til Resend ligger bare der installasjonen kjører (`RESEND_API_KEY` hos Vercel), aldri i nettleseren. Nettleseren sier hvilken gruppe e-posten gjelder, ikke hvilke adresser: funksjonen `/api/epost` leser registeret selv, som den som er logget inn, og databasens regler slipper bare en administrator til. Dette er prøvd mot reglene i den lokale emulatoren: en gruppeleder, en fremmed med konto og en administrator med ubekreftet adresse får alle nei.
+
+**Oppsett per installasjon.** Avsenderdomenet må være godkjent hos Resend, og `RESEND_API_KEY` må ligge hos Vercel. `EMAIL_FROM_ADDRESS` kan settes hvis en annen avsenderadresse skal brukes. Uten nøkkelen sier siden at e-post ikke er satt opp.
+
+**Ikke prøvd.** En ekte e-post er ikke sendt: det krever nøkkelen og et godkjent domene. Første prøve gjøres med «Send prøve til meg».
+
+**Ikke med.** Automatiske påminnelser før tjeneste, varsel ved forespørsel, SMS og avmelding fra e-post. Resend må føres som underleverandør i databehandleravtalen, siden tjenesten får navn og e-postadresser.
 
 ---
 

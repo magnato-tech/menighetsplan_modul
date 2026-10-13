@@ -90,9 +90,36 @@ export async function readWhereTrue(database: RestDatabase, collectionId: string
   return rows.flatMap((row) => (row.document ? [decodeDocument(row.document)] : []));
 }
 
+/**
+ * What a request carries to be read as the one who is signed in: the token the Firebase client
+ * holds for them. The database's rules then answer as they would answer that person's browser.
+ */
+export const signedInAs = (idToken: string): Record<string, string> => ({ Authorization: `Bearer ${idToken}` });
+
+/** What is sent to ask for every document of a collection. */
+export const wholeCollectionQuery = (collectionId: string) => ({ structuredQuery: { from: [{ collectionId }] } });
+
+/**
+ * Every document of a collection, read as the one the headers say is asking. A collection only
+ * an administrator may list, is refused for everyone else (a FirestoreRestError with 401 or 403).
+ */
+export async function readAll(database: RestDatabase, collectionId: string, ask: Fetch, headers: Record<string, string> = {}): Promise<(Record<string, unknown> & { id: string })[]> {
+  const response = await ask(`${documentsOf(database)}:runQuery`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...headers },
+    body: JSON.stringify(wholeCollectionQuery(collectionId)),
+  });
+  if (!response.ok) throw new FirestoreRestError(`Databasen svarte ${response.status} for ${collectionId}`, response.status);
+  const rows = (await response.json()) as { document?: RestDocument; error?: { code?: number; message?: string } }[];
+  if (!Array.isArray(rows)) throw new FirestoreRestError(`Databasen svarte ikke med en liste for ${collectionId}`, 502);
+  const failed = rows.find((row) => row.error);
+  if (failed?.error) throw new FirestoreRestError(failed.error.message || `Databasen svarte med en feil for ${collectionId}`, failed.error.code ?? 502);
+  return rows.flatMap((row) => (row.document ? [decodeDocument(row.document)] : []));
+}
+
 /** One document, or null when it is not there or may not be read. */
-export async function readDocument(database: RestDatabase, path: string, ask: Fetch): Promise<(Record<string, unknown> & { id: string }) | null> {
-  const response = await ask(`${documentsOf(database)}/${path}`);
+export async function readDocument(database: RestDatabase, path: string, ask: Fetch, headers?: Record<string, string>): Promise<(Record<string, unknown> & { id: string }) | null> {
+  const response = await ask(`${documentsOf(database)}/${path}`, headers ? { headers } : undefined);
   if (!response.ok) return null;
   return decodeDocument((await response.json()) as RestDocument);
 }
