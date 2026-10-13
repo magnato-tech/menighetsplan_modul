@@ -1306,7 +1306,7 @@ Bestilt av produkteier: administrative frister og det som kommer igjen hvert år
 | **Siden** | Tolv måneder i et rutenett. Hver frist står med tittel og dag. Måneden som er nå, er merket |
 | **Redigering** | «Ny frist» øverst. Blyant og søppelbøtte på hver frist vises når pekeren er over den, og hele tiden på telefon og nettbrett. En frist har tittel, måned, dag og et valgfritt notat |
 | **Standardårshjulet** | En menighet som ikke har endret noe, ser standardårshjulet: årshjulet til første menighet, gitt av produkteier som et bilde. Første endring lagrer hele hjulet, og fra da er det menighetens eget |
-| **Titler som var kuttet i bildet** | 17 av de 36 titlene var kuttet av med «…» i bildet. Der står bare det som kunne leses, uten gjetning på resten. De rettes i admin |
+| **Titler som var kuttet i bildet** | 22 av de 36 titlene var kuttet av med «…» i bildet. Et ord som var kuttet midt i, er skrevet ferdig der det ikke var tvil («høsthalvåret», «menighetsweekend»). Det som sto etter, og som ikke kunne leses, er utelatt og ikke gjettet. Titlene rettes i admin |
 | **Nøytralt** | Standardårshjulet nevner ikke et bestemt kirkesamfunn: fristen i desember heter «Rapportering til kirkesamfunnet» |
 | **Lagring** | Ett dokument i `cms_settings`, merket `yearWheel`. Administrator skriver det. Den som er logget inn, kan lese det: fristene er ikke personopplysninger |
 | **Ikke levert her** | En rolle som knyttes til fristene, og varsling når en frist nærmer seg. Produkteier har sagt at det kommer senere. Fristene er ikke koblet til kalenderen |

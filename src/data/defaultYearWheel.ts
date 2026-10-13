@@ -2,8 +2,9 @@ import type { YearWheelItem } from "../utils/yearWheel";
 
 // The standard annual wheel: what a congregation sees until it has changed something. It is the
 // wheel of the first congregation, given by the product owner on 13 October 2026 as a picture.
-// Where the picture cut a title short, only what could be read is written here; the congregation
-// writes the rest itself, since every item can be edited. The code names no denomination (see
+// Where the picture cut a title short, a word cut in the middle is written out when there was no
+// doubt what it was, and what came after it is left out, not guessed. The congregation writes the
+// rest itself, since every item can be edited. The code names no denomination (see
 // tests/neutral-code.test.ts), so the report at the end of the year goes to «kirkesamfunnet».
 // PMF in March stands as it was given.
 
