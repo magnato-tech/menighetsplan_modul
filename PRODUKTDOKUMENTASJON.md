@@ -1521,30 +1521,45 @@ Administrator er det samme som den som skal se registeret. En redaktør som endr
 
 **Kan ikke vises i demoen**, fordi ingen logger inn der. Reglene prøves lokalt (`npm run test:rules`), og med en konto til hos første menighet før adressen sendes ut.
 
-### Kalenderfanen på Min side er vanskelig å finne fram i *(beskjed fra produkteier 13. oktober 2026, ikke løst)*
+### Min side, forenklet *(bestemt av produkteier 13. oktober 2026, ikke løst)*
 
-**Problemet.** Produkteier åpnet fanen «Kalender» på mobil og trodde han fortsatt var på Min side. Fanen ser ut som resten av Min side, og selve kalenderen («Min kalender» med Alle / Menigheten / Mine grupper) står så langt ned at den ikke synes på første skjerm. Rekkefølgen på fanen i dag (`MyPage.tsx`):
+**Prinsipp: enkelhet først.** Min side skal vise så lite som mulig. Alt som gjentar noe, forklarer noe som kan ses, eller ikke kan trykkes på, tas bort. Dette gjelder Min side på mobil først, og det samme gjelder på stor skjerm.
 
-1. Overskriften «Min side» og «Oversikt for …»
-2. «Slik bruker du Min side»
-3. Den gule boksen «Dette trenger din handling» med «Se og håndter»
-4. «Neste i menigheten» (`NextChurchEventSection`)
-5. «Neste for deg» (`NextForYouSection`), ofte bare «Ingen personlige gruppesamlinger planlagt»
-6. «Min kalender» (`MyCalendarPanel inline`)
+**Problemet.** Produkteier åpnet fanen «Kalender» på mobil og trodde han fortsatt var på Min side. Alle tre fanene starter med det samme (overskrift, veiledning, den gule boksen), og på kalenderfanen står selve kalenderen så langt ned at den ikke synes på første skjerm. Toppen er så trang at navnet kuttes («Magnar Totl…») og «Admin & CMS Studio» går ut av skjermen.
 
-I tillegg dekker menylinjen nederst det første kortet i kalenderen før man har scrollet.
+**Toppen (`Header.tsx`, `AccountMenu.tsx`)**
 
-**Ønsket.**
+* Navn, rolle og «Logg ut» flyttes inn i en meny bak et rundt merke med initialene (for eksempel «MT») øverst til høyre. Menyen viser navnet, rollen og «Logg ut».
+* Da får menighetens navn og flatene (Min side / Gruppeleder / Admin & CMS Studio) plass uten å kuttes.
 
-* Når «Kalender» er valgt, er «Min kalender» med filtrene det første innholdet under fanene.
-* «Neste i menigheten» og «Neste for deg» tas bort fra kalenderfanen. Kalenderen viser det samme, og avsnittet «Mulig funksjon: Min kalender» i kapittel 3 sier allerede at kalenderen erstatter dem.
-* Det skal være tydelig hvilken fane man er på: overskriften på siden bør si «Kalender» (og «Mine oppgaver», «Mine grupper») i stedet for «Min side» på alle tre.
-* **Den gule handlingsboksen vises bare på fanen «Mine oppgaver»** (bestemt av produkteier 13. oktober 2026). Den tas bort fra «Mine grupper» og «Kalender». Dette erstatter det som står i `MyPageTabs.tsx` om at boksen står over alle fanene.
-* **Boksen skal bare si «Ta oppgave (68)».** Overskriften «Dette trenger din handling», det runde merket med tallet og forklaringsteksten («Du har forespørsler, ubesvarte innkallinger …») tas bort. Antallet står i parentes etter teksten. Knappen åpner det samme som «Se og håndter» gjør i dag.
-* Det siste kortet på fanen skal kunne scrolles helt fram over menylinjen nederst.
-* **«Slik bruker du Min side» blir et spørsmålstegn** (bestemt av produkteier 13. oktober 2026). Den hvite boksen som i dag står på alle fanene (`VolunteerHelp.tsx`), tas bort. I stedet står et lite «?»-ikon øverst, ved overskriften. Et trykk åpner veiledningen i et vindu (popup) som lukkes med kryss, med «Lukk» eller ved å trykke utenfor. Teksten i veiledningen er den samme som i dag.
+**Overskriften (`MyPage.tsx`)**
 
-**Oppdater også kapittel 3.** Tabellen og avsnittet «Mulig funksjon: Min kalender» sier at kalenderen ikke er bygget, men den finnes som fane på Min side.
+* Overskriften er navnet på fanen som er valgt: «Mine oppgaver», «Mine grupper» eller «Kalender». Ikke «Min side» på alle tre.
+* Linjen «Oversikt for …» tas bort. Navnet står allerede i toppen.
+* «7 grupper» tas bort. Gruppene står under «Mine grupper».
+* Veiledningen «Slik bruker du Min side» (`VolunteerHelp.tsx`) er ikke lenger en boks. Den blir et lite «?»-ikon ved overskriften. Et trykk åpner veiledningen i et vindu som lukkes med kryss, med «Lukk» eller ved å trykke utenfor. Teksten er den samme som i dag.
+
+**Fanen «Mine oppgaver»**
+
+* Den gule handlingsboksen står bare her, ikke på «Mine grupper» eller «Kalender». Dette erstatter det som står i `MyPageTabs.tsx` om at boksen står over alle fanene.
+* Boksen sier bare «Ta oppgave (68)». Overskriften «Dette trenger din handling», det runde merket med tallet og forklaringsteksten tas bort. Antallet står i parentes. Et trykk åpner det samme som «Se og håndter» gjør i dag.
+* Ett tall: merket med antall på «Mine oppgaver» i menylinjen nederst (i dag 7) tas bort. To ulike tall for samme fane forvirrer, og oppgavene står i lista på fanen.
+
+**Fanen «Kalender»**
+
+* «Min kalender» med filtrene Alle / Menigheten / Mine grupper er det første under overskriften.
+* «Neste i menigheten» og «Neste for deg» tas bort. Kalenderen viser det samme, og avsnittet «Mulig funksjon: Min kalender» i kapittel 3 sier at kalenderen erstatter dem.
+* Rammen «Min kalender» med egen overskrift trengs ikke når overskriften på siden er «Kalender». Filtrene og hendelsene står rett på siden.
+
+**Kortene**
+
+* Kategorien over tittelen («Gudstjeneste & Storsamling» over «Gudstjeneste») vises ikke når tittelen sier det samme.
+
+**Overalt**
+
+* Det siste kortet på en fane skal kunne scrolles helt fram over menylinjen nederst.
+
+**Oppdater også kapittel 3.** Tabellen og avsnittet «Mulig funksjon: Min kalender» sier at kalenderen ikke er bygget, men den finnes som fane på Min side. Beskriv Min side slik den blir etter dette.
 
 ### Fase 1 – Trygg i drift *(trinn 2 og 4 over)*
 1. Innlogging med Google-konto. Første administrator er produkteierens konto.
