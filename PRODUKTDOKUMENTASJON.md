@@ -1521,6 +1521,29 @@ Administrator er det samme som den som skal se registeret. En redaktør som endr
 
 **Kan ikke vises i demoen**, fordi ingen logger inn der. Reglene prøves lokalt (`npm run test:rules`), og med en konto til hos første menighet før adressen sendes ut.
 
+### Kalenderfanen på Min side er vanskelig å finne fram i *(beskjed fra produkteier 13. oktober 2026, ikke løst)*
+
+**Problemet.** Produkteier åpnet fanen «Kalender» på mobil og trodde han fortsatt var på Min side. Fanen ser ut som resten av Min side, og selve kalenderen («Min kalender» med Alle / Menigheten / Mine grupper) står så langt ned at den ikke synes på første skjerm. Rekkefølgen på fanen i dag (`MyPage.tsx`):
+
+1. Overskriften «Min side» og «Oversikt for …»
+2. «Slik bruker du Min side»
+3. Den gule boksen «Dette trenger din handling» med «Se og håndter»
+4. «Neste i menigheten» (`NextChurchEventSection`)
+5. «Neste for deg» (`NextForYouSection`), ofte bare «Ingen personlige gruppesamlinger planlagt»
+6. «Min kalender» (`MyCalendarPanel inline`)
+
+I tillegg dekker menylinjen nederst det første kortet i kalenderen før man har scrollet.
+
+**Ønsket.**
+
+* Når «Kalender» er valgt, er «Min kalender» med filtrene det første innholdet under fanene.
+* «Neste i menigheten» og «Neste for deg» tas bort fra kalenderfanen. Kalenderen viser det samme, og avsnittet «Mulig funksjon: Min kalender» i kapittel 3 sier allerede at kalenderen erstatter dem.
+* Det skal være tydelig hvilken fane man er på: overskriften på siden bør si «Kalender» (og «Mine oppgaver», «Mine grupper») i stedet for «Min side» på alle tre.
+* Boksen «Dette trenger din handling» står over alle fanene, slik det er bestemt. På mobil skyver den kalenderen ned. Vurder en kortere variant av boksen (én linje med antall og «Se og håndter») når en annen fane enn «Mine oppgaver» er valgt.
+* Det siste kortet på fanen skal kunne scrolles helt fram over menylinjen nederst.
+
+**Oppdater også kapittel 3.** Tabellen og avsnittet «Mulig funksjon: Min kalender» sier at kalenderen ikke er bygget, men den finnes som fane på Min side.
+
 ### Fase 1 – Trygg i drift *(trinn 2 og 4 over)*
 1. Innlogging med Google-konto. Første administrator er produkteierens konto.
 2. Roller: administrator, gruppeleder (avledet av gruppene) og frivillig.
