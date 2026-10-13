@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { isServiceGroup } from "../utils/personDirectory";
 import { Link } from "react-router-dom";
 import { useAdminDetailRoute } from "../utils/adminStudioRoutes";
 import { useAdminPersonDetail } from "../hooks/useAppHooks";
@@ -51,6 +52,8 @@ export const AdminPersonDetailPage: React.FC = () => {
     personTasks,
     updatePerson,
   } = useAdminPersonDetail(personId || "");
+  // «Frivillig» is said of the one who is in a service group (see utils/personDirectory.ts)
+  const servesInGroup = personGroups.some(isServiceGroup);
 
   // Form states
   const [name, setName] = useState<string>("");
@@ -255,6 +258,7 @@ export const AdminPersonDetailPage: React.FC = () => {
                   </div>
                 </div>
               </div>
+              {(person.globalRole === "admin" || servesInGroup) && (
               <span
                 className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
                   person.globalRole === "admin"
@@ -264,6 +268,7 @@ export const AdminPersonDetailPage: React.FC = () => {
               >
                 {person.globalRole === "admin" ? "Global Admin" : "Frivillig"}
               </span>
+              )}
             </div>
 
             {/* 1. Navn */}
@@ -374,7 +379,7 @@ export const AdminPersonDetailPage: React.FC = () => {
                 onChange={(e) => setGlobalRole(e.target.value as "member" | "admin")}
                 className={studioDetailInput}
               >
-                <option value="member">Frivillig (standard tilgang)</option>
+                <option value="member">Vanlig tilgang (standard)</option>
                 <option value="admin">Administrator (full tilgang til Admin Studio & CMS)</option>
               </select>
             </div>

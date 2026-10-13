@@ -16,6 +16,7 @@ import {
 import { StudioData, ShowFeedback } from "../studio";
 import { populateDemoPersons } from "../../../services/databaseAdmin";
 import {
+  isInServiceGroup,
   matchesPersonSearch,
   nextSort,
   PersonSortKey,
@@ -50,6 +51,7 @@ export const PersonsTab: React.FC<PersonsTabProps> = ({ studio, showFeedback }) 
   const [newGroupId, setNewGroupId] = useState("");
   const [onlyCongregation, setOnlyCongregation] = useState(false);
   const [onlyDenomination, setOnlyDenomination] = useState(false);
+  const [onlyWithoutService, setOnlyWithoutService] = useState(false);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [isPopulating, setIsPopulating] = useState<boolean>(false);
   const [view, setView] = useState<"cards" | "table">("table");
@@ -83,10 +85,11 @@ export const PersonsTab: React.FC<PersonsTabProps> = ({ studio, showFeedback }) 
       if (!matchesPersonSearch(row, searchTerm)) return false;
       if (onlyCongregation && row.person.congregationMember !== true) return false;
       if (onlyDenomination && row.person.denominationMember !== true) return false;
+      if (onlyWithoutService && isInServiceGroup(row)) return false;
       return true;
     });
     return sortPersonRows(filtered, sortKey, sortDirection);
-  }, [adminPersons, searchTerm, sortKey, sortDirection, onlyCongregation, onlyDenomination]);
+  }, [adminPersons, searchTerm, sortKey, sortDirection, onlyCongregation, onlyDenomination, onlyWithoutService]);
 
   const handleCreatePerson = (event: React.FormEvent) => {
     event.preventDefault();
@@ -332,6 +335,10 @@ export const PersonsTab: React.FC<PersonsTabProps> = ({ studio, showFeedback }) 
           <input id="filter-denomination" type="checkbox" checked={onlyDenomination} onChange={(event) => setOnlyDenomination(event.target.checked)} />
           Medlem i kirkesamfunnet
         </label>
+        <label className="flex items-center gap-2">
+          <input id="filter-without-service" type="checkbox" checked={onlyWithoutService} onChange={(event) => setOnlyWithoutService(event.target.checked)} />
+          Ikke i noen tjenestegruppe
+        </label>
         <button type="button" id="btn-download-persons" onClick={downloadList} className="font-bold text-indigo-700 cursor-pointer">
           Last ned listen
         </button>
@@ -385,7 +392,8 @@ export const PersonsTab: React.FC<PersonsTabProps> = ({ studio, showFeedback }) 
         />
       ) : (
         <div className="space-y-3">
-          {visiblePersons.map(({ person }) => {
+          {visiblePersons.map((row) => {
+            const { person } = row;
             const isAdminRole = person.globalRole === "admin";
             const hasPoliceCert = Boolean(person.policeCertificateValidUntil);
             const unavailableCount = person.unavailablePeriods?.length || 0;
@@ -402,11 +410,11 @@ export const PersonsTab: React.FC<PersonsTabProps> = ({ studio, showFeedback }) 
                       <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-950/80 border border-amber-800 text-amber-300">
                         Administrator
                       </span>
-                    ) : (
+                    ) : isInServiceGroup(row) ? (
                       <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-[var(--studio-bg)] text-[var(--studio-accent-text)]">
                         Frivillig
                       </span>
-                    )}
+                    ) : null}
 
                     {hasPoliceCert ? (
                       <span className="text-[10px] font-bold text-emerald-300 bg-emerald-950/80 border border-emerald-800 px-2 py-0.5 rounded flex items-center gap-1">

@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.32 · **Sist oppdatert:** 2026-10-13
+> **Dokumentversjon:** 4.33 · **Sist oppdatert:** 2026-10-13
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -1134,6 +1134,20 @@ Bestilt av produkteier: det er ikke alltid en gruppe som har ansvaret for et hel
 | **Følge** | Et arrangement i kalenderen kan bare administrator endre. Gruppeledere bemanner egne oppgaver som før |
 | **Ikke levert her** | At en enkeltperson kan stå som ansvarlig for et arrangement. Løsningen har ikke felt for det |
 | **Prøvd** | 4 sjekker |
+
+### «Frivillig» betyr at personen er med i en tjenestegruppe (13. oktober 2026)
+
+Bestilt av produkteier: alle i registeret sto som «Frivillig», også de som ikke er med på noe. Da sa merkelappen ingenting, og det var ikke mulig å se hvem man kan utfordre.
+
+| Område | Levert |
+|:---|:---|
+| **Merkelappen** | «Frivillig» står bare på den som er med i minst én tjenestegruppe, som deltaker, leder eller nestleder. Den som ikke er det, har ingen merkelapp. Administrator, gruppeleder og nestleder vises som før |
+| **Husgrupper** | Teller ikke. De er fellesskap, ikke tjeneste. En gruppe lagret før gruppene fikk kategori, regnes som tjenestegruppe |
+| **Filter** | «Ikke i noen tjenestegruppe» over listen viser dem som kan spørres |
+| **Hvor** | Tabellen og kortene under Personer, og merket øverst på personkortet |
+| **Tilgangen er uendret** | Alle i registeret med e-post kan logge inn som før. På personkortet heter valget nå «Vanlig tilgang (standard)», ikke «Frivillig» |
+| **Ikke levert her** | Den som bare står på en enkeltoppgave uten å være i en tjenestegruppe, regnes ikke som frivillig. Listen som lastes ned, har ikke kolonne for dette |
+| **Prøvd** | 6 sjekker, med oppdiktede personer |
 
 ---
 

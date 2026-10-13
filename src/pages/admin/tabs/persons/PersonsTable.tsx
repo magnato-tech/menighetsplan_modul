@@ -94,11 +94,15 @@ export const PersonsTable: React.FC<PersonsTableProps> = ({ rows, sortKey, sortD
                   </div>
                 </td>
                 <td className="px-3 py-3">
-                  <span
-                    className={`inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${accessClass(access)}`}
-                  >
-                    {PERSON_ACCESS_LABEL[access]}
-                  </span>
+                  {access === "ingen" ? (
+                    <span className="text-[var(--studio-muted)]">–</span>
+                  ) : (
+                    <span
+                      className={`inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${accessClass(access)}`}
+                    >
+                      {PERSON_ACCESS_LABEL[access]}
+                    </span>
+                  )}
                 </td>
                 <td className="px-3 py-3 text-[var(--studio-muted)] max-w-[220px]">
                   {groups.length > 0 ? groups.join(", ") : <span className="text-[var(--studio-muted)]">–</span>}

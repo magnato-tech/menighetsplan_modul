@@ -1,6 +1,8 @@
 import type { Group, Person } from "../types";
 
-export type PersonAccess = "administrator" | "gruppeleder" | "nestleder" | "medlem";
+// What stands by a person in the register. «Frivillig» is said of the one who is in a service
+// group, not of everybody who may sign in: then the list shows who serves, and who can be asked.
+export type PersonAccess = "administrator" | "gruppeleder" | "nestleder" | "medlem" | "ingen";
 
 export type PersonSortKey = "name" | "access" | "groups" | "email" | "phone";
 
@@ -18,6 +20,7 @@ const ACCESS_ORDER: Record<PersonAccess, number> = {
   gruppeleder: 1,
   nestleder: 2,
   medlem: 3,
+  ingen: 4,
 };
 
 export const PERSON_ACCESS_LABEL: Record<PersonAccess, string> = {
@@ -25,13 +28,22 @@ export const PERSON_ACCESS_LABEL: Record<PersonAccess, string> = {
   gruppeleder: "Gruppeleder",
   nestleder: "Nestleder",
   medlem: "Frivillig",
+  ingen: "",
 };
+
+/** A group people serve in. A group stored before groups had a category, is one. House groups and the other kinds are not. */
+export const isServiceGroup = (group: Pick<Group, "category">): boolean => (group.category ?? "tjenestegruppe") === "tjenestegruppe";
+
+/** Whether the person is in at least one service group, as participant, leader or deputy leader. */
+export function isInServiceGroup(row: Pick<PersonDirectoryRow, "groups" | "leaderInGroups" | "deputyInGroups">): boolean {
+  return [...row.groups, ...row.leaderInGroups, ...row.deputyInGroups].some(isServiceGroup);
+}
 
 export function personAccess(row: PersonDirectoryRow): PersonAccess {
   if (row.person.globalRole === "admin") return "administrator";
   if (row.leaderInGroups.length > 0) return "gruppeleder";
   if (row.deputyInGroups.length > 0) return "nestleder";
-  return "medlem";
+  return isInServiceGroup(row) ? "medlem" : "ingen";
 }
 
 export function personGroupNames(row: PersonDirectoryRow): string[] {
