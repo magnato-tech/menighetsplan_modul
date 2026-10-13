@@ -239,7 +239,7 @@ export const CreateMeetingDialog: React.FC<CreateMeetingDialogProps> = ({ model,
                 <p className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                   <CalendarCheck className="w-4 h-4 text-emerald-700" aria-hidden="true" />
                   <span>
-                    {chosenDays.length} {chosenDays.length === 1 ? "samling" : "samlinger"} opprettes
+                    Forslag: {chosenDays.length} {chosenDays.length === 1 ? "samling" : "samlinger"}
                   </span>
                 </p>
                 {members.length > 1 && chosenDays.length > 1 && (
@@ -263,7 +263,7 @@ export const CreateMeetingDialog: React.FC<CreateMeetingDialogProps> = ({ model,
                 )}
               </div>
               <p className="text-[11px] text-slate-600">
-                Ta bort haken på en dag som ikke passer. Vert, sted og tema kan stå åpent og legges inn på hver samling når det nærmer seg.
+                Ingenting er opprettet ennå. Ta bort haken på en dag som ikke passer, og trykk «Opprett» nederst. Vert, sted og tema kan stå åpent og legges inn på hver samling når det nærmer seg.
               </p>
 
               {days.length === 0 ? (

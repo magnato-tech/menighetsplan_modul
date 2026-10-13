@@ -73,7 +73,7 @@ describe("En gruppe som møtes annenhver torsdag", () => {
     expect((screen.getByLabelText("Til og med") as HTMLInputElement).value).toBe("2026-12-20");
 
     const plan = screen.getByRole("region", { name: "Dagene i planen" });
-    expect(within(plan).getByText("5 samlinger opprettes")).toBeTruthy();
+    expect(within(plan).getByText("Forslag: 5 samlinger")).toBeTruthy();
     expect(within(plan).getAllByRole("checkbox")).toHaveLength(5);
     expect(screen.getByRole("button", { name: "Opprett 5 samlinger" })).toBeTruthy();
   });
@@ -91,7 +91,7 @@ describe("En gruppe som møtes annenhver torsdag", () => {
   test("en dag som ikke passer, tas ut med haken", async () => {
     open(everySecondThursday);
     fireEvent.click(screen.getByRole("checkbox", { name: /29\. okt/ }));
-    expect(screen.getByText("4 samlinger opprettes")).toBeTruthy();
+    expect(screen.getByText("Forslag: 4 samlinger")).toBeTruthy();
 
     await create();
     expect(days()).toEqual(["2026-10-15", "2026-11-12", "2026-11-26", "2026-12-10"]);
@@ -138,7 +138,7 @@ describe("En gruppe som møtes annenhver torsdag", () => {
   test("siste dag kan flyttes, og uten noen dager kan ingenting opprettes", () => {
     open(everySecondThursday);
     fireEvent.change(screen.getByLabelText("Til og med"), { target: { value: "2026-11-01" } });
-    expect(screen.getByText("2 samlinger opprettes")).toBeTruthy();
+    expect(screen.getByText("Forslag: 2 samlinger")).toBeTruthy();
 
     fireEvent.click(screen.getByRole("checkbox", { name: /15\. okt/ }));
     fireEvent.click(screen.getByRole("checkbox", { name: /29\. okt/ }));
