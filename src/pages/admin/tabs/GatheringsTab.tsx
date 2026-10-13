@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   formatNorwegianDateTime,
@@ -18,6 +18,8 @@ import {
   SlidersHorizontal,
   Repeat,
   CalendarClock,
+  LayoutGrid,
+  Table2,
   Trash2,
 } from "lucide-react";
 import { StudioData, ShowFeedback } from "../studio";
@@ -27,6 +29,8 @@ import { NewGatheringDialog } from "../NewGatheringDialog";
 import { useFirebase } from "../../../context/FirebaseDataContext";
 import { movedRestOfSeries, restOfSeries } from "../../../utils/series";
 import { MoveSeriesDialog } from "../MoveSeriesDialog";
+import { GatheringsTable } from "./gatherings/GatheringsTable";
+import { nextGatheringSort, sortGatherings, type GatheringSortDirection, type GatheringSortKey } from "../../../utils/gatheringList";
 import { useLevel } from "../../../hooks/useLevel";
 import { defaultGroupId, newGatheringForm, type GatheringFormValues } from "../../../utils/gatheringForm";
 import { hasPlanner } from "../../../utils/level";
@@ -142,6 +146,24 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
       studio.deleteGathering(event.id);
     }
     showFeedback(`${remove.length} arrangementer i serien ble slettet`);
+  };
+
+  // The events as a table or as cards, by date until the admin presses another column
+  const [view, setView] = useState<"cards" | "table">("table");
+  const [sortKey, setSortKey] = useState<GatheringSortKey>("date");
+  const [sortDirection, setSortDirection] = useState<GatheringSortDirection>("asc");
+  const sortedGatherings = useMemo(() => sortGatherings(adminGatherings, sortKey, sortDirection), [adminGatherings, sortKey, sortDirection]);
+  const handleSort = (key: GatheringSortKey) => {
+    const next = nextGatheringSort(sortKey, sortDirection, key);
+    setSortKey(next.key);
+    setSortDirection(next.direction);
+  };
+  // The next event is suggested at the same time of day and place as the one it follows
+  const startNextAfter = (item: AdminGatheringItem) => {
+    setNextGatheringSource(item);
+    setNextGatheringDate("");
+    setNextGatheringTime(parseIsoToDateAndTime(item.gathering.startsAt).time);
+    setNextGatheringLocation(item.gathering.location || "");
   };
 
   // The rest of a series moved to other days, when the rhythm turned out to be a week off.
@@ -317,9 +339,52 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
           </div>
         </form>
 
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-xs text-[var(--studio-muted)]">
+            {sortedGatherings.length} {sortedGatherings.length === 1 ? "arrangement" : "arrangementer"}
+          </p>
+          <div className="inline-flex rounded-xl border border-[var(--studio-border)] bg-[var(--studio-surface)] p-0.5">
+            <button
+              type="button"
+              onClick={() => setView("cards")}
+              className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold cursor-pointer ${
+                view === "cards" ? "bg-[var(--studio-hover)] text-[var(--studio-text)]" : "text-[var(--studio-muted)] hover:text-[var(--studio-text)]"
+              }`}
+              aria-pressed={view === "cards"}
+            >
+              <LayoutGrid className="w-3.5 h-3.5" aria-hidden="true" />
+              Kort
+            </button>
+            <button
+              type="button"
+              onClick={() => setView("table")}
+              className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold cursor-pointer ${
+                view === "table" ? "bg-[var(--studio-hover)] text-[var(--studio-text)]" : "text-[var(--studio-muted)] hover:text-[var(--studio-text)]"
+              }`}
+              aria-pressed={view === "table"}
+            >
+              <Table2 className="w-3.5 h-3.5" aria-hidden="true" />
+              Tabell
+            </button>
+          </div>
+        </div>
+
+        {view === "table" && (
+          <GatheringsTable
+            rows={sortedGatherings}
+            sortKey={sortKey}
+            sortDirection={sortDirection}
+            onSort={handleSort}
+            onMoveRest={setMovingFrom}
+            onNext={startNextAfter}
+            onDelete={handleDeleteGathering}
+          />
+        )}
+
         {/* Gatherings List */}
+        {view === "cards" && (
         <div className="space-y-3">
-          {adminGatherings.map((item) => {
+          {sortedGatherings.map((item) => {
             const g = item.gathering;
             const staffing = item.staffing;
 
@@ -430,6 +495,7 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
             );
           })}
         </div>
+        )}
       </div>
 
       {fullForm && (

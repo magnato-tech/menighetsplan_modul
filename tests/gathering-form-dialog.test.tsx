@@ -270,11 +270,14 @@ describe("Arrangementer i admin", () => {
     stored.gatherings = [];
     stored.tasks = [];
     stored.programs = [];
-    return render(
+    const view = render(
       <MemoryRouter>
         <GatheringsTab studio={studioWith(adminGatherings)} showFeedback={showFeedback} />
       </MemoryRouter>
     );
+    // The events open as a table (see gathering-list.test.tsx). These tests are of the cards.
+    fireEvent.click(screen.getByRole("button", { name: "Kort" }));
+    return view;
   };
   const quickTitle = () => screen.getByPlaceholderText("Tittel, f.eks. Søndagsgudstjeneste & dåp") as HTMLInputElement;
   const openFullForm = () => {

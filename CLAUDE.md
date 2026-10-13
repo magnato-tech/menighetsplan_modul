@@ -90,6 +90,7 @@ Kjør `npm run lint` og `npm test` før en endring regnes som ferdig.
 | `src/utils/logo.ts` | Menighetens logo: hvilke filer som kan være logo, og hva som vises som en. Den ligger som tekst i innstillingene (`logoUrl`), og vises øverst på nettsiden og på innloggingssiden |
 | `src/utils/birthDate.ts` | Fødselsdatoen til en person: en kalenderdag uten klokkeslett, kontrollen av den, alderen og teksten den leses som |
 | `src/utils/meetingPlan.ts`, `src/components/husfellesskap/CreateMeetingDialog.tsx` | Gruppelederens plan for samlingene i en gruppe: hvor ofte, første og siste dag, verter på omgang, og hvem som spørres om de kommer (bare gruppens neste samling når den er del av en plan). Skjemaet viser dagene før noe opprettes |
+| `src/utils/gatheringList.ts`, `src/pages/admin/tabs/gatherings/GatheringsTable.tsx`, `src/pages/admin/MoveSeriesDialog.tsx` | Arrangementene i admin: rekkefølgen (etter dato til en annen kolonne er valgt), tabellen ved siden av kortene, og skjemaet som flytter resten av en serie like mange dager |
 | `src/utils/logins.ts`, `src/utils/groupAccess.ts`, `src/utils/mirror.ts`, `src/services/registerMirror.ts`, `src/hooks/useRegisterMirror.ts` | Det som ligger ved siden av registeret i en lukket database: innloggingene (`logins`), de offentlige kopiene (`publicProfiles`), gruppekatalogen (`groupDirectory`), ledernes e-postkort (`groupLeaderEmails`), de offentlige gruppekortene (`publicGroupCards`) og lesemerkene på kjøreplanen (`gatheringReaders`). Kroken skriver dem fra nettleseren til en administrator |
 
 ---

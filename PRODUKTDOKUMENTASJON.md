@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.25 · **Sist oppdatert:** 2026-10-13
+> **Dokumentversjon:** 4.26 · **Sist oppdatert:** 2026-10-13
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -1027,6 +1027,19 @@ Bestilt av produkteier hos første menighet: gudstjenestene etter jul var lagt p
 | **Vises før noe flyttes** | De nye datoene står i skjemaet, og det sies fra når noen er spurt eller står på en oppgave: de blir stående, på den nye datoen |
 | **Regler** | Uendret |
 | **Prøvd** | 11 sjekker, også over skiftet til sommertid |
+
+### Arrangementene som tabell (13. oktober 2026)
+
+Bestilt av produkteier: arrangementene i admin sto i tilfeldig rekkefølge, og det var tungt å finne fram blant dem.
+
+| Område | Levert |
+|:---|:---|
+| **Sortert på dato** | Arrangementene står etter dato, det første først, både som kort og som tabell. Før sto de i den rekkefølgen databasen ga dem |
+| **«Kort» og «Tabell»** | En bryter over listen, slik Personer har. Siden åpner som tabell |
+| **Tabellen** | Én linje per arrangement: dato, tittel med tema og merke for gudstjeneste og serie, sted og bemanning. Et trykk på overskriften sorterer på den kolonnen, og et trykk til snur rekkefølgen |
+| **Handlinger på linjen** | Kjøreplan, lag neste arrangement, slett, og for et arrangement i en serie «Flytt resten av serien» |
+| **Ikke i tabellen** | «Slett resten av serien» står bare på kortene. Produkteier har sagt at den sletter for mye i ett trykk, og hva som skal skje med den, er ikke bestemt |
+| **Prøvd** | 11 sjekker av rekkefølgen og tabellen. Sett i nettleseren: 16 arrangementer etter dato, sortering på bemanning, og bytte til kort |
 
 ---
 
