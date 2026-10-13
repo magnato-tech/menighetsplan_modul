@@ -172,6 +172,19 @@ export const DEFAULT_VOLUNTEER_ROLE_INSTRUCTIONS: Partial<Record<DefaultVoluntee
     "Start opptak når talen begynner. Etter møtet eksporteres lydfilen og lastes opp til ukens preken.",
 };
 
+/**
+ * The roles that have no instruction of their own, but a name the standard set has one for, each
+ * with that instruction. A role that already has an instruction is never among them: what the
+ * congregation has written, stands.
+ */
+export function rolesMissingStandardInstruction<T extends Pick<VolunteerRole, "name" | "instruction">>(roles: readonly T[]): { role: T; instruction: string }[] {
+  const byName = new Map(Object.entries(DEFAULT_VOLUNTEER_ROLE_INSTRUCTIONS).map(([name, instruction]) => [name.toLocaleLowerCase("nb"), instruction]));
+  return roles.flatMap((role) => {
+    const instruction = (role.instruction ?? "").trim() === "" ? byName.get(role.name.trim().toLocaleLowerCase("nb")) : undefined;
+    return instruction ? [{ role, instruction }] : [];
+  });
+}
+
 export function volunteerRoleIdForName(name: DefaultVolunteerRoleName): string {
   const index = DEFAULT_VOLUNTEER_ROLE_NAMES.indexOf(name);
   if (index < 0) throw new Error(`Ukjent rolle: ${name}`);

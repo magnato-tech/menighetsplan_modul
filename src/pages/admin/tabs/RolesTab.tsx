@@ -9,7 +9,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { DEFAULT_VOLUNTEER_ROLE_NAMES } from "../../../data/defaultVolunteerRoles";
+import { DEFAULT_VOLUNTEER_ROLE_NAMES, rolesMissingStandardInstruction } from "../../../data/defaultVolunteerRoles";
 import { VolunteerRole } from "../../../types";
 import {
   patchVolunteerRole,
@@ -111,6 +111,22 @@ export const RolesTab: React.FC<RolesTabProps> = ({ studio, showFeedback }) => {
     }
   };
 
+  // Roles without an instruction, that the standard set has one for. One press fills them in.
+  const missingInstructions = useMemo(() => rolesMissingStandardInstruction(adminVolunteerRoles), [adminVolunteerRoles]);
+  const [isFilling, setIsFilling] = useState(false);
+  const handleFillInstructions = async () => {
+    if (isFilling || missingInstructions.length === 0) return;
+    setIsFilling(true);
+    try {
+      for (const { role, instruction } of missingInstructions) await patchVolunteerRole(role.id, { instruction });
+      showFeedback?.(`Standardinstruks er lagt inn på ${missingInstructions.length} ${missingInstructions.length === 1 ? "rolle" : "roller"}.`);
+    } catch (err) {
+      showFeedback?.(err instanceof Error ? err.message : "Kunne ikke legge inn instruksene", "error");
+    } finally {
+      setIsFilling(false);
+    }
+  };
+
   const handleSeedDefaults = async () => {
     if (isSeeding || adminVolunteerRoles.length > 0) return;
     setIsSeeding(true);
@@ -179,6 +195,32 @@ export const RolesTab: React.FC<RolesTabProps> = ({ studio, showFeedback }) => {
           >
             {isSeeding ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
             <span>{isSeeding ? "Legger inn..." : "Legg inn standardroller"}</span>
+          </button>
+        </div>
+      )}
+
+      {missingInstructions.length > 0 && (
+        <div id="fill-standard-instructions" className="p-4 rounded-2xl bg-[var(--studio-accent-bg)] border border-[var(--studio-accent-border)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <div className="flex items-start gap-2.5">
+            <FileText className="w-5 h-5 text-[var(--studio-icon)] shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold text-[var(--studio-text)]">
+                {missingInstructions.length} {missingInstructions.length === 1 ? "rolle mangler" : "roller mangler"} instruks
+              </p>
+              <p className="text-[var(--studio-muted)]">
+                Standardinstruksen kan legges inn på {missingInstructions.map(({ role }) => role.name).join(", ")}. Roller som alt har en instruks, røres ikke, og
+                du kan endre teksten etterpå.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleFillInstructions}
+            disabled={isFilling}
+            className="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold shrink-0 shadow-sm cursor-pointer flex items-center gap-1.5"
+          >
+            {isFilling ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+            <span>{isFilling ? "Legger inn..." : "Legg inn standardinstrukser"}</span>
           </button>
         </div>
       )}

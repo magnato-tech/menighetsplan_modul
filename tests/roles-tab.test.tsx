@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { RolesTab } from "../src/pages/admin/tabs/RolesTab";
-import { DEFAULT_VOLUNTEER_ROLE_NAMES } from "../src/data/defaultVolunteerRoles";
+import { DEFAULT_VOLUNTEER_ROLE_INSTRUCTIONS, DEFAULT_VOLUNTEER_ROLE_NAMES, rolesMissingStandardInstruction } from "../src/data/defaultVolunteerRoles";
 import { StudioData } from "../src/pages/admin/studio";
 
 const createVolunteerRole = vi.fn();
@@ -56,6 +56,35 @@ describe("RolesTab", () => {
     expect(screen.getByPlaceholderText("Søk i roller...")).toBeTruthy();
   });
 
+  test("roller uten instruks kan få standardinstruksen, og de som har en, røres ikke", async () => {
+    const showFeedback = vi.fn();
+    const roles = [
+      { id: "role-1", name: "Lyd", instruction: "Møt kl. 09:30", sortOrder: 0 },
+      { id: "role-2", name: "kjøkken ", instruction: "  ", sortOrder: 1 },
+      { id: "role-3", name: "Taler", sortOrder: 2 },
+      { id: "role-4", name: "Parkeringsvakt", instruction: "", sortOrder: 3 },
+    ];
+    expect(rolesMissingStandardInstruction(roles).map(({ role }) => role.id)).toEqual(["role-2", "role-3"]);
+    expect(rolesMissingStandardInstruction([roles[0], roles[3]])).toEqual([]);
+
+    patchVolunteerRole.mockClear();
+    render(<RolesTab studio={{ ...studio, adminVolunteerRoles: roles } as unknown as StudioData} showFeedback={showFeedback} />);
+    expect(screen.getByText("2 roller mangler instruks")).toBeTruthy();
+    expect(screen.getByText(/kan legges inn på kjøkken , Taler\./)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Legg inn standardinstrukser" }));
+
+    await waitFor(() => expect(showFeedback).toHaveBeenCalledWith("Standardinstruks er lagt inn på 2 roller."));
+    expect(patchVolunteerRole.mock.calls).toEqual([
+      ["role-2", { instruction: DEFAULT_VOLUNTEER_ROLE_INSTRUCTIONS.Kjøkken }],
+      ["role-3", { instruction: DEFAULT_VOLUNTEER_ROLE_INSTRUCTIONS.Taler }],
+    ]);
+  });
+
+  test("når ingen rolle mangler en instruks standarden har, tilbys ingenting", () => {
+    render(<RolesTab studio={{ ...studio, adminVolunteerRoles: [{ id: "role-1", name: "Lyd", instruction: "Møt kl. 09:30", sortOrder: 0 }] } as unknown as StudioData} />);
+    expect(screen.queryByRole("button", { name: "Legg inn standardinstrukser" })).toBeNull();
+  });
+
   test("tilbyr standardroller når listen er tom", () => {
     render(
       <RolesTab
@@ -72,7 +101,7 @@ describe("RolesTab", () => {
 
   test("åpner instruks-dialog for valgt rolle", () => {
     render(<RolesTab studio={studio} />);
-    fireEvent.click(screen.getAllByRole("button", { name: /Instruks/i })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: /^Instruks$/i })[0]);
     expect(screen.getByText("Instruks: Lyd")).toBeTruthy();
     expect(screen.getByDisplayValue("Møt kl. 09:30")).toBeTruthy();
   });
@@ -80,7 +109,7 @@ describe("RolesTab", () => {
   test("lagrer redigert instruks", async () => {
     const showFeedback = vi.fn();
     render(<RolesTab studio={studio} showFeedback={showFeedback} />);
-    fireEvent.click(screen.getAllByRole("button", { name: /Instruks/i })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: /^Instruks$/i })[0]);
     fireEvent.change(screen.getByDisplayValue("Møt kl. 09:30"), {
       target: { value: "Møt kl. 09:45" },
     });

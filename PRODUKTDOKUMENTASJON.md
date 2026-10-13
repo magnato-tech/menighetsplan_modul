@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.30 · **Sist oppdatert:** 2026-10-13
+> **Dokumentversjon:** 4.31 · **Sist oppdatert:** 2026-10-13
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -1109,6 +1109,17 @@ Bestilt av produkteier: et menighetsmøte uten oppgaver sto med gul boks og «Ma
 | **Listen over arrangementer** | Slike arrangementer står med «Ingen oppgaver», både på kortene og i tabellen. Før sto de som «Dekket (0/0)» i grønt |
 | **Arrangementer med oppgaver** | Som før |
 | **Prøvd** | Én sjekk av tabellen. Sett i nettleseren mot demoens data: tre arrangementer uten oppgaver sto med «Ingen oppgaver» i begge visninger, kjøreplanen til ett av dem hadde ingen boks, og et arrangement med oppgaver hadde boksen som før |
+
+### Standardinstrukser på roller som mangler dem (13. oktober 2026)
+
+Bestilt av produkteier: rollene hos første menighet var lagt inn uten instruks.
+
+| Område | Levert |
+|:---|:---|
+| **«Legg inn standardinstrukser»** | Under Roller i admin, når minst én rolle står uten instruks og standardsettet har en instruks for en rolle med det navnet |
+| **Hva som skjer** | Rollene som mangler instruks, får standardinstruksen. Skjermen sier hvilke roller det gjelder før noe gjøres |
+| **Røres ikke** | Roller som alt har en instruks, og roller standardsettet ikke kjenner. Teksten kan endres etterpå, rolle for rolle |
+| **Prøvd** | 2 sjekker |
 
 ---
 
