@@ -1539,7 +1539,8 @@ I tillegg dekker menylinjen nederst det første kortet i kalenderen før man har
 * Når «Kalender» er valgt, er «Min kalender» med filtrene det første innholdet under fanene.
 * «Neste i menigheten» og «Neste for deg» tas bort fra kalenderfanen. Kalenderen viser det samme, og avsnittet «Mulig funksjon: Min kalender» i kapittel 3 sier allerede at kalenderen erstatter dem.
 * Det skal være tydelig hvilken fane man er på: overskriften på siden bør si «Kalender» (og «Mine oppgaver», «Mine grupper») i stedet for «Min side» på alle tre.
-* Boksen «Dette trenger din handling» står over alle fanene, slik det er bestemt. På mobil skyver den kalenderen ned. Vurder en kortere variant av boksen (én linje med antall og «Se og håndter») når en annen fane enn «Mine oppgaver» er valgt.
+* **Den gule handlingsboksen vises bare på fanen «Mine oppgaver»** (bestemt av produkteier 13. oktober 2026). Den tas bort fra «Mine grupper» og «Kalender». Dette erstatter det som står i `MyPageTabs.tsx` om at boksen står over alle fanene.
+* **Boksen skal bare si «Ta oppgave (68)».** Overskriften «Dette trenger din handling», det runde merket med tallet og forklaringsteksten («Du har forespørsler, ubesvarte innkallinger …») tas bort. Antallet står i parentes etter teksten. Knappen åpner det samme som «Se og håndter» gjør i dag.
 * Det siste kortet på fanen skal kunne scrolles helt fram over menylinjen nederst.
 
 **Oppdater også kapittel 3.** Tabellen og avsnittet «Mulig funksjon: Min kalender» sier at kalenderen ikke er bygget, men den finnes som fane på Min side.
