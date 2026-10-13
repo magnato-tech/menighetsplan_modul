@@ -59,6 +59,8 @@ import {
 
   LazyTemplatesTab,
 
+  LazyYearWheelTab,
+
   LazySermonsTab,
 
   LazySiteSettingsTab,
@@ -513,6 +515,10 @@ function AdminStudioContent() {
 
           <LazyTemplatesTab studio={studio} showFeedback={showFeedback} />
 
+        </StudioTabPanel>
+
+        <StudioTabPanel tab="arshjul" activeTab={activeTab} visited={visitedTabs.includes("arshjul")}>
+          <LazyYearWheelTab showFeedback={showFeedback} />
         </StudioTabPanel>
 
 

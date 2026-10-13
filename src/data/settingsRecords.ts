@@ -31,6 +31,10 @@ export function isHeadcountRecord(data: { recordType?: unknown }): boolean {
   return data.recordType === HEADCOUNT_RECORD;
 }
 
+/** The congregation's annual wheel: one document that holds the whole wheel (see services/yearWheel.ts). */
+export const YEAR_WHEEL_RECORD = "yearWheel";
+export const YEAR_WHEEL_DOC_ID = "year-wheel";
+
 export type OperatingMode = "demo" | "production";
 
 export const OPERATING_MODE_RECORD = "operatingMode";

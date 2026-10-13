@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.48 · **Sist oppdatert:** 2026-10-13
+> **Dokumentversjon:** 4.49 · **Sist oppdatert:** 2026-10-13
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -1295,6 +1295,23 @@ Bestilt av produkteier. En person kunne ikke slettes fra admin, og kolonnen «Ha
 | **Ikke levert her** | «Slett alle spor», der også navnet på gamle oppgaver og meldinger fjernes. Det trengs når noen krever sletting etter personvernreglene, og er ikke bygget |
 | **Regler** | Uendret. En ny regelsjekk viser at administrator kan gjøre sendingen, og at verken gruppens leder eller personen selv kan |
 | **Prøvd** | 6 sjekker og én regelsjekk i emulatoren |
+
+### Menighetens årshjul (13. oktober 2026)
+
+Bestilt av produkteier: administrative frister og det som kommer igjen hvert år, samlet på én side i admin. En enkel infoside. Ingen tildeles noe herfra, og ingenting sendes ut.
+
+| Område | Levert |
+|:---|:---|
+| **Hvor** | Admin → Årshjul, i menyen under Maler. På begge nivå, og i demoen |
+| **Siden** | Tolv måneder i et rutenett. Hver frist står med tittel og dag. Måneden som er nå, er merket |
+| **Redigering** | «Ny frist» øverst. Blyant og søppelbøtte på hver frist vises når pekeren er over den, og hele tiden på telefon og nettbrett. En frist har tittel, måned, dag og et valgfritt notat |
+| **Standardårshjulet** | En menighet som ikke har endret noe, ser standardårshjulet: årshjulet til første menighet, gitt av produkteier som et bilde. Første endring lagrer hele hjulet, og fra da er det menighetens eget |
+| **Titler som var kuttet i bildet** | 17 av de 36 titlene var kuttet av med «…» i bildet. Der står bare det som kunne leses, uten gjetning på resten. De rettes i admin |
+| **Nøytralt** | Standardårshjulet nevner ikke et bestemt kirkesamfunn: fristen i desember heter «Rapportering til kirkesamfunnet» |
+| **Lagring** | Ett dokument i `cms_settings`, merket `yearWheel`. Administrator skriver det. Den som er logget inn, kan lese det: fristene er ikke personopplysninger |
+| **Ikke levert her** | En rolle som knyttes til fristene, og varsling når en frist nærmer seg. Produkteier har sagt at det kommer senere. Fristene er ikke koblet til kalenderen |
+| **Regler** | Uendret |
+| **Prøvd** | 8 sjekker. Sett i nettleseren mot demoens data med nettet slått av: tolv måneder med standardårshjulet, oktober merket, en frist på 31. november ble avvist, og en ny frist la seg i riktig måned. Ingenting ble lagret i demodatabasen |
 
 ---
 

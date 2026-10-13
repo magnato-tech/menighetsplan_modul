@@ -22,6 +22,7 @@ import {
   Database,
   Badge,
   LayoutTemplate,
+  CalendarRange,
   Images,
   CircleHelp,
   Puzzle,
@@ -436,6 +437,21 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({ studio, activeTab,
             >
               <LayoutTemplate className="w-4 h-4" />
               <span>Maler</span>
+            </button>
+
+            {/* The annual wheel is a page of information for the administration, on both levels */}
+            <button
+              type="button"
+              {...tabPrefetchHandlers("arshjul")}
+              onClick={() => onTabChange("arshjul")}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
+                activeTab === "arshjul"
+                  ? "bg-indigo-600 text-white shadow-sm"
+                  : "text-[var(--studio-muted)] hover:text-[var(--studio-text)] hover:bg-[var(--studio-bg)]"
+              }`}
+            >
+              <CalendarRange className="w-4 h-4" />
+              <span>Årshjul</span>
             </button>
 
             {hasPlanner(level) && (

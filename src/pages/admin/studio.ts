@@ -19,6 +19,7 @@ export const STUDIO_TABS = [
   "planlegger-personer",
   "planlegger-roller",
   "planlegger-maler",
+  "arshjul",
   "database-admin",
   "moduler",
   "analyse",
