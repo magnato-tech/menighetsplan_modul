@@ -25,12 +25,11 @@ export const Header: React.FC = () => {
             to="/"
             id="app-logo-link"
             title="Til nettsiden"
-            className="flex flex-col items-start gap-0.5 min-w-0 group transition-opacity hover:opacity-90"
+            className="min-w-0 group transition-opacity hover:opacity-90"
           >
             <h1 className="text-lg font-bold text-slate-800 tracking-tight leading-tight group-hover:underline underline-offset-2">
               {settings.churchName || "Menighetsplan"}
             </h1>
-            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">Min Side</span>
           </Link>
 
           {/* Who is signed in, and the way out */}
