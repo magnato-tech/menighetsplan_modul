@@ -9,7 +9,11 @@ import { MemoryRouter } from "react-router-dom";
 
 const { installation, planner, library } = vi.hoisted(() => ({
   installation: { demo: null as null | Record<string, string> },
-  planner: { assignments: [] as { taskId: string }[], deleteTask: vi.fn((_taskId: string) => ({ success: true })) },
+  planner: {
+    assignments: [] as { id: string; taskId: string; personId: string; personName?: string; response: string }[],
+    deleteGatheringWithStaffing: vi.fn((_gatheringId: string) => ({ success: true }) as { success: boolean; error?: string }),
+    getPersonById: (id: string) => ({ astri: { name: "Astri Berg" }, preben: { name: "Preben Dahl" } })[id],
+  },
   library: { templates: [] as unknown[] },
 }));
 vi.mock("../src/demo", () => ({
@@ -372,60 +376,110 @@ describe("Arrangementer i admin", () => {
     expect(updateGathering).not.toHaveBeenCalled();
   });
 
-  test("resten av en serie kan slettes fra ett av arrangementene, og et arrangement noen har svart på, blir stående", () => {
-    const item = (id: string, day: string, seriesId?: string) => ({
-      gathering: { id, title: "Gudstjeneste", startsAt: combineDateAndTimeToIso(day, "11:00"), groupId: "lovsang", type: "arrangement", visibility: "offentlig", seriesId },
-      tasks: [{ id: `oppgave-${id}`, title: "Taler" }],
-      staffing: { color: "red" },
-    });
-    planner.assignments = [{ taskId: "oppgave-c" }];
+  // ---------- Deleting an event ----------
+
+  const eventOn = (id: string, day: string, more: Record<string, unknown> = {}) => ({
+    gathering: { id, title: "Gudstjeneste", startsAt: combineDateAndTimeToIso(day, "11:00"), groupId: "lovsang", type: "arrangement", visibility: "offentlig", ...more },
+    tasks: [
+      { id: `taler-${id}`, title: "Taler" },
+      { id: `lovsang-${id}`, title: "Lovsang" },
+      { id: `kaffe-${id}`, title: "Kirkekaffe" },
+    ],
+    staffing: { color: "red" },
+  });
+  const on = (taskId: string, personId: string, response = "confirmed", personName?: string) => ({ id: `${taskId}-${personId}`, taskId, personId, personName, response });
+
+  test("ingen knapp sletter mange arrangementer på en gang, verken på kortene eller i tabellen", () => {
+    show([eventOn("a", "2026-10-18", { seriesId: "serie-1" }), eventOn("b", "2026-10-25", { seriesId: "serie-1" })]);
+    expect(screen.getAllByText("Del av serie")).toHaveLength(2);
+    expect(screen.queryByRole("button", { name: /Slett resten/ })).toBeNull();
+    // What can be done with the rest of a series, is to move it
+    expect(screen.getAllByRole("button", { name: "Flytt resten av serien" })).toHaveLength(2);
+
+    fireEvent.click(screen.getByRole("button", { name: "Tabell" }));
+    expect(screen.queryByRole("button", { name: /Slett resten/ })).toBeNull();
+  });
+
+  test("et arrangement uten folk på oppgavene slettes etter ett spørsmål, med oppgavene", () => {
     vi.stubGlobal("confirm", vi.fn(() => true));
-    show([item("a", "2026-10-18", "serie-1"), item("b", "2026-10-25", "serie-1"), item("c", "2026-11-01", "serie-1"), item("d", "2026-11-08", "serie-1"), item("x", "2026-11-08", "serie-2"), item("y", "2026-11-15")]);
+    show([eventOn("a", "2026-10-18")]);
+    fireEvent.click(screen.getByRole("button", { name: "Slett" }));
 
-    expect(screen.getAllByText("Del av serie")).toHaveLength(5);
-    // From the second event on: the first one stands, and so does the one somebody is asked about
-    fireEvent.click(screen.getAllByRole("button", { name: "Slett resten av serien" })[1]);
-
-    expect(vi.mocked(confirm).mock.calls[0][0]).toMatch(/^Vil du slette 2 arrangementer i serien.* 1 blir stående, fordi noen er spurt eller har svart\.$/);
-    expect(deleteGathering.mock.calls.map(([id]) => id)).toEqual(["b", "d"]);
-    expect(planner.deleteTask.mock.calls.map(([id]) => id)).toEqual(["oppgave-b", "oppgave-d"]);
-    expect(showFeedback).toHaveBeenCalledWith("2 arrangementer i serien ble slettet");
+    expect(vi.mocked(confirm).mock.calls[0][0]).toMatch(/^Vil du slette «Gudstjeneste»/);
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+    expect(planner.deleteGatheringWithStaffing).toHaveBeenCalledWith("a");
+    expect(showFeedback).toHaveBeenCalledWith("Arrangementet ble slettet");
   });
 
   test("uten bekreftelse slettes ingenting", () => {
     vi.stubGlobal("confirm", vi.fn(() => false));
-    show([{ gathering: { id: "a", title: "Gudstjeneste", startsAt: combineDateAndTimeToIso("2026-10-18", "11:00"), groupId: "lovsang", seriesId: "serie-1" }, tasks: [], staffing: { color: "red" } }]);
-    fireEvent.click(screen.getByRole("button", { name: "Slett resten av serien" }));
-    expect(deleteGathering).not.toHaveBeenCalled();
+    show([eventOn("a", "2026-10-18")]);
+    fireEvent.click(screen.getByRole("button", { name: "Slett" }));
+    expect(planner.deleteGatheringWithStaffing).not.toHaveBeenCalled();
   });
 
-  test("ett arrangement kan slettes med Slett-knappen", () => {
-    vi.stubGlobal("confirm", vi.fn(() => true));
-    show([
-      {
-        gathering: { id: "a", title: "Gudstjeneste & dåp", startsAt: combineDateAndTimeToIso("2026-10-18", "11:00"), groupId: "lovsang", type: "arrangement", visibility: "offentlig" },
-        tasks: [{ id: "oppgave-a", title: "Lovsang" }],
-        staffing: { color: "red" },
-      },
-    ]);
-    fireEvent.click(screen.getByRole("button", { name: "Slett" }));
-    expect(deleteGathering).toHaveBeenCalledWith("a");
-    expect(planner.deleteTask).toHaveBeenCalledWith("oppgave-a");
-    expect(showFeedback).toHaveBeenCalledWith("Arrangementet ble slettet");
+  test("står det folk på oppgavene, kommer en advarsel som sier hvem, og ingenting er slettet ennå", () => {
+    const ask = vi.fn(() => true);
+    vi.stubGlobal("confirm", ask);
+    planner.assignments = [on("taler-a", "astri"), on("lovsang-a", "preben", "pending"), on("lovsang-a", "astri"), on("kaffe-a", "ukjent", "confirmed", "Kari Gjest"), on("taler-b", "preben")];
+    show([eventOn("a", "2026-10-18"), eventOn("b", "2026-10-25")]);
+    fireEvent.click(screen.getAllByRole("button", { name: "Slett" })[0]);
+
+    const warning = screen.getByRole("alertdialog", { name: "Slette arrangement med folk på oppgavene?" });
+    expect(ask).not.toHaveBeenCalled();
+    expect(planner.deleteGatheringWithStaffing).not.toHaveBeenCalled();
+    // Three people, though one of them stands on two tasks. Nobody from the other event.
+    expect(warning.textContent).toContain("3 personer står på oppgaver eller er spurt");
+    const lines = within(within(warning).getByRole("region", { name: "De som blir tatt av" })).getAllByRole("listitem").map((line) => line.textContent);
+    expect(lines).toEqual(["Taler:Astri Berg", "Lovsang:Preben Dahl (spurt), Astri Berg", "Kirkekaffe:Kari Gjest"]);
+    expect(warning.textContent).toContain("Løsningen sier ikke fra til dem");
   });
 
-  test("arrangement med tildelinger kan ikke slettes med Slett-knappen", () => {
-    vi.stubGlobal("confirm", vi.fn(() => true));
-    planner.assignments = [{ taskId: "oppgave-a" }];
-    show([
-      {
-        gathering: { id: "a", title: "Gudstjeneste", startsAt: combineDateAndTimeToIso("2026-10-18", "11:00"), groupId: "lovsang", type: "arrangement", visibility: "offentlig" },
-        tasks: [{ id: "oppgave-a", title: "Lovsang" }],
-        staffing: { color: "red" },
-      },
-    ]);
+  test("«Avbryt» lar alt stå, og «Fjern alle og slett arrangementet» gjør begge deler i én sending", () => {
+    planner.assignments = [on("taler-a", "astri")];
+    show([eventOn("a", "2026-10-18")]);
+
     fireEvent.click(screen.getByRole("button", { name: "Slett" }));
+    fireEvent.click(within(screen.getByRole("alertdialog")).getByRole("button", { name: "Avbryt" }));
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+    expect(planner.deleteGatheringWithStaffing).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Slett" }));
+    expect(screen.getByRole("alertdialog").textContent).toContain("1 person står på oppgaver");
+    fireEvent.click(within(screen.getByRole("alertdialog")).getByRole("button", { name: "Fjern alle og slett arrangementet" }));
+
+    expect(planner.deleteGatheringWithStaffing).toHaveBeenCalledTimes(1);
+    expect(planner.deleteGatheringWithStaffing).toHaveBeenCalledWith("a");
     expect(deleteGathering).not.toHaveBeenCalled();
-    expect(showFeedback).toHaveBeenCalledWith(expect.stringContaining("kan ikke slettes"), "error");
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+    expect(showFeedback).toHaveBeenCalledWith("Arrangementet ble slettet, og alle ble tatt av oppgavene");
+  });
+
+  test("advarselen kommer også fra tabellen", () => {
+    planner.assignments = [on("taler-a", "astri")];
+    show([eventOn("a", "2026-10-18")]);
+    fireEvent.click(screen.getByRole("button", { name: "Tabell" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Slett Gudstjeneste/ }));
+    expect(within(screen.getByRole("alertdialog")).getByText("Astri Berg")).toBeTruthy();
+  });
+
+  test("de som har sagt nei eller meldt forfall, står ikke på noe: da er det ingen å advare om", () => {
+    vi.stubGlobal("confirm", vi.fn(() => true));
+    planner.assignments = [on("taler-a", "astri", "declined"), on("lovsang-a", "preben", "withdrawn")];
+    show([eventOn("a", "2026-10-18")]);
+    fireEvent.click(screen.getByRole("button", { name: "Slett" }));
+
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+    // The same sending takes their old answers along, so nothing is left behind
+    expect(planner.deleteGatheringWithStaffing).toHaveBeenCalledWith("a");
+  });
+
+  test("går sendingen ikke, står det i meldingen", () => {
+    planner.assignments = [on("taler-a", "astri")];
+    planner.deleteGatheringWithStaffing.mockReturnValueOnce({ success: false, error: "Du har ikke tilgang." });
+    show([eventOn("a", "2026-10-18")]);
+    fireEvent.click(screen.getByRole("button", { name: "Slett" }));
+    fireEvent.click(screen.getByRole("button", { name: "Fjern alle og slett arrangementet" }));
+    expect(showFeedback).toHaveBeenCalledWith("Du har ikke tilgang.", "error");
   });
 });

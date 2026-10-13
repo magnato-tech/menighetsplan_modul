@@ -491,6 +491,27 @@ describe("En administrator", () => {
     await assertSucceeds(deleteDoc(doc(db, "cms_settings/headcount-g-apen")));
   });
 
+  test("sletter et arrangement med oppgavene og alle som står på dem i én sending, og det kan ingen frivillig", async () => {
+    // The sending the app makes (deleteGatheringAndStaffing in src/services/firestore.ts)
+    const sending = (db: Firestore) => {
+      const batch = writeBatch(db);
+      batch.delete(doc(db, "assignments/a1"));
+      batch.delete(doc(db, "tasks/task-1"));
+      batch.delete(doc(db, "gatherings/g-apen"));
+      return batch.commit();
+    };
+    await assertFails(sending(hakon()));
+    await assertSucceeds(sending(kari()));
+
+    const db = kari();
+    expect((await getDoc(doc(db, "gatherings/g-apen"))).exists()).toBe(false);
+    expect((await getDoc(doc(db, "tasks/task-1"))).exists()).toBe(false);
+    expect((await getDoc(doc(db, "assignments/a1"))).exists()).toBe(false);
+    // The other event stands, with its task and the one asked
+    expect((await getDoc(doc(db, "assignments/a-intern"))).exists()).toBe(true);
+    expect((await getDoc(doc(db, "tasks/task-2"))).exists()).toBe(true);
+  });
+
   test("kan skrive mange dokumenter i én sending: et helt register, og alle innloggingene", async () => {
     const db = kari();
     // The size the app sends in one go (BATCH_SIZE in src/services/)

@@ -48,6 +48,7 @@ import {
   removeGroupMember,
   setGroupNotifications,
   saveAssignmentChange,
+  deleteGatheringAndStaffing,
   setAnalyticsModuleHidden as storeAnalyticsModuleHidden,
 } from "../services/firestore";
 import { signOut as signOutOfAccount, subscribeAccount } from "../services/auth";
@@ -146,6 +147,8 @@ export interface FirebaseDataContextType {
   reportAbsence: (taskId: string, personId: string) => ActionResult;
   updateAssignmentStatus: (assignmentId: string, response: Assignment["response"]) => ActionResult;
   removeAssignment: (assignmentId: string) => ActionResult;
+  /** Deletes the event with its tasks and takes everyone off them, in one write. */
+  deleteGatheringWithStaffing: (gatheringId: string) => ActionResult;
   updateGroupName: (groupId: string, newName: string) => ActionResult;
   updateGroup: (groupId: string, updates: Partial<Group>) => ActionResult;
   createGroup: (data: NewGroupInput) => ActionResult & { group?: Group };
@@ -872,6 +875,12 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
         const assignment = assignments.find((a) => a.id === assignmentId);
         if (!assignment) return { success: false, error: "Tildelingen finnes ikke lenger." };
         return changeAssignments(assignment.taskId, { remove: assignmentId }, "fjerne tildelingen");
+      },
+
+      deleteGatheringWithStaffing: (gatheringId: string) => {
+        const taskIds = tasks.filter((task) => task.gatheringId === gatheringId).map((task) => task.id);
+        const assignmentIds = assignments.filter((assignment) => taskIds.includes(assignment.taskId)).map((assignment) => assignment.id);
+        return save("slette arrangementet", () => deleteGatheringAndStaffing(gatheringId, taskIds, assignmentIds));
       },
 
       reportAbsence: (taskId: string, personId: string) => {

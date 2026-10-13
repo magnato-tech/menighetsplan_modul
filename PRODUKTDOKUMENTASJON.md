@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.26 · **Sist oppdatert:** 2026-10-13
+> **Dokumentversjon:** 4.27 · **Sist oppdatert:** 2026-10-13
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -926,7 +926,7 @@ Del B og C av «Arrangement, maler og serier» (kapittel 14). Bestilt av produkt
 | **Lag mal av et arrangement** | «Lag mal» på et arrangement som alt er satt opp, gir en mal med programmet, oppgavene, bildet og teksten |
 | **Arrangement fra mal** | «Start fra en mal» i det store skjemaet fyller ut skjemaet. Arrangementet får malens program, på klokkeslettene som følger av dets egen starttid, og én oppgave per rolle |
 | **Serie** | «Gjenta som serie»: hver uke, hver 2., 3. eller 4. uke, eller én gang i måneden. Siste dato er foreslått til 30. juni. Dagene vises med hake, og en dag kan tas ut. En dag der det alt ligger et arrangement, er merket |
-| **Etter at serien er laget** | Hvert arrangement er merket «Del av serie» i listen. «Slett resten av serien» sletter fra og med arrangementet, med oppgavene, etter bekreftelse. Arrangementer noen har svart på, står |
+| **Etter at serien er laget** | Hvert arrangement er merket «Del av serie» i listen. Resten av en serie kan flyttes (se «Flytt resten av en serie»). Den kan ikke slettes i ett trykk: «Slett resten av serien» ble tatt ut 13. oktober 2026, og arrangementer slettes ett om gangen (se «Slett ett arrangement, også når det står folk på det») |
 | **Menighetsplattform** | Maler og serier virker også uten planleggeren. Arrangementene får da ikke program og oppgaver |
 | **Demoen** | Standardmalen ligger klar hos eksempelmenigheten og hos hver av menighetene, og legges inn på nytt ved nullstillingen |
 | **Lagring** | Malene ligger sammen med innstillingene, merket som maler, slik tjenesterollene gjør. Det krever ingen endring i databasens regler |
@@ -1021,7 +1021,7 @@ Bestilt av produkteier hos første menighet: gudstjenestene etter jul var lagt p
 
 | Område | Levert |
 |:---|:---|
-| **«Flytt resten av serien»** | Knapp på hvert arrangement som er del av en serie, ved siden av «Slett resten av serien» |
+| **«Flytt resten av serien»** | Knapp på hvert arrangement som er del av en serie |
 | **Slik brukes den** | Administrator gir arrangementet en ny dato. Det og de som kommer etter i serien, flyttes like mange dager, fram eller tilbake |
 | **Det som følger med** | Klokkeslett, sluttid, program, oppgaver og de som står på dem. Arrangementene før, andre serier og enkeltarrangementer røres ikke |
 | **Vises før noe flyttes** | De nye datoene står i skjemaet, og det sies fra når noen er spurt eller står på en oppgave: de blir stående, på den nye datoen |
@@ -1038,8 +1038,24 @@ Bestilt av produkteier: arrangementene i admin sto i tilfeldig rekkefølge, og d
 | **«Kort» og «Tabell»** | En bryter over listen, slik Personer har. Siden åpner som tabell |
 | **Tabellen** | Én linje per arrangement: dato, tittel med tema og merke for gudstjeneste og serie, sted og bemanning. Et trykk på overskriften sorterer på den kolonnen, og et trykk til snur rekkefølgen |
 | **Handlinger på linjen** | Kjøreplan, lag neste arrangement, slett, og for et arrangement i en serie «Flytt resten av serien» |
-| **Ikke i tabellen** | «Slett resten av serien» står bare på kortene. Produkteier har sagt at den sletter for mye i ett trykk, og hva som skal skje med den, er ikke bestemt |
+| **Ikke i tabellen** | Ingen knapp som sletter mange arrangementer på en gang (se neste avsnitt) |
 | **Prøvd** | 11 sjekker av rekkefølgen og tabellen. Sett i nettleseren: 16 arrangementer etter dato, sortering på bemanning, og bytte til kort |
+
+### Slett ett arrangement, også når det står folk på det (13. oktober 2026)
+
+Bestilt av produkteier: «Slett resten av serien» var for farlig, fordi et helt semesterprogram kunne gå tapt i ett trykk. Samtidig tok det lang tid å slette ett arrangement som var bemannet, fordi hver person først måtte tas av hver oppgave i kjøreplanen.
+
+| Område | Levert |
+|:---|:---|
+| **«Slett resten av serien» er tatt ut** | Knappen er borte fra arrangementene i admin, både på kortene og i tabellen. Arrangementer slettes ett om gangen |
+| **Uten folk på oppgavene** | «Slett» spør én gang, som før, og sletter arrangementet med program og oppgaver |
+| **Med folk på oppgavene** | «Slett» åpner en advarsel i stedet for å nekte. Den sier hvor mange det gjelder, og viser oppgave for oppgave hvem som står der, og hvem som bare er spurt |
+| **Ett trykk** | «Fjern alle og slett arrangementet» tar alle av oppgavene og sletter arrangementet. «Avbryt» lar alt stå |
+| **Én sending** | De som står på oppgavene, oppgavene og arrangementet slettes i samme sending til databasen: enten er alt borte, eller så står alt. Det gjelder også et arrangement uten folk, og gamle svar (nei og forfall) følger med ut |
+| **Ikke levert her** | Løsningen sier ikke fra til dem som tas av. Advarselen sier det, og administrator gir beskjed selv |
+| **Står som før** | Gruppelederens «Slett denne og alle senere» for samlingene i en plan (se «Gruppelederen planlegger semesteret»). Produkteier har sagt at den kan stå inntil videre |
+| **Regler** | Uendret. En ny regelsjekk viser at administrator kan gjøre sendingen, og at en frivillig ikke kan |
+| **Prøvd** | 8 sjekker av slettingen i admin, én av sendingen i dataleverandøren og én regelsjekk i emulatoren. Sett i nettleseren mot demoens data med nettet slått av i fanen: advarselen viste oppgaven og navnet, «Avbryt» lot alt stå, og etter «Fjern alle og slett arrangementet» var arrangementet, oppgaven og tildelingen borte og resten urørt. Etter ny lasting sto alt som før i databasen |
 
 ---
 

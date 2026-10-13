@@ -175,6 +175,19 @@ export function saveAssignmentChange(taskId: string, change: AssignmentChange, t
 }
 
 /**
+ * Deletes an event together with its tasks and everyone on them, in one write: either all of it
+ * is gone, or nothing is. An event can then never be left with tasks nobody can find, or people
+ * on tasks of an event that is not there.
+ */
+export function deleteGatheringAndStaffing(gatheringId: string, taskIds: string[], assignmentIds: string[]): Promise<void> {
+  const batch = writeBatch(db);
+  for (const id of assignmentIds) batch.delete(doc(db, COLLECTIONS.ASSIGNMENTS, id));
+  for (const id of taskIds) batch.delete(doc(db, COLLECTIONS.TASKS, id));
+  batch.delete(doc(db, COLLECTIONS.GATHERINGS, gatheringId));
+  return batch.commit();
+}
+
+/**
  * Deletes a CMS page and moves its sub-pages to the top level in the same write,
  * so the database never holds a page that points at a deleted parent.
  */

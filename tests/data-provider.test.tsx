@@ -389,6 +389,23 @@ describe("Bemanning", () => {
     expect(data.current.getTaskById("task-1")?.status).toBe("open");
   });
 
+  test("Et arrangement slettes med oppgavene og alle som står på dem, og resten står urørt", async () => {
+    const data = await mountProvider();
+    data.current.assignTaskToPerson("task-1", "person-3", "pending");
+    await waitFor(() => expect(data.current.getAllAssignmentsForTask("task-1")).toHaveLength(1));
+    const asked = data.current.getAllAssignmentsForTask("task-1")[0].id;
+
+    expect(data.current.deleteGatheringWithStaffing("gathering-1")).toEqual({ success: true });
+    await waitFor(() => expect(data.current.getGatheringById("gathering-1")).toBeUndefined());
+
+    expect(await stored(COLLECTIONS.GATHERINGS, "gathering-1")).toBeUndefined();
+    expect(await storedIds(COLLECTIONS.TASKS)).toEqual(["task-soon"]);
+    expect(await storedIds(COLLECTIONS.ASSIGNMENTS)).toEqual(["assign-soon"]);
+    expect(await stored(COLLECTIONS.ASSIGNMENTS, asked)).toBeUndefined();
+    expect(await stored(COLLECTIONS.GATHERINGS, "gathering-soon")).toBeDefined();
+    expect(getWriteError()).toBeNull();
+  });
+
   test("Forfall fra en som ikke står på oppgaven gjør ingenting", async () => {
     const data = await mountProvider();
     expect(data.current.reportAbsence("task-1", "person-2").success).toBe(false);

@@ -27,7 +27,8 @@ import { visibilityOf } from "../../../utils/visibility";
 import { DEFAULT_LOCATION, isWorshipService, locationOf } from "../../../utils/gatherings";
 import { NewGatheringDialog } from "../NewGatheringDialog";
 import { useFirebase } from "../../../context/FirebaseDataContext";
-import { movedRestOfSeries, restOfSeries } from "../../../utils/series";
+import { movedRestOfSeries } from "../../../utils/series";
+import { DeleteGatheringDialog, type StaffedTask } from "../DeleteGatheringDialog";
 import { MoveSeriesDialog } from "../MoveSeriesDialog";
 import { GatheringsTable } from "./gatherings/GatheringsTable";
 import { nextGatheringSort, sortGatherings, type GatheringSortDirection, type GatheringSortKey } from "../../../utils/gatheringList";
@@ -125,28 +126,7 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
     setNewGatheringTheme("");
   };
 
-  // The rest of a series, taken away from one of its events on. An event somebody has been asked
-  // about or has answered for, stands: the series is what the admin pointed at, their answers are not.
-  const { assignments, deleteTask } = useFirebase();
-  const handleRemoveRestOfSeries = (item: AdminGatheringItem) => {
-    const taskIdsOf = (other: AdminGatheringItem) => new Set(other.tasks.map((task) => task.id));
-    const { remove, kept } = restOfSeries(
-      adminGatherings.map((other) => ({ ...other.gathering, item: other })),
-      item.gathering,
-      (event) => assignments.some((assignment) => taskIdsOf(event.item).has(assignment.taskId))
-    );
-    if (remove.length === 0) {
-      showFeedback("Ingen arrangementer i serien kan slettes: noen er spurt eller har svart på alle.", "error");
-      return;
-    }
-    const stands = kept.length > 0 ? ` ${kept.length} blir stående, fordi noen er spurt eller har svart.` : "";
-    if (!confirm(`Vil du slette ${remove.length === 1 ? "dette arrangementet" : `${remove.length} arrangementer`} i serien, fra og med ${formatNorwegianDateTime(item.gathering.startsAt)}?${stands}`)) return;
-    for (const event of remove) {
-      for (const task of event.item.tasks) deleteTask(task.id);
-      studio.deleteGathering(event.id);
-    }
-    showFeedback(`${remove.length} arrangementer i serien ble slettet`);
-  };
+  const { assignments, deleteGatheringWithStaffing, getPersonById } = useFirebase();
 
   // The events as a table or as cards, by date until the admin presses another column
   const [view, setView] = useState<"cards" | "table">("table");
@@ -181,27 +161,36 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
     showFeedback(`${moved.length} ${moved.length === 1 ? "arrangement" : "arrangementer"} i serien ble flyttet`);
   };
 
+  // An event with people on its tasks is deleted through a warning that names them. One press
+  // there takes them all off and deletes the event, so they need not be removed one by one.
+  const [deleting, setDeleting] = useState<AdminGatheringItem | null>(null);
+  const staffedTasksOf = (item: AdminGatheringItem): StaffedTask[] =>
+    item.tasks.flatMap((task) => {
+      const people = assignments
+        .filter((assignment) => assignment.taskId === task.id && (assignment.response === "confirmed" || assignment.response === "pending"))
+        .map((assignment) => ({
+          name: getPersonById(assignment.personId)?.name ?? assignment.personName ?? "Ukjent person",
+          asked: assignment.response === "pending",
+        }));
+      return people.length > 0 ? [{ title: task.title, people }] : [];
+    });
+  const deleteWithStaffing = (item: AdminGatheringItem) => {
+    const res = deleteGatheringWithStaffing(item.gathering.id);
+    setDeleting(null);
+    if (res.success) showFeedback("Arrangementet ble slettet, og alle ble tatt av oppgavene");
+    else showFeedback(res.error || "Kunne ikke slette arrangementet", "error");
+  };
+
   const handleDeleteGathering = (item: AdminGatheringItem) => {
     const g = item.gathering;
-    const taskIds = new Set(item.tasks.map((task) => task.id));
-    if (assignments.some((assignment) => taskIds.has(assignment.taskId))) {
-      showFeedback(
-        "Arrangementet kan ikke slettes fordi noen er forespurt eller tildelt på oppgaver. Gå til kjøreplanen og fjern tildelingene først.",
-        "error"
-      );
+    if (staffedTasksOf(item).length > 0) {
+      setDeleting(item);
       return;
     }
     if (!confirm(`Vil du slette «${g.title}» (${formatNorwegianDateTime(g.startsAt)})? Program og oppgaver fjernes også.`)) {
       return;
     }
-    for (const task of item.tasks) {
-      const removed = deleteTask(task.id);
-      if (!removed.success) {
-        showFeedback(removed.error || "Kunne ikke slette en oppgave", "error");
-        return;
-      }
-    }
-    const res = studio.deleteGathering(g.id);
+    const res = deleteGatheringWithStaffing(g.id);
     if (res.success) showFeedback("Arrangementet ble slettet");
     else showFeedback(res.error || "Kunne ikke slette arrangementet", "error");
   };
@@ -446,17 +435,6 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
                       <span>Flytt resten av serien</span>
                     </button>
                   )}
-                  {g.seriesId && (
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveRestOfSeries(item)}
-                      className="px-3 py-1.5 rounded-lg bg-[var(--studio-bg)] hover:bg-red-950 text-[var(--studio-muted)] hover:text-red-400 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer border border-[var(--studio-border)]"
-                      title="Sletter dette arrangementet og de som kommer etter i serien"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      <span>Slett resten av serien</span>
-                    </button>
-                  )}
                   <button
                     type="button"
                     onClick={() => {
@@ -500,6 +478,16 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
 
       {fullForm && (
         <NewGatheringDialog studio={studio} showFeedback={showFeedback} initial={fullForm} onCreated={emptyQuickForm} onClose={() => setFullForm(null)} />
+      )}
+
+      {deleting && (
+        <DeleteGatheringDialog
+          title={deleting.gathering.title}
+          when={formatNorwegianDateTime(deleting.gathering.startsAt)}
+          staffed={staffedTasksOf(deleting)}
+          onConfirm={() => deleteWithStaffing(deleting)}
+          onClose={() => setDeleting(null)}
+        />
       )}
 
       {movingFrom && (
