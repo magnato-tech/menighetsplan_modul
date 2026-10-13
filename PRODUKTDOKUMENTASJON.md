@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.50 · **Sist oppdatert:** 2026-10-13
+> **Dokumentversjon:** 4.51 · **Sist oppdatert:** 2026-10-13
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -1315,6 +1315,20 @@ Bestilt av produkteier: administrative frister og det som kommer igjen hvert år
 | **Ikke levert her** | En rolle som knyttes til fristene, og varsling når en frist nærmer seg. Produkteier har sagt at det kommer senere. Fristene er ikke koblet til kalenderen |
 | **Regler** | Uendret |
 | **Prøvd** | 8 sjekker. Sett i nettleseren mot demoens data med nettet slått av: tolv måneder med standardårshjulet, oktober merket, en frist på 31. november ble avvist, og en ny frist la seg i riktig måned. Ingenting ble lagret i demodatabasen |
+
+### Tre faner på Min side (13. oktober 2026)
+
+Oppgavene lå bak en knapp nederst på Min side, og kalenderen bak et lite ikon. Nå er siden delt i tre faner.
+
+| Del | Hva som er levert |
+|---|---|
+| **Tre faner** | «Mine oppgaver», «Mine grupper» og «Kalender». Siden åpner i «Mine oppgaver». Adressen kan be om en fane med `?view=oppgaver`, `?view=grupper` eller `?view=kalender` |
+| **Nederst på mobil, øverst på PC** | På mobil står fanene fast nederst på skjermen. På bredere skjerm står de rett under overskriften |
+| **Mine oppgaver** | Oppgavene personen har sagt ja til og som ligger foran, den nærmeste først, med arrangement og tidspunkt. Et trykk åpner oppgaven. Tallet på fanen er antall oppgaver |
+| **Mine grupper** | Gruppekortene som før |
+| **Kalender** | «Neste i menigheten», «Neste for deg» og Min kalender, rett på siden |
+| **Det som trenger handling** | Står over fanene, uansett hvilken fane som er åpen |
+| **Tatt bort** | Den gamle bunnmenyen på mobil (Min side, Grupper, Oppgaver, Meldinger), kalenderikonet øverst og raden «Dine oppgaver – Vis oppgaveliste». Meldinger nås fra hvert gruppekort |
 
 ---
 

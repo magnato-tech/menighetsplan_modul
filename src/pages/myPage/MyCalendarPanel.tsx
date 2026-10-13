@@ -12,7 +12,10 @@ import {
 } from "../../utils/personalCalendar";
 
 interface MyCalendarPanelProps {
-  onClose: () => void;
+  /** Closes the window. Left out when the calendar is a part of the page (`inline`). */
+  onClose?: () => void;
+  /** Drawn in the page itself, with no window around it and nothing to close. */
+  inline?: boolean;
 }
 
 const FILTERS: { id: PersonalCalendarFilter; label: string }[] = [
@@ -21,7 +24,7 @@ const FILTERS: { id: PersonalCalendarFilter; label: string }[] = [
   { id: "mine_grupper", label: "Mine grupper" },
 ];
 
-export const MyCalendarPanel: React.FC<MyCalendarPanelProps> = ({ onClose }) => {
+export const MyCalendarPanel: React.FC<MyCalendarPanelProps> = ({ onClose, inline = false }) => {
   const navigate = useNavigate();
   const { currentUser, userGroups } = useCurrentUser();
   const { gatherings, getPersonAttendance } = useFirebase();
@@ -43,7 +46,7 @@ export const MyCalendarPanel: React.FC<MyCalendarPanelProps> = ({ onClose }) => 
   );
 
   const openEvent = (gatheringId: string) => {
-    onClose();
+    onClose?.();
     navigate(`/samling/${gatheringId}`);
   };
 
@@ -53,23 +56,25 @@ export const MyCalendarPanel: React.FC<MyCalendarPanelProps> = ({ onClose }) => 
 
   return (
     <div
-      id="modal-my-calendar"
-      className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in"
+      id={inline ? "section-min-kalender" : "modal-my-calendar"}
+      className={inline ? "" : "fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in"}
     >
-      <div className="w-full max-w-md bg-slate-50 rounded-t-3xl sm:rounded-3xl shadow-xl max-h-[85vh] flex flex-col overflow-hidden border border-slate-200">
+      <div className={inline ? "bg-slate-50 rounded-2xl overflow-hidden border border-slate-200/80" : "w-full max-w-md bg-slate-50 rounded-t-3xl sm:rounded-3xl shadow-xl max-h-[85vh] flex flex-col overflow-hidden border border-slate-200"}>
         <div className="p-4 bg-white border-b border-slate-200 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Calendar className="w-5 h-5 text-emerald-600" />
             <h3 className="font-bold text-sm text-slate-900">Min kalender</h3>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
-            aria-label="Lukk kalender"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          {!inline && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
+              aria-label="Lukk kalender"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
         </div>
 
         <div className="px-4 pt-3 pb-2 bg-white border-b border-slate-200 space-y-2">

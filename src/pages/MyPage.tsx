@@ -5,17 +5,12 @@ import { AttentionSection } from "./myPage/AttentionSection";
 import { MyGroupsSection } from "./myPage/MyGroupsSection";
 import { NextChurchEventSection } from "./myPage/NextChurchEventSection";
 import { NextForYouSection } from "./myPage/NextForYouSection";
-import { MyTasksModal } from "./myPage/MyTasksModal";
+import { MyTasksTab } from "./myPage/MyTasksTab";
+import { MyPageTabs, toMyPageTab, type MyPageTab } from "./myPage/MyPageTabs";
 import { MyCalendarPanel } from "./myPage/MyCalendarPanel";
 import { AttentionModal } from "./myPage/AttentionModal";
-import { MobileBottomNav } from "./myPage/MobileBottomNav";
 import { VolunteerHelp } from "./myPage/VolunteerHelp";
-import {
-  Calendar,
-  CheckCircle2,
-  Info,
-  ListTodo,
-} from "lucide-react";
+import { CheckCircle2, Info } from "lucide-react";
 
 export const MyPage: React.FC = () => {
   const page = useMyPage();
@@ -23,12 +18,10 @@ export const MyPage: React.FC = () => {
 
   const [searchParams] = useSearchParams();
 
-  // Active view toggle for mobile tasks modal / drawer if requested
-  const [showTasksModal, setShowTasksModal] = useState(
-    searchParams.get("view") === "oppgaver"
-  );
+  // The page has three parts: one's tasks, one's groups and the calendar. An address can ask for
+  // one of them (?view=); otherwise it opens on the tasks, which is what a volunteer comes for.
+  const [tab, setTab] = useState<MyPageTab>(toMyPageTab(searchParams.get("view")));
   const [showAttentionModal, setShowAttentionModal] = useState(false);
-  const [showCalendarPanel, setShowCalendarPanel] = useState(false);
 
   return (
     <div className="w-full max-w-md mx-auto bg-slate-50 min-h-screen shadow-md sm:my-4 sm:rounded-3xl sm:border sm:border-slate-200/80 overflow-hidden pb-20 sm:pb-8">
@@ -70,14 +63,6 @@ export const MyPage: React.FC = () => {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setShowCalendarPanel(true)}
-              className="inline-flex items-center justify-center w-9 h-9 rounded-full border border-slate-200/80 bg-white text-slate-600 hover:text-emerald-700 hover:border-emerald-200 shadow-2xs cursor-pointer"
-              aria-label="Åpne Min kalender"
-            >
-              <Calendar className="w-4 h-4" />
-            </button>
             <span className="text-[11px] font-semibold text-slate-600 bg-white border border-slate-200/80 px-2.5 py-1 rounded-full shadow-2xs">
               {myGroups.length} {myGroups.length === 1 ? "gruppe" : "grupper"}
             </span>
@@ -104,59 +89,26 @@ export const MyPage: React.FC = () => {
           </p>
         )}
 
-        {/* =========================================================================
-            2. MINE GRUPPER
-            Hovedinngang til brukerens gruppeliv med siste melding integrert
-           ========================================================================= */}
-        <MyGroupsSection page={page} />
+        {/* What needs one's action stands above. Under it, one part at a time. */}
+        <MyPageTabs active={tab} onChange={setTab} taskCount={myTasks.length} />
 
-        {/* =========================================================================
-            3. NESTE I MENIGHETEN
-            Neste gudstjeneste/arrangement som gjelder hele menigheten
-           ========================================================================= */}
-        <NextChurchEventSection page={page} />
+        {tab === "oppgaver" && <MyTasksTab page={page} />}
 
-        {/* =========================================================================
-            3. NESTE FOR DEG
-            Brukerens neste relevante aktivitet (f.eks. husfellesskap eller tjeneste)
-           ========================================================================= */}
-        <NextForYouSection page={page} />
+        {tab === "grupper" && <MyGroupsSection page={page} />}
 
-        {/* Quick Access to User Groups & Tasks */}
-        <div className="pt-2">
-          <div className="p-3.5 bg-white rounded-2xl border border-slate-200/80 flex items-center justify-between text-xs font-semibold text-slate-700">
-            <span className="flex items-center gap-1.5">
-              <ListTodo className="w-4 h-4 text-slate-500" />
-              <span>Dine oppgaver ({myTasks.length})</span>
-            </span>
-            <button
-              type="button"
-              onClick={() => setShowTasksModal(true)}
-              className="text-xs font-bold text-emerald-700 hover:text-emerald-900 cursor-pointer"
-            >
-              Vis oppgaveliste
-            </button>
+        {tab === "kalender" && (
+          <div className="space-y-5">
+            <NextChurchEventSection page={page} />
+            <NextForYouSection page={page} />
+            <MyCalendarPanel inline />
           </div>
-        </div>
+        )}
       </div>
-
-      {/* =========================================================================
-          TASKS MODAL / DRAWER (for viewing task details without cluttering dashboard)
-         ========================================================================= */}
-      {showTasksModal && <MyTasksModal page={page} onClose={() => setShowTasksModal(false)} />}
-
-      {showCalendarPanel && <MyCalendarPanel onClose={() => setShowCalendarPanel(false)} />}
 
       {/* =========================================================================
           ATTENTION MODAL / DRAWER (for viewing & handling 3+ pending actions)
          ========================================================================= */}
       {showAttentionModal && <AttentionModal page={page} onClose={() => setShowAttentionModal(false)} />}
-
-      {/* =========================================================================
-          FAST BUNNNAVIGASJON PÅ MOBIL:
-          MIN SIDE | GRUPPER | OPPGAVER | MELDINGER
-         ========================================================================= */}
-      <MobileBottomNav onShowTasks={() => setShowTasksModal(true)} />
     </div>
   );
 };
