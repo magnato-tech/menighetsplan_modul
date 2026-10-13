@@ -1,7 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import { formatNorwegianDateTime } from "../../utils/dates";
 import { MyPageModel } from "./useMyPage";
-import { attentionText } from "./attention";
+import { attentionTags, attentionText, withAttentionTags } from "./attention";
 import {
   AlertCircle,
   Check,
@@ -16,6 +16,18 @@ interface AttentionModalProps {
 
 export const AttentionModal: React.FC<AttentionModalProps> = ({ page, onClose }) => {
   const { attentionItems, handleAttentionAnswer } = page;
+  // The roles pressed in. What is shown, has one of them; with none pressed, everything is shown.
+  const [chosen, setChosen] = useState<ReadonlySet<string>>(new Set());
+  const tags = attentionTags(attentionItems);
+  // A tag whose last item has been answered, no longer narrows anything
+  const active = new Set([...chosen].filter((tag) => tags.some((entry) => entry.tag === tag)));
+  const shown = withAttentionTags(attentionItems, active);
+  const toggle = (tag: string) => {
+    const next = new Set(active);
+    if (next.has(tag)) next.delete(tag);
+    else next.add(tag);
+    setChosen(next);
+  };
 
   return (
     <div
@@ -27,7 +39,7 @@ export const AttentionModal: React.FC<AttentionModalProps> = ({ page, onClose })
           <div className="flex items-center gap-2">
             <AlertCircle className="w-5 h-5 text-amber-600" />
             <h3 className="font-bold text-sm text-slate-900">
-              Dette trenger din handling ({attentionItems.length})
+              Dette trenger din handling ({active.size > 0 ? `${shown.length} av ${attentionItems.length}` : attentionItems.length})
             </h3>
           </div>
           <button
@@ -39,6 +51,35 @@ export const AttentionModal: React.FC<AttentionModalProps> = ({ page, onClose })
           </button>
         </div>
 
+        {tags.length > 1 && (
+          <div className="px-4 py-3 bg-white border-b border-slate-200 space-y-2">
+            <p className="text-[11px] text-slate-600">Trykk på det du vil se. Du kan velge flere.</p>
+            <div role="group" aria-label="Vis bare disse" className="flex flex-wrap gap-1.5">
+              {tags.map(({ tag, count }) => {
+                const pressed = active.has(tag);
+                return (
+                  <button
+                    key={tag}
+                    type="button"
+                    aria-pressed={pressed}
+                    onClick={() => toggle(tag)}
+                    className={`px-2.5 py-1 rounded-full text-[11px] font-bold border cursor-pointer transition-colors ${
+                      pressed ? "bg-emerald-700 border-emerald-700 text-white" : "bg-white border-slate-300 text-slate-700 hover:bg-slate-100"
+                    }`}
+                  >
+                    {tag} <span className={pressed ? "text-emerald-100" : "text-slate-500"}>{count}</span>
+                  </button>
+                );
+              })}
+              {active.size > 0 && (
+                <button type="button" onClick={() => setChosen(new Set())} className="px-2.5 py-1 text-[11px] font-bold text-emerald-800 underline underline-offset-2 cursor-pointer">
+                  Vis alle
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="p-4 overflow-y-auto space-y-3 flex-1">
           {attentionItems.length === 0 ? (
             <div className="p-8 text-center text-xs text-slate-400 space-y-1">
@@ -46,7 +87,7 @@ export const AttentionModal: React.FC<AttentionModalProps> = ({ page, onClose })
               <p>Du har håndtert alle dine saker!</p>
             </div>
           ) : (
-            attentionItems.map((item) => {
+            shown.map((item) => {
               const text = attentionText(item);
 
               return (

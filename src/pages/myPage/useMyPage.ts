@@ -31,6 +31,7 @@ export function useMyPage() {
     getGroupById,
     getTaskById,
     getAllAssignmentsForTask,
+    volunteerRoles,
   } = useFirebase();
 
   const navigate = useNavigate();
@@ -69,6 +70,8 @@ export function useMyPage() {
   // =========================================================================
   const attentionItems = useMemo(() => {
     const items: AttentionItem[] = [];
+    // The role a task is for, by name: what the list is narrowed by
+    const roleOf = (task: Task) => volunteerRoles.find((role) => role.id === task.volunteerRoleId)?.name;
 
     // A) Forespørsler fra en leder som brukeren ikke har svart på
     assignments
@@ -82,6 +85,7 @@ export function useMyPage() {
           id: `request-${assignment.id}`,
           assignmentId: assignment.id,
           title: task.title,
+          role: roleOf(task),
           taskDescription: task.description,
           startsAt: gathering?.startsAt || "",
           location: gathering?.location || gathering?.title,
@@ -130,6 +134,7 @@ export function useMyPage() {
           id: `attention-task-${task.id}`,
           taskId: task.id,
           title: task.title,
+          role: roleOf(task),
           taskDescription: task.description,
           startsAt: gathering?.startsAt || "",
           location: gathering?.location || gathering?.title,
@@ -153,6 +158,7 @@ export function useMyPage() {
     getGroupById,
     getTaskById,
     getAllAssignmentsForTask,
+    volunteerRoles,
     currentUser.id,
     now,
   ]);

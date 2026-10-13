@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.40 · **Sist oppdatert:** 2026-10-13
+> **Dokumentversjon:** 4.41 · **Sist oppdatert:** 2026-10-13
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -1237,6 +1237,19 @@ Bestilt av produkteier etter at de første frivillige hadde prøvd løsningen.
 | **Lenken til nettsiden** | Den fantes øverst på Min side, med liten og blek tekst («Gå til offentlig nettside»), og ble ikke sett. Den heter nå «Til nettsiden», i hvit, understreket tekst |
 | **Statuslinjen hos gruppelederen** | Den sa «Alle oppgaver er dekket for planlagte aktiviteter» så lenge ingen hadde meldt forfall, også når aktiviteter manglet folk. Den sier nå «N aktiviteter mangler folk», eller «Venter på svar på N aktiviteter», med knappen «Vis dem». Grønn er den bare når alt er dekket |
 | **Prøvd** | 9 sjekker. Sett i nettleseren med demoens oppdiktede personer: oppgaveboksen med tabell og lesbar tekst, og lenken «Til nettsiden». Statuslinjen er prøvd i sjekkene, siden ingen gruppe i demoen mangler folk |
+
+### Tagger i «Dette trenger din handling» (13. oktober 2026)
+
+Bestilt av produkteier: en som er med i mange grupper, fikk 68 saker i én liste på Min side.
+
+| Område | Levert |
+|:---|:---|
+| **Tagger øverst i listen** | Én knapp for hver rolle det finnes en oppgave for, med antall. Innkallinger til samlinger har sin egen, «Innkalling» |
+| **Flere kan trykkes inn** | Det som vises, har én av rollene som er trykket inn. Uten noen trykket inn vises alt. «Vis alle» nullstiller |
+| **Rolle, ikke gruppe** | Produkteier valgte det: noen er interessert i bare én rolle i en gruppe. En oppgave uten rolle står med sin egen tittel |
+| **Overskriften** | Viser «N av M» når listen er snevret inn |
+| **Vises ikke** | Når listen bare har én rolle, er det ingenting å velge mellom |
+| **Prøvd** | 5 sjekker. Sett i nettleseren i telefonbredde med demoens oppdiktede personer: seks tagger, to trykket inn, og listen viste de to |
 
 ---
 
