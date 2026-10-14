@@ -467,6 +467,14 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
     return () => stops.forEach((stop) => stop());
   }, [memberId, myGroupIds.join("|"), ledGroupIds.join("|")]);
 
+  // The names on an open gathering are asked for as open ones: a member who is neither in its group
+  // nor on one of its tasks may read them only so, and a query must set the rule's own condition.
+  const watchedGatherings = useMemo(
+    () => watchedGatheringIds.map((id) => ({ id, open: gatherings.find((g) => g.id === id)?.isPublic === true })),
+    [watchedGatheringIds, gatherings]
+  );
+  const watchedGatheringsKey = watchedGatherings.map((w) => `${w.id}:${w.open ? "open" : "group"}`).join("|");
+
   // Planning data, only behind the public website, and only for someone who is in the register.
   // A member does not subscribe to every assignment or every group message.
   useEffect(() => {
@@ -524,12 +532,19 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
         })
       );
     }
-    for (const gatheringId of watchedGatheringIds) {
+    for (const { id: gatheringId, open } of watchedGatherings) {
       stops.push(
-        subscribeWhere<Assignment>(COLLECTIONS.ASSIGNMENTS, "gatheringId", "==", gatheringId, (list) => {
-          assignmentParts.set(`gathering:${gatheringId}`, list);
-          publishAssignments();
-        })
+        subscribeWhere<Assignment>(
+          COLLECTIONS.ASSIGNMENTS,
+          "gatheringId",
+          "==",
+          gatheringId,
+          (list) => {
+            assignmentParts.set(`gathering:${gatheringId}`, list);
+            publishAssignments();
+          },
+          open ? { field: "gatheringPublic", value: true } : undefined
+        )
       );
     }
     const messageParts = new Map<string, GroupMessage[]>();
@@ -571,7 +586,7 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
     }
     if (!memberId && groupGatheringIds.length === 0) setAttendances([]);
     return () => stops.forEach((stop) => stop());
-  }, [internal, isMember, fullRegister, memberId, myGroupIds.join("|"), groupGatheringIds.join("|"), watchedGatheringIds.join("|")]);
+  }, [internal, isMember, fullRegister, memberId, myGroupIds.join("|"), groupGatheringIds.join("|"), watchedGatheringsKey]);
 
   const watchGatheringAssignments = useCallback((gatheringId: string) => {
     if (!gatheringId || fullRegister) return () => {};

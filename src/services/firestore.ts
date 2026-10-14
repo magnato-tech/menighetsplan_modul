@@ -57,10 +57,13 @@ export function subscribeWhere<T extends { id: string }>(
   field: string,
   op: "==" | "array-contains",
   value: string,
-  onChange: (items: T[]) => void
+  onChange: (items: T[]) => void,
+  /** A second condition the rule asks for, such as only the open ones. */
+  and?: { field: string; value: string | boolean }
 ): () => void {
+  const conditions = and ? [where(field, op, value), where(and.field, "==", and.value)] : [where(field, op, value)];
   return onSnapshot(
-    query(collection(db, name), where(field, op, value)),
+    query(collection(db, name), ...conditions),
     (snapshot) => onChange(snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as T))),
     (error) => handleFirestoreError(error, OperationType.GET, name)
   );

@@ -302,6 +302,23 @@ describe("Et medlem", () => {
     await assertSucceeds(getDocs(query(collection(db, "assignments"), where("personId", "==", "hakon"))));
   });
 
+  test("leser navnene på et arrangement for menigheten i kjøreplanen, men bare når spørringen ber om de åpne", async () => {
+    await env.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore() as unknown as Firestore;
+      await updateDoc(doc(db, "groups/group-lyd"), { memberIds: [] });
+      await deleteDoc(doc(db, "gatheringReaders/g-apen_hakon"));
+      await deleteDoc(doc(db, "assignments/a1"));
+      await setDoc(doc(db, "assignments/a2"), {
+        taskId: "task-1", personId: "ola", response: "confirmed", personName: "Ola Hansen",
+        gatheringId: "g-apen", gatheringGroupId: "group-lyd", gatheringPublic: true,
+      });
+    });
+    const db = hakon();
+    await assertSucceeds(getDocs(query(collection(db, "assignments"), where("gatheringId", "==", "g-apen"), where("gatheringPublic", "==", true))));
+    await assertFails(getDocs(query(collection(db, "assignments"), where("gatheringId", "==", "g-apen"))));
+    await assertFails(getDocs(query(collection(db, "assignments"), where("gatheringId", "==", "g-intern"))));
+  });
+
   test("svarer på en forespørsel, og oppgavens status skrives sammen med svaret", async () => {
     const db = hakon();
     const batch = writeBatch(db);

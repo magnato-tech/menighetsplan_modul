@@ -1,6 +1,8 @@
-import type { Group, ProgramItem, Task, VolunteerRole } from "../types";
+import type { Gathering, Group, ProgramItem, Task, VolunteerRole } from "../types";
 import type { AssignedPerson } from "./staffing";
 import { resolveTaskInstruction } from "./roleStaffing";
+import { isInGroup } from "./groups";
+import { isPubliclyVisible } from "./visibility";
 
 // The run sheet of a gathering ("kjøreplan"): its programme and its tasks on one timeline.
 // It shows what is registered and nothing else. A programme item nobody has linked a task
@@ -134,4 +136,65 @@ export function buildRunSheet(
 
   // By the clock, with rows without a time last. The sort is stable, so the programme keeps its order.
   return [...programRows, ...taskRows].sort((a, b) => (a.time || "99:99").localeCompare(b.time || "99:99"));
+}
+
+/**
+ * A run sheet row as everyone who may see the gathering reads it ("Kjøreplan"): the names of
+ * those who have accepted and nothing about who was asked, has withdrawn or said no. The
+ * instruction is only given on the reader's own task.
+ */
+export interface SharedRunSheetRow {
+  id: string;
+  time: string;
+  title: string;
+  description?: string;
+  roleTitle?: string;
+  meetAt?: string;
+  groupName?: string;
+  /** Those who have accepted, in the order they were assigned. Empty when nobody has. */
+  names: string[];
+  /** The reader is asked or has accepted. */
+  isMine: boolean;
+  instruction?: string;
+}
+
+export function sharedRunSheet(rows: RunSheetRow[], personId: string): SharedRunSheetRow[] {
+  return rows.map((row) => {
+    const mine = row.assignedPersons.some(
+      (p) => p.assignment.personId === personId && (p.response === "confirmed" || p.response === "pending")
+    );
+    const names = row.assignedPersons
+      .filter((p) => p.response === "confirmed")
+      .map((p) => p.person?.name || p.assignment.personName || "")
+      .filter(Boolean);
+    return {
+      id: row.id,
+      time: row.time,
+      title: row.title,
+      description: row.description,
+      roleTitle: row.roleTitle,
+      meetAt: row.meetAt,
+      groupName: row.groupName,
+      names,
+      isMine: mine,
+      instruction: mine ? row.instruction : undefined,
+    };
+  });
+}
+
+/**
+ * Whether a person may see the run sheet of a gathering: one open to the congregation, one held by
+ * a group they are in, or one where they stand on a task. Someone who may plan it, may also see it.
+ * The database lets the same people read the names on it (firestore.rules, assignments).
+ */
+export function maySeeRunSheet(input: {
+  gathering: Pick<Gathering, "visibility" | "isPublic">;
+  gatheringGroup?: Group | null;
+  personId: string;
+  mayPlan: boolean;
+  standsOnTask: boolean;
+}): boolean {
+  if (input.mayPlan || input.standsOnTask) return true;
+  if (isPubliclyVisible(input.gathering)) return true;
+  return Boolean(input.gatheringGroup && isInGroup(input.gatheringGroup, input.personId));
 }

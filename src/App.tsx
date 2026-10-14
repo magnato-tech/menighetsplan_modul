@@ -44,6 +44,9 @@ const LeaderGroupDetailPage = lazy(() =>
 const LeaderGatheringDetailPage = lazy(() =>
   import("./pages/LeaderGatheringDetailPage").then((m) => ({ default: m.LeaderGatheringDetailPage }))
 );
+const GatheringRunSheetPage = lazy(() =>
+  import("./pages/GatheringRunSheetPage").then((m) => ({ default: m.GatheringRunSheetPage }))
+);
 const HusfellesskapPage = lazy(() =>
   import("./pages/HusfellesskapPage").then((m) => ({ default: m.HusfellesskapPage }))
 );
@@ -126,7 +129,7 @@ function AppContent() {
                 <Route path="/leder/samling/:gatheringId" element={<LeaderGatheringDetailPage />} />
                 <Route path="/oppgave/:taskId" element={<TaskDetailPage />} />
                 <Route path="/gruppe/:groupId" element={<LeaderGroupDetailPage />} />
-                <Route path="/samling/:gatheringId" element={<LeaderGatheringDetailPage />} />
+                <Route path="/samling/:gatheringId" element={<GatheringRunSheetPage />} />
                 <Route path="/husfellesskap" element={<HusfellesskapPage />} />
                 <Route path="/husfellesskap/:groupId" element={<HusfellesskapPage />} />
                 <Route path="/meldinger" element={<ModulePlaceholderPage module="meldinger" />} />

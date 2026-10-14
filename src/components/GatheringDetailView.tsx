@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   useLeaderGatheringDetail,
   formatNorwegianDateTime,
@@ -72,6 +72,8 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
   const withPlanner = hasPlanner(useLevel());
 
   const isExplicitAdminView = mode === "admin" || (isUserAdmin && mode !== "leader");
+  const [searchParams] = useSearchParams();
+  const fromRunSheet = searchParams.get("fra") === "kjoreplan";
   const canAdminister = isUserAdmin || isExplicitAdminView;
 
   // Filter state
@@ -246,11 +248,16 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
     window.print();
   };
 
-  const backLink = isExplicitAdminView
+  // Opened with «Åpne planlegging» from the run sheet everyone sees: back goes there
+  const backLink = fromRunSheet
+    ? `/samling/${gathering.id}`
+    : isExplicitAdminView
     ? studioTabUrl("planlegger-samlinger")
     : "/leder?tab=samlinger";
 
-  const backLabel = isExplicitAdminView
+  const backLabel = fromRunSheet
+    ? "Tilbake til kjøreplanen"
+    : isExplicitAdminView
     ? "Tilbake til arrangementer"
     : "Tilbake til samlingsoversikt";
 

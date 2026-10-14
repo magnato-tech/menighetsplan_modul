@@ -29,7 +29,8 @@ export const InstructionDialog: React.FC<InstructionDialogProps> = ({ task, onCl
         <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
           <div>
             <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 block">
-              {task.groupName || "Instruks for oppgave"} • kl. {task.time || "11:00"}
+              {task.groupName || "Instruks for oppgave"}
+              {task.time && ` • kl. ${task.time}`}
             </span>
             <h3 className="text-base font-extrabold text-slate-900 leading-tight">{task.title}</h3>
           </div>

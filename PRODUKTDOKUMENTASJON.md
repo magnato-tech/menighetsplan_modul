@@ -270,7 +270,7 @@ Regnskap er ikke en egen modul. Givertjeneste og Utleie skal registrere inntekte
 | **Oppgave** | `/oppgave/:id` | Tid, sted, instruks og hvem andre som står på. Ta oppgaven, svar på forespørsel, meld forfall | Levert. En grunn for forfallet lagres ikke: den kan være privat, og tas muntlig |
 | **Gruppeleder** | `/leder` | Gruppene jeg leder, med bemanningsstatus | Levert |
 | **Gruppe** | `/gruppe/:id` | Deltakere, møteplan, aktiviteter og beskjeder til gruppen, med bilde | Levert |
-| **Samling** | `/samling/:id` | Kjøreplan: programmet og oppgavene på én tidslinje, med hvem som står på hva | Delvis: programmet kan ikke redigeres i løsningen ennå |
+| **Samling** | `/samling/:id` | Kjøreplan: programmet og oppgavene på én tidslinje, med hvem som har sagt ja. Åpnes fra kalenderen på Min side, og er lik for alle. Ledere og administrator går videre med «Åpne planlegging» | Delvis: programmet kan ikke redigeres i løsningen ennå |
 | **Husfellesskap** | `/husfellesskap` | Neste møte med vert, tema og bibeltekst. «Kommer» / «Kommer ikke». Deltakerliste | Levert |
 | Meldinger | `/meldinger` | Valgfri modul for meldinger på tvers av grupper | Planlagt: i dag en plassholderside |
 | Kalender | – | Valgfri modul med felles kalender | Planlagt: modulen kan slås på, men har ingen side |
@@ -683,6 +683,8 @@ Oppretter en ny samling på valgt dato med samme klokkeslett, og kopierer oppgav
 
 ### 11.2 Kjøreplan
 Samlingssiden viser programmet og oppgavene på én tidslinje. Et programpunkt som er koblet til en oppgave, viser hvem som står på den. Et programpunkt uten oppgave har ingen ansvarlig, og en samling uten program viser bare oppgavene sine. Løsningen viser aldri et program eller et navn som ikke er registrert.
+
+Kjøreplanen finnes i to utgaver. Den alle ser (`/samling/:id`, fra kalenderen på Min side) viser bare dem som har akseptert. Planleggingen (`/leder/samling/:id` og `/admin/samling/:id`) viser også forespurt, forfall og avslått, og der tildeles og flyttes det.
 
 **Planlagt:** skjermbilde for å redigere programmet.
 
@@ -1382,6 +1384,24 @@ Bygget etter bestillingen i kapittel 14. Prinsippet er enkelhet først: det som 
 * Med én eller to saker som venter, står kortene fortsatt rett på siden med svarknappene, uten overskrift. Knappen «Ta oppgave (N)» kommer fra tre saker og opp.
 * En konto med ubekreftet e-postadresse får samme tekst som de to andre tilfellene. Årsaken sies ikke.
 * I kalenderen står «Menigheten» fortsatt over menighetens arrangementer, så de skilles fra gruppenes når filteret er «Alle».
+
+### Kjøreplan fra kalenderen (14. oktober 2026)
+
+Bestilt av produkteier: en frivillig som trykket på et arrangement i kalenderen på Min side, fikk «Arrangementet krever leder- eller admin-tilgang». Nå får alle en forenklet kjøreplan, også gruppeledere og administrator, så det ser likt ut for alle.
+
+| Del | Hva som er levert |
+|---|---|
+| **Kjøreplanen** | Tittel, tid og sted, og én rad per programpunkt: klokkeslett, tittel, rolle og «Ansvarlig:» med navn. Ingenting kan endres her |
+| **Navnene** | Bare de som har akseptert. Forespurt, forfall og avslått vises ikke. En oppgave uten noen som har akseptert, står uten navn |
+| **Egne oppgaver** | Raden der en selv er forespurt eller har akseptert, er merket «Du» og har knappen «Instruks» |
+| **Hvem som ser den** | Alle ser kjøreplanen for menighetens arrangementer. Et gruppearrangement ser de som er med i gruppen, de som står på en oppgave der, og de som kan planlegge det. Andre får «Arrangementet hører til en gruppe» og en knapp tilbake til kalenderen |
+| **Åpne planlegging** | Gruppeleder, nestleder og administrator får en knapp til den fulle visningen. «Tilbake» der går til kjøreplanen igjen |
+| **Skriv ut** | Kjøreplanen kan skrives ut eller lagres som PDF |
+| **Ledersiden og admin** | Åpner fortsatt planleggingen direkte, som før |
+
+**Slik er det sikret.** Databasen ga allerede en frivillig lov til å lese navnene på menighetens arrangementer, men bare når spørringen ber om de åpne. Appen spør nå slik for et åpent arrangement. Regelen er ikke endret.
+
+**Ikke prøvd.** Regeltesten for spørringen er skrevet, men ikke kjørt: maskinen den ble laget på har ikke Java. Kjøreplanen er sett i nettleseren i demoen som frivillig, gruppeleder og administrator. Demoen leser hele registeret, så spørringen for en frivillig i en menighets egen installasjon er ikke prøvd mot ekte regler.
 
 ---
 
