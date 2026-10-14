@@ -1,4 +1,5 @@
-import type { Gathering, Group, GatheringAttendance } from "../types";
+import type { Assignment, Gathering, Group, GatheringAttendance, Task } from "../types";
+import { staffingDotFor, worstStaffingDot, type StaffingDot } from "./staffing";
 import { isGroupGathering, upcomingPublicGatherings } from "./gatherings";
 
 export type PersonalCalendarSource = "menigheten" | "mine_grupper";
@@ -78,6 +79,40 @@ export function filterPersonalCalendarEvents(
 }
 
 /** Same window as the public iCal feed: recent past and one year ahead. */
+/**
+ * The dot a group leader sees on an event in the calendar: the worst of the tasks of the groups
+ * they lead (see staffingDotFor). Nothing for a cancelled event, or for someone who leads none.
+ */
+export function leaderDotForGathering(
+  gathering: Pick<Gathering, "id" | "cancelled">,
+  tasks: readonly Task[],
+  assignments: readonly Assignment[],
+  ledGroupIds: ReadonlySet<string>
+): StaffingDot | null {
+  if (gathering.cancelled || ledGroupIds.size === 0) return null;
+  const led = tasks.filter((t) => t.gatheringId === gathering.id && t.groupId && ledGroupIds.has(t.groupId));
+  return worstStaffingDot(led.map((t) => staffingDotFor(t, assignments.filter((a) => a.taskId === t.id))));
+}
+
+/**
+ * The events whose assignments the calendar needs to tell red from yellow: those where a group
+ * the leader leads has a task with a free place. For the others the task's own status says it.
+ */
+export function gatheringsNeedingAssignments(
+  gatheringIds: readonly string[],
+  tasks: readonly Task[],
+  ledGroupIds: ReadonlySet<string>
+): string[] {
+  const wanted = new Set(gatheringIds);
+  const ids = new Set<string>();
+  for (const t of tasks) {
+    if (wanted.has(t.gatheringId) && t.groupId && ledGroupIds.has(t.groupId) && (t.status === "open" || t.status === "vacant")) {
+      ids.add(t.gatheringId);
+    }
+  }
+  return [...ids].sort();
+}
+
 export const PERSONAL_FEED_PAST_MS = 30 * 24 * 60 * 60 * 1000;
 export const PERSONAL_FEED_FUTURE_MS = 365 * 24 * 60 * 60 * 1000;
 

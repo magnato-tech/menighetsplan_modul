@@ -1,5 +1,5 @@
 import type { Gathering, Group, ProgramItem, Task, VolunteerRole } from "../types";
-import type { AssignedPerson } from "./staffing";
+import { staffingDotFor, type AssignedPerson, type StaffingDot } from "./staffing";
 import { resolveTaskInstruction } from "./roleStaffing";
 import { isInGroup } from "./groups";
 import { isPubliclyVisible } from "./visibility";
@@ -156,6 +156,8 @@ export interface SharedRunSheetRow {
   /** The reader is asked or has accepted. */
   isMine: boolean;
   instruction?: string;
+  /** Only on a task of a group the reader leads: red when nobody is on it, yellow when it is not full. */
+  dot?: StaffingDot;
 }
 
 export function sharedRunSheet(rows: RunSheetRow[], personId: string): SharedRunSheetRow[] {
@@ -178,6 +180,7 @@ export function sharedRunSheet(rows: RunSheetRow[], personId: string): SharedRun
       names,
       isMine: mine,
       instruction: mine ? row.instruction : undefined,
+      dot: (row.isMyGroup && row.task && staffingDotFor(row.task, row.assignedPersons.map((p) => p.assignment))) || undefined,
     };
   });
 }

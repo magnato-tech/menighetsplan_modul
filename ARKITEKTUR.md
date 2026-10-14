@@ -124,6 +124,8 @@ Samlingsvisningen (`GatheringDetailView.tsx`) viser programmet og oppgavene på 
 
 Kjøreplanen alle ser (`/samling/:id`, `src/pages/GatheringRunSheetPage.tsx` og `src/components/gathering/SharedRunSheetView.tsx`) bygges av den samme `buildRunSheet`, og `sharedRunSheet` tar bort det bare planleggingen skal se: bare de som har akseptert, får navnet sitt, og instruksen følger bare den som leser sin egen oppgave. Hvem som får se den, avgjør `maySeeRunSheet`, som følger regelen for tildelinger i `firestore.rules`. Navnene på et åpent arrangement hentes med `gatheringPublic == true` i spørringen (`watchGatheringAssignments` i `FirebaseDataContext.tsx`), ellers avviser databasen den for en som ikke er med i gruppen. Planleggingen (`GatheringDetailView.tsx`) åpnes fra kjøreplanen med `?fra=kjoreplan`, og «Tilbake» går da dit. For en gruppeleder (ikke administrator) tegnes radene til grupper hun ikke leder med den samme raden (`SharedRunSheetRowCard.tsx`), og boksen øverst og «Forfall / Mangler» teller bare egne grupper. Egne grupper er `myGroups` fra `useLeaderGatheringDetail`: alle involverte grupper personen leder eller er nestleder i (`leadsGroup`).
 
+Prikken for gruppeleder (rød: ingen på oppgaven, gul: ikke fullt) avgjøres ett sted, `staffingDotFor` i `src/utils/staffing.ts`. Lagret status (`confirmed`, `assigned`) avgjør der den kan, så en skjerm uten tildelingene ikke viser rødt for en oppgave som er dekket. Kjøreplanen får den på raden fra `sharedRunSheet`. Kalenderen på Min side bruker `leaderDotForGathering` og henter tildelingene bare for arrangementer der en egen oppgave har ledig plass (`gatheringsNeedingAssignments`).
+
 Det finnes ennå ikke noe skjermbilde for å redigere programmet; bare demodataene har et.
 
 ### Analysebordet

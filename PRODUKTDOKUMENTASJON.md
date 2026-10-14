@@ -1419,6 +1419,23 @@ Bestilt av produkteier: en gruppeleder så forespurt, forfall, avslått og mangl
 
 **Prøvd.** I demoen som Andreas Lind (leder for Lyd og bilde) og som administrator. En test sjekker at en som leder én gruppe og er nestleder i en annen, får begge som egne, og ikke en tredje.
 
+### Rød og gul prikk for gruppeleder (14. oktober 2026)
+
+Bestilt av produkteier: en gruppeleder skal se raskt hvor skoen trykker, i kjøreplanen og i kalenderen på Min side.
+
+| Del | Hva som er levert |
+|---|---|
+| **Rød prikk** | En oppgave i egen gruppe der ingen er på: ingen har sagt ja, og ingen er forespurt. Et forfall som ikke er erstattet, regnes med |
+| **Gul prikk** | Noen er på, men færre enn behovet har sagt ja. Også når noen er forespurt og ikke har svart |
+| **Ingen prikk** | Så mange som behovet har sagt ja |
+| **Kjøreplanen** | Prikken står til høyre på hver rad i egen gruppe som mangler folk |
+| **Kalenderen** | Én prikk til høyre på kortet, den verste for arrangementet: rød hvis minst én egen oppgave er rød, ellers gul. Ingen prikk på et avlyst arrangement |
+| **Hvem** | Bare gruppeleder og nestleder, og bare for egne grupper. Holder man musepekeren over, står det «Mangler folk» eller «Ikke fullt bemannet» |
+
+Planleggingen har ingen prikk: den viser det samme med røde og gule rammer. Behovet er feltet «Behov» på oppgaven; et eget minstetall finnes ikke.
+
+**Prøvd.** I demoen som Andreas Lind: kalenderen har prikk på de samme tre arrangementene som «Dette trenger din handling», og kjøreplanen for «Gudstjeneste & dåp» har rød prikk på «Lydopptak & podcast». En frivillig ser ingen prikker.
+
 ---
 
 

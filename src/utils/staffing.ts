@@ -53,6 +53,28 @@ export function countSlots(task: Pick<Task, "neededCount">, taskAssignments: Ass
   return { needed, confirmed, pending, free: Math.max(0, needed - confirmed - pending) };
 }
 
+/**
+ * The dot a group leader sees on a task of their own group: red when nobody is on it (nobody
+ * has said yes or been asked), yellow when someone is but fewer than the need have said yes,
+ * none when the need is met. The status stored on the task settles it where it can, so a
+ * screen that has not fetched the assignments does not show red for a task that is spoken for.
+ */
+export type StaffingDot = "red" | "yellow";
+
+export function staffingDotFor(task: Pick<Task, "status" | "neededCount">, taskAssignments: Assignment[]): StaffingDot | null {
+  if (task.status === "cancelled" || task.status === "confirmed") return null;
+  if (task.status === "assigned") return "yellow";
+  const { needed, confirmed, pending } = countSlots(task, taskAssignments);
+  if (confirmed >= needed) return null;
+  return confirmed + pending === 0 ? "red" : "yellow";
+}
+
+/** One dot for several tasks: red when any is red, yellow when any is yellow. */
+export function worstStaffingDot(dots: readonly (StaffingDot | null)[]): StaffingDot | null {
+  if (dots.includes("red")) return "red";
+  return dots.includes("yellow") ? "yellow" : null;
+}
+
 /** Whether the person is on the task: has said yes, or has been asked and not answered yet. */
 export function holdsSlot(assignment: Pick<Assignment, "response">): boolean {
   return assignment.response === "confirmed" || assignment.response === "pending";

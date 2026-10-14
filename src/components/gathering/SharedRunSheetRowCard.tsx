@@ -1,6 +1,7 @@
 import React from "react";
 import { FileText } from "lucide-react";
 import type { SharedRunSheetRow } from "../../utils/runSheet";
+import { StaffingDotMark } from "./StaffingDotMark";
 
 interface SharedRunSheetRowCardProps {
   row: SharedRunSheetRow;
@@ -31,6 +32,11 @@ export const SharedRunSheetRowCard: React.FC<SharedRunSheetRowCardProps> = ({ ro
         </div>
         {row.description && <p className="text-xs text-slate-500 mt-0.5">{row.description}</p>}
       </div>
+      {row.dot && (
+        <span className="shrink-0 pt-1.5">
+          <StaffingDotMark dot={row.dot} />
+        </span>
+      )}
     </div>
 
     {(row.names.length > 0 || row.isMine) && (

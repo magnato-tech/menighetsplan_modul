@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Clock, MapPin } from "lucide-react";
 import { useFirebase } from "../../context/FirebaseDataContext";
@@ -6,8 +6,12 @@ import { useCurrentUser } from "../../hooks/memberHooks";
 import { formatNorwegianDateTime } from "../../utils/dates";
 import { locationOf } from "../../utils/gatherings";
 import { repeatsTitle } from "../../utils/labels";
+import { leadsGroup } from "../../utils/groups";
+import { StaffingDotMark } from "../../components/gathering/StaffingDotMark";
 import {
   filterPersonalCalendarEvents,
+  gatheringsNeedingAssignments,
+  leaderDotForGathering,
   personalCalendarEvents,
   PersonalCalendarFilter,
 } from "../../utils/personalCalendar";
@@ -25,7 +29,7 @@ const FILTERS: { id: PersonalCalendarFilter; label: string }[] = [
 export const MyCalendarPanel: React.FC = () => {
   const navigate = useNavigate();
   const { currentUser, userGroups } = useCurrentUser();
-  const { gatherings, getPersonAttendance } = useFirebase();
+  const { gatherings, getPersonAttendance, tasks, assignments, watchGatheringAssignments } = useFirebase();
   const [filter, setFilter] = useState<PersonalCalendarFilter>("alle");
 
   const from = useMemo(() => Date.now(), []);
@@ -41,6 +45,26 @@ export const MyCalendarPanel: React.FC = () => {
   const visibleEvents = useMemo(
     () => filterPersonalCalendarEvents(allEvents, filter),
     [allEvents, filter]
+  );
+
+  // A group leader sees a dot where the groups they lead lack people (red) or are not full (yellow)
+  const ledGroupIds = useMemo(
+    () => new Set(userGroups.filter((g) => leadsGroup(g, currentUser.id)).map((g) => g.id)),
+    [userGroups, currentUser.id]
+  );
+  const watchedIds = useMemo(
+    () => gatheringsNeedingAssignments(allEvents.map((e) => e.gathering.id), tasks, ledGroupIds),
+    [allEvents, tasks, ledGroupIds]
+  );
+  const watchedKey = watchedIds.join("|");
+  useEffect(() => {
+    const stops = watchedIds.map((id) => watchGatheringAssignments(id));
+    return () => stops.forEach((stop) => stop());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchedKey, watchGatheringAssignments]);
+  const dots = useMemo(
+    () => new Map(visibleEvents.map((e) => [e.gathering.id, leaderDotForGathering(e.gathering, tasks, assignments, ledGroupIds)])),
+    [visibleEvents, tasks, assignments, ledGroupIds]
   );
 
   // No subscription is offered here: the personal calendar file needs a service that reads what
@@ -95,10 +119,16 @@ export const MyCalendarPanel: React.FC = () => {
                   )}
                   <h2 className="text-sm font-bold text-slate-900 leading-snug">{event.gathering.title}</h2>
                 </div>
-                {event.gathering.cancelled && (
+                {event.gathering.cancelled ? (
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700 shrink-0">
                     Avlyst
                   </span>
+                ) : (
+                  dots.get(event.gathering.id) && (
+                    <span className="shrink-0 pt-1">
+                      <StaffingDotMark dot={dots.get(event.gathering.id)!} />
+                    </span>
+                  )
                 )}
               </div>
 
