@@ -1436,6 +1436,10 @@ Planleggingen har ingen prikk: den viser det samme med røde og gule rammer. Beh
 
 **Prøvd.** I demoen som Andreas Lind: kalenderen har prikk på de samme tre arrangementene som «Dette trenger din handling», og kjøreplanen for «Gudstjeneste & dåp» har rød prikk på «Lydopptak & podcast». En frivillig ser ingen prikker.
 
+### Trykk på raden i kjøreplanen (14. oktober 2026)
+
+Bestilt av produkteier: en gruppeleder kan trykke på en rad i egen gruppe i kjøreplanen. Planleggingen åpnes og går rett til den oppgaven. Radene kjennes på en liten pil til høyre og en tydeligere ramme når pekeren holdes over. Andre gruppers rader og programposter uten oppgave kan ikke trykkes på. Knappen «Åpne planlegging» er beholdt, nå grå, for administrator og for det som ikke har en rad.
+
 ---
 
 

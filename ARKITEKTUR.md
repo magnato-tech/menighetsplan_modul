@@ -126,6 +126,8 @@ Kjøreplanen alle ser (`/samling/:id`, `src/pages/GatheringRunSheetPage.tsx` og 
 
 Prikken for gruppeleder (rød: ingen på oppgaven, gul: ikke fullt) avgjøres ett sted, `staffingDotFor` i `src/utils/staffing.ts`. Lagret status (`confirmed`, `assigned`) avgjør der den kan, så en skjerm uten tildelingene ikke viser rødt for en oppgave som er dekket. Kjøreplanen får den på raden fra `sharedRunSheet`. Kalenderen på Min side bruker `leaderDotForGathering` og henter tildelingene bare for arrangementer der en egen oppgave har ledig plass (`gatheringsNeedingAssignments`).
 
+En rad i egen gruppe i kjøreplanen lenker til planleggingen med `#schedule-row-<rad>`, id-en raden har i `RunSheetRowCard`. Planleggingen ruller dit én gang når raden er tegnet.
+
 Det finnes ennå ikke noe skjermbilde for å redigere programmet; bare demodataene har et.
 
 ### Analysebordet

@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useMemo } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import React, { useEffect, useRef, useState, useMemo } from "react";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import {
   useLeaderGatheringDetail,
   formatNorwegianDateTime,
@@ -75,6 +75,7 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
   const isExplicitAdminView = mode === "admin" || (isUserAdmin && mode !== "leader");
   const [searchParams] = useSearchParams();
   const fromRunSheet = searchParams.get("fra") === "kjoreplan";
+  const { hash } = useLocation();
   const canAdminister = isUserAdmin || isExplicitAdminView;
   // A group leader follows up the groups they lead. The rest of the programme reads as it does
   // for everyone (see SharedRunSheetView): those who have accepted, and nothing about who is missing.
@@ -166,6 +167,17 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
       return true;
     });
   }, [integratedSchedule, viewFilter, selectedGroupFilter, limitToMyGroups]);
+
+  // Opened from a row in the run sheet (#schedule-row-…): go to that row once it is drawn
+  const scrolledTo = useRef<string | null>(null);
+  useEffect(() => {
+    const id = hash.slice(1);
+    if (!id || scrolledTo.current === id) return;
+    const target = document.getElementById(id);
+    if (!target) return;
+    scrolledTo.current = id;
+    target.scrollIntoView({ block: "center" });
+  }, [hash, filteredSchedule]);
 
   // Staffing barometer calculations
   const myGroupTasks = tasksWithDetails.filter((t) => t.isMyGroup);

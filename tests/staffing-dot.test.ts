@@ -54,4 +54,5 @@ describe("Prikken for gruppeleder", () => {
   );
   assert(rows.find((r) => r.id === "task-egen")?.dot === "red", "Egen gruppes tomme oppgave er rød i kjøreplanen");
   assert(rows.find((r) => r.id === "task-annen")?.dot === undefined, "En annen gruppes oppgave har ingen prikk");
+  assert(rows.find((r) => r.id === "task-egen")?.isMyGroup === true && rows.find((r) => r.id === "task-annen")?.isMyGroup === false, "Bare egen gruppes rad kan åpne planleggingen");
 });

@@ -1,22 +1,32 @@
 import React from "react";
-import { FileText } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { ChevronRight, FileText } from "lucide-react";
 import type { SharedRunSheetRow } from "../../utils/runSheet";
 import { StaffingDotMark } from "./StaffingDotMark";
 
 interface SharedRunSheetRowCardProps {
   row: SharedRunSheetRow;
   onShowInstruction: (row: SharedRunSheetRow) => void;
+  /** Where a press on the row leads: the planning, for a leader's own group. */
+  href?: string;
 }
 
 /**
  * One row of the run sheet as everyone reads it: time, title and those who have accepted.
  * Used in «Kjøreplan», and in a leader's planning for the rows of groups they do not lead.
  */
-export const SharedRunSheetRowCard: React.FC<SharedRunSheetRowCardProps> = ({ row, onShowInstruction }) => (
+export const SharedRunSheetRowCard: React.FC<SharedRunSheetRowCardProps> = ({ row, onShowInstruction, href }) => {
+  const navigate = useNavigate();
+  const open = href ? () => navigate(href) : undefined;
+  return (
   <div
+    role={href ? "link" : undefined}
+    tabIndex={href ? 0 : undefined}
+    onClick={open}
+    onKeyDown={open && ((event) => event.key === "Enter" && open())}
     className={`bg-white rounded-2xl border p-3 space-y-2 break-inside-avoid ${
       row.isMine ? "border-emerald-300 ring-1 ring-emerald-200" : "border-slate-200/80"
-    }`}
+    } ${href ? "cursor-pointer hover:border-emerald-400 hover:shadow-sm transition-colors" : ""}`}
   >
     <div className="flex items-start gap-3">
       <span className="shrink-0 font-mono text-xs font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 min-w-[3.25rem] text-center">
@@ -32,9 +42,10 @@ export const SharedRunSheetRowCard: React.FC<SharedRunSheetRowCardProps> = ({ ro
         </div>
         {row.description && <p className="text-xs text-slate-500 mt-0.5">{row.description}</p>}
       </div>
-      {row.dot && (
-        <span className="shrink-0 pt-1.5">
-          <StaffingDotMark dot={row.dot} />
+      {(row.dot || href) && (
+        <span className="shrink-0 flex items-center gap-1 pt-0.5">
+          {row.dot && <StaffingDotMark dot={row.dot} />}
+          {href && <ChevronRight className="w-4 h-4 text-slate-400 print:hidden" aria-hidden />}
         </span>
       )}
     </div>
@@ -57,7 +68,10 @@ export const SharedRunSheetRowCard: React.FC<SharedRunSheetRowCardProps> = ({ ro
         {row.isMine && (
           <button
             type="button"
-            onClick={() => onShowInstruction(row)}
+            onClick={(event) => {
+              event.stopPropagation();
+              onShowInstruction(row);
+            }}
             className="ml-auto inline-flex items-center gap-1 text-[11px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/80 px-2 py-1 rounded-lg cursor-pointer print:hidden"
           >
             <FileText className="w-3.5 h-3.5" />
@@ -67,4 +81,5 @@ export const SharedRunSheetRowCard: React.FC<SharedRunSheetRowCardProps> = ({ ro
       </div>
     )}
   </div>
-);
+  );
+};

@@ -155,6 +155,8 @@ export interface SharedRunSheetRow {
   names: string[];
   /** The reader is asked or has accepted. */
   isMine: boolean;
+  /** A task of a group the reader leads. */
+  isMyGroup: boolean;
   instruction?: string;
   /** Only on a task of a group the reader leads: red when nobody is on it, yellow when it is not full. */
   dot?: StaffingDot;
@@ -179,6 +181,7 @@ export function sharedRunSheet(rows: RunSheetRow[], personId: string): SharedRun
       groupName: row.groupName,
       names,
       isMine: mine,
+      isMyGroup: row.isMyGroup,
       instruction: mine ? row.instruction : undefined,
       dot: (row.isMyGroup && row.task && staffingDotFor(row.task, row.assignedPersons.map((p) => p.assignment))) || undefined,
     };

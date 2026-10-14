@@ -46,7 +46,7 @@ export const SharedRunSheetView: React.FC<SharedRunSheetViewProps> = ({ detail, 
             {planningLink && (
               <Link
                 to={planningLink}
-                className="inline-flex items-center gap-1 text-[11px] font-bold text-white bg-emerald-700 hover:bg-emerald-800 px-2.5 py-1.5 rounded-lg transition-colors"
+                className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 px-2.5 py-1.5 rounded-lg transition-colors"
               >
                 <SlidersHorizontal className="w-3.5 h-3.5" />
                 <span>Åpne planlegging</span>
@@ -98,6 +98,7 @@ export const SharedRunSheetView: React.FC<SharedRunSheetViewProps> = ({ detail, 
             <SharedRunSheetRowCard
               key={row.id}
               row={row}
+              href={planningLink && row.isMyGroup ? `${planningLink}#schedule-row-${row.id}` : undefined}
               onShowInstruction={(shown) =>
                 setInstructionFor({
                   title: shown.roleTitle || shown.title,
