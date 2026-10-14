@@ -14,29 +14,38 @@ import {
   Headphones,
 } from "lucide-react";
 import { StudioData, StudioTab, countPublicGatherings, countUrgentTasks } from "../studio";
+import type { StudioArea } from "../studioAreas";
+import { useLevel } from "../../../hooks/useLevel";
+import { hasPlanner } from "../../../utils/level";
 
 interface DashboardTabProps {
   studio: StudioData;
+  /** The part of the admin that is chosen: the overview shows what belongs to it (see studioAreas.ts). */
+  area: StudioArea;
   onTabChange: (tab: StudioTab) => void;
   /** Opens the tab with its editor for a new item already showing. */
   onCreateIn: (tab: StudioTab) => void;
 }
 
-export const DashboardTab: React.FC<DashboardTabProps> = ({ studio, onTabChange, onCreateIn }) => {
+export const DashboardTab: React.FC<DashboardTabProps> = ({ studio, area, onTabChange, onCreateIn }) => {
   const { adminGatherings, adminTasks } = studio;
   const { pages, news, sermons, staff, settings } = useCms();
   const publicGatheringsCount = countPublicGatherings(adminGatherings);
   const urgentTasksCount = countUrgentTasks(adminTasks);
+  const withPlanner = hasPlanner(useLevel());
+  const planning = area === "planlegging";
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[var(--studio-border)] pb-6">
         <div>
           <h1 className="text-2xl sm:text-3xl font-black text-[var(--studio-text)] tracking-tight">
-            Velkommen til Admin Studio
+            {planning ? "Planlegging" : "Nettside"}
           </h1>
           <p className="text-xs sm:text-sm text-[var(--studio-muted)] mt-1">
-            Komplett administrasjon av {settings.churchName}: nettsiden, samlingene og de frivillige på ett sted.
+            {planning
+              ? `Arrangementene, de frivillige og bemanningen i ${settings.churchName}.`
+              : `Sidene, nyhetene, talene og utseendet på nettsiden til ${settings.churchName}.`}
           </p>
         </div>
 
@@ -61,6 +70,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ studio, onTabChange,
 
       {/* Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {planning && (
         <div
           onClick={() => onTabChange("planlegger-samlinger")}
           className="p-5 rounded-2xl bg-[var(--studio-surface)] border border-[var(--studio-border)] hover:border-indigo-500 cursor-pointer transition-all space-y-2"
@@ -72,7 +82,9 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ studio, onTabChange,
           <div className="text-3xl font-black text-[var(--studio-text)]">{adminGatherings.length}</div>
           <p className="text-[11px] text-[var(--studio-muted)]">{publicGatheringsCount} offentlig i kalenderen</p>
         </div>
+        )}
 
+        {planning && withPlanner && (
         <div
           onClick={() => onTabChange("planlegger-oppgaver")}
           className="p-5 rounded-2xl bg-[var(--studio-surface)] border border-[var(--studio-border)] hover:border-indigo-500 cursor-pointer transition-all space-y-2"
@@ -90,6 +102,10 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ studio, onTabChange,
             )}
           </p>
         </div>
+        )}
+
+        {!planning && (
+          <>
 
         <div
           onClick={() => onTabChange("cms-taler")}
@@ -108,7 +124,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ studio, onTabChange,
           className="p-5 rounded-2xl bg-[var(--studio-surface)] border border-[var(--studio-border)] hover:border-indigo-500 cursor-pointer transition-all space-y-2"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-[var(--studio-muted)] uppercase tracking-wider">CMS Sider</span>
+            <span className="text-xs font-bold text-[var(--studio-muted)] uppercase tracking-wider">Sider</span>
             <FileText className="w-4 h-4 text-emerald-400" />
           </div>
           <div className="text-3xl font-black text-[var(--studio-text)]">{pages.length}</div>
@@ -138,15 +154,18 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ studio, onTabChange,
           <div className="text-3xl font-black text-[var(--studio-text)]">{staff.length}</div>
           <p className="text-[11px] text-[var(--studio-muted)]">Registrerte ledere og ansatte</p>
         </div>
+          </>
+        )}
       </div>
 
       {/* Quick Actions Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Hurtighandlinger Nettside CMS */}
+        {!planning && (
         <div className="p-6 rounded-2xl bg-[var(--studio-surface)] border border-[var(--studio-border)] space-y-4">
           <div className="flex items-center gap-2 text-[var(--studio-icon)] font-bold text-sm">
             <Globe className="w-4 h-4" />
-            <span>Hurtighandlinger: Nettside & CMS</span>
+            <span>Hurtighandlinger</span>
           </div>
           <div className="space-y-2 text-xs">
             <button
@@ -179,12 +198,14 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ studio, onTabChange,
             </button>
           </div>
         </div>
+        )}
 
         {/* Hurtighandlinger Menighetsplanlegger */}
+        {planning && (
         <div className="p-6 rounded-2xl bg-[var(--studio-surface)] border border-[var(--studio-border)] space-y-4">
           <div className="flex items-center gap-2 text-amber-300 font-bold text-sm">
             <Calendar className="w-4 h-4" />
-            <span>Hurtighandlinger: Planlegger</span>
+            <span>Hurtighandlinger</span>
           </div>
           <div className="space-y-2 text-xs">
             <button
@@ -195,6 +216,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ studio, onTabChange,
               <span>Opprett ny gudstjeneste eller samling</span>
               <Plus className="w-4 h-4 text-amber-300" />
             </button>
+            {withPlanner && (
             <button
               type="button"
               onClick={() => onTabChange("planlegger-oppgaver")}
@@ -203,6 +225,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ studio, onTabChange,
               <span>Sjekk vikarstatus og ubesatte oppgaver</span>
               <ListTodo className="w-4 h-4 text-rose-400" />
             </button>
+            )}
             <button
               type="button"
               onClick={() => onTabChange("planlegger-personer")}
@@ -213,6 +236,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ studio, onTabChange,
             </button>
           </div>
         </div>
+        )}
       </div>
     </div>
   );

@@ -304,7 +304,7 @@ export const PublicNavbar: React.FC = () => {
               >
                 <div className="flex items-center gap-2">
                   <Shield className="w-4 h-4 text-accent-200" />
-                  <span>Admin & CMS Studio</span>
+                  <span>Admin</span>
                 </div>
                 <ChevronRight className="w-4 h-4 text-primary-200" />
               </Link>

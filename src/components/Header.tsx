@@ -83,7 +83,7 @@ export const Header: React.FC = () => {
               }`}
             >
               <Shield className="w-3.5 h-3.5" />
-              <span>Admin & CMS Studio</span>
+              <span>Admin</span>
             </Link>
           )}
         </nav>

@@ -152,7 +152,7 @@ export const PublicFooter: React.FC = () => {
               <li>
                 <Link to="/admin" className="text-primary-400 hover:text-primary-300 flex items-center gap-1.5 font-semibold transition-colors">
                   <Shield className="w-3.5 h-3.5" />
-                  <span>Admin & CMS Studio</span>
+                  <span>Admin</span>
                 </Link>
               </li>
             </ul>

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import {
   formatNorwegianDateTime,
 } from "../../../hooks/useAppHooks";
@@ -122,6 +123,14 @@ export const VisibilityTab: React.FC<VisibilityTabProps> = ({ studio, showFeedba
                   <ImageIcon className="w-3.5 h-3.5" />
                   <span>Bilde og tekst</span>
                 </button>
+
+                {/* The event itself is planned in the other part of the admin */}
+                <Link
+                  to={`/admin/samling/${g.id}`}
+                  className="px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 bg-[var(--studio-bg)] hover:bg-[var(--studio-hover)] text-[var(--studio-text)]"
+                >
+                  <span>Åpne i planleggingen</span>
+                </Link>
 
                 <button
                   type="button"

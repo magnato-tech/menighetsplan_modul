@@ -38,6 +38,7 @@ import { useDemoOwner } from "../../hooks/useDemoOwner";
 import { STUDIO_ADDONS, addonMenuSections } from "./addons";
 import { StudioData, StudioTab, countUrgentTasks } from "./studio";
 import { prefetchStudioTab } from "./studioTabLoaders";
+import { STUDIO_AREAS, STUDIO_AREA_NAMES, areaOfTab, type StudioArea } from "./studioAreas";
 import { usePendingProposalCounts } from "../../hooks/useMemberProposals";
 import { useStudioAppearance } from "./studioAppearance";
 import { StudioThemeToggle } from "./StudioThemeToggle";
@@ -54,11 +55,14 @@ interface StudioSidebarProps {
   studio: StudioData;
   activeTab: StudioTab;
   onTabChange: (tab: StudioTab) => void;
+  /** The part of the admin the menu shows, and how to choose the other (see studioAreas.ts). */
+  area: StudioArea;
+  onAreaChange: (area: StudioArea) => void;
   sidebarOpen: boolean;
   onToggleSidebar: () => void;
 }
 
-export const StudioSidebar: React.FC<StudioSidebarProps> = ({ studio, activeTab, onTabChange, sidebarOpen, onToggleSidebar }) => {
+export const StudioSidebar: React.FC<StudioSidebarProps> = ({ studio, activeTab, onTabChange, area, onAreaChange, sidebarOpen, onToggleSidebar }) => {
   const { currentUser, adminPersons, adminGroups, adminGatherings, adminTasks } = studio;
   const { pages, media, news, sermons, staff, settings, addons } = useCms();
   const urgentTasksCount = countUrgentTasks(adminTasks);
@@ -71,7 +75,33 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({ studio, activeTab,
   const { sidebarTheme, toggleSidebarTheme } = useStudioAppearance();
   // The media library shows the images that come with the app next to the uploaded ones
   const mediaCount = media.filter((item) => item.status === "ready").length + useStockImageCount();
+  // The add-ons that are on, each in the part its tab belongs to
+  const addonEntries = (inDemo ? [] : addonMenuSections(addons))
+    .flatMap((section) => section.entries)
+    .filter((entry) => areaOfTab(entry.tab) === area);
   const waitingProposals = [...usePendingProposalCounts(hasPlanner(level)).values()].reduce((sum, count) => sum + count, 0);
+
+  // The add-ons that are on (see addons.ts), at the end of the part they belong to
+  const addonButtons = (
+    <>
+      {addonEntries.map((entry) => (
+        <button
+          key={entry.tab}
+          type="button"
+          {...tabPrefetchHandlers(entry.tab)}
+          onClick={() => onTabChange(entry.tab)}
+          className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
+            activeTab === entry.tab
+              ? "bg-indigo-600 text-white shadow-sm"
+              : "text-[var(--studio-muted)] hover:text-[var(--studio-text)] hover:bg-[var(--studio-bg)]"
+          }`}
+        >
+          <entry.icon className="w-4 h-4 text-[var(--studio-icon)]" />
+          <span>{entry.label}</span>
+        </button>
+      ))}
+    </>
+  );
 
   return (
     <>
@@ -82,7 +112,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({ studio, activeTab,
       >
         <div className="flex items-center gap-2">
           <Shield className="w-5 h-5 text-[var(--studio-icon)]" />
-          <span className="font-black text-sm">Menighetsplan Admin Studio</span>
+          <span className="font-black text-sm">Admin</span>
         </div>
         <button
           type="button"
@@ -110,7 +140,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({ studio, activeTab,
                 <Shield className="w-4 h-4 text-amber-300" />
               </div>
               <div>
-                <h2 className="text-sm font-black text-[var(--studio-text)] tracking-tight">Admin & CMS Studio</h2>
+                <h2 className="text-sm font-black text-[var(--studio-text)] tracking-tight">Admin</h2>
                 <div className="flex items-center gap-1.5 text-[10px] text-emerald-400 font-semibold">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                   <span>Oppdateres i sanntid</span>
@@ -120,6 +150,26 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({ studio, activeTab,
             <p className="text-[11px] text-[var(--studio-muted)] pt-1">
               Fullskjerms administrasjon for {settings.churchName}
             </p>
+          </div>
+
+          {/* The two parts of the admin. Only this menu and the overview follow the choice. */}
+          <div role="tablist" aria-label="Del av admin" className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-[var(--studio-surface)]">
+            {STUDIO_AREAS.map((choice) => (
+              <button
+                key={choice}
+                type="button"
+                role="tab"
+                aria-selected={area === choice}
+                onClick={() => onAreaChange(choice)}
+                className={`px-2 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  area === choice
+                    ? "bg-indigo-600 text-white shadow-sm"
+                    : "text-[var(--studio-muted)] hover:text-[var(--studio-text)]"
+                }`}
+              >
+                {STUDIO_AREA_NAMES[choice]}
+              </button>
+            ))}
           </div>
 
           {/* Nav Section: Dashboard */}
@@ -135,7 +185,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({ studio, activeTab,
               }`}
             >
               <LayoutDashboard className="w-4 h-4" />
-              <span>Oversikt & Dashboard</span>
+              <span>Oversikt</span>
             </button>
 
             {/* The two ways out of the studio. Each is listed here only. */}
@@ -166,11 +216,9 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({ studio, activeTab,
             </div>
           </div>
 
-          {/* Nav Section: Nettside & CMS */}
+          {/* The website */}
+          {area === "nettside" && (
           <div className="space-y-1">
-            <div className="text-[10px] font-black uppercase tracking-wider text-[var(--studio-muted)] px-3 py-1">
-              Nettside & CMS
-            </div>
 
             <button
               type="button"
@@ -310,27 +358,13 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({ studio, activeTab,
               <Star className="w-4 h-4 text-amber-400" />
               <span>Arrangementer på nettsiden</span>
             </button>
-
-            <button
-              type="button"
-              {...tabPrefetchHandlers("cms-hjelp")}
-              onClick={() => onTabChange("cms-hjelp")}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
-                activeTab === "cms-hjelp"
-                  ? "bg-indigo-600 text-white shadow-sm"
-                  : "text-[var(--studio-muted)] hover:text-[var(--studio-text)] hover:bg-[var(--studio-bg)]"
-              }`}
-            >
-              <CircleHelp className="w-4 h-4" />
-              <span>Hjelp</span>
-            </button>
+            {addonButtons}
           </div>
+          )}
 
-          {/* Nav Section: Menighetsplanlegger */}
+          {/* The planning. The planner beyond the calendar only at the level that has it. */}
+          {area === "planlegging" && (
           <div className="space-y-1">
-            <div className="text-[10px] font-black uppercase tracking-wider text-[var(--studio-muted)] px-3 py-1">
-              {hasPlanner(level) ? "Arrangementer & Bemanning" : "Arrangementer & Personer"}
-            </div>
 
             <button
               type="button"
@@ -492,6 +526,25 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({ studio, activeTab,
               </span>
             </button>
             )}
+            {addonButtons}
+          </div>
+          )}
+
+          {/* In both parts */}
+          <div className="space-y-1 pt-2 border-t border-[var(--studio-border)]">
+            <button
+              type="button"
+              {...tabPrefetchHandlers("cms-hjelp")}
+              onClick={() => onTabChange("cms-hjelp")}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
+                activeTab === "cms-hjelp"
+                  ? "bg-indigo-600 text-white shadow-sm"
+                  : "text-[var(--studio-muted)] hover:text-[var(--studio-text)] hover:bg-[var(--studio-bg)]"
+              }`}
+            >
+              <CircleHelp className="w-4 h-4" />
+              <span>Hjelp</span>
+            </button>
           </div>
 
           {/* Nav Section: System & Database */}
@@ -564,31 +617,6 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({ studio, activeTab,
           </div>
           )}
 
-        {/* Nav sections from the add-ons that are on (see addons.ts). An add-on that is off is not in the menu. */}
-          {(inDemo ? [] : addonMenuSections(addons)).map((section) => (
-            <div key={section.heading} className="space-y-1">
-              <div className="text-[10px] font-black uppercase tracking-wider text-[var(--studio-muted)] px-3 py-1">
-                {section.heading}
-              </div>
-
-              {section.entries.map((entry) => (
-                <button
-                  key={entry.tab}
-                  type="button"
-                  {...tabPrefetchHandlers(entry.tab)}
-                  onClick={() => onTabChange(entry.tab)}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
-                    activeTab === entry.tab
-                      ? "bg-indigo-600 text-white shadow-sm"
-                      : "text-[var(--studio-muted)] hover:text-[var(--studio-text)] hover:bg-[var(--studio-bg)]"
-                  }`}
-                >
-                  <entry.icon className="w-4 h-4 text-[var(--studio-icon)]" />
-                  <span>{entry.label}</span>
-                </button>
-              ))}
-            </div>
-          ))}
         </div>
 
         {/* Sidebar Footer: the look of the menu, and who is signed in */}

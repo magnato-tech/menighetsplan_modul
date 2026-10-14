@@ -29,6 +29,7 @@ import { DemoGate } from "../src/pages/admin/DemoGate";
 import { LevelGate } from "../src/pages/admin/LevelGate";
 import { StudioSidebar } from "../src/pages/admin/StudioSidebar";
 import type { StudioData, StudioTab } from "../src/pages/admin/studio";
+import type { StudioArea } from "../src/pages/admin/studioAreas";
 import { StudioAppearanceProvider } from "../src/pages/admin/studioAppearance";
 import { chooseDemoLevel, forgetDemoLevel } from "../src/services/demoLevel";
 
@@ -41,11 +42,19 @@ const studio = {
   adminVolunteerRoles: [],
 } as unknown as StudioData;
 
-const renderMenu = () => {
+const renderMenu = (area: StudioArea = "planlegging") => {
   const { container } = render(
     <MemoryRouter>
       <StudioAppearanceProvider>
-        <StudioSidebar studio={studio} activeTab="dashboard" onTabChange={() => {}} sidebarOpen onToggleSidebar={() => {}} />
+        <StudioSidebar
+          studio={studio}
+          activeTab="dashboard"
+          onTabChange={() => {}}
+          area={area}
+          onAreaChange={() => {}}
+          sidebarOpen
+          onToggleSidebar={() => {}}
+        />
       </StudioAppearanceProvider>
     </MemoryRouter>
   );
@@ -53,8 +62,18 @@ const renderMenu = () => {
 };
 
 const PLANNER_ITEMS = [/Trenger oppfølging/, /Grupper & Husfellesskap/, /^Roller/];
-// «Arrangementer» in the planner, and not «Arrangementer på nettsiden» in the CMS
-const IN_BOTH = [/Sider & Innhold/, /Nyheter/, /Design/, /^Arrangementer(?! på nettsiden)/, /^Arrangementer på nettsiden/, /^Personer/];
+// On both levels: in the planning («Arrangementer», not «Arrangementer på nettsiden»), and the website
+const IN_BOTH = [/^Arrangementer(?! på nettsiden)/, /^Personer/];
+const WEBSITE = [/Sider & Innhold/, /Nyheter/, /Design/, /^Arrangementer på nettsiden/];
+/** Every part of the menu has what it should. */
+const expectInMenu = (planning: RegExp[], website: RegExp[]) => {
+  const planMenu = renderMenu("planlegging");
+  for (const name of planning) expect(planMenu.getByRole("button", { name })).toBeTruthy();
+  cleanup();
+  const siteMenu = renderMenu("nettside");
+  for (const name of website) expect(siteMenu.getByRole("button", { name })).toBeTruthy();
+  cleanup();
+};
 const NOT_IN_DEMO = [/Database/, /Moduler/];
 
 const started = vi.fn();
@@ -84,15 +103,15 @@ describe("Menyen i admin følger nivået", () => {
   test("hos en menighet står hele planleggeren i menyen", () => {
     const menu = renderMenu();
     for (const name of [...PLANNER_ITEMS, ...IN_BOTH, ...NOT_IN_DEMO]) expect(menu.getByRole("button", { name })).toBeTruthy();
-    expect(menu.getByText("Arrangementer & Bemanning")).toBeTruthy();
     expect(menu.getByText("System & Database")).toBeTruthy();
+    cleanup();
+    expectInMenu([], WEBSITE);
   });
 
   test("i demoen, med Menighetsplan valgt, står hele planleggeren i menyen", () => {
     installation.demo = {};
     chooseDemoLevel("plan");
-    const menu = renderMenu();
-    for (const name of [...PLANNER_ITEMS, ...IN_BOTH]) expect(menu.getByRole("button", { name })).toBeTruthy();
+    expectInMenu([...PLANNER_ITEMS, ...IN_BOTH], WEBSITE);
   });
 
   test("med Menighetsplattform valgt er oppgavene, gruppene og rollene borte, og resten står", () => {
@@ -101,10 +120,8 @@ describe("Menyen i admin følger nivået", () => {
     const menu = renderMenu();
 
     for (const name of PLANNER_ITEMS) expect(menu.queryByRole("button", { name })).toBeNull();
-    for (const name of IN_BOTH) expect(menu.getByRole("button", { name })).toBeTruthy();
-    // The heading no longer promises staffing
-    expect(menu.queryByText("Arrangementer & Bemanning")).toBeNull();
-    expect(menu.getByText("Arrangementer & Personer")).toBeTruthy();
+    cleanup();
+    expectInMenu(IN_BOTH, WEBSITE);
   });
 
   test("menyen følger med når nivået byttes mens den står åpen", () => {
@@ -129,8 +146,9 @@ describe("Admin i demoen", () => {
     for (const name of NOT_IN_DEMO) expect(menu.queryByRole("button", { name })).toBeNull();
     expect(menu.queryByText("System & Database")).toBeNull();
     expect(menu.queryByRole("button", { name: "Analysebord" })).toBeNull();
-    expect(menu.queryByText("Analyse")).toBeNull();
-    for (const name of [...PLANNER_ITEMS, ...IN_BOTH]) expect(menu.getByRole("button", { name })).toBeTruthy();
+    cleanup();
+    expectInMenu([...PLANNER_ITEMS, ...IN_BOTH], WEBSITE);
+    expect(renderMenu("nettside").queryByRole("button", { name: "Besøk på nettsiden" })).toBeNull();
     cms.addons = {};
   });
 

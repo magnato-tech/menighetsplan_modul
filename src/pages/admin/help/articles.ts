@@ -26,7 +26,7 @@ const siderSidetre: HelpArticle = {
   title: "Sidetre",
   layout: "wide",
   formal: "Bygge menyen på nettsiden med hovedfaner og underfaner, og styre om en side er publisert.",
-  hvor: "Sidemeny, Nettside & CMS, Sider & Innhold. Overskriften på siden er «Sider & Innhold på nettsiden».",
+  hvor: "Velg Nettside øverst i menyen, så Sider & Innhold. Overskriften på siden er «Sider & Innhold på nettsiden».",
   steg: [
     "Velg Ny hovedfane eller Legg til fane.",
     "På en eksisterende hovedfane: opprett underfane, velg Rediger, eller slett.",
@@ -133,7 +133,7 @@ const nyheter: HelpArticle = {
   title: "Aktuelt & Nyheter",
   layout: "wide",
   formal: "Publisere en nyhet som vises på nettsiden.",
-  hvor: "Sidemeny Aktuelt & Nyheter. Overskrift på siden: Aktuelt & Nyhetsartikler.",
+  hvor: "Nettside, Aktuelt & Nyheter. Overskrift på siden: Aktuelt & Nyhetsartikler.",
   steg: [
     "Trykk Ny artikkel.",
     "Fyll inn Tittel, velg Kategori, og kontroller Forfatter.",
@@ -155,7 +155,7 @@ const taler: HelpArticle = {
   title: "Taler & Prekener",
   layout: "wide",
   formal: "Legge en tale inn i prekenarkivet, med taler, bibeltekst og lenke til opptak.",
-  hvor: "Sidemeny Taler & Prekener. Overskrift: Taler & Prekenarkiv.",
+  hvor: "Nettside, Taler & Prekener. Overskrift: Taler & Prekenarkiv.",
   steg: [
     "Trykk Legg til tale.",
     "Fyll inn tittel, taler, dato, bibeltekst, serie og lenker til lyd eller video.",
@@ -173,7 +173,7 @@ const lederskap: HelpArticle = {
   title: "Lederskap & Stab",
   layout: "wide",
   formal: "Vise ansatte og menighetsråd på nettsiden, hentet fra personregisteret og ledergruppen.",
-  hvor: "Sidemeny Lederskap & Stab. Overskriften er den samme.",
+  hvor: "Nettside, Lederskap & Stab. Overskriften er den samme.",
   steg: [
     "Trykk Legg til person i staben.",
     "Velg en person som ikke allerede står i staben, og bekreft.",
@@ -192,7 +192,7 @@ const mediebibliotek: HelpArticle = {
   title: "Mediebibliotek",
   layout: "wide",
   formal: "Bruke bildene som følger med, og laste opp egne, på sider og i moduler uten å forlate redigeringen.",
-  hvor: "Sidemeny Mediebibliotek. Samme bibliotek åpnes fra bildevelgeren mens du redigerer en side.",
+  hvor: "Nettside, Mediebibliotek. Samme bibliotek åpnes fra bildevelgeren mens du redigerer en side.",
   steg: [
     "Øverst ligger Bilder som følger med. Søk etter for eksempel fellesskap, familie eller høst.",
     "For å laste opp et eget bilde: skriv Tittel i biblioteket, Standardtekst for skjermleser (påkrevd) og eventuelt emneord.",
@@ -211,7 +211,7 @@ const forside: HelpArticle = {
   title: "Arrangementer på nettsiden",
   layout: "wide",
   formal: "Bestemme hvilke arrangementer som løftes på forsiden, vises i den offentlige kalenderen, eller holdes interne.",
-  hvor: "Sidemeny Arrangementer på nettsiden, under Nettside & CMS. Hvert arrangement viser om det mangler bilde eller tekst. Bilde og tekst åpner arrangementets skjema, på delen På nettsiden.",
+  hvor: "Nettside, Arrangementer på nettsiden. Hvert arrangement viser om det mangler bilde eller tekst. Bilde og tekst åpner arrangementets skjema, på delen På nettsiden.",
   steg: [
     "Finn arrangementet i listen.",
     "Trykk Fremhev, Offentlig eller Kun intern.",
@@ -227,7 +227,7 @@ const arrangementer: HelpArticle = {
   title: "Arrangementer",
   layout: "wide",
   formal: "Legge inn en samling og åpne kjøreplanen for oppgaver den dagen.",
-  hvor: "Sidemeny, Arrangementer & Bemanning, Arrangementer. Overskrift: Gudstjenester & Møter. Kjøreplan merkes Kjøreplan. Tilbake-lenke: Tilbake til arrangementer.",
+  hvor: "Velg Planlegging øverst i menyen, så Arrangementer. Overskrift: Gudstjenester & Møter. Kjøreplan merkes Kjøreplan. Tilbake-lenke: Tilbake til arrangementer.",
   steg: [
     "Under Opprett ny samling: skriv tittel, dato og klokkeslett. Tema og sted er valgfritt. Står stedet tomt, brukes menighetens faste sted.",
     "Huk av Dette er en gudstjeneste hvis det gjelder.",
@@ -249,7 +249,7 @@ const oppgaver: HelpArticle = {
   title: "Trenger oppfølging",
   layout: "wide",
   formal: "Se hvilke oppgaver som mangler folk, tildele en person, eller lage en påminnelsestekst.",
-  hvor: "Sidemeny Trenger oppfølging. Overskrift: Oppgaver & Frivilligoversikt. Detalj merkes Oppgavekort. Tilbake: Tilbake til oppgaver.",
+  hvor: "Planlegging, Trenger oppfølging. Overskrift: Oppgaver & Frivilligoversikt. Detalj merkes Oppgavekort. Tilbake: Tilbake til oppgaver.",
   steg: [
     "Filtrer med Alle oppgaver, Trenger oppfølging / Vikar eller Venter på svar / Ubesatt. De to siste viser bare samlinger som ikke er over. Alle oppgaver viser også dem som er holdt.",
     "Trykk Tildel eller Forespør på en oppgave.",
@@ -268,7 +268,7 @@ const grupper: HelpArticle = {
   title: "Grupper & Husfellesskap",
   layout: "wide",
   formal: "Opprette en gruppe og sette leder, nestleder og deltakere.",
-  hvor: "Sidemeny Grupper & Husfellesskap. Overskrift: Grupper & Fellesskap. Detalj: Administrer gruppe, merket Gruppeadministrasjon. Tilbake: Tilbake til grupper.",
+  hvor: "Planlegging, Grupper & Husfellesskap. Overskrift: Grupper & Fellesskap. Detalj: Administrer gruppe, merket Gruppeadministrasjon. Tilbake: Tilbake til grupper.",
   steg: [
     "Trykk Opprett ny gruppe.",
     "Skriv navn, velg type, leder og eventuell beskrivelse.",
@@ -288,7 +288,7 @@ const personer: HelpArticle = {
   title: "Personer",
   layout: "wide",
   formal: "Holde kontaktinfo, tilgang, fravær og offentlig profil oppdatert for én person.",
-  hvor: "Sidemeny Personer. Overskrift: Personregister. Åpne med Åpne i tabellen eller Rediger person & fravær i kortvisning. Merket Personkort. Tilbake: Tilbake til personregister.",
+  hvor: "Planlegging, Personer. Overskrift: Personregister. Åpne med Åpne i tabellen eller Rediger person & fravær i kortvisning. Merket Personkort. Tilbake: Tilbake til personregister.",
   steg: [
     "Søk, eller bytt mellom Kort og Tabell.",
     "Åpne personen.",
@@ -309,7 +309,7 @@ const analysebord: HelpArticle = {
   layout: "wide",
   formal:
     "Se menighetens liv i tall over en periode: oppmøte på gudstjenestene, frivillighet og bemanning, grupper og fellesskap, personregisteret og nettsiden. Hvert tall sammenlignes med perioden før.",
-  hvor: "Sidemeny Innsikt, Analysebord. Overskrift: Analysebord.",
+  hvor: "Planlegging, Analysebord. Overskrift: Analysebord.",
   steg: [
     "Velg periode: Siste 4 uker, Siste 3 måneder eller Siste 12 måneder.",
     "Under Oppmøte: trykk på en søyle, eller Registrer i listen Mangler oppmøtetall, for å skrive inn hvor mange som var til stede.",
@@ -362,6 +362,10 @@ export const helpSections: HelpSection[] = [
 ];
 
 export const defaultHelpArticleId = siderSidetre.id;
+
+/** The article help opens on when nothing is asked for: the first one for the part of the admin that is open. */
+export const firstHelpArticleIdFor = (area: "planlegging" | "nettside"): string =>
+  area === "planlegging" ? arrangementer.id : defaultHelpArticleId;
 
 export function helpArticles(): HelpArticle[] {
   return helpSections.flatMap((section) =>

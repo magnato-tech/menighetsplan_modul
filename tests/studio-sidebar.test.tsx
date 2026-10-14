@@ -31,6 +31,7 @@ vi.mock("../src/services/stockImages", () => ({ listStockImages: vi.fn() }));
 
 import { StudioSidebar } from "../src/pages/admin/StudioSidebar";
 import type { StudioData } from "../src/pages/admin/studio";
+import type { StudioArea } from "../src/pages/admin/studioAreas";
 import { StudioAppearanceProvider } from "../src/pages/admin/studioAppearance";
 import { listStockImages } from "../src/services/stockImages";
 
@@ -44,12 +45,21 @@ const studio = {
 } as unknown as StudioData;
 
 const onTabChange = vi.fn();
-/** The menu as the studio shows it. Returns the menu itself, without the bar a phone has above it. */
-const renderMenu = () => {
+const onAreaChange = vi.fn();
+/** The menu as the studio shows it, for one part. Returns the menu itself, without the bar a phone has above it. */
+const renderMenu = (area: StudioArea = "nettside") => {
   const { container } = render(
     <MemoryRouter>
       <StudioAppearanceProvider>
-        <StudioSidebar studio={studio} activeTab="dashboard" onTabChange={onTabChange} sidebarOpen onToggleSidebar={() => {}} />
+        <StudioSidebar
+          studio={studio}
+          activeTab="dashboard"
+          onTabChange={onTabChange}
+          area={area}
+          onAreaChange={onAreaChange}
+          sidebarOpen
+          onToggleSidebar={() => {}}
+        />
       </StudioAppearanceProvider>
     </MemoryRouter>
   );
@@ -113,7 +123,7 @@ describe("Menyen i admin", () => {
     // Right under the overview, ahead of the first menu item, and with nothing after the last one
     const comesBefore = (first: Element, second: Element) =>
       Boolean(first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING);
-    const overview = menu.getByRole("button", { name: "Oversikt & Dashboard" });
+    const overview = menu.getByRole("button", { name: "Oversikt" });
     const firstItem = menu.getByRole("button", { name: /Sider & Innhold/ });
     for (const link of [myPage[0], website[0]]) {
       expect(comesBefore(overview, link)).toBe(true);
@@ -139,8 +149,6 @@ describe("Menyen i admin", () => {
 
     expect(menu.queryByRole("button", { name: "Analysebord" })).toBeNull();
     expect(menu.queryByRole("button", { name: "Besøk på nettsiden" })).toBeNull();
-    // Nor is the heading they would have stood under
-    expect(menu.queryByText("Analyse")).toBeNull();
 
     const modules = menu.getByRole("button", { name: /Moduler/ });
     expect(modules.textContent).toBe("Moduler0 av 2 på");
@@ -151,26 +159,46 @@ describe("Menyen i admin", () => {
   test("en modul som er slått på, får sin plass i menyen, og den andre er fortsatt borte", () => {
     vi.mocked(listStockImages).mockResolvedValue(stockImages(0));
     cms.addons = { nettsidebesok: true };
-    const menu = renderMenu();
+    const menu = renderMenu("nettside");
 
-    expect(menu.getByText("Analyse")).toBeTruthy();
     expect(menu.queryByRole("button", { name: "Analysebord" })).toBeNull();
     fireEvent.click(menu.getByRole("button", { name: "Besøk på nettsiden" }));
     expect(onTabChange).toHaveBeenCalledWith("nettsidebesok");
     expect(menu.getByRole("button", { name: /Moduler/ }).textContent).toBe("Moduler1 av 2 på");
   });
 
-  test("med begge modulene på står de under én overskrift, Analysebord først", () => {
+  test("med begge modulene på står Analysebord under Planlegging og besøkene under Nettside", () => {
     vi.mocked(listStockImages).mockResolvedValue(stockImages(0));
     cms.addons = { analysebord: true, nettsidebesok: true };
-    const menu = renderMenu();
-
-    expect(menu.getAllByText("Analyse")).toHaveLength(1);
-    const board = menu.getByRole("button", { name: "Analysebord" });
-    const visits = menu.getByRole("button", { name: "Besøk på nettsiden" });
-    expect(Boolean(board.compareDocumentPosition(visits) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
-    fireEvent.click(board);
+    const planning = renderMenu("planlegging");
+    expect(planning.queryByRole("button", { name: "Besøk på nettsiden" })).toBeNull();
+    fireEvent.click(planning.getByRole("button", { name: "Analysebord" }));
     expect(onTabChange).toHaveBeenCalledWith("analyse");
+    cleanup();
+
+    const website = renderMenu("nettside");
+    expect(website.queryByRole("button", { name: "Analysebord" })).toBeNull();
+    expect(website.getByRole("button", { name: "Besøk på nettsiden" })).toBeTruthy();
+  });
+
+  test("øverst velges Planlegging eller Nettside, og menyen viser bare den delen", () => {
+    vi.mocked(listStockImages).mockResolvedValue(stockImages(0));
+    const planning = renderMenu("planlegging");
+    expect(planning.getByRole("heading", { name: "Admin" })).toBeTruthy();
+    expect(planning.getByRole("tab", { name: "Planlegging" }).getAttribute("aria-selected")).toBe("true");
+    expect(planning.getByRole("button", { name: /^Arrangementer/ })).toBeTruthy();
+    expect(planning.queryByRole("button", { name: /Sider & Innhold/ })).toBeNull();
+    // In both parts
+    for (const name of [/^Oversikt$/, /^Hjelp$/, /Moduler/]) expect(planning.getByRole("button", { name })).toBeTruthy();
+
+    fireEvent.click(planning.getByRole("tab", { name: "Nettside" }));
+    expect(onAreaChange).toHaveBeenCalledWith("nettside");
+    cleanup();
+
+    const website = renderMenu("nettside");
+    expect(website.getByRole("button", { name: /Sider & Innhold/ })).toBeTruthy();
+    expect(website.queryByRole("button", { name: /^Personer/ })).toBeNull();
+    expect(website.getByRole("button", { name: /^Hjelp$/ })).toBeTruthy();
   });
 
   test("ingenting i menyen står to ganger", () => {

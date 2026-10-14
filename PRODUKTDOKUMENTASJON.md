@@ -28,7 +28,7 @@ Menighetsplan er **ett adminpanel som styrer to ting i samme format**:
               ┌───────────────────────────────────────────────┐
               │             ADMINPANELET   /admin             │
               │                                               │
-              │   Planlegging              Nettside & CMS     │
+              │   Planlegging              Nettside           │
               │   · Arrangementer          · Sider og meny    │
               │   · Trenger oppfølging     · Nyheter          │
               │   · Grupper                · Taler            │
@@ -131,7 +131,7 @@ Demoen er appen installert én gang til, med egen database og egen adresse, og m
 
 ## 2. Adminpanelet (Admin Studio)
 
-Adminpanelet ligger på `/admin` og har én meny med to deler. Hver fane har sin egen adresse (`/admin?tab=…`), og et påbegynt utkast overlever et fanebytte. Deler av panelet som ikke alle menigheter skal ha, er **moduler**: de slås på under **Moduler** og står først da i menyen (kapittel 2.6).
+Adminpanelet ligger på `/admin` og heter **Admin**. Øverst i menyen velges **Planlegging** eller **Nettside**, og menyen til venstre og Oversikt viser bare den delen. Oversikt, Hjelp og Moduler står i begge. Valget er ikke nivået: nivået (Menighetsplattform eller Menighetsplan) sier hva menigheten har, valget sier hva man jobber med nå. Hver fane har sin egen adresse (`/admin?tab=…`), og et påbegynt utkast overlever et fanebytte. Deler av panelet som ikke alle menigheter skal ha, er **moduler**: de slås på under **Moduler** og står først da i menyen (kapittel 2.6).
 
 ### 2.1 Planlegging – admin for webappen
 
@@ -147,7 +147,7 @@ Adminpanelet ligger på `/admin` og har én meny med to deler. Hver fane har sin
 | **Database & innstillinger** | Fyller databasen med demodata, simulerer et halvår med menighetsliv (vises når Analysebord er slått på), sletter alt, tester API-et | Levert |
 | **Analysebord** (del av modulen Analyse, kapittel 2.6) | Ser menighetens liv i tall for en periode, sammenlignet med perioden før: oppmøte, frivillighet og bemanning, grupper, personregisteret og nettsiden. Registrerer oppmøtetall og laster dem ned som regneark | Levert 5. oktober (kapittel 2.4) |
 
-### 2.2 Nettside & CMS – admin for nettsiden
+### 2.2 Nettside – admin for nettsiden
 
 | Fane | Hva administratoren gjør | Status |
 |---|---|---|
@@ -162,6 +162,7 @@ Adminpanelet ligger på `/admin` og har én meny med to deler. Hver fane har sin
 ### 2.3 Felles for hele panelet
 
 * Panelet er responsivt: fast meny på PC, uttrekksmeny på mobil.
+* **Planlegging eller Nettside.** Åpnes en fane fra den andre delen (fra en lenke, eller en detaljside, som hører til Planlegging), følger menyen etter. Ved et bytte åpnes fanen man sist var på i den delen, ellers Oversikt. Admin husker valget i nettleseren. Første gang åpnes Planlegging med Menighetsplan og Nettside med Menighetsplattform. Hjelp åpner på artiklene for delen som er valgt. Et arrangement i planleggingen har «Vis på nettsiden», og Arrangementer på nettsiden har «Åpne i planleggingen».
 * En handling bekreftes med en melding som forsvinner av seg selv. En lagring som feiler, vises i et rødt banner og blir ikke stående som om den var lagret.
 * **Moduler** (under System & Database) viser hvilke moduler produktet har, og slår delene av dem av og på for hele menigheten (kapittel 2.6).
 * **Innlogging.** `/admin` er bare for administratorer. Den som ikke er logget inn, sendes til innloggingssiden, og en frivillig får beskjed om at det kreves administrator (kapittel 10.1). Nederst i menyen står hvem som er logget inn, og «Logg ut».
@@ -1435,6 +1436,20 @@ Bestilt av produkteier: en gruppeleder skal se raskt hvor skoen trykker, i kjør
 Planleggingen har ingen prikk: den viser det samme med røde og gule rammer. Behovet er feltet «Behov» på oppgaven; et eget minstetall finnes ikke.
 
 **Prøvd.** I demoen som Andreas Lind: kalenderen har prikk på de samme tre arrangementene som «Dette trenger din handling», og kjøreplanen for «Gudstjeneste & dåp» har rød prikk på «Lydopptak & podcast». En frivillig ser ingen prikker.
+
+### Admin delt i Planlegging og Nettside (14. oktober 2026)
+
+Bestilt av produkteier, etter mønster fra Planning Center: menyen i admin var lang og blandet to jobber. Nå heter panelet «Admin», og øverst i menyen velges Planlegging eller Nettside (kapittel 2 og 2.3). Ingen fane er flyttet eller tatt bort, og adressene er de samme.
+
+| Del | Hva som er levert |
+|---|---|
+| **Planlegging** | Arrangementer, Trenger oppfølging, Grupper & Husfellesskap, Personer, Maler, Årshjul, Send e-post, Roller, og Analysebord når modulen er på. Med Menighetsplattform: Arrangementer, Personer, Maler og Årshjul |
+| **Nettside** | Sider & Innhold, Aktuelt & Nyheter, Taler & Prekener, Lederskap & Stab, Mediebibliotek, Tema & Designsystem, Nettside-innstillinger, Arrangementer på nettsiden, og Besøk på nettsiden når modulen er på |
+| **I begge** | Oversikt, Gå til Min side, Åpne offentlig nettside, Hjelp, System & Database og Demo-oppsett |
+| **Oversikt** | Viser tallene og hurtighandlingene for delen som er valgt |
+| **Navnet** | «Admin & CMS Studio» heter «Admin», også i lenkene fra Min side og nettsiden |
+
+**Prøvd.** I demoen som Kari Nordmann: Planlegging først, bytte til Nettside og tilbake (fanen man sist var på, åpnes igjen), en detaljside for et arrangement setter menyen til Planlegging, Hjelp åpner på «Arrangementer» under Planlegging, og menyen får plass i mobilbredde.
 
 ### Trykk på raden i kjøreplanen (14. oktober 2026)
 

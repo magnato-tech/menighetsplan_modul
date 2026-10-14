@@ -3,16 +3,17 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { ChevronDown, CircleHelp } from "lucide-react";
 import { HelpArticleView } from "../help/HelpArticleView";
 import {
-  defaultHelpArticleId,
   findHelpArticle,
+  firstHelpArticleIdFor,
   helpSections,
   type HelpNavItem,
 } from "../help/articles";
 import { studioTabUrl } from "../studio";
+import type { StudioArea } from "../studioAreas";
 
-function articleIdFromHash(hash: string): string {
+function articleIdFromHash(hash: string, area: StudioArea): string {
   const id = hash.replace(/^#/, "");
-  return id || defaultHelpArticleId;
+  return id || firstHelpArticleIdFor(area);
 }
 
 function itemContains(item: HelpNavItem, id: string): boolean {
@@ -20,10 +21,10 @@ function itemContains(item: HelpNavItem, id: string): boolean {
   return item.articles.some((article) => article.id === id);
 }
 
-export const HelpTab: React.FC = () => {
+export const HelpTab: React.FC<{ area: StudioArea }> = ({ area }) => {
   const { hash } = useLocation();
   const navigate = useNavigate();
-  const activeId = articleIdFromHash(hash);
+  const activeId = articleIdFromHash(hash, area);
   const article = useMemo(() => findHelpArticle(activeId), [activeId]);
   const [pagesOpen, setPagesOpen] = useState(true);
 

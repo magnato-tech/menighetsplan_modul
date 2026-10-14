@@ -8,6 +8,10 @@ import { useAdminDashboard } from "../../hooks/useAppHooks";
 
 import { StudioTab, ShowFeedback, studioTabUrl, toStudioTab } from "./studio";
 
+import { areaOfTab, areaToShow, readStoredArea, storeArea, type StudioArea } from "./studioAreas";
+
+import { useLevel } from "../../hooks/useLevel";
+
 import { useTimedMessage } from "../../hooks/useTimedMessage";
 
 import { StudioSidebar } from "./StudioSidebar";
@@ -280,6 +284,44 @@ function AdminStudioContent() {
 
   const clearCreateRequest = () => setCreateRequest(null);
 
+  // The part of the admin the menu shows (see studioAreas.ts): the part of the open tab, or the one last chosen
+
+  const level = useLevel();
+
+  const [chosenArea, setChosenArea] = useState<StudioArea | null>(readStoredArea);
+
+  const [lastTabIn, setLastTabIn] = useState<Partial<Record<StudioArea, StudioTab>>>({});
+
+  const shownTab = detailRoute?.backTab ?? activeTab;
+
+  const area = areaToShow(shownTab, chosenArea, level);
+
+  useEffect(() => {
+
+    if (area !== chosenArea) {
+
+      setChosenArea(area);
+
+      storeArea(area);
+
+    }
+
+    if (areaOfTab(shownTab)) setLastTabIn((prev) => ({ ...prev, [area]: shownTab }));
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+
+  }, [area, shownTab]);
+
+  const handleAreaChange = (next: StudioArea) => {
+
+    setChosenArea(next);
+
+    storeArea(next);
+
+    handleTabChange(lastTabIn[next] ?? "dashboard");
+
+  };
+
 
 
   const [feedback, setFeedback] = useTimedMessage<{ text: string; type: "success" | "error" }>();
@@ -322,7 +364,11 @@ function AdminStudioContent() {
 
         studio={studio}
 
-        activeTab={detailRoute?.backTab ?? activeTab}
+        activeTab={shownTab}
+
+        area={area}
+
+        onAreaChange={handleAreaChange}
 
         onTabChange={handleTabChange}
 
@@ -376,7 +422,7 @@ function AdminStudioContent() {
 
         <StudioTabPanel tab="dashboard" activeTab={activeTab} visited={visitedTabs.includes("dashboard")}>
 
-          <LazyDashboardTab studio={studio} onTabChange={handleTabChange} onCreateIn={handleCreateIn} />
+          <LazyDashboardTab studio={studio} area={area} onTabChange={handleTabChange} onCreateIn={handleCreateIn} />
 
         </StudioTabPanel>
 
@@ -466,7 +512,7 @@ function AdminStudioContent() {
 
         <StudioTabPanel tab="cms-hjelp" activeTab={activeTab} visited={visitedTabs.includes("cms-hjelp")}>
 
-          <LazyHelpTab />
+          <LazyHelpTab area={area} />
 
         </StudioTabPanel>
 

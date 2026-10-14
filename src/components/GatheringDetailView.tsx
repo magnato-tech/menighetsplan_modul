@@ -24,6 +24,7 @@ import {
   Plus,
   Printer,
   LayoutTemplate,
+  Globe,
 } from "lucide-react";
 import { RunSheetRowCard } from "./gathering/RunSheetRowCard";
 import { SharedRunSheetRowCard } from "./gathering/SharedRunSheetRowCard";
@@ -347,6 +348,16 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
                   <Plus className="w-3.5 h-3.5" />
                   <span>Ny oppgave</span>
                 </button>
+                {isExplicitAdminView && (
+                  <Link
+                    to={studioTabUrl("cms-overstyringer")}
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200/90 px-2.5 py-1.5 rounded-lg transition-colors shadow-2xs"
+                    title="Bilde, tekst og om arrangementet er fremhevet på nettsiden"
+                  >
+                    <Globe className="w-3.5 h-3.5 text-slate-500" />
+                    <span>Vis på nettsiden</span>
+                  </Link>
+                )}
                 <button
                   type="button"
                   onClick={handleMakeTemplate}
