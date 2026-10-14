@@ -19,7 +19,7 @@ export const AssignPersonDialog: React.FC<AssignPersonDialogProps> = ({
   showToast,
   onClose,
 }) => {
-  const { gathering, groupMembers, allPersons, tasksWithDetails, assignTaskToPerson } = detail;
+  const { gathering, groupMembers, membersOf, allPersons, tasksWithDetails, assignTaskToPerson } = detail;
 
   const [personSearchQuery, setPersonSearchQuery] = useState<string>("");
 
@@ -30,7 +30,8 @@ export const AssignPersonDialog: React.FC<AssignPersonDialogProps> = ({
   const availablePersonsForModal = useMemo(() => {
     if (!taskId) return [];
     const assignedIds = activeTaskDetail ? activeTaskDetail.assignedPersons.map((p) => p.person?.id) : [];
-    const pool = canAdminister ? allPersons : groupMembers;
+    // A leader assigns from the group the task belongs to, which may be another of the groups they lead
+    const pool = canAdminister ? allPersons : taskGroup ? membersOf(taskGroup) : groupMembers;
 
     const filtered = pool
       .filter((p) => !assignedIds.includes(p.id))
@@ -46,7 +47,7 @@ export const AssignPersonDialog: React.FC<AssignPersonDialogProps> = ({
       if (aLeader !== bLeader) return aLeader - bLeader;
       return a.name.localeCompare(b.name, "nb");
     });
-  }, [taskId, activeTaskDetail, canAdminister, allPersons, groupMembers, personSearchQuery, leaderIds]);
+  }, [taskId, activeTaskDetail, canAdminister, allPersons, groupMembers, membersOf, taskGroup, personSearchQuery, leaderIds]);
 
   const handleAssignPerson = (
     assignTaskId: string,

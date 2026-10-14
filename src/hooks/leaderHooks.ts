@@ -336,13 +336,12 @@ export function useLeaderGatheringDetail(gatheringId: string) {
     return involvedGroupIds.map((id) => getGroupById(id)).filter(Boolean) as Group[];
   }, [involvedGroupIds, getGroupById]);
 
-  // Determine user's active group for this gathering:
-  // If user is leader/deputy in one of the involved groups, pick that group
-  const userLedGroup = useMemo(() => {
-    return involvedGroups.find(
-      (g) => g.leaderIds.includes(currentUser.id) || g.deputyLeaderIds?.includes(currentUser.id)
-    ) || null;
-  }, [involvedGroups, currentUser]);
+  // Every involved group the user leads or is deputy leader of. Their tasks are the user's to follow up.
+  const myGroups = useMemo(
+    () => involvedGroups.filter((g) => leadsGroup(g, currentUser.id)),
+    [involvedGroups, currentUser]
+  );
+  const userLedGroup = myGroups[0] ?? null;
 
   const group = useMemo(() => {
     if (userLedGroup) return userLedGroup;
@@ -361,12 +360,18 @@ export function useLeaderGatheringDetail(gatheringId: string) {
   const isAdmin = currentUser.globalRole === "admin";
   const hasAccess = Boolean(isAdmin || isLeader || isDeputy);
 
-  // Group members available for leader to assign
+  // The people in a group, for a leader to assign from
+  const membersOf = useCallback(
+    (g: Group) =>
+      hasFullRegister
+        ? allPersons.filter((p) => isInGroup(g, p.id))
+        : allGroupPersonIds(g).flatMap((id) => getPersonById(id) ?? []),
+    [allPersons, hasFullRegister, getPersonById]
+  );
   const groupMembers = useMemo(() => {
     if (!group) return hasFullRegister ? allPersons : [];
-    if (hasFullRegister) return allPersons.filter((p) => isInGroup(group, p.id));
-    return allGroupPersonIds(group).flatMap((id) => getPersonById(id) ?? []);
-  }, [group, allPersons, hasFullRegister, getPersonById]);
+    return membersOf(group);
+  }, [group, allPersons, hasFullRegister, membersOf]);
 
   const tasksWithDetails = useMemo(() => {
     if (!gathering) return [];
@@ -382,7 +387,7 @@ export function useLeaderGatheringDetail(gatheringId: string) {
       const isFullyCovered = taskStaffing.isFullyCovered;
       const hasWithdrawn = taskStaffing.hasForfall;
       const missingCount = taskStaffing.missingCount;
-      const isMyGroup = Boolean(group && task.groupId && task.groupId === group.id);
+      const isMyGroup = Boolean(task.groupId && myGroups.some((g) => g.id === task.groupId));
       const staffingStatusLabel = taskStaffing.statusText;
 
       return {
@@ -399,7 +404,7 @@ export function useLeaderGatheringDetail(gatheringId: string) {
         taskStaffing,
       };
     });
-  }, [gathering, gatheringTasks, assignments, getPersonById, getGroupById, group]);
+  }, [gathering, gatheringTasks, assignments, getPersonById, getGroupById, myGroups]);
 
   // The programme registered on the gathering. A gathering without one has none; nothing is made up for it.
   const programSchedule = gathering?.programSchedule ?? NO_PROGRAM;
@@ -412,8 +417,10 @@ export function useLeaderGatheringDetail(gatheringId: string) {
     currentUser,
     gathering,
     group,
+    myGroups,
     involvedGroups,
     groupMembers,
+    membersOf,
     allPersons,
     tasksWithDetails,
     programSchedule,

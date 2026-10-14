@@ -6,7 +6,7 @@ import {
 } from "../hooks/useAppHooks";
 import { useTimedMessage } from "../hooks/useTimedMessage";
 import { studioTabUrl } from "../pages/admin/studio";
-import { buildRunSheet, programIndexOfRunSheetRow, reorderProgramSchedule } from "../utils/runSheet";
+import { buildRunSheet, programIndexOfRunSheetRow, reorderProgramSchedule, sharedRunSheet } from "../utils/runSheet";
 import { locationOf } from "../utils/gatherings";
 import {
   ArrowLeft,
@@ -26,6 +26,7 @@ import {
   LayoutTemplate,
 } from "lucide-react";
 import { RunSheetRowCard } from "./gathering/RunSheetRowCard";
+import { SharedRunSheetRowCard } from "./gathering/SharedRunSheetRowCard";
 import { InstructionDialog } from "./gathering/InstructionDialog";
 import { AssignPersonDialog } from "./gathering/AssignPersonDialog";
 import { EditTaskDialog } from "./gathering/EditTaskDialog";
@@ -54,11 +55,11 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
   useEffect(() => watchGatheringAssignments(gatheringId), [gatheringId, watchGatheringAssignments]);
   const {
     hasAccess,
-    isLeader,
     isDeputy,
     isAdmin: isUserAdmin,
     gathering,
-    group,
+    myGroups,
+    currentUser,
     involvedGroups,
     tasksWithDetails,
     programSchedule,
@@ -75,6 +76,9 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
   const [searchParams] = useSearchParams();
   const fromRunSheet = searchParams.get("fra") === "kjoreplan";
   const canAdminister = isUserAdmin || isExplicitAdminView;
+  // A group leader follows up the groups they lead. The rest of the programme reads as it does
+  // for everyone (see SharedRunSheetView): those who have accepted, and nothing about who is missing.
+  const limitToMyGroups = !canAdminister;
 
   // Filter state
   const [viewFilter, setViewFilter] = useState<"all" | "needs-action" | "my-group">("all");
@@ -141,6 +145,12 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
     return Array.from(map.values());
   }, [integratedSchedule]);
 
+  // The same rows as everyone reads them, for the groups a leader does not lead
+  const sharedRows = useMemo(
+    () => new Map(sharedRunSheet(integratedSchedule, currentUser.id).map((row) => [row.id, row])),
+    [integratedSchedule, currentUser.id]
+  );
+
   // Filtered rows based on view filters
   const filteredSchedule = useMemo(() => {
     return integratedSchedule.filter((row) => {
@@ -151,18 +161,19 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
         return row.isMyGroup;
       }
       if (viewFilter === "needs-action") {
-        return !row.isFullyCovered || row.hasForfall;
+        return (!limitToMyGroups || row.isMyGroup) && (!row.isFullyCovered || row.hasForfall);
       }
       return true;
     });
-  }, [integratedSchedule, viewFilter, selectedGroupFilter]);
+  }, [integratedSchedule, viewFilter, selectedGroupFilter, limitToMyGroups]);
 
   // Staffing barometer calculations
-  const totalTasks = tasksWithDetails.length;
-  const vacantTasks = tasksWithDetails.filter((t) => t.task.status === "vacant" || t.hasWithdrawn);
-  const coveredTasks = tasksWithDetails.filter((t) => t.isFullyCovered);
   const myGroupTasks = tasksWithDetails.filter((t) => t.isMyGroup);
-  const myGroupNeedsAction = myGroupTasks.filter((t) => !t.isFullyCovered || t.hasWithdrawn);
+  const followedTasks = limitToMyGroups ? myGroupTasks : tasksWithDetails;
+  const totalTasks = followedTasks.length;
+  const vacantTasks = followedTasks.filter((t) => t.task.status === "vacant" || t.hasWithdrawn);
+  const coveredTasks = followedTasks.filter((t) => t.isFullyCovered);
+  const myGroupNames = myGroups.map((g) => g.name).join(", ");
 
   // Access check
   if (!gathering || !hasAccess) {
@@ -417,8 +428,8 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
                   : "Mangler bemanning på noen oppgaver"}
               </span>
               <span className="text-[11px] opacity-80 block truncate">
-                Total dekning: {coveredTasks.length} av {totalTasks} oppgaver dekket
-                {!isExplicitAdminView && group && ` • Min gruppe (${group.name}): ${myGroupTasks.length - myGroupNeedsAction.length}/${myGroupTasks.length}`}
+                {limitToMyGroups ? `${myGroupNames}: ` : "Total dekning: "}
+                {coveredTasks.length} av {totalTasks} oppgaver dekket
               </span>
             </div>
           </div>
@@ -474,7 +485,7 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
               )}
             </button>
 
-            {!isExplicitAdminView && group && (
+            {limitToMyGroups && myGroups.length > 0 && (
               <button
                 type="button"
                 id="tab-filter-my-group"
@@ -485,13 +496,13 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
                     : "text-slate-600 hover:text-slate-900"
                 }`}
               >
-                Min gruppe ({myGroupTasks.length})
+                {myGroups.length > 1 ? "Mine grupper" : "Min gruppe"} ({myGroupTasks.length})
               </button>
             )}
           </div>
 
           {/* Group Filter Dropdown / Pills for Admin & Multigroup view */}
-          {groupsInSchedule.length > 1 && (
+          {!limitToMyGroups && groupsInSchedule.length > 1 && (
             <div className="flex items-center gap-1 overflow-x-auto pb-0.5 text-[11px] scrollbar-none">
               <span className="text-slate-400 font-bold uppercase text-[10px] pr-1 flex items-center gap-0.5">
                 <SlidersHorizontal className="w-3 h-3" />
@@ -596,11 +607,28 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
             {filteredSchedule.map((row) => {
               const programIndex = programIndexOfRunSheetRow(row.id);
               const reorderRow = canReorderProgram && programIndex !== null;
+              const shared = limitToMyGroups && !row.isMyGroup ? sharedRows.get(row.id) : undefined;
+              if (shared) {
+                return (
+                  <SharedRunSheetRowCard
+                    key={row.id}
+                    row={shared}
+                    onShowInstruction={(shown) =>
+                      setViewInstructionTask({
+                        title: shown.roleTitle ? `${shown.title} – ${shown.roleTitle}` : shown.title,
+                        instruction: shown.instruction || "",
+                        time: shown.meetAt || shown.time,
+                        groupName: shown.groupName,
+                      })
+                    }
+                  />
+                );
+              }
               return (
                 <RunSheetRowCard
                   key={row.id}
                   row={row}
-                  canIntervene={canAdminister || (row.isMyGroup && isLeader)}
+                  canIntervene={canAdminister || row.isMyGroup}
                   canAdminister={canAdminister}
                   openMenuAssignmentId={activePersonActionId}
                   onToggleMenu={setActivePersonActionId}

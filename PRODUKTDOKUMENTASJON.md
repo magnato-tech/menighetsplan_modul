@@ -684,7 +684,7 @@ Oppretter en ny samling på valgt dato med samme klokkeslett, og kopierer oppgav
 ### 11.2 Kjøreplan
 Samlingssiden viser programmet og oppgavene på én tidslinje. Et programpunkt som er koblet til en oppgave, viser hvem som står på den. Et programpunkt uten oppgave har ingen ansvarlig, og en samling uten program viser bare oppgavene sine. Løsningen viser aldri et program eller et navn som ikke er registrert.
 
-Kjøreplanen finnes i to utgaver. Den alle ser (`/samling/:id`, fra kalenderen på Min side) viser bare dem som har akseptert. Planleggingen (`/leder/samling/:id` og `/admin/samling/:id`) viser også forespurt, forfall og avslått, og der tildeles og flyttes det.
+Kjøreplanen finnes i to utgaver. Den alle ser (`/samling/:id`, fra kalenderen på Min side) viser bare dem som har akseptert. Planleggingen (`/leder/samling/:id` og `/admin/samling/:id`) viser også forespurt, forfall og avslått, og der tildeles og flyttes det. En gruppeleder ser dette bare for gruppene hun leder; resten av programmet ser ut som i kjøreplanen for alle.
 
 **Planlagt:** skjermbilde for å redigere programmet.
 
@@ -1402,6 +1402,22 @@ Bestilt av produkteier: en frivillig som trykket på et arrangement i kalenderen
 **Slik er det sikret.** Databasen ga allerede en frivillig lov til å lese navnene på menighetens arrangementer, men bare når spørringen ber om de åpne. Appen spør nå slik for et åpent arrangement. Regelen er ikke endret.
 
 **Ikke prøvd.** Regeltesten for spørringen er skrevet, men ikke kjørt: maskinen den ble laget på har ikke Java. Kjøreplanen er sett i nettleseren i demoen som frivillig, gruppeleder og administrator. Demoen leser hele registeret, så spørringen for en frivillig i en menighets egen installasjon er ikke prøvd mot ekte regler.
+
+### Planleggingen for gruppeleder viser bare egne grupper (14. oktober 2026)
+
+Bestilt av produkteier: en gruppeleder så forespurt, forfall, avslått og mangler i alle gruppene på arrangementet, som administrator gjør. Det forvirret mer enn det hjalp. Administrators visning er uendret.
+
+| Del | Hva som er levert |
+|---|---|
+| **Egne grupper** | Radene til gruppene gruppelederen leder eller er nestleder i, er som før: status på hver person, tall, «Ubesatt», «Grip inn / Tildel» og «Instruks» |
+| **Andre grupper** | Ser ut som i kjøreplanen for alle: bare navn på dem som har akseptert, uten status, tall, farget ramme eller instruks |
+| **Boksen øverst** | Teller bare egne grupper, for eksempel «Lyd og bilde: 3 av 4 oppgaver dekket» |
+| **Fanene** | «Hele programmet», «Forfall / Mangler» og «Min gruppe» (eller «Mine grupper»). De to siste viser bare egne grupper |
+| **Filteret med gruppene** | Vises bare for administrator |
+| **Flere grupper** | Alle gruppene en leder eller er nestleder i på arrangementet, regnes som egne. Før ble bare den første regnet med. Tildeling skjer fra gruppen oppgaven hører til |
+| **Nestleder** | Kan gjøre det samme som leder i sine grupper. Før kunne en nestleder bare se |
+
+**Prøvd.** I demoen som Andreas Lind (leder for Lyd og bilde) og som administrator. En test sjekker at en som leder én gruppe og er nestleder i en annen, får begge som egne, og ikke en tredje.
 
 ---
 

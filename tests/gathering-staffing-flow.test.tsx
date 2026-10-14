@@ -471,3 +471,38 @@ describe("Kjøreplan og gruppeledervisning", () => {
     expect(vertRow.confirmedCount).toBe(0);
   });
 });
+
+describe("Gruppeleder med flere grupper på samme arrangement", () => {
+  test("alle gruppene en leder eller er nestleder i, er ens egne, og en annen gruppe er det ikke", async () => {
+    const admin = await mountProvider();
+    const scenario = await buildScenario(admin);
+    const kari = admin.result.current.addPerson({ name: "Kari Kjøkken" }).person!;
+    const barn = admin.result.current.addPerson({ name: "Berit Barn" }).person!;
+    await waitFor(() => expect(admin.result.current.allPersons).toHaveLength(5));
+    const kitchen = admin.result.current
+      .createGroup({ name: "Kjøkken", leaderIds: [kari.id], deputyLeaderIds: [scenario.leader.id], memberIds: [kari.id] })
+      .group!;
+    const children = admin.result.current.createGroup({ name: "Barn", leaderIds: [barn.id], memberIds: [barn.id] }).group!;
+    await waitFor(() => expect(admin.result.current.getGroupById(children.id)).toBeTruthy());
+    const kitchenTask = admin.result.current
+      .createTask({ gatheringId: scenario.gatheringFar.id, groupId: kitchen.id, title: "Kirkekaffe", neededCount: 2 })
+      .task!;
+    const childrenTask = admin.result.current
+      .createTask({ gatheringId: scenario.gatheringFar.id, groupId: children.id, title: "Barnekirke", neededCount: 2 })
+      .task!;
+    await waitFor(() =>
+      expect(admin.result.current.tasks.filter((t) => t.gatheringId === scenario.gatheringFar.id)).toHaveLength(5)
+    );
+
+    await switchUser(admin, scenario.leader.id);
+    const { result } = renderHook(() => useLeaderGatheringDetail(scenario.gatheringFar.id), { wrapper });
+    await waitFor(() => expect(result.current.tasksWithDetails).toHaveLength(5));
+
+    const mine = (taskId: string) => result.current.tasksWithDetails.find((t) => t.task.id === taskId)!.isMyGroup;
+    expect(mine(scenario.taskLyd.id)).toBe(true);
+    expect(mine(kitchenTask.id)).toBe(true);
+    expect(mine(childrenTask.id)).toBe(false);
+    expect(result.current.myGroups.map((g) => g.name).sort()).toEqual(["Kjøkken", "Lyd og bilde"]);
+    expect(result.current.membersOf(kitchen).map((p) => p.id)).toContain(kari.id);
+  });
+});
