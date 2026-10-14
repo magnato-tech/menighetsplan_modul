@@ -424,7 +424,7 @@ export const initialGroups: Group[] = [
   },
   {
     id: "group-barn",
-    name: "Søndagsskole & barn",
+    name: "Barnekirke",
     category: "tjenestegruppe",
     memberIds: ["person-6", "person-3", "person-22", "person-10"],
     leaderIds: ["person-6"], // Silje Markussen
