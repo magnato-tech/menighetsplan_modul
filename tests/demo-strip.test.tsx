@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from "react";
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import type { Session } from "../src/utils/session";
 
@@ -42,7 +42,13 @@ const openStrip = () =>
     </MemoryRouter>
   );
 
-const levelButton = (name: string) => screen.getByRole("radio", { name });
+/** A screen without the strip, as when the level is read where the strip is not drawn. */
+const openScreen = () =>
+  render(
+    <MemoryRouter>
+      <Screen />
+    </MemoryRouter>
+  );
 
 afterEach(() => {
   cleanup();
@@ -63,39 +69,31 @@ describe("Stripen øverst i demoen", () => {
     expect(screen.getByText("Nivået er plan")).toBeTruthy();
   });
 
-  test("sier at dette er en demo, og viser hele produktet til noe er valgt", () => {
+  test("sier at dette er en demo, har ingen nivåvelger inntil videre, og viser hele produktet", () => {
     installation.demo = {};
     openApp();
 
     const strip = within(screen.getByRole("complementary", { name: "Demo" }));
     expect(strip.getByText("Demo")).toBeTruthy();
     expect(strip.getByText("Alt du ser her, er eksempler.")).toBeTruthy();
-    expect(levelButton("Menighetsplan").getAttribute("aria-checked")).toBe("true");
-    expect(levelButton("Menighetsplattform").getAttribute("aria-checked")).toBe("false");
+    expect(screen.queryByRole("radiogroup")).toBeNull();
     expect(screen.getByText("Nivået er plan")).toBeTruthy();
   });
 
-  test("velgeren har to valg, og et valg endrer skjermen under med en gang", () => {
+  test("et nivå som ble valgt før velgeren ble tatt bort, glemmes, så demoen viser hele produktet", () => {
     installation.demo = {};
+    chooseDemoLevel("plattform");
     openApp();
-    expect(screen.getAllByRole("radio")).toHaveLength(2);
 
-    fireEvent.click(levelButton("Menighetsplattform"));
-    expect(screen.getByText("Nivået er plattform")).toBeTruthy();
-    expect(levelButton("Menighetsplattform").getAttribute("aria-checked")).toBe("true");
-    expect(levelButton("Menighetsplan").getAttribute("aria-checked")).toBe("false");
-
-    fireEvent.click(levelButton("Menighetsplan"));
     expect(screen.getByText("Nivået er plan")).toBeTruthy();
+    expect(readDemoLevel()).toBeNull();
   });
 
-  test("valget huskes i nettleseren til den som ser på", () => {
+  test("et nivå som velges, huskes i nettleseren til den som ser på (klart til velgeren kommer tilbake)", () => {
     installation.demo = {};
-    openStrip();
-    fireEvent.click(levelButton("Menighetsplattform"));
-    cleanup();
+    chooseDemoLevel("plattform");
 
-    openApp();
+    openScreen();
     expect(screen.getByText("Nivået er plattform")).toBeTruthy();
   });
 
@@ -107,18 +105,18 @@ describe("Stripen øverst i demoen", () => {
     vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
       throw new Error("Lagring er stengt");
     });
-    openApp();
+    openScreen();
     expect(screen.getByText("Nivået er plan")).toBeTruthy();
 
-    fireEvent.click(levelButton("Menighetsplattform"));
+    act(() => chooseDemoLevel("plattform"));
     expect(screen.getByText("Nivået er plattform")).toBeTruthy();
     expect(readDemoLevel()).toBe("plattform");
   });
 
   test("et valg gjort i en annen fane i samme nettleser følges", () => {
     installation.demo = {};
-    openApp();
-    fireEvent.click(levelButton("Menighetsplan"));
+    openScreen();
+    act(() => chooseDemoLevel("plan"));
 
     window.localStorage.setItem("menighetsplan_demo_nivaa", "plattform");
     fireEvent(window, new StorageEvent("storage", { key: "menighetsplan_demo_nivaa", newValue: "plattform" }));

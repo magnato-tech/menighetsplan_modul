@@ -136,12 +136,12 @@ describe("Valget av menighet i demoen", () => {
     expect(chooseDemoSite).not.toHaveBeenCalled();
   });
 
-  test("uten noen menighet klar i databasen finnes ikke lista, og nivåvelgeren står som før", async () => {
+  test("uten noen menighet klar i databasen finnes ikke lista", async () => {
     openStrip();
     await settled();
 
     expect(screen.queryByRole("combobox")).toBeNull();
-    expect(screen.getAllByRole("radio")).toHaveLength(2);
+    expect(screen.getByRole("complementary", { name: "Demo" })).toBeTruthy();
   });
 
   test("den som har valgt en menighet demoen ikke har, tas til eksempelmenigheten", async () => {

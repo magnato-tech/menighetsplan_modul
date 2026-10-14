@@ -89,7 +89,7 @@ Produktet selges på to nivåer. Det høyeste inneholder det laveste.
 
 Demoen er appen installert én gang til, med egen database og egen adresse, og med en innstilling som sier at den er demoen. Den er ikke egen kode og har ikke eget repo. Det samme gjelder hver menighet: samme kode, egen database, egen adresse.
 
-* **Stripen øverst** *(levert 8. oktober)* står på alle skjermer i demoen, og blir stående når man ruller. Den sier at dette er en demo, har velgeren mellom de to nivåene, viser veien inn til den som ikke er inne, og lenker til påmeldingen og tilbake til nettsiden som presenterer produktet. En lenke ut av demoen vises bare når adressen er lagt inn i demoens innstillinger.
+* **Stripen øverst** *(levert 8. oktober)* står på alle skjermer i demoen, og blir stående når man ruller. Den sier at dette er en demo, har menighetsvelgeren, viser veien inn til den som ikke er inne, og lenker til påmeldingen og tilbake til nettsiden som presenterer produktet. En lenke ut av demoen vises bare når adressen er lagt inn i demoens innstillinger.
 * **Veien inn** *(levert 9. oktober)*. Ingen logger inn i demoen. «Gå inn» i stripen, og «Min Side» på nettsiden, fører til en side med tre valg, ett for hver rolle:
 
   | Valg | Fører til |
@@ -103,7 +103,7 @@ Demoen er appen installert én gang til, med egen database og egen adresse, og m
 * **Bytte rolle.** Den som er inne, har «Bytt rolle» i stripen, som fører til de samme valgene. «Logg ut» gjør det samme.
 * **Hvem man går inn som**, følger av registeret: av dem som har rollen, den som er med i flest grupper. Innholdet i demoen kan dermed byttes uten at noe annet må endres.
 * **Det demoen er uten** *(levert 9. oktober)*. «Database og Testdata» og «Moduler» står ikke i menyen, og tilleggsmodulene vises ikke, heller ikke om en skulle være slått på i databasen. Skrives adressen til en slik fane inn, sier siden at den ikke er med i demoen. Alt som tømmer databasen, nekter i demoen, uansett hvor det kalles fra.
-* **Nivåvelgeren** *(levert 8. oktober)* har to valg. Valget gjelder med en gang på alle skjermer, og huskes i nettleseren til den som ser på. Én besøkendes valg endrer ikke hva en annen ser. Før noe er valgt, vises Menighetsplan.
+* **Nivåvelgeren** *(levert 8. oktober, tatt ut av stripen 14. oktober)* hadde to valg, Menighetsplattform og Menighetsplan. Produkteier tok den bort inntil videre: nivåene skiller seg foreløpig bare i deler av admin, så velgeren så ut som en knapp som ikke virket. Demoen viser hele produktet (Menighetsplan), og et nivå en besøkende valgte før, glemmes. Nivåene er fortsatt i koden og settes tilbake når trinn 3c bygges, den dagen en menighet vil ha bare nettside.
 * **Bare i demoen.** En menighets installasjon tegner aldri stripen, og spør aldri nettleseren om nivået.
 * **Forhåndsvisningen i admin** viser nettsiden uten stripe.
 * **Eksempelmenigheten** *(levert 9. oktober)*. Demoen viser Fjordvik menighet. Den er oppdiktet: navnet, adressen, personene og innholdet. E-postadressene ender på `.example`, som ingen kan eie. Innholdet nevner ingen årstid, høytid eller måned, for det vises hele året.
@@ -1524,7 +1524,7 @@ Trinnene tas i rekkefølge. Et trinn er ferdig når det er prøvd, testene er gr
 |:---|:---|:---|
 | 3a | **Demo-installasjonen og nivåvelgeren.** En installasjon kan settes opp som demo. Da står en stripe øverst med velgeren mellom Menighetsplattform og Menighetsplan, og menyen i admin følger valget | **Levert 8. oktober** (kapittel 1.3, 1.4 og 12) |
 | 3b | **Vei inn uten innlogging** i demoen, som administrator, gruppeleder og frivillig. Det som tømmer databasen, er ikke med i demoen | **Levert 9. oktober** (kapittel 1.4 og 12) |
-| 3c | **Nivåskillet i resten av appen:** Min side, arrangementssiden, oversikten og gruppene på nettsiden | Neste, og det siste som gjenstår av trinn 3 |
+| 3c | **Nivåskillet i resten av appen:** Min side, arrangementssiden, oversikten og gruppene på nettsiden | **Utsatt 14. oktober** til en menighet vil ha bare nettside. Nivåvelgeren er tatt ut av demostripen til da |
 | 3d | **Demodata som lever:** datoene regnes fra i dag, og demomenigheten får navn og innhold | **Levert 9. oktober** (kapittel 1.4 og 12) |
 | 3e | **Demoen legges ut** med egen database, og nullstilles hver natt. Krever et eget Firebase-prosjekt, som produkteier oppretter | **Levert 9. oktober:** lagt ut på demo.menighetsplan.no med egen database, som er fylt, og med «Velg menighet». Eierkoden til «Demo-oppsett» er lagt inn. Gjenstår å se: den første nullstillingen som går av seg selv, natt til 10. oktober (kapittel 1.4) |
 

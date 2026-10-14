@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useFirebase } from "../context/FirebaseDataContext";
 import { DEMO } from "../demo";
@@ -6,9 +6,7 @@ import { DEMO_SITE } from "../demoSite";
 import { chooseDemoSite } from "../services/demoSite";
 import { useDemoSites } from "../hooks/useDemoSites";
 import { SIGN_IN_PATH } from "../utils/routes";
-import { useLevel } from "../hooks/useLevel";
-import { chooseDemoLevel } from "../services/demoLevel";
-import { LEVELS, LEVEL_NAMES, LEVEL_SUMMARIES } from "../utils/level";
+import { forgetDemoLevel, readDemoLevel } from "../services/demoLevel";
 
 const link = "font-bold whitespace-nowrap underline underline-offset-2 decoration-slate-500 hover:text-white hover:decoration-white";
 
@@ -20,7 +18,7 @@ const siteName = (url: string): string => new URL(url).hostname.replace(/^www\./
 
 /**
  * The strip at the top of the demo installation: it says that this is a demo, lets the visitor
- * choose which congregation and which of the two levels to look at, shows the way in to Min side
+ * choose which congregation to look at, shows the way in to Min side
  * and the admin, and leads to the sign-up and back to the website that presents the product. A
  * congregation's own installation never draws it.
  *
@@ -28,7 +26,13 @@ const siteName = (url: string): string => new URL(url).hostname.replace(/^www\./
  * else is pinned to the top, is pinned below it.
  */
 export const DemoStrip: React.FC = () => {
-  const level = useLevel();
+  // The choice between the two levels is out of the strip for now (decided 14 October 2026): so far
+  // the levels differ only in parts of the admin, and the choice looked like it did nothing. The demo
+  // shows the whole product, and a level chosen before is forgotten. The levels stay in the code
+  // (utils/level.ts, services/demoLevel.ts) for the day a congregation wants only the website.
+  useEffect(() => {
+    if (DEMO && readDemoLevel()) forgetDemoLevel();
+  }, []);
   const { session } = useFirebase();
   const sites = useDemoSites();
   if (!DEMO) return null;
@@ -67,27 +71,6 @@ export const DemoStrip: React.FC = () => {
           </label>
         )}
 
-        <div
-          role="radiogroup"
-          aria-label="Velg nivå"
-          className={`${sites.length > 0 ? "shrink-0" : "flex-1"} md:flex-none flex rounded-lg bg-slate-800 p-0.5`}
-        >
-          {LEVELS.map((option) => (
-            <button
-              key={option}
-              type="button"
-              role="radio"
-              aria-checked={level === option}
-              title={LEVEL_SUMMARIES[option]}
-              onClick={() => chooseDemoLevel(option)}
-              className={`flex-1 md:flex-none px-3 py-1 rounded-md font-bold whitespace-nowrap cursor-pointer transition-colors ${
-                level === option ? "bg-white text-slate-950 shadow-xs" : "text-slate-300 hover:text-white"
-              }`}
-            >
-              {LEVEL_NAMES[option]}
-            </button>
-          ))}
-        </div>
       </div>
 
       <p className="md:flex-1 flex items-center justify-end gap-3">
