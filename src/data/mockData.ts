@@ -429,11 +429,7 @@ export const initialGroups: Group[] = [
     memberIds: ["person-6", "person-3", "person-22", "person-10"],
     leaderIds: ["person-6"], // Silje Markussen
     deputyLeaderIds: ["person-3"], // Ingrid Berg
-    meetingSchedule: {
-      weekday: "Søndag",
-      time: "11:15",
-      frequency: "annenhver uke",
-    },
+    // No regular meeting: the children's church is part of the service, not a meeting of its own
   },
   {
     id: "group-lovsang",
