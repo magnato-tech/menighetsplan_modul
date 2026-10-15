@@ -1,16 +1,21 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, CheckCircle2, Mail, Send } from "lucide-react";
 import { useCms } from "../../../context/CmsContext";
 import { DEMO } from "../../../demo";
 import { requestEmail, saveEmailLog, saveReplyTo, subscribeEmailRecord } from "../../../services/email";
+import { subscribeNewsletterBanner, subscribeNewsletterOptOuts } from "../../../services/newsletter";
 import { formatNorwegianDateTime } from "../../../utils/dates";
 import { newId } from "../../../utils/id";
 import { EMAIL_LINKS, EMAIL_SUBJECT_MAX, EMAIL_TEMPLATES, EMAIL_TEXT_MAX, emailDraftError, renderEmail, type EmailDraft, type EmailLink } from "../../../utils/emailMessage";
 import { recentSameSending, stopMessage, withLogEntry, withRestSent, type EmailLogEntry, type EmailOutcome, type EmailRecord } from "../../../utils/emailOutcome";
-import { audienceKey, audienceLabel, emailRecipients, toEmailAudience, usableEmail, type EmailAudience } from "../../../utils/emailRecipients";
+import { audienceKey, audienceLabel, emailRecipients, isNewsletter, toEmailAudience, usableEmail, type EmailAudience } from "../../../utils/emailRecipients";
+import { TEST_UNSUBSCRIBE_TOKEN, optedOutPersonIds, unsubscribeUrlOf } from "../../../utils/newsletter";
 import { isServiceGroup } from "../../../utils/personDirectory";
 import type { ShowFeedback, StudioData } from "../studio";
 import { studioCardPadded, studioInputFull, studioPrimaryButton, studioSecondaryButton } from "../studioTheme";
+import { EmailTextToolbar } from "./email/EmailTextToolbar";
+import { NewsletterBannerCard } from "./email/NewsletterBannerCard";
+import { NewsletterOptOutsCard } from "./email/NewsletterOptOutsCard";
 
 interface EmailTabProps {
   studio: Pick<StudioData, "adminPersons" | "adminGroups">;
@@ -26,7 +31,7 @@ const draftOf = ({ subject, text, link }: EmailDraft): EmailDraft => ({ subject,
 const people = (count: number): string => (count === 1 ? "1 person" : `${count} personer`);
 const label = "block text-[11px] font-bold text-[var(--studio-muted)] mb-1";
 
-/** E-mail from the administration to the leaders and the volunteers, with a log of what has been sent. */
+/** E-mail from the administration to the leaders and the volunteers, and the newsletter, with a log of what has been sent. */
 export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSend = DEMO === null, now = () => new Date() }) => {
   const persons = useMemo(() => studio.adminPersons.map((row) => row.person), [studio.adminPersons]);
   const groups = useMemo(() => studio.adminGroups.map((row) => row.group), [studio.adminGroups]);
@@ -41,6 +46,10 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<"test" | "send" | null>(null);
   const [result, setResult] = useState<{ good: boolean; text: string } | null>(null);
+  // The keys that have unsubscribed: undefined while they are read, null when the database refuses them
+  const [optOutKeys, setOptOutKeys] = useState<string[] | null | undefined>(undefined);
+  const [banner, setBanner] = useState<string | null | undefined>(undefined);
+  const textField = useRef<HTMLTextAreaElement>(null);
 
   useEffect(
     () =>
@@ -58,9 +67,39 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
     []
   );
 
-  const { recipients, withoutEmail } = useMemo(() => emailRecipients(audience, persons, groups), [audience, persons, groups]);
+  useEffect(
+    () =>
+      subscribeNewsletterOptOuts(
+        (keys) => setOptOutKeys(keys),
+        () => setOptOutKeys(null)
+      ),
+    []
+  );
+  useEffect(
+    () =>
+      subscribeNewsletterBanner(
+        (stored) => setBanner(stored),
+        () => setBanner(null)
+      ),
+    []
+  );
+
+  const newsletter = isNewsletter(audience);
+  const optedOutIds = useMemo(() => optedOutPersonIds(persons, optOutKeys ?? []), [persons, optOutKeys]);
+  const optedOutPersons = useMemo(() => (optOutKeys === undefined || optOutKeys === null ? optOutKeys : persons.filter((person) => optedOutIds.has(person.id))), [optOutKeys, persons, optedOutIds]);
+  const { recipients, withoutEmail, optedOut } = useMemo(() => emailRecipients(audience, persons, groups, undefined, optedOutIds), [audience, persons, groups, optedOutIds]);
   const storedReplyTo = record?.replyTo ?? "";
-  const preview = useMemo(() => renderEmail({ draft, churchName, siteUrl: window.location.origin, firstName: "Kari" }), [draft, churchName]);
+  const preview = useMemo(
+    () =>
+      renderEmail({
+        draft,
+        churchName,
+        siteUrl: window.location.origin,
+        firstName: "Kari",
+        ...(newsletter ? { newsletter: { unsubscribeUrl: unsubscribeUrlOf(window.location.origin, TEST_UNSUBSCRIBE_TOKEN), bannerUrl: banner ?? null } } : {}),
+      }),
+    [draft, churchName, newsletter, banner]
+  );
 
   const choose = (id: string) => {
     setTemplateId(id);
@@ -101,7 +140,7 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
     if (wrong) return;
     setBusy("test");
     setResult(null);
-    const outcome = await requestEmail({ ...draft, mode: "test" });
+    const outcome = await requestEmail(newsletter ? { ...draft, mode: "test", audience } : { ...draft, mode: "test" });
     setBusy(null);
     tell(outcome, "Prøven er sendt til e-postadressen du er logget inn med. Sjekk innboksen, og søppelposten.");
   };
@@ -165,7 +204,7 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
       <div className="border-b border-[var(--studio-border)] pb-4">
         <h2 className="text-xl sm:text-2xl font-black text-[var(--studio-text)]">Send e-post</h2>
         <p className="text-xs text-[var(--studio-muted)] mt-1">
-          Si fra til lederne og de frivillige, for eksempel når et nytt semester starter. Hver person får sin egen e-post, og ingen ser de andres adresser.
+          Si fra til lederne og de frivillige, for eksempel når et nytt semester starter, eller send nyhetsbrev til medlemmene. Hver person får sin egen e-post, og ingen ser de andres adresser.
         </p>
       </div>
 
@@ -224,6 +263,10 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
               Hvem skal ha den
             </label>
             <select id="email-audience" value={audienceValue} onChange={(event) => chooseAudience(event.target.value)} className={studioInputFull}>
+              <optgroup label="Nyhetsbrev">
+                <option value="members">Medlemmer av menigheten</option>
+                <option value="everyone">Alle i registeret med e-post</option>
+              </optgroup>
               <option value="leaders">Ledere og nestledere i tjenestegruppene</option>
               <option value="serviceGroups">Alle i tjenestegruppene</option>
               <optgroup label="Én gruppe">
@@ -243,7 +286,13 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
                   {people(withoutEmail.length)} mangler e-postadresse og får den ikke: {withoutEmail.map((person) => person.name).join(", ")}.
                 </>
               )}
+              {optedOut.length > 0 && ` ${people(optedOut.length)} har meldt seg av nyhetsbrevet.`}
             </p>
+            {newsletter && (
+              <p className="text-[11px] text-[var(--studio-muted)] mt-1">
+                Et nyhetsbrev får toppbildet øverst og en lenke nederst der mottakeren kan melde seg av. Medlemmer er de som er merket som medlem av menigheten i personregisteret.
+              </p>
+            )}
           </div>
 
           <div>
@@ -257,8 +306,12 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
             <label htmlFor="email-text" className={label}>
               Tekst
             </label>
-            <textarea id="email-text" rows={9} maxLength={EMAIL_TEXT_MAX} value={draft.text} onChange={(event) => setDraft({ ...draft, text: event.target.value })} className={`${studioInputFull} leading-relaxed`} />
-            <p className="text-[11px] text-[var(--studio-muted)] mt-1">En tom linje gir nytt avsnitt. Hilsenen med fornavn og knappen legges til av seg selv.</p>
+            <EmailTextToolbar field={textField} onChange={(text) => setDraft((current) => ({ ...current, text }))} />
+            <textarea ref={textField} id="email-text" rows={newsletter ? 16 : 9} maxLength={EMAIL_TEXT_MAX} value={draft.text} onChange={(event) => setDraft({ ...draft, text: event.target.value })} className={`${studioInputFull} leading-relaxed`} />
+            <p className="text-[11px] text-[var(--studio-muted)] mt-1">
+              En tom linje gir nytt avsnitt. Merk tekst og trykk på en knapp over feltet for overskrift, fet skrift, lenke eller punktliste.{" "}
+              {newsletter ? "Toppbildet og lenken til avmelding legges til av seg selv." : "Hilsenen med fornavn og knappen legges til av seg selv."}
+            </p>
           </div>
 
           <div>
@@ -311,11 +364,23 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
               <dd className="inline text-[var(--studio-text)]">{preview.subject || "–"}</dd>
             </div>
           </dl>
-          <pre id="email-preview" className="whitespace-pre-wrap break-words font-sans text-xs leading-relaxed p-4 rounded-xl bg-white text-slate-800 border border-[var(--studio-border)]">
-            {preview.text}
-          </pre>
-          <p className="text-[11px] text-[var(--studio-muted)]">«Kari» står her for fornavnet til den som får e-posten.</p>
+          <iframe
+            id="email-preview"
+            title="Slik ser e-posten ut"
+            srcDoc={preview.html}
+            // No scripts can run in it; the same origin only lets the browser draw it as a frame of the page
+            sandbox="allow-same-origin"
+            className="w-full h-[560px] rounded-xl bg-white border border-[var(--studio-border)]"
+          />
+          <p className="text-[11px] text-[var(--studio-muted)]">
+            {newsletter ? "Lenkene virker ikke her, bare i e-posten." : "«Kari» står her for fornavnet til den som får e-posten. Lenkene virker ikke her, bare i e-posten."}
+          </p>
         </section>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <NewsletterBannerCard banner={banner} churchName={churchName} showFeedback={showFeedback} />
+        <NewsletterOptOutsCard optedOut={optedOutPersons} showFeedback={showFeedback} />
       </div>
 
       <section aria-label="Sendt" className={studioCardPadded}>

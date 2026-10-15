@@ -117,6 +117,30 @@ export async function readAll(database: RestDatabase, collectionId: string, ask:
   return rows.flatMap((row) => (row.document ? [decodeDocument(row.document)] : []));
 }
 
+/** The full name of a document, as a write names it: "projects/…/documents/persons/p1". */
+export const documentNameOf = ({ projectId, databaseId }: RestDatabase, path: string): string =>
+  `projects/${projectId}/databases/${databaseId || "(default)"}/documents/${path}`;
+
+/**
+ * Sets text fields on documents that are there, all in one write, as the one the headers say is
+ * asking: every field named is written, and nothing else in the documents is touched. Thrown as a
+ * FirestoreRestError when the database refuses.
+ */
+export async function setTextFields(database: RestDatabase, changes: readonly { path: string; fields: Record<string, string> }[], ask: Fetch, headers: Record<string, string> = {}): Promise<void> {
+  if (changes.length === 0) return;
+  const writes = changes.map(({ path, fields }) => ({
+    update: { name: documentNameOf(database, path), fields: Object.fromEntries(Object.entries(fields).map(([key, value]) => [key, { stringValue: value }])) },
+    updateMask: { fieldPaths: Object.keys(fields) },
+    currentDocument: { exists: true },
+  }));
+  const response = await ask(`${documentsOf(database)}:commit`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...headers },
+    body: JSON.stringify({ writes }),
+  });
+  if (!response.ok) throw new FirestoreRestError(`Databasen svarte ${response.status} på skrivingen`, response.status);
+}
+
 /** One document, or null when it is not there or may not be read. */
 export async function readDocument(database: RestDatabase, path: string, ask: Fetch, headers?: Record<string, string>): Promise<(Record<string, unknown> & { id: string }) | null> {
   const response = await ask(`${documentsOf(database)}/${path}`, headers ? { headers } : undefined);

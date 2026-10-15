@@ -14,7 +14,8 @@ import type { EmailAudience } from "../utils/emailRecipients";
 /** Where the sending is done. Only an installation at the hosting has it: a developer's machine has not. */
 export const EMAIL_SEND_PATH = "/api/epost";
 
-export type EmailSendRequest = EmailDraft & ({ mode: "test" } | { mode: "send"; audience: EmailAudience; onlyPersonIds?: string[] });
+/** A test goes to the one who asks; with a newsletter's audience, it looks like the newsletter. */
+export type EmailSendRequest = EmailDraft & ({ mode: "test"; audience?: EmailAudience } | { mode: "send"; audience: EmailAudience; onlyPersonIds?: string[] });
 
 /** Asks for an e-mail to be sent, as the one who is signed in. Never throws: what went wrong, comes back as the answer. */
 export async function requestEmail(request: EmailSendRequest): Promise<EmailOutcome> {

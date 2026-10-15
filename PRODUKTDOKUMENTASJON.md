@@ -1362,7 +1362,33 @@ Administratoren kan sende e-post til lederne og de frivillige fra siden «Send e
 
 **Ikke prøvd.** En ekte e-post er ikke sendt: det krever nøkkelen og et godkjent domene. Første prøve gjøres med «Send prøve til meg».
 
-**Ikke med.** Automatiske påminnelser før tjeneste, varsel ved forespørsel, SMS og avmelding fra e-post. Resend må føres som underleverandør i databehandleravtalen, siden tjenesten får navn og e-postadresser.
+**Ikke med.** Automatiske påminnelser før tjeneste, varsel ved forespørsel og SMS. Resend må føres som underleverandør i databehandleravtalen, siden tjenesten får navn og e-postadresser.
+
+### Nyhetsbrev (15. oktober 2026)
+
+Bestilt og gått gjennom trinn for trinn med produkteier 15. oktober: nyhetsbrev fra siden «Send e-post» til medlemmene, uten at medlemslisten kopieres til et annet verktøy. Valgene han tok: mottakerne velges ved hver utsending, avmelding med en lenke i hver e-post, utseendet slik det står under, og Resends gratisplan til å begynne med (100 e-poster om dagen; «Send til dem som gjenstår» tar resten dagen etter).
+
+| Del | Hva som er levert |
+|---|---|
+| **Mottakere** | To nye valg under «Nyhetsbrev»: «Medlemmer av menigheten» (de som er merket «Medlem i menigheten» i personregisteret) og «Alle i registeret med e-post». En e-post til disse to er et nyhetsbrev; til ledere og grupper er den som før |
+| **Ferdig tekst** | «Nyhetsbrev» med overskrifter og en punktliste å fylle inn, til medlemmene og uten knapp |
+| **Toppbilde** | Lastes opp én gang på siden, og står øverst i hvert nyhetsbrev. Uten bilde står menighetens navn der. Bildet hentes av innboksen fra `/api/nyhetsbrevbilde`, siden de fleste e-postprogram ikke viser et bilde som ligger inne i e-posten |
+| **Verktøylinje** | Overskrift, Fet, Lenke og Punktliste over tekstfeltet. Knappene skriver enkle merker i teksten (`## `, `**`, `[tekst](adresse)`, `- `), og e-posten tegnes av dem. Bare nettadresser og e-postadresser blir lenker, og ingenting som skrives, leses som HTML |
+| **Forhåndsvisning** | E-posten vises ferdig tegnet ved siden av skjemaet, med toppbildet og avmeldingslenken når det er et nyhetsbrev |
+| **Knappen** | Valgfri: «Ingen knapp» er et valg. Nyhetsbrevet har ingen hilsen eller avslutning av seg selv: dem skriver administratoren |
+| **Lengde** | Teksten kan være opptil 10 000 tegn (før 3000) |
+| **Avmelding** | Nederst i hvert nyhetsbrev: «Du får dette nyhetsbrevet fra … Meld deg av». Lenken fører til `/avmelding/<nøkkel>`, der mottakeren trykker «Meld meg av» (ingenting skjer før knappen trykkes, siden e-postprogram kan åpne lenker for å sjekke dem). E-posten har også feltet `List-Unsubscribe`, så Gmail og Outlook kan vise sin egen avmeldingsknapp |
+| **Meldt av** | Siden «Send e-post» viser hvem som har meldt seg av, med «Meld på igjen». Antallet står også ved mottakerne. Avmeldingen gjelder bare nyhetsbrevet: beskjeder til ledere og grupper går ut som før |
+| **Delt adresse** | Har én av dem som deler en adresse, meldt seg av, får adressen ikke nyhetsbrevet |
+| **Prøve** | «Send prøve til meg» med nyhetsbrev som mottaker sender nyhetsbrevet slik det blir, med en avmeldingslenke som ikke melder noen av |
+
+**Slik virker avmeldingen.** Hver person nyhetsbrevet sendes til, får en tilfeldig nøkkel på 32 tegn (`newsletterToken` på personen), skrevet av `/api/epost` første gang. Lenken bærer nøkkelen. Trykker mottakeren «Meld meg av», skrives ett dokument med nøkkelen som navn og tidspunktet som eneste innhold i `newsletterOptOuts`. Hvem som helst med lenken kan legge det til og se at det er der; bare en administrator kan liste dem, og dermed vite hvem nøkkelen hører til, eller ta et bort igjen. Ingen innlogging trengs, og ingen opplysning om personen forlater registeret.
+
+**Databasereglene må limes inn på nytt.** `firestore.rules` har fått regelen for `newsletterOptOuts`, og toppbildet (`cms_settings/newsletter-banner`) kan leses av alle. Med reglene fra før sier siden at avmeldingene ikke kan leses, og `/api/epost` sender ikke nyhetsbrev («Databasen har ikke fått reglene for nyhetsbrev ennå»). Andre e-poster virker som før. Prøvd i den lokale emulatoren (`npm run test:rules`).
+
+**Ikke prøvd.** En ekte e-post er ikke sendt, og toppbildet er ikke hentet av et ekte e-postprogram: det krever nøkkelen hos Resend og en menighets installasjon. Demoen sender aldri.
+
+**Ikke med.** Bilder inne i teksten (bare toppbildet), planlagt utsending på et bestemt tidspunkt, og statistikk over hvem som har åpnet e-posten.
 
 ### Min side, forenklet (14. oktober 2026)
 

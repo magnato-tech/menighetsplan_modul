@@ -58,6 +58,14 @@ export const GROUP_LEADER_EMAILS_COLLECTION = "groupLeaderEmails";
 export const PUBLIC_GROUP_CARDS_COLLECTION = "publicGroupCards";
 export const GATHERING_READERS_COLLECTION = "gatheringReaders";
 
+/**
+ * Who has unsubscribed from the newsletter: one document named by the key in the link they
+ * pressed, and nothing else in it (see utils/newsletter.ts). Anyone may add one; only an
+ * administrator may list them. Not content: not part of a dataset, and not used in the demo,
+ * which sends no e-mail.
+ */
+export const NEWSLETTER_OPT_OUTS_COLLECTION = "newsletterOptOuts";
+
 const PREFIX = collectionPrefixOf(DEMO_SITE);
 
 /** The names as the congregation being looked at has them. They keep their plain types: no code tells the two apart. */

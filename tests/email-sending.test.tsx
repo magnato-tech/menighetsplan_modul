@@ -77,10 +77,11 @@ describe("Hvem en e-post går til", () => {
 describe("E-posten slik den sendes", () => {
   const draft = { subject: "Nytt semester", text: "Første avsnitt.\n\nAndre <b>avsnitt</b> & mer\nmed linjeskift.", link: "leder" as const };
 
-  test("de to ferdige tekstene kan sendes som de står, til lederne og til de frivillige", () => {
+  test("de ferdige tekstene kan sendes som de står: til lederne, til de frivillige og som nyhetsbrev til medlemmene", () => {
     expect(EMAIL_TEMPLATES.map((template) => [template.audience.kind, template.link])).toEqual([
       ["leaders", "leder"],
       ["serviceGroups", "minside"],
+      ["members", "ingen"],
     ]);
     for (const template of EMAIL_TEMPLATES) expect(emailDraftError(template)).toBeNull();
   });
@@ -369,6 +370,20 @@ vi.mock("../src/services/email", () => ({
   },
 }));
 vi.mock("../src/context/CmsContext", () => ({ useCms: () => ({ settings: { churchName: "Fjellbygda menighet" } }) }));
+// The newsletter's stores: nobody has unsubscribed, and there is no banner (tests/newsletter.test.tsx has the rest)
+vi.mock("../src/services/newsletter", () => ({
+  subscribeNewsletterOptOuts: (onChange: (keys: string[]) => void) => {
+    onChange([]);
+    return () => undefined;
+  },
+  subscribeNewsletterBanner: (onChange: (banner: string | null) => void) => {
+    onChange(null);
+    return () => undefined;
+  },
+  optBackIn: vi.fn(),
+  saveNewsletterBanner: vi.fn(),
+  removeNewsletterBanner: vi.fn(),
+}));
 
 import { EmailTab } from "../src/pages/admin/tabs/EmailTab";
 
@@ -397,8 +412,8 @@ describe("Siden «Send e-post» i admin", () => {
     expect((screen.getByLabelText("Hvem skal ha den") as HTMLSelectElement).value).toBe("leaders");
     expect(document.getElementById("email-recipient-count")?.textContent).toBe("2 personer får e-posten.");
     expect(screen.getByRole("button", { name: "Send til 2 personer" })).toBeTruthy();
-    expect(document.getElementById("email-preview")?.textContent).toContain("Hei Kari!");
-    expect(document.getElementById("email-preview")?.textContent).toContain("Hilsen Fjellbygda menighet");
+    expect(document.getElementById("email-preview")?.getAttribute("srcdoc")).toContain("Hei Kari!");
+    expect(document.getElementById("email-preview")?.getAttribute("srcdoc")).toContain("Hilsen Fjellbygda menighet");
     expect(screen.getByText("Ingen e-post er sendt herfra ennå.")).toBeTruthy();
   });
 
@@ -507,6 +522,28 @@ describe("Siden «Send e-post» i admin", () => {
     fireEvent.click(screen.getByRole("button", { name: "Send til 2 personer" }));
     expect(screen.getByRole("alert").textContent).toBe("E-posten må ha et emne.");
     expect(service.requestEmail).not.toHaveBeenCalled();
+  });
+
+  test("nyhetsbrevet går til medlemmene, prøven ser ut som det, og knappene over teksten skriver merkene", async () => {
+    service.requestEmail.mockResolvedValue(sent({ mode: "test", sent: 1 }));
+    show();
+    fireEvent.click(screen.getByRole("button", { name: "Nyhetsbrev" }));
+    expect((screen.getByLabelText("Hvem skal ha den") as HTMLSelectElement).value).toBe("members");
+    expect((screen.getByLabelText("Knappen fører til") as HTMLSelectElement).value).toBe("ingen");
+    // Nobody among the made-up persons here is marked as a member of the congregation
+    expect(document.getElementById("email-recipient-count")?.textContent).toBe("0 personer får e-posten.");
+    fireEvent.change(screen.getByLabelText("Hvem skal ha den"), { target: { value: "everyone" } });
+    expect(document.getElementById("email-recipient-count")?.textContent).toMatch(/^7 personer får e-posten\. 2 personer mangler e-postadresse/);
+    expect(document.getElementById("email-preview")?.getAttribute("srcdoc")).toContain("Meld deg av");
+
+    const field = screen.getByLabelText("Tekst") as HTMLTextAreaElement;
+    fireEvent.change(field, { target: { value: "Kom på fest" } });
+    field.setSelectionRange(7, 11);
+    fireEvent.click(screen.getByRole("button", { name: "Fet" }));
+    expect(field.value).toBe("Kom på **fest**");
+
+    fireEvent.click(screen.getByRole("button", { name: "Send prøve til meg" }));
+    await waitFor(() => expect(service.requestEmail).toHaveBeenCalledWith(expect.objectContaining({ mode: "test", audience: { kind: "everyone" }, link: "ingen" })));
   });
 
   test("i demoen vises siden, men ingenting kan sendes", () => {

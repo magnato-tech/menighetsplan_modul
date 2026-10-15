@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import { FirebaseDataProvider } from "./context/FirebaseDataContext";
 import { CmsProvider, useCms } from "./context/CmsContext";
 import { SITE_THEME_CLASS, getThemeCssVariables } from "./utils/themeUtils";
-import { isAdminStudioPath, isMinSidePath, isPublicPath, isSignInPath } from "./utils/routes";
+import { isAdminStudioPath, isMinSidePath, isPublicPath, isSignInPath, isUnsubscribePath } from "./utils/routes";
 import { PreviewQueryPersist } from "./components/public/PreviewQueryPersist";
 import { useSiteTraffic } from "./hooks/useSiteTraffic";
 import { EmbeddedPreviewGuard } from "./components/public/EmbeddedPreviewGuard";
@@ -54,6 +54,7 @@ const ModulePlaceholderPage = lazy(() =>
   import("./pages/ModulePlaceholderPage").then((m) => ({ default: m.ModulePlaceholderPage }))
 );
 const SignInPage = lazy(() => import("./pages/SignInPage").then((m) => ({ default: m.SignInPage })));
+const UnsubscribePage = lazy(() => import("./pages/UnsubscribePage").then((m) => ({ default: m.UnsubscribePage })));
 function LazyRouteFallback() {
   return <p className="p-6 text-sm text-slate-500">Laster…</p>;
 }
@@ -95,6 +96,19 @@ function AppContent() {
       <ChunkErrorBoundary>
         <Suspense fallback={<LazyRouteFallback />}>
           <SignInPage />
+        </Suspense>
+      </ChunkErrorBoundary>
+    );
+  }
+
+  if (isUnsubscribePath(location.pathname)) {
+    return (
+      <ChunkErrorBoundary>
+        <Suspense fallback={<LazyRouteFallback />}>
+          <Routes>
+            <Route path="/avmelding/:key" element={<UnsubscribePage />} />
+            <Route path="*" element={<UnsubscribePage />} />
+          </Routes>
         </Suspense>
       </ChunkErrorBoundary>
     );

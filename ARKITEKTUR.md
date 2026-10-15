@@ -168,6 +168,11 @@ Nettsiden bygges av fem samlinger: `cms_pages`, `cms_news`, `cms_sermons`, `cms_
 
 Kontrakten for eksterne lesere står i **[INTEGRASJON-MENIGHETSPLAN.md](INTEGRASJON-MENIGHETSPLAN.md)**.
 
+## E-post og nyhetsbrev
+E-post sendes av funksjonen `/api/epost` på Vercel (`server/emailSending.ts`) gjennom Resend. Nettleseren sier hvilken mottakergruppe, aldri hvilke adresser: funksjonen leser registeret som den som er logget inn, og reglene slipper bare en administrator til. Mottakerne regnes ut i `src/utils/emailRecipients.ts`, både i nettleseren (for antallet) og i funksjonen.
+
+Mottakerne «members» og «everyone» er nyhetsbrevet (`isNewsletter`). Det har toppbildet og en avmeldingslenke. Avmeldingen er bygget uten innlogging og uten en egen nøkkel hos Vercel: hver mottaker får en tilfeldig `newsletterToken` på personen (skrevet av funksjonen med administratorens innlogging), lenken bærer den, og siden `/avmelding/<nøkkel>` skriver ett dokument med nøkkelen som navn i `newsletterOptOuts`. Regelen lar hvem som helst opprette et slikt dokument med bare tidspunktet i, og bare en administrator liste eller slette dem. Funksjonen leser dem før et nyhetsbrev sendes, og hopper over adressene. Toppbildet ligger som tekst i `cms_settings/newsletter-banner`, som alle kan lese, og funksjonen `/api/nyhetsbrevbilde` (`server/newsletterBanner.ts`) gir det ut som et vanlig bilde, fordi e-postprogram sjelden viser et bilde som ligger inne i e-posten.
+
 ## Hva som er offentlig
 Tre regler avgjør hva en besøkende ser, og hver av dem ligger ett sted:
 

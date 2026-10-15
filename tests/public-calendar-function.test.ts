@@ -156,7 +156,7 @@ describe("Funksjonen slik Vercel leser den", () => {
   });
 
   test("det samme gjelder alle funksjonene, også e-postutsendingen i api/epost.js", async () => {
-    expect(Object.keys(API_FUNCTIONS)).toEqual(["kalender", "epost"]);
+    expect(Object.keys(API_FUNCTIONS)).toEqual(["kalender", "epost", "nyhetsbrevbilde"]);
     for (const name of Object.keys(API_FUNCTIONS) as (keyof typeof API_FUNCTIONS)[]) {
       expect(normal(readFileSync(packedPathOf(name), "utf8")), `api/${name}.js`).toBe(normal(await packFunction(name)));
     }

@@ -890,3 +890,42 @@ describe("Svar på tildelinger", () => {
     await assertSucceeds(getDocs(query(collection(db, "gatheringAttendances"), where("personId", "==", "hakon"))));
   });
 });
+
+describe("Nyhetsbrevet", () => {
+  const KEY = "abcdefghijklmnopqrstuvwxyz012345";
+
+  test("den som har lenken, melder seg av uten å logge inn, og ser at det er gjort, men kan ikke liste eller angre", async () => {
+    await assertSucceeds(setDoc(doc(visitor(), "newsletterOptOuts", KEY), { at: "2026-10-15T10:00:00.000Z" }));
+    expect((await getDoc(doc(visitor(), "newsletterOptOuts", KEY))).exists()).toBe(true);
+    // Twice is not allowed: the page asks first
+    await assertFails(setDoc(doc(visitor(), "newsletterOptOuts", KEY), { at: "2026-10-15T11:00:00.000Z" }));
+    await assertFails(getDocs(collection(visitor(), "newsletterOptOuts")));
+    await assertFails(getDocs(collection(hakon(), "newsletterOptOuts")));
+    await assertFails(deleteDoc(doc(visitor(), "newsletterOptOuts", KEY)));
+    await assertFails(deleteDoc(doc(hakon(), "newsletterOptOuts", KEY)));
+  });
+
+  test("et merke som ikke er en nøkkel, eller som holder noe annet enn når, avvises", async () => {
+    await assertFails(setDoc(doc(visitor(), "newsletterOptOuts", "prove"), { at: "2026-10-15T10:00:00.000Z" }));
+    await assertFails(setDoc(doc(visitor(), "newsletterOptOuts", KEY), { at: "2026-10-15T10:00:00.000Z", personId: "ola" }));
+    await assertFails(setDoc(doc(visitor(), "newsletterOptOuts", KEY), { at: 7 }));
+  });
+
+  test("administrator ser hvem som har meldt seg av, melder dem på igjen, og gir personene nøkler", async () => {
+    await setDoc(doc(visitor(), "newsletterOptOuts", KEY), { at: "2026-10-15T10:00:00.000Z" });
+    expect((await assertSucceeds(getDocs(collection(kari(), "newsletterOptOuts")))).size).toBe(1);
+    await assertSucceeds(deleteDoc(doc(kari(), "newsletterOptOuts", KEY)));
+    await assertSucceeds(updateDoc(doc(kari(), "persons", "ola"), { newsletterToken: KEY }));
+    // A member cannot give themselves another key
+    await assertFails(updateDoc(doc(hakon(), "persons", "hakon"), { newsletterToken: KEY }));
+  });
+
+  test("toppbildet leses av alle, og skrives bare av administrator", async () => {
+    await assertSucceeds(setDoc(doc(kari(), "cms_settings", "newsletter-banner"), { recordType: "newsletterBanner", imageUrl: "/bildebibliotek/a.jpg", updatedAt: "1" }));
+    await assertSucceeds(getDoc(doc(visitor(), "cms_settings", "newsletter-banner")));
+    await assertFails(setDoc(doc(visitor(), "cms_settings", "newsletter-banner"), { recordType: "newsletterBanner", imageUrl: "/x.jpg" }));
+    await assertFails(setDoc(doc(hakon(), "cms_settings", "newsletter-banner"), { recordType: "newsletterBanner", imageUrl: "/x.jpg" }));
+    // The page's own record, with the log, is still closed to visitors
+    await assertFails(getDoc(doc(visitor(), "cms_settings", "email")));
+  });
+});

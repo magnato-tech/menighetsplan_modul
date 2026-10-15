@@ -59,10 +59,11 @@ function readDemoInstallation(env) {
 // src/utils/emailMessage.ts
 var EMAIL_LINKS = {
   leder: { path: "/leder", button: "Åpne gruppene mine", label: "Gruppelederens side" },
-  minside: { path: "/minside", button: "Åpne Min side", label: "Min side" }
+  minside: { path: "/minside", button: "Åpne Min side", label: "Min side" },
+  ingen: { path: null, button: "", label: "Ingen knapp" }
 };
 var EMAIL_SUBJECT_MAX = 120;
-var EMAIL_TEXT_MAX = 3e3;
+var EMAIL_TEXT_MAX = 1e4;
 var EMAIL_TEMPLATES = [
   {
     id: "semesterstart-ledere",
@@ -87,6 +88,14 @@ var EMAIL_TEMPLATES = [
       "Gå inn på Min side. Der ser du forespørsler som venter på svar fra deg, og ledige oppgaver i gruppene du er med i. Ta de dagene som passer for deg.",
       "Du logger inn med e-postadressen denne e-posten kom til."
     ].join("\n\n")
+  },
+  {
+    id: "nyhetsbrev",
+    label: "Nyhetsbrev",
+    audience: { kind: "members" },
+    link: "ingen",
+    subject: "Nyhetsbrev",
+    text: ["## Kjære alle sammen!", "Skriv nyhetsbrevet her.", "## Hva skjer", "- Første punkt\n- Andre punkt"].join("\n\n")
   }
 ];
 function emailDraftError(draft) {
@@ -97,7 +106,7 @@ function emailDraftError(draft) {
   if (subject.length > EMAIL_SUBJECT_MAX) return `Emnet kan ikke være lengre enn ${EMAIL_SUBJECT_MAX} tegn.`;
   if (text === "") return "E-posten må ha en tekst.";
   if (text.length > EMAIL_TEXT_MAX) return `Teksten kan ikke være lengre enn ${EMAIL_TEXT_MAX} tegn.`;
-  if (draft.link !== "leder" && draft.link !== "minside") return "Velg hvor knappen i e-posten skal føre.";
+  if (typeof draft.link !== "string" || !Object.keys(EMAIL_LINKS).includes(draft.link)) return "Velg hvor knappen i e-posten skal føre.";
   return null;
 }
 function toEmailDraft(value) {
@@ -105,30 +114,77 @@ function toEmailDraft(value) {
   return { subject: value.subject.trim(), text: value.text.trim().replace(/\r\n/g, "\n"), link: value.link };
 }
 var escapeHtml = (value) => value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
-var paragraphsOf = (text) => text.split(/\n{2,}/).map((paragraph) => paragraph.trim()).filter(Boolean);
-function renderEmail({ draft, churchName, siteUrl, firstName }) {
+var HEADING = /^##\s+(.*)$/;
+var POINT = /^[-*]\s+(.*)$/;
+function emailBlocksOf(text) {
+  const blocks = [];
+  let open = null;
+  for (const raw of text.replace(/\r\n/g, "\n").split("\n")) {
+    const line = raw.trim();
+    const heading = HEADING.exec(line);
+    const point = POINT.exec(line);
+    if (line === "") open = null;
+    else if (heading) {
+      blocks.push({ kind: "heading", text: heading[1].trim() });
+      open = null;
+    } else if (point) {
+      if (open?.kind !== "list") blocks.push(open = { kind: "list", items: [] });
+      open.items.push(point[1].trim());
+    } else {
+      if (open?.kind !== "paragraph") blocks.push(open = { kind: "paragraph", lines: [] });
+      open.lines.push(line);
+    }
+  }
+  return blocks;
+}
+var LINK = /\[([^\]\n]+)\]\(((?:https?:\/\/|mailto:)[^\s)]+)\)/g;
+var BOLD = /\*\*([^*\n]+?)\*\*/g;
+var LINK_STYLE = "color:#047857;text-decoration:underline;";
+function inlineHtml(line) {
+  return escapeHtml(line).replace(LINK, (_, text, url) => `<a href="${url}" style="${LINK_STYLE}">${text}</a>`).replace(BOLD, "<strong>$1</strong>");
+}
+var inlineText = (line) => line.replace(LINK, (_, text, url) => `${text} (${url.replace(/^mailto:/, "")})`).replace(BOLD, "$1");
+var blockHtml = (block) => {
+  if (block.kind === "heading") return `<h2 style="margin:22px 0 8px 0;font-size:20px;line-height:26px;color:#0f172a;">${inlineHtml(block.text)}</h2>`;
+  if (block.kind === "list") return `<ul style="margin:12px 0;padding-left:22px;">${block.items.map((item) => `<li style="margin:4px 0;">${inlineHtml(item)}</li>`).join("")}</ul>`;
+  return `<p style="margin:12px 0;">${block.lines.map(inlineHtml).join("<br>")}</p>`;
+};
+var blockText = (block) => {
+  if (block.kind === "heading") return inlineText(block.text).toLocaleUpperCase("nb");
+  if (block.kind === "list") return block.items.map((item) => `- ${inlineText(item)}`).join("\n");
+  return block.lines.map(inlineText).join("\n");
+};
+function renderEmail({ draft, churchName, siteUrl, firstName, newsletter }) {
   const link = EMAIL_LINKS[draft.link];
-  const url = siteUrl.replace(/\/+$/, "") + link.path;
-  const greeting = firstName ? `Hei ${firstName}!` : "Hei!";
-  const paragraphs = paragraphsOf(draft.text);
-  const footer = `Du får denne e-posten fordi du står i en gruppe i ${churchName}. Du kan svare på den hvis du lurer på noe.`;
-  const text = [greeting, ...paragraphs, `${link.button}: ${url}`, `Hilsen ${churchName}`, footer].join("\n\n");
+  const url = link.path ? siteUrl.replace(/\/+$/, "") + link.path : null;
+  const greeting = newsletter ? null : firstName ? `Hei ${firstName}!` : "Hei!";
+  const closing = newsletter ? null : `Hilsen ${churchName}`;
+  const blocks = emailBlocksOf(draft.text);
+  const footer = newsletter ? `Du får dette nyhetsbrevet fra ${churchName}.` : `Du får denne e-posten fordi du står i en gruppe i ${churchName}. Du kan svare på den hvis du lurer på noe.`;
+  const text = [
+    greeting,
+    ...blocks.map(blockText),
+    url ? `${link.button}: ${url}` : null,
+    closing,
+    newsletter ? `${footer} Meld deg av: ${newsletter.unsubscribeUrl}` : footer
+  ].filter((part) => part !== null).join("\n\n");
+  const header = newsletter?.bannerUrl ? `<tr><td style="padding:0;"><img src="${escapeHtml(newsletter.bannerUrl)}" alt="${escapeHtml(churchName)}" width="600" style="display:block;width:100%;max-width:600px;height:auto;border:0;border-radius:16px 16px 0 0;"></td></tr>` : `<tr><td style="padding:24px 28px 8px 28px;font-size:13px;font-weight:bold;color:#047857;">${escapeHtml(churchName)}</td></tr>`;
   const html = `<!doctype html>
 <html lang="nb">
 <body style="margin:0;padding:0;background:#f1f5f9;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:24px 12px;">
 <tr><td align="center">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:16px;border:1px solid #e2e8f0;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
-<tr><td style="padding:24px 28px 8px 28px;font-size:13px;font-weight:bold;color:#047857;">${escapeHtml(churchName)}</td></tr>
-<tr><td style="padding:0 28px 8px 28px;font-size:16px;line-height:24px;">
-<p style="margin:12px 0;">${escapeHtml(greeting)}</p>
-${paragraphs.map((paragraph) => `<p style="margin:12px 0;">${escapeHtml(paragraph).replace(/\n/g, "<br>")}</p>`).join("\n")}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:${newsletter ? 600 : 520}px;background:#ffffff;border-radius:16px;border:1px solid #e2e8f0;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
+${header}
+<tr><td style="padding:${newsletter ? "12px" : "0"} 28px 8px 28px;font-size:16px;line-height:24px;">
+${greeting ? `<p style="margin:12px 0;">${escapeHtml(greeting)}</p>
+` : ""}${blocks.map(blockHtml).join("\n")}
 </td></tr>
-<tr><td style="padding:8px 28px 24px 28px;">
+${url ? `<tr><td style="padding:8px 28px 24px 28px;">
 <a href="${escapeHtml(url)}" style="display:inline-block;background:#047857;color:#ffffff;text-decoration:none;font-size:15px;font-weight:bold;padding:12px 22px;border-radius:10px;">${escapeHtml(link.button)}</a>
 </td></tr>
-<tr><td style="padding:0 28px 24px 28px;font-size:16px;line-height:24px;">Hilsen ${escapeHtml(churchName)}</td></tr>
-<tr><td style="padding:16px 28px 22px 28px;border-top:1px solid #e2e8f0;font-size:12px;line-height:18px;color:#64748b;">${escapeHtml(footer)}</td></tr>
+` : ""}${closing ? `<tr><td style="padding:0 28px 24px 28px;font-size:16px;line-height:24px;">${escapeHtml(closing)}</td></tr>
+` : ""}<tr><td style="padding:16px 28px 22px 28px;border-top:1px solid #e2e8f0;font-size:12px;line-height:18px;color:#64748b;">${escapeHtml(footer)}${newsletter ? ` <a href="${escapeHtml(newsletter.unsubscribeUrl)}" style="color:#64748b;text-decoration:underline;">Meld deg av</a>` : ""}</td></tr>
 </table>
 </td></tr>
 </table>
@@ -147,16 +203,19 @@ function usableEmail(value) {
   const address = value.trim().toLowerCase();
   return address.length <= 254 && ADDRESS.test(address) ? address : null;
 }
+var isNewsletter = (audience) => audience.kind === "members" || audience.kind === "everyone";
 var leadersOf = (group) => [...group.leaderIds ?? [], ...group.deputyLeaderIds ?? []];
 var everyoneIn = (group) => [...group.memberIds ?? [], ...leadersOf(group)];
-function audiencePersonIds(audience, groups) {
+function audiencePersonIds(audience, groups, persons) {
+  if (audience.kind === "members") return persons.filter((person) => person.congregationMember === true).map((person) => person.id);
+  if (audience.kind === "everyone") return persons.map((person) => person.id);
   const serviceGroups = groups.filter(isServiceGroup);
   const ids = audience.kind === "leaders" ? serviceGroups.flatMap(leadersOf) : audience.kind === "serviceGroups" ? serviceGroups.flatMap(everyoneIn) : groups.filter((group) => group.id === audience.groupId).flatMap(everyoneIn);
   return [...new Set(ids)];
 }
-function emailRecipients(audience, persons, groups, onlyPersonIds) {
+function emailRecipients(audience, persons, groups, onlyPersonIds, optedOutPersonIds2 = /* @__PURE__ */ new Set()) {
   const only = onlyPersonIds ? new Set(onlyPersonIds) : null;
-  const wanted = new Set(audiencePersonIds(audience, groups).filter((id) => !only || only.has(id)));
+  const wanted = new Set(audiencePersonIds(audience, groups, persons).filter((id) => !only || only.has(id)));
   const byAddress = /* @__PURE__ */ new Map();
   const withoutEmail = [];
   for (const person of persons) {
@@ -165,12 +224,21 @@ function emailRecipients(audience, persons, groups, onlyPersonIds) {
     if (!address) withoutEmail.push(person);
     else byAddress.set(address, [...byAddress.get(address) ?? [], person]);
   }
+  const optedOut = [];
+  if (isNewsletter(audience)) {
+    const unsubscribed = new Set(persons.filter((person) => optedOutPersonIds2.has(person.id)).map((person) => usableEmail(person.email)));
+    for (const [address, people] of byAddress) {
+      if (!unsubscribed.has(address)) continue;
+      optedOut.push(...people);
+      byAddress.delete(address);
+    }
+  }
   const recipients = [...byAddress.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([email, people]) => ({
     email,
     personIds: people.map((person) => person.id),
     firstName: people.length === 1 ? firstNameOf(people[0].name) : null
   }));
-  return { recipients, withoutEmail };
+  return { recipients, withoutEmail, optedOut };
 }
 function firstNameOf(name) {
   const first2 = (name ?? "").trim().split(/\s+/)[0];
@@ -179,10 +247,36 @@ function firstNameOf(name) {
 function toEmailAudience(value) {
   if (!value || typeof value !== "object") return null;
   const { kind, groupId } = value;
-  if (kind === "leaders" || kind === "serviceGroups") return { kind };
+  if (kind === "leaders" || kind === "serviceGroups" || kind === "members" || kind === "everyone") return { kind };
   if (kind === "group" && typeof groupId === "string" && groupId.trim() !== "") return { kind, groupId };
   return null;
 }
+
+// src/utils/newsletter.ts
+var UNSUBSCRIBE_PATH = "/avmelding";
+var TEST_UNSUBSCRIBE_TOKEN = "prove";
+var NEWSLETTER_TOKEN = /^[A-Za-z0-9_-]{32}$/;
+var isNewsletterToken = (value) => typeof value === "string" && NEWSLETTER_TOKEN.test(value);
+var KEY_LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+function newNewsletterToken(random = (bytes) => globalThis.crypto.getRandomValues(bytes)) {
+  return Array.from(random(new Uint8Array(32)), (byte) => KEY_LETTERS[byte % 64]).join("");
+}
+var unsubscribeUrlOf = (siteUrl, token) => `${siteUrl.replace(/\/+$/, "")}${UNSUBSCRIBE_PATH}/${encodeURIComponent(token)}`;
+function optedOutPersonIds(persons, unsubscribedTokens) {
+  const tokens = new Set(unsubscribedTokens);
+  return new Set(persons.filter((person) => person.newsletterToken !== void 0 && tokens.has(person.newsletterToken)).map((person) => person.id));
+}
+var NEWSLETTER_BANNER_PATH = "/api/nyhetsbrevbilde";
+var NEWSLETTER_BANNER_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+function newsletterBannerOf(imageUrl) {
+  if (typeof imageUrl !== "string") return null;
+  const value = imageUrl.trim();
+  const stored = /^data:([a-z/+.-]+);base64,([A-Za-z0-9+/=]+)$/.exec(value);
+  if (stored) return NEWSLETTER_BANNER_TYPES.includes(stored[1]) ? { kind: "stored", contentType: stored[1], base64: stored[2] } : null;
+  if (/^https:\/\/[^\s"'<>]+$/.test(value) || /^\/(?!\/)[^\s"'<>]*$/.test(value)) return { kind: "address", url: value };
+  return null;
+}
+var newsletterBannerUrlOf = (siteUrl, version) => `${siteUrl.replace(/\/+$/, "")}${NEWSLETTER_BANNER_PATH}?v=${encodeURIComponent(version)}`;
 
 // server/firestoreRest.ts
 var FirestoreRestError = class extends Error {
@@ -230,6 +324,21 @@ async function readAll(database, collectionId, ask, headers = {}) {
   if (failed?.error) throw new FirestoreRestError(failed.error.message || `Databasen svarte med en feil for ${collectionId}`, failed.error.code ?? 502);
   return rows.flatMap((row) => row.document ? [decodeDocument(row.document)] : []);
 }
+var documentNameOf = ({ projectId, databaseId }, path) => `projects/${projectId}/databases/${databaseId || "(default)"}/documents/${path}`;
+async function setTextFields(database, changes, ask, headers = {}) {
+  if (changes.length === 0) return;
+  const writes = changes.map(({ path, fields }) => ({
+    update: { name: documentNameOf(database, path), fields: Object.fromEntries(Object.entries(fields).map(([key, value]) => [key, { stringValue: value }])) },
+    updateMask: { fieldPaths: Object.keys(fields) },
+    currentDocument: { exists: true }
+  }));
+  const response = await ask(`${documentsOf(database)}:commit`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...headers },
+    body: JSON.stringify({ writes })
+  });
+  if (!response.ok) throw new FirestoreRestError(`Databasen svarte ${response.status} på skrivingen`, response.status);
+}
 async function readDocument(database, path, ask, headers) {
   const response = await ask(`${documentsOf(database)}/${path}`, headers ? { headers } : void 0);
   if (!response.ok) return null;
@@ -241,6 +350,9 @@ var PERSONS = "persons";
 var GROUPS = "groups";
 var SETTINGS_DOCUMENT = "cms_settings/global";
 var EMAIL_DOCUMENT = "cms_settings/email";
+var NEWSLETTER_BANNER_DOCUMENT = "cms_settings/newsletter-banner";
+var NEWSLETTER_BANNER_RECORD = "newsletterBanner";
+var NEWSLETTER_OPT_OUTS = "newsletterOptOuts";
 var EMAIL_SETTINGS = {
   /** The key to the e-mail service. Only where the installation is hosted, never in the browser. */
   apiKey: "RESEND_API_KEY",
@@ -258,7 +370,8 @@ var MESSAGES = {
   "bad-request": [400, "E-posten kan ikke sendes slik den er."],
   "no-reply-to": [400, "Legg inn adressen svar skal gå til, før du sender."],
   "no-recipients": [400, "Ingen av mottakerne har en e-postadresse."],
-  database: [502, "Registeret kunne ikke leses akkurat nå. Prøv igjen."]
+  database: [502, "Registeret kunne ikke leses akkurat nå. Prøv igjen."],
+  "rules-outdated": [409, "Databasen har ikke fått reglene for nyhetsbrev ennå. Lim inn de nye reglene i Firebase, og prøv igjen."]
 };
 var refuse = (reason, message) => ({
   status: MESSAGES[reason][0],
@@ -292,6 +405,7 @@ async function sendEmail({ env, siteUrl, idToken, body, ask, wait = pause }) {
   const mode = request.mode === "test" ? "test" : request.mode === "send" ? "send" : null;
   const draft = toEmailDraft(request);
   const audience = toEmailAudience(request.audience);
+  const newsletter = audience !== null && isNewsletter(audience);
   const only = Array.isArray(request.onlyPersonIds) ? request.onlyPersonIds.filter((id) => typeof id === "string") : void 0;
   if (!mode || !draft || mode === "send" && !audience) return refuse("bad-request");
   const database = { projectId: installation.projectId, databaseId: installation.firestoreDatabaseId };
@@ -317,16 +431,54 @@ async function sendEmail({ env, siteUrl, idToken, body, ask, wait = pause }) {
   const churchName = typeof settings?.churchName === "string" && settings.churchName.trim() || "Menigheten";
   const replyTo = usableEmail(record?.replyTo);
   if (!replyTo) return refuse("no-reply-to");
+  let unsubscribed = /* @__PURE__ */ new Set();
+  let bannerUrl = null;
+  if (newsletter) {
+    try {
+      const optOuts = mode === "send" ? await readAll(database, NEWSLETTER_OPT_OUTS, ask, as) : [];
+      unsubscribed = optedOutPersonIds(persons, optOuts.map((optOut) => optOut.id));
+    } catch (error) {
+      const status = error instanceof FirestoreRestError ? error.status : 0;
+      if (status === 403 || status === 7) return refuse("rules-outdated");
+      console.error("Nyhetsbrevet fikk ikke lest hvem som har meldt seg av:", error instanceof Error ? error.message : error);
+      return refuse("database");
+    }
+    const banner = await readDocument(database, NEWSLETTER_BANNER_DOCUMENT, ask, as).catch(() => null);
+    if (banner?.recordType === NEWSLETTER_BANNER_RECORD && newsletterBannerOf(banner.imageUrl)) {
+      bannerUrl = newsletterBannerUrlOf(siteUrl, typeof banner.updatedAt === "string" ? banner.updatedAt : "1");
+    }
+  }
   let recipients;
   let withoutEmail = 0;
   if (mode === "test") {
     const me = persons.find((person) => usableEmail(person.email) === caller);
     recipients = [{ email: caller, personIds: me ? [me.id] : [], firstName: firstNameOf(me?.name) }];
   } else {
-    const found = emailRecipients(audience, persons, groups, only);
+    const found = emailRecipients(audience, persons, groups, only, unsubscribed);
     recipients = found.recipients;
     withoutEmail = found.withoutEmail.length;
     if (recipients.length === 0) return refuse("no-recipients");
+  }
+  const tokens = /* @__PURE__ */ new Map();
+  if (newsletter) {
+    const byId = new Map(persons.map((person) => [person.id, person]));
+    const missing = [];
+    for (const recipient of recipients) {
+      if (mode === "test") {
+        tokens.set(recipient.email, TEST_UNSUBSCRIBE_TOKEN);
+        continue;
+      }
+      const owner = recipient.personIds.map((id) => byId.get(id)).find((person) => isNewsletterToken(person?.newsletterToken));
+      const token = owner?.newsletterToken ?? newNewsletterToken();
+      if (!owner) missing.push({ path: `${PERSONS}/${recipient.personIds[0]}`, fields: { newsletterToken: token } });
+      tokens.set(recipient.email, token);
+    }
+    try {
+      for (let start = 0; start < missing.length; start += 400) await setTextFields(database, missing.slice(start, start + 400), ask, as);
+    } catch (error) {
+      console.error("Nyhetsbrevet fikk ikke lagret lenkene til avmelding:", error instanceof Error ? error.message : error);
+      return refuse("database");
+    }
   }
   const from = senderOf(churchName, settingOf(env, EMAIL_SETTINGS.from) ?? DEFAULT_FROM_ADDRESS);
   let sent = 0;
@@ -335,8 +487,17 @@ async function sendEmail({ env, siteUrl, idToken, body, ask, wait = pause }) {
   for (let start = 0; start < recipients.length; start += BATCH_SIZE) {
     if (start > 0) await wait(600);
     const batch = recipients.slice(start, start + BATCH_SIZE).map((recipient) => {
-      const rendered = renderEmail({ draft, churchName, siteUrl, firstName: recipient.firstName });
-      return { from, to: [recipient.email], reply_to: replyTo, subject: rendered.subject, html: rendered.html, text: rendered.text };
+      const unsubscribeUrl = newsletter ? unsubscribeUrlOf(siteUrl, tokens.get(recipient.email)) : null;
+      const rendered = renderEmail({ draft, churchName, siteUrl, firstName: recipient.firstName, ...unsubscribeUrl ? { newsletter: { unsubscribeUrl, bannerUrl } } : {} });
+      return {
+        from,
+        to: [recipient.email],
+        reply_to: replyTo,
+        subject: rendered.subject,
+        html: rendered.html,
+        text: rendered.text,
+        ...unsubscribeUrl ? { headers: { "List-Unsubscribe": `<${unsubscribeUrl}>` } } : {}
+      };
     });
     try {
       const response = await ask(SEND_URL, {

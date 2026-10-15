@@ -39,6 +39,14 @@ export const YEAR_WHEEL_DOC_ID = "year-wheel";
 export const EMAIL_RECORD = "email";
 export const EMAIL_DOC_ID = "email";
 
+/**
+ * The banner at the top of the newsletter (see utils/newsletter.ts): its own document, readable by
+ * anyone, since the inbox of everyone the newsletter goes to fetches it. Not in the settings
+ * themselves, which every visit to the website reads.
+ */
+export const NEWSLETTER_BANNER_RECORD = "newsletterBanner";
+export const NEWSLETTER_BANNER_DOC_ID = "newsletter-banner";
+
 export type OperatingMode = "demo" | "production";
 
 export const OPERATING_MODE_RECORD = "operatingMode";

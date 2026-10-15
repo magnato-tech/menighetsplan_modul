@@ -13,6 +13,8 @@ export type EmailRefusal =
   | "no-reply-to"
   | "no-recipients"
   | "database"
+  /** The database's rules are older than the newsletter, and refuse what it reads. */
+  | "rules-outdated"
   /** The browser got no answer from where the e-mail is sent. */
   | "unreachable";
 

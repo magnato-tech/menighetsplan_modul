@@ -204,6 +204,18 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+    // Who has unsubscribed from the newsletter: a document named by the key in the link they
+    // pressed, holding only when. Anyone with the link may add it, and see that it is there; only
+    // an administrator may list them (and so tell whose key it is) or take one away again.
+    match /newsletterOptOuts/{key} {
+      allow get: if true;
+      allow list, delete: if isAdmin();
+      allow create: if key.matches('^[A-Za-z0-9_-]{32}$')
+        && request.resource.data.keys().hasOnly(['at'])
+        && request.resource.data.at is string
+        && request.resource.data.at.size() <= 40;
+    }
+
     match /groups/{groupId} {
       allow read: if isAdmin() || (isMember() && inGroupData(resource.data));
       allow create, delete: if isAdmin();
@@ -365,8 +377,9 @@ service cloud.firestore {
           && data.keys().hasOnly(['recordType', 'date', 'views', 'hours', 'visits', 'entries', 'deepVisits', 'seconds', 'missing', 'actions', 'sermons']);
       }
 
-      // The website reads the settings, which add-ons are on and the operating mode
-      allow get: if docId in ['global', 'addons', 'operating-mode'] || isMember();
+      // The website reads the settings, which add-ons are on and the operating mode, and the
+      // inbox of everyone a newsletter goes to fetches its banner (server/newsletterBanner.ts)
+      allow get: if docId in ['global', 'addons', 'operating-mode', 'newsletter-banner'] || isMember();
       allow list: if isMember();
 
       allow create: if isAdmin()

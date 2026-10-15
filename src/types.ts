@@ -38,6 +38,8 @@ export interface Person {
   analyticsHiddenModules?: string[];
   /** Secret token for the personal iCal feed at /api/min/kalender.ics (not the person's id). */
   calendarFeedToken?: string;
+  /** The key in the person's link to unsubscribe from the newsletter (see utils/newsletter.ts). Written the first time a newsletter is sent to them. */
+  newsletterToken?: string;
   updatedBy?: string;
   updatedAt?: string;
 }
