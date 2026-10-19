@@ -1,0 +1,24 @@
+console: Failed to load resource: the server responded with a status of 403 ()
+status 200
+shot 01-inngang https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fmenighetsplan-modul-n9b17gfof-magnato-techs-projects.vercel.app%252Fadmin%26nonce%3D040247535e42136f4b8cbec30df307166da25b0481bebf54ac77c13adb3f7412
+shot 02-oversikt https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fmenighetsplan-modul-n9b17gfof-magnato-techs-projects.vercel.app%252Fadmin%26nonce%3D040247535e42136f4b8cbec30df307166da25b0481bebf54ac77c13adb3f7412
+FAIL bemanning: TimeoutError: locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByRole('link', { name: /Neste/ }).first()
+
+FAIL personmeny: TimeoutError: locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for locator('[aria-haspopup=menu]').first()
+
+FAIL tildel: TimeoutError: locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByRole('button', { name: 'Tildel' }).first()
+
+FAIL program: TimeoutError: locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByRole('tab', { name: /Program/ })
+
+console: Failed to load resource: the server responded with a status of 403 ()
+shot 07-arrangementer https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fmenighetsplan-modul-n9b17gfof-magnato-techs-projects.vercel.app%252Fadmin%253Ftab%253Dplanlegger-samlinger%26nonce%3D040247535e42136f4b8cbec30df307166da25b0481bebf54ac77c13adb3f7412
+console: Failed to load resource: the server responded with a status of 403 ()
+shot 08-oppfolging https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fmenighetsplan-modul-n9b17gfof-magnato-techs-projects.vercel.app%252Fadmin%253Ftab%253Dplanlegger-oppgaver%26nonce%3D040247535e42136f4b8cbec30df307166da25b0481bebf54ac77c13adb3f7412
