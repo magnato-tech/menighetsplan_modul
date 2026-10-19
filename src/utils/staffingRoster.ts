@@ -190,13 +190,18 @@ export interface RosterSummary {
   total: number;
 }
 
-export function summarizeStaffingRoster(rows: RosterRow[]): RosterSummary {
-  const count = (state: RosterState) => rows.filter((row) => row.state === state).length;
+/** How many tasks are in each state. Cancelled tasks are not counted. */
+export function summarizeStates(states: RosterState[]): RosterSummary {
+  const count = (state: RosterState) => states.filter((s) => s === state).length;
   return {
     forfall: count("forfall"),
     ubesatt: count("ubesatt"),
     venter: count("venter"),
     dekket: count("dekket"),
-    total: rows.filter((row) => row.state !== "avlyst").length,
+    total: states.filter((s) => s !== "avlyst").length,
   };
+}
+
+export function summarizeStaffingRoster(rows: RosterRow[]): RosterSummary {
+  return summarizeStates(rows.map((row) => row.state));
 }

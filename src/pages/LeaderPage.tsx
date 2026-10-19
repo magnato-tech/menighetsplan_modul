@@ -163,7 +163,7 @@ export const LeaderPage: React.FC = () => {
                 <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse shrink-0" />
                 <div>
                   <span className="text-xs font-bold text-red-900 block leading-snug">
-                    {urgentTasksCount} {urgentTasksCount === 1 ? "oppgave trenger vikar / oppfølging" : "oppgaver trenger vikar / oppfølging"}
+                    {urgentTasksCount} {urgentTasksCount === 1 ? "oppgave" : "oppgaver"} med forfall må fylles
                   </span>
                   <span className="text-[11px] text-red-700 font-medium">
                     I {urgentGatherings.length} {urgentGatherings.length === 1 ? "aktivitet" : "aktiviteter"} dette semesteret

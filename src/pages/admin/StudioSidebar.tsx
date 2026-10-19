@@ -36,7 +36,7 @@ import { DEMO } from "../../demo";
 import { SlidersHorizontal } from "lucide-react";
 import { useDemoOwner } from "../../hooks/useDemoOwner";
 import { STUDIO_ADDONS, addonMenuSections } from "./addons";
-import { StudioData, StudioTab, countUrgentTasks } from "./studio";
+import { StudioData, StudioTab, NEAR_WEEKS, isUrgentTask, withinWeeks } from "./studio";
 import { prefetchStudioTab } from "./studioTabLoaders";
 import { STUDIO_AREAS, STUDIO_AREA_NAMES, areaOfTab, type StudioArea } from "./studioAreas";
 import { usePendingProposalCounts } from "../../hooks/useMemberProposals";
@@ -65,7 +65,8 @@ interface StudioSidebarProps {
 export const StudioSidebar: React.FC<StudioSidebarProps> = ({ studio, activeTab, onTabChange, area, onAreaChange, sidebarOpen, onToggleSidebar }) => {
   const { currentUser, adminPersons, adminGroups, adminGatherings, adminTasks } = studio;
   const { pages, media, news, sermons, staff, settings, addons } = useCms();
-  const urgentTasksCount = countUrgentTasks(adminTasks);
+  // What must be ordered in the nearest weeks; further out, an empty slot is planning, not an emergency
+  const urgentTasksCount = withinWeeks(adminTasks, NEAR_WEEKS).filter(isUrgentTask).length;
   // The planner beyond the calendar is only in the menu at the level that has it (see levelTabs.ts)
   const level = useLevel();
   // The demo is without the database tools and the add-on modules (see demoTabs.ts)
@@ -402,13 +403,9 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({ studio, activeTab,
               </div>
               {urgentTasksCount > 0 ? (
                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-900/60 border border-red-700 text-red-300 font-bold">
-                  {urgentTasksCount} ubesatt
+                  {urgentTasksCount} må ordnes
                 </span>
-              ) : (
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--studio-surface)] text-[var(--studio-muted)]">
-                  {adminTasks.length}
-                </span>
-              )}
+              ) : null}
             </button>
             )}
 

@@ -21,6 +21,8 @@ import {
   LayoutGrid,
   Table2,
   Trash2,
+  MoreHorizontal,
+  ChevronRight,
 } from "lucide-react";
 import { StudioData, ShowFeedback } from "../studio";
 import { visibilityOf } from "../../../utils/visibility";
@@ -31,7 +33,7 @@ import { movedRestOfSeries } from "../../../utils/series";
 import { DeleteGatheringDialog, type StaffedTask } from "../DeleteGatheringDialog";
 import { MoveSeriesDialog } from "../MoveSeriesDialog";
 import { GatheringsTable } from "./gatherings/GatheringsTable";
-import { nextGatheringSort, sortGatherings, type GatheringSortDirection, type GatheringSortKey } from "../../../utils/gatheringList";
+import { gatheringsInPeriod, nextGatheringSort, type GatheringPeriod, type GatheringSortDirection, type GatheringSortKey } from "../../../utils/gatheringList";
 import { defaultGroupId, newGatheringForm, type GatheringFormValues } from "../../../utils/gatheringForm";
 
 interface GatheringsTabProps {
@@ -131,7 +133,14 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
   const [view, setView] = useState<"cards" | "table">("table");
   const [sortKey, setSortKey] = useState<GatheringSortKey>("date");
   const [sortDirection, setSortDirection] = useState<GatheringSortDirection>("asc");
-  const sortedGatherings = useMemo(() => sortGatherings(adminGatherings, sortKey, sortDirection), [adminGatherings, sortKey, sortDirection]);
+  // Coming events first; the held ones are a press away
+  const [period, setPeriod] = useState<GatheringPeriod>("kommende");
+  const sortedGatherings = useMemo(
+    () => gatheringsInPeriod(adminGatherings, period, Date.now(), sortKey, sortDirection),
+    [adminGatherings, period, sortKey, sortDirection]
+  );
+  // On a phone the secondary actions of a card are behind «…»
+  const [openActionsId, setOpenActionsId] = useState<string | null>(null);
   const handleSort = (key: GatheringSortKey) => {
     const next = nextGatheringSort(sortKey, sortDirection, key);
     setSortKey(next.key);
@@ -323,10 +332,25 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
         </form>
 
         <div className="flex items-center justify-between gap-3">
-          <p className="text-xs text-[var(--studio-muted)]">
+          <div className="inline-flex rounded-xl border border-[var(--studio-border)] bg-[var(--studio-surface)] p-0.5" role="group" aria-label="Periode">
+            {(["kommende", "tidligere"] as const).map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setPeriod(p)}
+                aria-pressed={period === p}
+                className={`px-3 py-2 rounded-lg text-xs font-bold cursor-pointer ${
+                  period === p ? "bg-[var(--studio-hover)] text-[var(--studio-text)]" : "text-[var(--studio-muted)] hover:text-[var(--studio-text)]"
+                }`}
+              >
+                {p === "kommende" ? "Kommende" : "Tidligere"}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-[var(--studio-muted)] ml-auto">
             {sortedGatherings.length} {sortedGatherings.length === 1 ? "arrangement" : "arrangementer"}
           </p>
-          <div className="inline-flex rounded-xl border border-[var(--studio-border)] bg-[var(--studio-surface)] p-0.5">
+          <div className="hidden md:inline-flex rounded-xl border border-[var(--studio-border)] bg-[var(--studio-surface)] p-0.5">
             <button
               type="button"
               onClick={() => setView("cards")}
@@ -353,6 +377,7 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
         </div>
 
         {view === "table" && (
+          <div className="hidden md:block">
           <GatheringsTable
             rows={sortedGatherings}
             sortKey={sortKey}
@@ -362,11 +387,11 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
             onNext={startNextAfter}
             onDelete={handleDeleteGathering}
           />
+          </div>
         )}
 
-        {/* Gatherings List */}
-        {view === "cards" && (
-        <div className="space-y-3">
+        {/* Gatherings List. A phone always gets the cards: a table does not fit it */}
+        <div className={`space-y-3 ${view === "cards" ? "" : "md:hidden"}`}>
           {sortedGatherings.map((item) => {
             const g = item.gathering;
             const staffing = item.staffing;
@@ -374,11 +399,13 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
             return (
               <div
                 key={g.id}
-                className="p-5 rounded-2xl bg-[var(--studio-surface)] border border-[var(--studio-border)] flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                className="p-4 sm:p-5 rounded-2xl bg-[var(--studio-surface)] border border-[var(--studio-border)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4"
               >
-                <div className="space-y-1">
+                {/* The whole card opens the event; on a phone that is the one thing it is for */}
+                <div className="flex items-start gap-2">
+                <Link to={`/admin/samling/${g.id}`} className="space-y-1 min-w-0 flex-1 group">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="font-bold text-[var(--studio-text)] text-base">{g.title}</h3>
+                    <h3 className="font-bold text-[var(--studio-text)] text-base group-hover:underline">{g.title}</h3>
                     {isWorshipService(g) && (
                       <span className="text-[10px] font-bold text-[var(--studio-accent-text)] bg-[var(--studio-accent-bg)] px-2 py-0.5 rounded">
                         Gudstjeneste
@@ -420,9 +447,19 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
                     {formatNorwegianDateTime(g.startsAt)} · {locationOf(g)}
                     {g.theme && ` · Tema: ${g.theme}`}
                   </p>
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setOpenActionsId(openActionsId === g.id ? null : g.id)}
+                  aria-expanded={openActionsId === g.id}
+                  aria-label={`Flere valg for ${g.title}`}
+                  className="sm:hidden p-2 -mr-2 rounded-lg text-[var(--studio-muted)] hover:bg-[var(--studio-hover)] cursor-pointer"
+                >
+                  <MoreHorizontal className="w-5 h-5" aria-hidden />
+                </button>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
+                <div className={`flex-wrap items-center gap-2 ${openActionsId === g.id ? "flex" : "hidden sm:flex"}`}>
                   {g.seriesId && (
                     <button
                       type="button"
@@ -465,14 +502,14 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
                     className="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs"
                   >
                     <ListTodo className="w-3.5 h-3.5" />
-                    <span>Oppgaver & Kjøreplan</span>
+                    <span>Program og bemanning</span>
+                    <ChevronRight className="w-3.5 h-3.5" aria-hidden />
                   </Link>
                 </div>
               </div>
             );
           })}
         </div>
-        )}
       </div>
 
       {fullForm && (

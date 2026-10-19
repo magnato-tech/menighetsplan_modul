@@ -5,7 +5,7 @@ import { MemoryRouter } from "react-router-dom";
 import type { AdminGatheringItem } from "../src/hooks/adminHooks";
 import { GatheringsTable } from "../src/pages/admin/tabs/gatherings/GatheringsTable";
 import { combineDateAndTimeToIso } from "../src/utils/dates";
-import { nextGatheringSort, sortGatherings } from "../src/utils/gatheringList";
+import { gatheringsInPeriod, nextGatheringSort, sortGatherings } from "../src/utils/gatheringList";
 
 // The admin's list of events: by date until another column is pressed, and as a table.
 
@@ -131,5 +131,28 @@ describe("Arrangementene som tabell", () => {
     fireEvent.click(within(meeting).getByRole("button", { name: /^Slett Menighetsmøte/ }));
     expect(handlers.onNext.mock.calls[0][0].gathering.id).toBe("mote");
     expect(handlers.onDelete.mock.calls[0][0].gathering.id).toBe("mote");
+  });
+});
+
+describe("Kommende og tidligere arrangementer", () => {
+  // Between the service on 25 October and the meeting the day after
+  const now = new Date(combineDateAndTimeToIso("2026-10-25", "18:00")).getTime();
+
+  test("kommende står fra det nærmeste", () => {
+    expect(ids(gatheringsInPeriod(rows, "kommende", now))).toEqual(["mote", "nov-22", "des-20", "bonn"]);
+  });
+
+  test("tidligere står fra det siste som ble holdt", () => {
+    const earlier = [...rows, row("okt-18", "2026-10-18", "Gudstjeneste", "Bedehuset", 0)];
+    expect(ids(gatheringsInPeriod(earlier, "tidligere", now))).toEqual(["okt-25", "okt-18"]);
+  });
+
+  test("et arrangement som pågår, er kommende", () => {
+    const during = new Date(combineDateAndTimeToIso("2026-10-25", "12:00")).getTime();
+    expect(ids(gatheringsInPeriod(rows, "kommende", during))[0]).toBe("okt-25");
+  });
+
+  test("en annen kolonne sorterer innenfor perioden", () => {
+    expect(ids(gatheringsInPeriod(rows, "kommende", now, "staffing", "desc"))).toEqual(["des-20", "nov-22", "mote", "bonn"]);
   });
 });

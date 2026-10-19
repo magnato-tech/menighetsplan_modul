@@ -1,5 +1,5 @@
 import type { Gathering } from "../types";
-import { locationOf } from "./gatherings";
+import { ONGOING_MS, locationOf } from "./gatherings";
 
 // The order of the events in the admin's list. They are shown by date, the earliest first,
 // until the admin picks another column in the table.
@@ -43,4 +43,24 @@ export function nextGatheringSort(
   pressed: GatheringSortKey
 ): { key: GatheringSortKey; direction: GatheringSortDirection } {
   return pressed === currentKey ? { key: pressed, direction: currentDirection === "asc" ? "desc" : "asc" } : { key: pressed, direction: "asc" };
+}
+
+export type GatheringPeriod = "kommende" | "tidligere";
+
+/**
+ * The events of one period: those to come (and one going on now), or those held. Sorted by date,
+ * the coming ones from the soonest and the held ones from the latest, so the list starts where the
+ * admin is most likely to look.
+ */
+export function gatheringsInPeriod<T extends SortableGathering>(
+  rows: readonly T[],
+  period: GatheringPeriod,
+  now: number,
+  key: GatheringSortKey = "date",
+  direction: GatheringSortDirection = "asc"
+): T[] {
+  const coming = (row: T) => timeOf(row) >= now - ONGOING_MS;
+  const chosen = rows.filter((row) => (period === "kommende" ? coming(row) : !coming(row)));
+  const sorted = sortGatherings(chosen, key, direction);
+  return period === "tidligere" && key === "date" ? sorted.reverse() : sorted;
 }
