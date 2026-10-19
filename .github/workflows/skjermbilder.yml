@@ -10,12 +10,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: tools
+      - uses: actions/checkout@v4
+        with:
+          ref: mobil-bemanning
+          path: app
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm init -y >/dev/null && npm i playwright@1 >/dev/null && npx playwright install --with-deps chromium >/dev/null
-      - run: node shoot.mjs "$(cat url.txt)" || true
-      - run: |
+      - name: Demoens innstillinger fra den publiserte demoen
+        run: node tools/demo-env.mjs > app/.env.production.local
+      - name: Bygg grenen som demo
+        working-directory: app
+        run: npm ci && npx vite build
+      - name: Nettleser
+        working-directory: tools
+        run: npm init -y >/dev/null && npm i playwright@1 >/dev/null && npx playwright install --with-deps chromium >/dev/null
+      - name: Skjermbilder
+        run: |
+          (cd app && npx vite preview --port 4173 --strictPort &) 
+          npx wait-on -t 60000 http://localhost:4173 || sleep 10
+          cd tools && node shoot.mjs http://localhost:4173 || true
+      - name: Lagre
+        working-directory: tools
+        run: |
           git config user.name "Claude"
           git config user.email "noreply@anthropic.com"
           git add -A out
