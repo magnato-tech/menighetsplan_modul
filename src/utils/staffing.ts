@@ -5,7 +5,7 @@ import { Task, Assignment, Person } from "../types";
 /** How a person's answer to a task reads in the planner. */
 export const RESPONSE_LABELS: Record<Assignment["response"], string> = {
   pending: "Forespurt",
-  confirmed: "Akseptert",
+  confirmed: "Bekreftet",
   declined: "Avslått",
   withdrawn: "Forfall",
 };

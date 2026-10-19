@@ -1,0 +1,24 @@
+# Typesjekk, tester og bygg for en gren som ikke er main eller stabil, og for en pull request.
+# Det samme som «npm run lint» og «npm test» før en endring regnes som ferdig (CLAUDE.md, kapittel 2).
+name: Sjekk
+
+on:
+  push:
+    branches-ignore:
+      - main
+      - stabil
+  pull_request:
+
+jobs:
+  sjekk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build

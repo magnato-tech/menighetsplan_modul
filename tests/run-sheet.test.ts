@@ -14,7 +14,7 @@ describe("Kjøreplan", () => {
           {
             assignment: { id: `a-${id}`, taskId: id, personId: "p1", response: "confirmed" },
             person: { id: "p1", name: "Kari Nordmann", globalRole: "member" },
-            statusLabel: "Akseptert",
+            statusLabel: "Bekreftet",
             response: "confirmed",
           },
         ]
