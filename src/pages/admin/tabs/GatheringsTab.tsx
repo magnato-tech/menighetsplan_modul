@@ -29,6 +29,7 @@ import { visibilityOf } from "../../../utils/visibility";
 import { DEFAULT_LOCATION, isWorshipService, locationOf } from "../../../utils/gatherings";
 import { NewGatheringDialog } from "../NewGatheringDialog";
 import { useFirebase } from "../../../context/FirebaseDataContext";
+import { useMediaQuery } from "../../../hooks/useMediaQuery";
 import { movedRestOfSeries } from "../../../utils/series";
 import { DeleteGatheringDialog, type StaffedTask } from "../DeleteGatheringDialog";
 import { MoveSeriesDialog } from "../MoveSeriesDialog";
@@ -130,7 +131,10 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
   const { assignments, deleteGatheringWithStaffing, getPersonById } = useFirebase();
 
   // The events as a table or as cards, by date until the admin presses another column
-  const [view, setView] = useState<"cards" | "table">("table");
+  const [chosenView, setView] = useState<"cards" | "table">("table");
+  // A phone always gets the cards: a table does not fit it, and its last column is out of sight
+  const wide = useMediaQuery("(min-width: 768px)");
+  const view = wide ? chosenView : "cards";
   const [sortKey, setSortKey] = useState<GatheringSortKey>("date");
   const [sortDirection, setSortDirection] = useState<GatheringSortDirection>("asc");
   // Coming events first; the held ones are a press away
@@ -350,7 +354,8 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
           <p className="text-xs text-[var(--studio-muted)] ml-auto">
             {sortedGatherings.length} {sortedGatherings.length === 1 ? "arrangement" : "arrangementer"}
           </p>
-          <div className="hidden md:inline-flex rounded-xl border border-[var(--studio-border)] bg-[var(--studio-surface)] p-0.5">
+          {wide && (
+          <div className="inline-flex rounded-xl border border-[var(--studio-border)] bg-[var(--studio-surface)] p-0.5">
             <button
               type="button"
               onClick={() => setView("cards")}
@@ -374,10 +379,10 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
               Tabell
             </button>
           </div>
+          )}
         </div>
 
         {view === "table" && (
-          <div className="hidden md:block">
           <GatheringsTable
             rows={sortedGatherings}
             sortKey={sortKey}
@@ -387,11 +392,11 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
             onNext={startNextAfter}
             onDelete={handleDeleteGathering}
           />
-          </div>
         )}
 
-        {/* Gatherings List. A phone always gets the cards: a table does not fit it */}
-        <div className={`space-y-3 ${view === "cards" ? "" : "md:hidden"}`}>
+        {/* Gatherings List */}
+        {view === "cards" && (
+        <div className="space-y-3">
           {sortedGatherings.map((item) => {
             const g = item.gathering;
             const staffing = item.staffing;
@@ -510,6 +515,7 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
             );
           })}
         </div>
+        )}
       </div>
 
       {fullForm && (
