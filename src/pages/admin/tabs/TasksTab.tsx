@@ -165,7 +165,7 @@ export const TasksTab: React.FC<TasksTabProps> = ({ studio, showFeedback }) => {
                                 Under 48 t
                               </span>
                             )}
-                            {item.neededCount > 1 && (
+                            {item.neededCount > 1 && item.confirmedCount > 0 && (
                               <span className="text-[10px] font-semibold text-[var(--studio-muted)]">
                                 {item.confirmedCount}/{item.neededCount} bekreftet
                               </span>
