@@ -35,7 +35,7 @@ const enterAs = async (page, role) => {
 };
 
 await run("mobil", devices["iPhone 13"], async (page, shot, step) => {
-  await step("inn", async () => { await enterAs(page, "^Administrator"); await shot("01-oversikt"); });
+  await step("inn", async () => { await enterAs(page, "Administrator"); await shot("01-oversikt"); });
   await step("bemanning", async () => {
     await page.getByRole("link", { name: /Neste/ }).first().click();
     await page.waitForTimeout(4000);
@@ -65,7 +65,7 @@ await run("leder", devices["iPhone 13"], async (page, shot, step) => {
 });
 
 await run("pc", { viewport: { width: 1280, height: 900 } }, async (page, shot, step) => {
-  await step("inn", async () => { await enterAs(page, "^Administrator"); await shot("01-oversikt", false); });
+  await step("inn", async () => { await enterAs(page, "Administrator"); await shot("01-oversikt", false); });
   await step("bemanning", async () => {
     const url = fs.readFileSync("out/gathering-url.txt", "utf8");
     await page.goto(url, { waitUntil: "load" });
