@@ -91,12 +91,13 @@ export const StaffingView: React.FC<StaffingViewProps> = ({ detail, rows, canAdm
     );
   }
 
-  const card = (row: RosterRow) => (
+  const card = (row: RosterRow, showTeam = true) => (
     <StaffingRosterRowCard
       key={row.task.id}
       row={row}
       canIntervene={canAdminister || row.isMyGroup}
       canAdminister={canAdminister}
+      showTeam={showTeam}
       openMenuAssignmentId={openMenuId}
       onToggleMenu={setOpenMenuId}
       onStatusChange={handleStatusChange}
@@ -128,19 +129,19 @@ export const StaffingView: React.FC<StaffingViewProps> = ({ detail, rows, canAdm
   return (
     <div className="space-y-4">
       {ordered.attention.length > 0 && (
-        <section aria-labelledby="roster-attention" className="space-y-2">
-          <h2 id="roster-attention" className="px-1 text-xs font-bold uppercase tracking-wider text-red-700 flex items-center gap-1.5">
+        <section aria-labelledby="staffing-attention" className="space-y-2">
+          <h2 id="staffing-attention" className="px-1 text-xs font-bold uppercase tracking-wider text-red-700 flex items-center gap-1.5">
             <AlertTriangle className="w-3.5 h-3.5" aria-hidden />
             Må ordnes ({ordered.attention.length})
           </h2>
-          <div className="space-y-2">{ordered.attention.map(card)}</div>
+          <div className="space-y-2">{ordered.attention.map((row) => card(row))}</div>
         </section>
       )}
 
       {ordered.teams.map((team) => (
         <section key={team.groupId ?? "uten-team"} aria-label={team.name} className="space-y-2">
           <h2 className="px-1 text-xs font-bold uppercase tracking-wider text-slate-500">{team.name}</h2>
-          <div className="space-y-2">{team.rows.map(card)}</div>
+          <div className="space-y-2">{team.rows.map((row) => card(row, false))}</div>
         </section>
       ))}
 

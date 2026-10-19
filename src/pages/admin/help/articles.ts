@@ -227,7 +227,7 @@ const arrangementer: HelpArticle = {
   title: "Arrangementer",
   layout: "wide",
   formal: "Legge inn en samling og åpne kjøreplanen for oppgaver den dagen.",
-  hvor: "Velg Planlegging øverst i menyen, så Arrangementer. Overskrift: Gudstjenester & Møter. Kjøreplan merkes Kjøreplan. Tilbake-lenke: Tilbake til arrangementer.",
+  hvor: "Velg Planlegging øverst i menyen, så Arrangementer. Overskrift: Gudstjenester & Møter. Listen viser Kommende først; Tidligere viser dem som er holdt. Trykk på et arrangement for å åpne det. Tilbake-lenke: Arrangementer.",
   steg: [
     "Under Opprett ny samling: skriv tittel, dato og klokkeslett. Tema og sted er valgfritt. Står stedet tomt, brukes menighetens faste sted.",
     "Huk av Dette er en gudstjeneste hvis det gjelder.",
@@ -236,7 +236,7 @@ const arrangementer: HelpArticle = {
     "Start fra en mal i det store skjemaet fyller ut skjemaet, og arrangementet får malens program og oppgaver. På et arrangement som allerede finnes bruker du Hent fra mal i kjøreplanen. Rediger malen (penn på malen, eller Rediger malen før du oppretter) åpner malen før arrangementet lages. Malene lages under Maler i menyen, eller med Lag mal på et arrangement som alt er satt opp.",
     "Gjenta som serie: velg hvor ofte og siste dato. Dagene vises med hake, og en dag kan tas ut før serien opprettes. Flytt resten av serien står på hvert arrangement i en serie. Arrangementer slettes ett om gangen: står det folk på oppgavene, kommer en advarsel som sier hvem, og ett trykk tar alle av og sletter arrangementet.",
     "For å gjenta et arrangement: åpne neste arrangement, sett ny dato, og bekreft. Oppgavene kopieres uten personer.",
-    "På kjøreplanen: Rediger åpner det samme store skjemaet, der arrangementet også kan avlyses. Med hele programmet i visning kan admin dra i håndtaket på en programpost for å flytte den. Ny oppgave, Skriv ut. Overskrift: Kjøreplan & «Hvem gjør hva».",
+    "I arrangementet: Rediger åpner det samme store skjemaet, der arrangementet også kan avlyses. Under Program kan admin dra i håndtaket på en programpost for å flytte den. Bemanningen gjøres under Bemanning (se den artikkelen). På mobil står Rediger, Ny oppgave, Hent fra mal, Lag mal og Skriv ut bak «…».",
   ],
   knapper:
     "Plassholder tittel: «Tittel, f.eks. Søndagsgudstjeneste & dåp». Plassholder tema: «Valgfritt tema...». Tom gruppe: «Ingen grupper finnes ennå». Knapp: Legg til i planleggeren.",
@@ -244,23 +244,42 @@ const arrangementer: HelpArticle = {
     "«Ny samling opprettet og synkronisert til kalenderen!» Ved kopi: «Nytt arrangement opprettet for [dato] med [antall] oppgaver klonet!» «Tittel og dato må fylles ut». «Opprett en gruppe først. Arrangementene må ha en gruppe å ligge i.»",
 };
 
+const bemanning: HelpArticle = {
+  id: "bemanning",
+  title: "Bemanning",
+  layout: "wide",
+  formal: "Fikse forfall og fylle ledige roller på et arrangement, også fra mobilen.",
+  hvor: "Oversikt i Planlegging viser de neste arrangementene. Trykk på ett, så åpnes Bemanning. Arrangementet har to visninger: Program og Bemanning.",
+  steg: [
+    "Program viser programpostene med rolle, team, tema og hvem som er satt opp. Her endres ikke bemanningen.",
+    "Bemanning viser hver rolle én gang, også når den brukes i flere programposter. Øverst står Må ordnes: forfall og ubesatte roller. Resten står per team.",
+    "Trykk på en person for å endre: Bekreftet, Forespurt, Forfall eller Slett. Har personen telefonnummer, ringer du ved å trykke på navnet øverst.",
+    "Har en rolle en ledig plass, står Tildel og Forespør under den. Tildel setter personen på som bekreftet (avtalt allerede). Forespør sender en forespørsel til Min side.",
+    "Et bytte: trykk på den som ikke kan og velg Forfall. Trykk så Tildel på samme rolle og velg den nye.",
+    "Trykk på rollenavnet for å se instruksen.",
+    "En gruppeleder ser hele programmet, og bemanningen til sine egne grupper.",
+  ],
+  knapper:
+    "Program, Bemanning, Tildel, Forespør, Bekreftet, Forespurt, Forfall, Slett. Merker: Forfall, Ubesatt, Venter på svar, Dekket.",
+  etterLagring:
+    "«[Navn]: Forfall», «[Navn] er tildelt [rolle].», «[Navn] er forespurt som [rolle].», «[Navn] er slettet fra oppgaven.» En rolle du nettopp har endret, blir stående der den er til du åpner arrangementet igjen.",
+};
+
 const oppgaver: HelpArticle = {
   id: "oppgaver",
   title: "Trenger oppfølging",
   layout: "wide",
-  formal: "Se hvilke oppgaver som mangler folk, tildele en person, eller lage en påminnelsestekst.",
-  hvor: "Planlegging, Trenger oppfølging. Overskrift: Oppgaver & Frivilligoversikt. Detalj merkes Oppgavekort. Tilbake: Tilbake til oppgaver.",
+  formal: "Se forfall og ubesatte roller på arrangementene som kommer, og tildele en person.",
+  hvor: "Planlegging, Trenger oppfølging. Overskrift: Trenger oppfølging. Tallet i menyen er det som må ordnes de nærmeste fire ukene.",
   steg: [
-    "Filtrer med Alle oppgaver, Trenger oppfølging / Vikar eller Venter på svar / Ubesatt. De to siste viser bare samlinger som ikke er over. Alle oppgaver viser også dem som er holdt.",
-    "Trykk Tildel eller Forespør på en oppgave.",
-    "Velg person. Tildel direkte setter personen som bekreftet. Forespør setter status til venter på svar.",
-    "Bekreft med Tildel oppgave (Bekreftet) eller Forespør frivillig (Venter på svar).",
-    "Purr åpner Purr / Send påminnelse. Trykk Kopier tekst.",
+    "Oppgavene står per arrangement, det nærmeste først. Trykk på arrangementet for å åpne Bemanning.",
+    "Velg Må ordnes, Venter på svar eller Alle, og 4 uker eller Alt som kommer.",
+    "Trykk Tildel eller Forespør på en oppgave, velg person og bekreft.",
   ],
   knapper:
-    "Tildel, Forespør, Tildel direkte, Purr. Hjelp: «Setter status umiddelbart til Bekreftet. Brukes når du allerede har avtalt vakten muntlig med personen.» Purr: «Purr / generer SMS- og Messenger-tekst».",
+    "Må ordnes, Venter på svar, Alle, 4 uker, Alt som kommer, Bemanning, Tildel, Forespør, Rediger. Merket Under 48 t står på forfall og ubesatte roller når arrangementet er under to døgn unna.",
   etterLagring:
-    "«Personen ble tildelt og bekreftet!» eller «Forespørsel ble sendt (status: venter på svar)!» «Purretekst kopiert til utklippstavlen!» Uten person: «Vennligst velg en person». Påminnelsen kopieres. Den sendes ikke som melding herfra.",
+    "«Personen er tildelt.» eller «Forespørselen er sendt.» Uten person: «Velg en person».",
 };
 
 const grupper: HelpArticle = {
@@ -350,6 +369,7 @@ export const helpSections: HelpSection[] = [
     title: "For planleggere og administratorer",
     items: [
       { kind: "article", article: arrangementer },
+      { kind: "article", article: bemanning },
       { kind: "article", article: oppgaver },
       { kind: "article", article: grupper },
       { kind: "article", article: personer },

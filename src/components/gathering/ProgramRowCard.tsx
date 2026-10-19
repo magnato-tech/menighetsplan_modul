@@ -34,7 +34,9 @@ export const ProgramRowCard: React.FC<ProgramRowCardProps> = ({
   onDragOver,
   onDrop,
 }) => {
-  const people = row.assignedPersons.filter((p) => (staffing === "full" ? holdsSlot(p.assignment) : p.response === "confirmed"));
+  const people = row.assignedPersons
+    .filter((p) => (staffing === "full" ? holdsSlot(p.assignment) : p.response === "confirmed"))
+    .sort((a, b) => Number(a.response !== "confirmed") - Number(b.response !== "confirmed"));
   const nameOf = (p: (typeof people)[number]) => p.person?.name || p.assignment.personName || "Ukjent person";
 
   return (

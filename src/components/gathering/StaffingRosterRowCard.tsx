@@ -11,6 +11,8 @@ interface StaffingRosterRowCardProps {
   /** May change who is on the task: an admin, or the leader of the task's group. */
   canIntervene: boolean;
   canAdminister: boolean;
+  /** The team is named on the row where it is not already the heading above it. */
+  showTeam?: boolean;
   openMenuAssignmentId: string | null;
   onToggleMenu: (assignmentId: string | null) => void;
   onStatusChange: (assignmentId: string, response: PersonResponse, personName?: string) => void;
@@ -80,6 +82,7 @@ export const StaffingRosterRowCard: React.FC<StaffingRosterRowCardProps> = ({
   row,
   canIntervene,
   canAdminister,
+  showTeam = true,
   openMenuAssignmentId,
   onToggleMenu,
   onStatusChange,
@@ -114,7 +117,7 @@ export const StaffingRosterRowCard: React.FC<StaffingRosterRowCardProps> = ({
                 {when}
               </span>
             )}
-            {row.needed > 1 && (
+            {row.needed > 1 && row.confirmed > 0 && (
               <span className="font-semibold">
                 {row.confirmed}/{row.needed} bekreftet
               </span>
@@ -123,7 +126,7 @@ export const StaffingRosterRowCard: React.FC<StaffingRosterRowCardProps> = ({
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0">
-          {row.groupName && (
+          {showTeam && row.groupName && (
             <span
               className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
                 row.isMyGroup ? "bg-emerald-50 text-emerald-800 border-emerald-200" : "bg-slate-100 text-slate-700 border-slate-200"
