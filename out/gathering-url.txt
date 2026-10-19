@@ -1,0 +1,1 @@
+http://localhost:4173/admin/samling/gathering-1?vis=bemanning

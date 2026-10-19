@@ -1,21 +1,21 @@
 mobil console: Failed to load resource: the server responded with a status of 400 ()
-mobil shot 01-oversikt http://localhost:4173/logg-inn?neste=%2Fadmin
-mobil FAIL bemanning: TimeoutError: locator.click: Timeout 30000ms exceeded.
-mobil FAIL personmeny: TimeoutError: locator.click: Timeout 30000ms exceeded.
-mobil FAIL tildel: TimeoutError: locator.click: Timeout 30000ms exceeded.
-mobil FAIL instruks: TimeoutError: locator.click: Timeout 30000ms exceeded.
+mobil shot 01-oversikt http://localhost:4173/admin
+mobil shot 02-bemanning http://localhost:4173/admin/samling/gathering-1?vis=bemanning
+mobil shot 03-personmeny http://localhost:4173/admin/samling/gathering-1?vis=bemanning
+mobil shot 04-tildel http://localhost:4173/admin/samling/gathering-1?vis=bemanning
+mobil shot 05-instruks http://localhost:4173/admin/samling/gathering-1?vis=bemanning
 mobil console: Failed to load resource: the server responded with a status of 400 ()
-mobil FAIL meny: TimeoutError: locator.click: Timeout 30000ms exceeded.
-mobil FAIL program: TimeoutError: locator.click: Timeout 30000ms exceeded.
+mobil shot 06-flere-valg http://localhost:4173/admin/samling/gathering-1?vis=bemanning
+mobil shot 07-program http://localhost:4173/admin/samling/gathering-1?vis=program
 mobil console: Failed to load resource: the server responded with a status of 400 ()
-mobil shot 08-arrangementer http://localhost:4173/logg-inn?neste=%2Fadmin%3Ftab%3Dplanlegger-samlinger
+mobil shot 08-arrangementer http://localhost:4173/admin?tab=planlegger-samlinger
 mobil console: Failed to load resource: the server responded with a status of 400 ()
-mobil shot 09-oppfolging http://localhost:4173/logg-inn?neste=%2Fadmin%3Ftab%3Dplanlegger-oppgaver
+mobil shot 09-oppfolging http://localhost:4173/admin?tab=planlegger-oppgaver
 leder console: Failed to load resource: the server responded with a status of 400 ()
 leder shot 01-start http://localhost:4173/leder
 leder console: Failed to load resource: the server responded with a status of 400 ()
-leder shot 02-bemanning http://localhost:4173/leder/samling/undefined
-leder FAIL samling: TimeoutError: locator.click: Timeout 30000ms exceeded.
-pc shot 01-oversikt http://localhost:4173/logg-inn?neste=%2Fadmin
-pc FAIL bemanning: Error: ENOENT: no such file or directory, open 'out/gathering-url.txt'
-pc shot 03-oppfolging http://localhost:4173/logg-inn?neste=%2Fadmin%3Ftab%3Dplanlegger-oppgaver
+leder shot 02-bemanning http://localhost:4173/leder/samling/gathering-1
+leder shot 03-program http://localhost:4173/leder/samling/gathering-1?vis=program
+pc shot 01-oversikt http://localhost:4173/admin
+pc shot 02-bemanning http://localhost:4173/admin/samling/gathering-1?vis=bemanning
+pc shot 03-oppfolging http://localhost:4173/admin?tab=planlegger-oppgaver
