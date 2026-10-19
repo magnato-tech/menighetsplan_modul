@@ -1,0 +1,23 @@
+name: Skjermbilder
+on:
+  push:
+    branches: [claude/skjermbilder]
+permissions:
+  contents: write
+jobs:
+  shots:
+    if: "!contains(github.event.head_commit.message, '[bilder]')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm init -y >/dev/null && npm i playwright@1 >/dev/null && npx playwright install --with-deps chromium >/dev/null
+      - run: node shoot.mjs "$(cat url.txt)" || true
+      - run: |
+          git config user.name "Claude"
+          git config user.email "noreply@anthropic.com"
+          git add -A out
+          git commit -m "Skjermbilder [bilder]" || exit 0
+          git push
