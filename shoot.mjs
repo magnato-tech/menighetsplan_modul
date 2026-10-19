@@ -16,13 +16,16 @@ const run = async (prefix, ctxOptions, script) => {
     log.push(`${prefix} shot ${name} ${page.url()}`);
   };
   const step = async (name, fn) => {
-    try { await fn(); } catch (e) { log.push(`${prefix} FAIL ${name}: ${String(e).split("\n")[0].slice(0, 300)}`); }
+    try { await fn(); } catch (e) {
+      log.push(`${prefix} FAIL ${name}: ${String(e).split("\n")[0].slice(0, 300)}`);
+      try { await page.screenshot({ path: `out/${prefix}-feil-${name}.png` }); } catch {}
+    }
   };
   await script(page, shot, step);
   await ctx.close();
 };
 const enterAs = async (page, role) => {
-  await page.goto(base + "/admin", { waitUntil: "networkidle", timeout: 60000 });
+  await page.goto(base + "/admin", { waitUntil: "load", timeout: 60000 });
   await page.waitForTimeout(2500);
   const button = page.getByRole("button", { name: new RegExp(role) }).first();
   const link = page.getByRole("link", { name: new RegExp(role) }).first();
@@ -44,8 +47,8 @@ await run("mobil", devices["iPhone 13"], async (page, shot, step) => {
   await step("instruks", async () => { await page.getByRole("button", { name: /Instruks/ }).first().click(); await shot("05-instruks", false); await page.keyboard.press("Escape"); });
   await step("meny", async () => { await page.goto(page.url()); await page.waitForTimeout(3000); await page.getByRole("button", { name: "Flere valg" }).click(); await shot("06-flere-valg", false); await page.mouse.click(2, 600); });
   await step("program", async () => { await page.getByRole("tab", { name: /Program/ }).click(); await shot("07-program"); });
-  await step("arrangementer", async () => { await page.goto(base + "/admin?tab=planlegger-samlinger", { waitUntil: "networkidle" }); await shot("08-arrangementer"); });
-  await step("oppfolging", async () => { await page.goto(base + "/admin?tab=planlegger-oppgaver", { waitUntil: "networkidle" }); await shot("09-oppfolging"); });
+  await step("arrangementer", async () => { await page.goto(base + "/admin?tab=planlegger-samlinger", { waitUntil: "load" }); await shot("08-arrangementer"); });
+  await step("oppfolging", async () => { await page.goto(base + "/admin?tab=planlegger-oppgaver", { waitUntil: "load" }); await shot("09-oppfolging"); });
 });
 
 await run("leder", devices["iPhone 13"], async (page, shot, step) => {
@@ -53,7 +56,7 @@ await run("leder", devices["iPhone 13"], async (page, shot, step) => {
   await step("samling", async () => {
     const url = fs.existsSync("out/gathering-url.txt") ? fs.readFileSync("out/gathering-url.txt", "utf8") : "";
     const id = url.match(/samling\/([^?#/]+)/)?.[1];
-    await page.goto(`${base}/leder/samling/${id}`, { waitUntil: "networkidle" });
+    await page.goto(`${base}/leder/samling/${id}`, { waitUntil: "load" });
     await page.waitForTimeout(4000);
     await shot("02-bemanning");
     await page.getByRole("tab", { name: /Program/ }).click();
@@ -65,14 +68,14 @@ await run("pc", { viewport: { width: 1280, height: 900 } }, async (page, shot, s
   await step("inn", async () => { await enterAs(page, "^Administrator"); await shot("01-oversikt", false); });
   await step("bemanning", async () => {
     const url = fs.readFileSync("out/gathering-url.txt", "utf8");
-    await page.goto(url, { waitUntil: "networkidle" });
+    await page.goto(url, { waitUntil: "load" });
     await page.waitForTimeout(4000);
     await shot("02-bemanning", false);
     const card = page.locator("[id^=roster-]").first();
     await card.screenshot({ path: "out/hjelp-bemanning-kort.png" });
   });
   await step("oppfolging", async () => {
-    await page.goto(base + "/admin?tab=planlegger-oppgaver", { waitUntil: "networkidle" });
+    await page.goto(base + "/admin?tab=planlegger-oppgaver", { waitUntil: "load" });
     await page.waitForTimeout(3000);
     await shot("03-oppfolging", false);
   });

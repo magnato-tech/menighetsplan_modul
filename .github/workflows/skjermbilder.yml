@@ -20,7 +20,9 @@ jobs:
         with:
           node-version: 22
       - name: Demoens innstillinger fra den publiserte demoen
-        run: node tools/demo-env.mjs > app/.env.production.local
+        run: |
+          mkdir -p tools/out
+          node tools/demo-env.mjs > app/.env.production.local 2> tools/env-summary.txt; cat tools/env-summary.txt
       - name: Bygg grenen som demo
         working-directory: app
         run: npm ci && npx vite build
@@ -31,7 +33,7 @@ jobs:
         run: |
           (cd app && npx vite preview --port 4173 --strictPort &) 
           npx wait-on -t 60000 http://localhost:4173 || sleep 10
-          cd tools && node shoot.mjs http://localhost:4173 || true
+          cd tools && node shoot.mjs http://localhost:4173 || true; cp env-summary.txt out/ || true
       - name: Lagre
         working-directory: tools
         run: |
