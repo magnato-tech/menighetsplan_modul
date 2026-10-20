@@ -48,7 +48,7 @@ await run("mobil", devices["iPhone 13"], async (page, shot, step) => {
   });
   await step("personmeny", async () => { await page.locator("div[id^=roster-] [aria-haspopup=menu]").first().click(); await shot("03-personmeny", false); await page.keyboard.press("Escape"); await page.mouse.click(2, 300); });
   await step("tildel", async () => { await page.getByRole("button", { name: "Tildel", exact: true }).first().click(); await shot("04-tildel", false); await page.getByRole("button", { name: "Lukk" }).click(); });
-  await step("instruks", async () => { await page.getByRole("button", { name: /Instruks/ }).first().click(); await shot("05-instruks", false); await page.keyboard.press("Escape"); });
+  await step("instruks", async () => { await page.getByRole("button", { name: /Instruks/ }).first().click(); await shot("05-instruks", false); await page.mouse.click(5, 5); await page.waitForTimeout(800); });
   await step("meny", async () => { await page.getByRole("button", { name: "Flere valg" }).click(); await shot("06-flere-valg", false); await page.mouse.click(2, 600); });
   await step("program", async () => { await page.getByRole("tab", { name: /Program/ }).click(); await shot("07-program"); });
   await step("arrangementer", async () => { await go(page, "/admin?tab=planlegger-samlinger"); await shot("08-arrangementer"); });
@@ -80,6 +80,8 @@ await run("pc", { viewport: { width: 1280, height: 900 } }, async (page, shot, s
   await step("oppfolging", async () => {
     await go(page, "/admin?tab=planlegger-oppgaver");
     await shot("03-oppfolging", false);
+    await go(page, "/admin?tab=planlegger-samlinger");
+    await shot("04-arrangementer", false);
     await page.locator("section div.rounded-2xl").first().screenshot({ path: "out/hjelp-oppgaver.png" });
     await go(page, "/admin?tab=planlegger-samlinger");
     await shot("04-arrangementer", false);
