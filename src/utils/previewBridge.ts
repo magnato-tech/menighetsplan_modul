@@ -114,20 +114,72 @@ export function buildDraftSnapshot(
   };
 }
 
-export function writeDraftSnapshot(snapshot: PreviewDraftSnapshot, previousSlug?: string): void {
-  if (typeof sessionStorage === "undefined") return;
+/** How much of the page the preview got: everything, all but images that only exist unsaved, only the form fields, or nothing. */
+export type SnapshotFit = "full" | "saved-images" | "fields-only" | "none";
+
+const ID_KEY_PREFIX = "cms_preview_draft_id_";
+const isInlineImage = (value: unknown) => typeof value === "string" && value.startsWith("data:");
+
+/** The snapshot without uploaded images that live as text in the page: the preview shows those as last saved. */
+function withSavedImages(snapshot: PreviewDraftSnapshot): PreviewDraftSnapshot {
+  const lighter: PreviewDraftSnapshot = { ...snapshot };
+  if (isInlineImage(lighter.heroImage)) delete lighter.heroImage;
+  if (isInlineImage(lighter.ogImage)) delete lighter.ogImage;
+  if (lighter.heroImages?.some(isInlineImage)) delete lighter.heroImages;
+  return lighter;
+}
+
+/** Only the fields typed in the form: the content blocks are shown as last saved. */
+function fieldsOnly(snapshot: PreviewDraftSnapshot): PreviewDraftSnapshot {
+  const lighter = withSavedImages(snapshot);
+  delete lighter.content;
+  delete lighter.blocks;
+  return lighter;
+}
+
+/**
+ * Stores the page being edited for the preview frame. The whole page is stored once, under its id; the
+ * other two keys only say which page it is. Pages with uploaded images can be larger than the browser
+ * allows (about 5 MB), so a page that does not fit is stored again without them, and then without the
+ * content blocks. Snapshots of other pages edited earlier are removed first, so they do not take the room.
+ */
+export function writeDraftSnapshot(
+  snapshot: PreviewDraftSnapshot,
+  previousSlug?: string,
+  storage: Storage | undefined = typeof sessionStorage === "undefined" ? undefined : sessionStorage
+): SnapshotFit {
+  if (!storage) return "none";
   const pageId = snapshot.id || "draft-page-preview";
-  const payload = { ...snapshot };
-  delete (payload as { revision?: number }).revision;
-  delete (payload as { publicPath?: string }).publicPath;
+  const idKey = draftStorageKeyById(pageId);
 
-  sessionStorage.setItem(draftStorageKeyById(pageId), JSON.stringify(snapshot));
-  sessionStorage.setItem("cms_preview_active", JSON.stringify(payload));
-  sessionStorage.setItem(draftStorageKeyBySlug(snapshot.slug || ""), JSON.stringify(payload));
-
-  if (previousSlug && previousSlug !== snapshot.slug) {
-    sessionStorage.removeItem(draftStorageKeyBySlug(previousSlug));
+  for (let i = storage.length - 1; i >= 0; i--) {
+    const key = storage.key(i);
+    if (key && key.startsWith(ID_KEY_PREFIX) && key !== idKey) storage.removeItem(key);
   }
+
+  const pointer = JSON.stringify({ id: pageId, slug: snapshot.slug, linkUrl: snapshot.linkUrl, publicPath: snapshot.publicPath });
+  const attempts: [SnapshotFit, PreviewDraftSnapshot][] = [
+    ["full", snapshot],
+    ["saved-images", withSavedImages(snapshot)],
+    ["fields-only", fieldsOnly(snapshot)],
+  ];
+  for (const [fit, candidate] of attempts) {
+    try {
+      storage.removeItem(idKey);
+      storage.setItem(idKey, JSON.stringify(candidate));
+      storage.setItem("cms_preview_active", pointer);
+      storage.setItem(draftStorageKeyBySlug(snapshot.slug || ""), pointer);
+      if (previousSlug && previousSlug !== snapshot.slug) {
+        storage.removeItem(draftStorageKeyBySlug(previousSlug));
+      }
+      return fit;
+    } catch (error) {
+      if (fit === "fields-only") {
+        console.warn("Forhåndsvisningen fikk ikke plass til siden i nettleseren", error);
+      }
+    }
+  }
+  return "none";
 }
 
 export function readDraftSnapshotById(pageId: string): PreviewDraftSnapshot | null {
@@ -164,7 +216,10 @@ export function readDraftSnapshotForPath(pathname: string, pages: CmsPage[]): Pr
       const byId = readDraftSnapshotById(page.id);
       if (byId) return byId;
       const bySlug = sessionStorage.getItem(draftStorageKeyBySlug(page.slug));
-      if (bySlug) return JSON.parse(bySlug) as PreviewDraftSnapshot;
+      if (bySlug) {
+        const found = JSON.parse(bySlug) as PreviewDraftSnapshot;
+        return (found.id ? readDraftSnapshotById(found.id) : null) || found;
+      }
     }
   } catch {
     return null;

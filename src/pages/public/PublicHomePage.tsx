@@ -27,7 +27,6 @@ import { useMediaMap, useResolvedMediaUrl } from "../../hooks/useMediaMap";
 import { resolveMediaUrl } from "../../utils/media";
 import { HeroBackdrop } from "../../components/public/HeroBackdrop";
 
-import { Sparkles } from "lucide-react";
 
 
 
@@ -232,14 +231,6 @@ export const PublicHomePage: React.FC<PublicHomePageProps> = ({
 
 
           <div className="relative z-10 w-full max-w-5xl mx-auto text-center space-y-6">
-
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-xs font-semibold text-accent-300">
-
-              <Sparkles className="w-3.5 h-3.5" />
-
-              <span>{settings.churchName}</span>
-
-            </div>
 
 
 
