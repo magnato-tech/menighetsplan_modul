@@ -15,3 +15,4 @@ leder shot 03-program http://localhost:4173/leder/samling/gathering-1?vis=progra
 pc shot 01-oversikt http://localhost:4173/admin
 pc shot 02-bemanning http://localhost:4173/admin/samling/gathering-1?vis=bemanning
 pc shot 03-oppfolging http://localhost:4173/admin?tab=planlegger-oppgaver
+pc shot 04-arrangementer http://localhost:4173/admin?tab=planlegger-samlinger
