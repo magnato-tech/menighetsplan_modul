@@ -1564,6 +1564,18 @@ Feltene er nye på sidene og i innstillingene. Reglene i databasen lar en admini
 
 **Rettet samme dag:** de tre valgene for toppbildet (høyde, tittel og «Vis på siden» for undertittelen) ble vist i forhåndsvisningen, men forsvant ved Lagre. Siden som lagres, bygges av en fast liste med felt, og de nye feltene sto ikke på den. Listen ligger nå i `buildPageRecord` i `src/utils/pageRecord.ts`, og `tests/page-record.test.ts` feiler for et felt på en side som ikke blir med når den lagres.
 
+### Menyen på nettsiden øverst i Sider (20. oktober 2026)
+
+Bestilt av produkteier: på PC skal nettsidens meny stå øverst i Sider, så den kan brukes til å finne fram i listen.
+
+| Del | Hva som er levert |
+|---|---|
+| **Linjen** | Hovedfanene i menyens rekkefølge, med undersidene i en meny som åpnes når musen holdes over (eller med Tab). Den blir stående øverst når listen rulles. Bare på store skjermer (`PageMenuBar.tsx`) |
+| **Trykk** | Listen ruller til siden. En fane som er foldet sammen, åpnes, og siden lyser kort opp |
+| **Hvor man er** | Hovedfanen som står øverst i listen, er markert i linjen |
+| **Kladder og skjulte** | Står med, dempet og merket «Kladd», «Planlagt» eller «Ikke i menyen» (`buildMenuBar` i `src/utils/menu.ts`) |
+| **Kollaps alle og Utvid alle** | Står i linjen på store skjermer, og over listen som før på mobil |
+
 ---
 
 
