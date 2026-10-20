@@ -67,9 +67,10 @@ const siderHero: HelpArticle = {
     "Skriv Tittel i Hero.",
     "Velg bilde med bildevelgeren. Se Mediebibliotek.",
     "Skriv knappetekst for Primærknapp og Sekundærknapp, og huk av Vis på siden for dem som skal vises.",
+    "På forsiden: velg Høyde på toppbildet (Lav, Middels eller Hele skjermen) og om Tittelen på bildet skal være Kraftig eller Rolig. Undertittelen kan slås av med Vis på siden ved Ingress / Undertittel.",
   ],
   knapper:
-    "Hero / Toppbanner, Tittel i Hero, Primærknapp, Sekundærknapp, Vis på siden. Plassholder for knappetekst: «Knappetekst». På forsiden brukes «Se hva som skjer» og «Bli kjent med oss» som plassholdere.",
+    "Hero / Toppbanner, Tittel i Hero, Toppbildet: størrelse, tittel og flere bilder, Høyde på toppbildet, Tittelen på bildet, Primærknapp, Sekundærknapp, Vis på siden. Plassholder for knappetekst: «Knappetekst». På forsiden brukes «Se hva som skjer» og «Bli kjent med oss» som plassholdere.",
   etterLagring:
     "Banner og knapper vises på den offentlige siden etter Lagre side, når siden er publisert. Bilde kan stå tomt.",
 };
@@ -102,7 +103,7 @@ const siderPublisering: HelpArticle = {
     "Huk av Aktiver publisering hvis siden skal vises.",
     "Huk av Vis i offentlig meny hvis den skal ligge i toppmenyen.",
     "Valgfritt: sett Publiseringsdato & tidspunkt (Planlegging), eller bruk I morgen 09:00.",
-    "Trykk Lagre side. Avbryt lukker uten å lagre.",
+    "Trykk Lagre øverst, som alltid står synlig, eller Lagre side nederst. Avbryt lukker uten å lagre.",
   ],
   knapper:
     "Aktiver publisering — «Når aktivert, vil siden være synlig for publikum (eller automatisk fra planlagt dato).» Vis i offentlig meny — «Vises i toppmenyen eller nedtrekksmenyen. Slått av er siden bare tilgjengelig via direkte lenke.» Nullstill dato (publiser umiddelbart). Lagre side.",

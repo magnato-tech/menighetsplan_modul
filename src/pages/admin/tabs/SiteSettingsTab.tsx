@@ -14,6 +14,8 @@ import {
   Trash2,
 } from "lucide-react";
 import { logoFileError, logoOf } from "../../../utils/logo";
+import { SOCIAL_FIELDS, socialUrlOf } from "../../../utils/socialLinks";
+import { SocialIcon } from "../../../components/public/SocialIcon";
 
 export const SiteSettingsTab: React.FC = () => {
   const { settings, saveSettings } = useCms();
@@ -282,6 +284,48 @@ export const SiteSettingsTab: React.FC = () => {
               />
             </div>
           </div>
+        </div>
+
+        {/* Sosiale medier */}
+        <div className="p-6 rounded-2xl bg-[var(--studio-surface)] border border-[var(--studio-border)] space-y-4">
+          <div>
+            <h3 className="text-sm font-bold text-[var(--studio-text)]">Sosiale medier</h3>
+            <p className="text-xs text-[var(--studio-muted)]">
+              Lim inn lenken til menighetens side. Et felt som står tomt, får ikke noe ikon. Ikonene står nederst på nettsiden.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+            {SOCIAL_FIELDS.map(({ kind, key, label, placeholder }) => {
+              const value = settingsForm[key] || "";
+              const invalid = value.trim() !== "" && socialUrlOf(value) === null;
+              return (
+                <div key={kind} className="space-y-1">
+                  <label htmlFor={`social-${kind}`} className="font-semibold text-[var(--studio-muted)] flex items-center gap-1.5">
+                    <SocialIcon kind={kind} className="w-3.5 h-3.5" />
+                    <span>{label}</span>
+                  </label>
+                  <input
+                    id={`social-${kind}`}
+                    type="url"
+                    value={value}
+                    onChange={(e) => setSettingsForm({ ...settingsForm, [key]: e.target.value })}
+                    placeholder={placeholder}
+                    aria-invalid={invalid || undefined}
+                    className="w-full px-3 py-2 rounded-xl bg-[var(--studio-input)] border border-[var(--studio-border)] text-[var(--studio-input-text)]"
+                  />
+                  {invalid && <p className="text-rose-500 font-semibold">Dette ser ikke ut som en lenke</p>}
+                </div>
+              );
+            })}
+          </div>
+          <label className="flex items-center gap-2 text-xs text-[var(--studio-text)] cursor-pointer">
+            <input
+              type="checkbox"
+              checked={settingsForm.showSocialInMenu !== false}
+              onChange={(e) => setSettingsForm({ ...settingsForm, showSocialInMenu: e.target.checked ? undefined : false })}
+            />
+            <span>Vis ikonene også i menyen øverst på nettsiden</span>
+          </label>
         </div>
 
         <div className="flex items-center justify-end gap-3 pt-2">

@@ -18,14 +18,14 @@ import {
   ExternalLink,
   Monitor,
   Tablet,
-  Smartphone,
-} from "lucide-react";
+  Smartphone, Save } from "lucide-react";
 import { CmsMediaPicker } from "../../../../components/admin/CmsMediaPicker";
 import { useMediaMap } from "../../../../hooks/useMediaMap";
 import { resolveShareableMediaUrl } from "../../../../utils/media";
 import { ContentBlockPickerModal } from "./ContentBlockPickerModal";
 import { useCms } from "../../../../context/CmsContext";
 import { useTimedMessage } from "../../../../hooks/useTimedMessage";
+import { HERO_HEIGHTS, HERO_TITLE_STYLES, heroHeightOf, heroTitleStyleOf, type HeroHeight, type HeroTitleStyle } from "../../../../utils/heroLayout";
 import { formatNorwegianDateTime } from "../../../../utils/dates";
 import { shareableImageUrl } from "../../../../utils/seoUtils";
 import { VisualBlockManager } from "./VisualBlockManager";
@@ -290,7 +290,7 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
 
   useEffect(() => {
     setPreviewRevision((r) => r + 1);
-  }, [editingPage.title, editingPage.summary, editingPage.heroTitle, editingPage.heroCtaText, editingPage.heroCtaLink, editingPage.heroCtaSecondaryText, editingPage.heroCtaSecondaryLink, editingPage.showHeroPrimaryCta, editingPage.showHeroSecondaryCta, editingPage.heroImage, editingPage.heroImages, editingPage.content, editingPage.isPublished, editingPage.linkUrl, cleanSlug]);
+  }, [editingPage.title, editingPage.summary, editingPage.heroTitle, editingPage.heroCtaText, editingPage.heroCtaLink, editingPage.heroCtaSecondaryText, editingPage.heroCtaSecondaryLink, editingPage.showHeroPrimaryCta, editingPage.showHeroSecondaryCta, editingPage.showHeroSubtext, editingPage.heroHeight, editingPage.heroTitleStyle, editingPage.heroZoom, editingPage.heroMenuOverlay, editingPage.heroImage, editingPage.heroImages, editingPage.content, editingPage.isPublished, editingPage.linkUrl, cleanSlug]);
 
   useEffect(() => {
     if (viewMode === "edit") return;
@@ -604,9 +604,22 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
 
         <div className="space-y-1">
           <div className="flex items-center justify-between">
-            <label className="text-xs font-semibold text-[var(--studio-muted)] block">
-              Ingress / Undertittel
-            </label>
+            <div className="flex items-center gap-3">
+              <label className="text-xs font-semibold text-[var(--studio-muted)] block">
+                Ingress / Undertittel
+              </label>
+              {isHomePage && (
+                <label className="flex items-center gap-2 cursor-pointer text-[11px] font-semibold text-[var(--studio-muted)]">
+                  <input
+                    type="checkbox"
+                    checked={editingPage.showHeroSubtext !== false}
+                    onChange={(e) => onUpdate({ showHeroSubtext: e.target.checked })}
+                    className="w-4 h-4 rounded text-indigo-600 bg-[var(--studio-panel-bg)] border-[var(--studio-border)] cursor-pointer"
+                  />
+                  <span>Vis på siden</span>
+                </label>
+              )}
+            </div>
             {editingPage.summary && (
               <button
                 type="button"
@@ -662,10 +675,36 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
         {(editingPage.linkUrl === "/" || editingPage.id === "page-forside" || editingPage.slug === "forside") && (
           <div className="space-y-2.5 p-3 rounded-xl bg-[var(--studio-row)] border border-[var(--studio-border)]">
             <div>
-              <span className="text-xs font-semibold text-[var(--studio-text)] block">Flere toppbilder og bevegelse</span>
+              <span className="text-xs font-semibold text-[var(--studio-text)] block">Toppbildet: størrelse, tittel og flere bilder</span>
               <p className="text-[11px] text-[var(--studio-muted)] leading-relaxed">
                 Med flere bilder toner toppen rolig fra det ene til det neste. Opptil tre bilder i alt.
               </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label className="space-y-1 text-xs font-semibold text-[var(--studio-muted)]">
+                <span className="block">Høyde på toppbildet</span>
+                <select
+                  value={heroHeightOf(editingPage)}
+                  onChange={(e) => onUpdate({ heroHeight: e.target.value as HeroHeight })}
+                  className="w-full px-3 py-2 rounded-xl bg-[var(--studio-panel-bg)] border border-[var(--studio-border)] text-[var(--studio-input-text)] text-xs"
+                >
+                  {HERO_HEIGHTS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="space-y-1 text-xs font-semibold text-[var(--studio-muted)]">
+                <span className="block">Tittelen på bildet</span>
+                <select
+                  value={heroTitleStyleOf(editingPage)}
+                  onChange={(e) => onUpdate({ heroTitleStyle: e.target.value as HeroTitleStyle })}
+                  className="w-full px-3 py-2 rounded-xl bg-[var(--studio-panel-bg)] border border-[var(--studio-border)] text-[var(--studio-input-text)] text-xs"
+                >
+                  {HERO_TITLE_STYLES.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </label>
             </div>
             {[0, 1].map((index) => (
               <CmsMediaPicker
@@ -1036,7 +1075,8 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
           : "max-w-4xl mx-auto w-full"
       }`}
     >
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--studio-border)] pb-3">
+      {/* The top bar stays in view while the page scrolls, so Lagre is always within reach */}
+      <div className="sticky top-0 z-30 -mx-4 sm:-mx-6 -mt-4 sm:-mt-6 px-4 sm:px-6 pt-4 sm:pt-6 rounded-t-2xl bg-[var(--studio-surface)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--studio-border)] pb-3">
         <h3 className="text-sm font-bold text-[var(--studio-text)] flex items-center gap-2">
           <Edit3 className="w-4 h-4 text-[var(--studio-icon)]" />
           <span>
@@ -1103,6 +1143,15 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
           </a>
 
           <button
+            type="submit"
+            className="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-sm flex items-center gap-1.5 cursor-pointer transition-colors"
+            title="Lagre siden"
+          >
+            <Save className="w-4 h-4" aria-hidden />
+            <span>Lagre</span>
+          </button>
+
+          <button
             type="button"
             onClick={onClose}
             className="p-1.5 rounded-lg text-[var(--studio-muted)] hover:text-[var(--studio-text)] hover:bg-[var(--studio-hover)] cursor-pointer transition-colors"
@@ -1122,7 +1171,7 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
           <div className="w-full lg:w-[460px] xl:w-[500px] 2xl:w-[540px] shrink-0 space-y-4 overflow-y-auto max-h-[82vh] pr-2">
             {renderFormFields()}
           </div>
-          <div className="flex-1 min-w-0 w-full sticky top-0">
+          <div className="flex-1 min-w-0 w-full sticky top-24">
             {renderLiveFrontendPreview()}
           </div>
         </div>

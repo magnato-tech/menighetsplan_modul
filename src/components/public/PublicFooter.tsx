@@ -1,6 +1,8 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { useCms } from "../../context/CmsContext";
+import { socialLinksOf } from "../../utils/socialLinks";
+import { SocialIcon } from "./SocialIcon";
 import {
   Church,
   MapPin,
@@ -38,6 +40,23 @@ export const PublicFooter: React.FC = () => {
             {settings.orgNumber && (
               <div className="pt-2 text-xs text-stone-400">
                 <span className="font-semibold text-stone-200">Orgnr:</span> {settings.orgNumber}
+              </div>
+            )}
+            {socialLinksOf(settings).length > 0 && (
+              <div className="flex items-center gap-1 pt-2" aria-label="Sosiale medier" role="group">
+                {socialLinksOf(settings).map((link) => (
+                  <a
+                    key={link.kind}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={link.label}
+                    title={link.label}
+                    className="inline-flex items-center justify-center w-10 h-10 rounded-lg text-stone-300 hover:text-white hover:bg-stone-800 transition-colors"
+                  >
+                    <SocialIcon kind={link.kind} />
+                  </a>
+                ))}
               </div>
             )}
           </div>

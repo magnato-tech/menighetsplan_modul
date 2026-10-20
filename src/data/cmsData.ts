@@ -51,6 +51,12 @@ export interface CmsPage {
   heroZoom?: boolean;
   /** The menu lies on top of the front page hero until the visitor scrolls. On unless switched off. */
   heroMenuOverlay?: boolean;
+  /** How tall the front page picture is (see utils/heroLayout.ts). The middle height unless chosen. */
+  heroHeight?: "low" | "medium" | "full";
+  /** The headline on the front page picture: heavy and large, or lighter and calmer. Heavy unless chosen. */
+  heroTitleStyle?: "bold" | "calm";
+  /** The line under the headline on the front page. Shown unless switched off. */
+  showHeroSubtext?: boolean;
   heroTitle?: string;
   heroCtaText?: string;
   heroCtaLink?: string;
@@ -252,6 +258,8 @@ export interface CmsSettings {
   facebookUrl?: string;
   instagramUrl?: string;
   youtubeUrl?: string;
+  /** The icons for the links above stand in the menu at the top of the website. In the footer they always stand. */
+  showSocialInMenu?: boolean;
   podcastUrl?: string;
   theme?: CmsDesignTheme;
   leadershipDecisions?: {

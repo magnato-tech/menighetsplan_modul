@@ -136,6 +136,37 @@ describe("Toppbildet", () => {
   });
 });
 
+describe("Valgene for toppbildet på forsiden", () => {
+  const hero = () => document.querySelector(`[data-cms-preview-target="${CMS_PREVIEW_TARGET_HERO}"]`)!;
+  const vis = (page: Partial<CmsPage>) =>
+    render(
+      <MemoryRouter>
+        <PublicHomePage pageOverride={{ ...home, ...page }} />
+      </MemoryRouter>
+    );
+
+  test("et lavt toppbilde gir plass til innholdet under, og hele skjermen fyller den", () => {
+    vis({ heroHeight: "low" });
+    expect(hero().className).toContain("min-h-[50vh]");
+    cleanup();
+    vis({ heroHeight: "full" });
+    expect(hero().className).toContain("min-h-[100svh]");
+  });
+
+  test("en rolig tittel er tynnere og mindre enn den kraftige", () => {
+    vis({ heroTitleStyle: "calm" });
+    const h1 = hero().querySelector("h1")!;
+    expect(h1.className).toContain("font-normal");
+    expect(h1.className).not.toContain("font-black");
+  });
+
+  test("undertittelen kan slås av, og da står det ingen tekst fra innstillingene heller", () => {
+    vis({ showHeroSubtext: false });
+    expect(hero().textContent).not.toContain(home.summary);
+    expect(hero().querySelector("p")).toBeNull();
+  });
+});
+
 describe("Menyen oppå toppbildet", () => {
   const meny = (path: string) => {
     const { container } = render(
