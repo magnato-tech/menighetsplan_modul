@@ -1532,7 +1532,7 @@ Bestilt av produkteier: Sider-fanen hadde to knapper som gjorde det samme, knapp
 | **Ny hovedfane** | Én rund + øverst til høyre, med forklaring når musen holdes over. «Ny hovedfane» og «Legg til fane» åpnet det samme skjemaet, og er slått sammen. En underfane legges til med + på fanen den skal ligge under |
 | **Tatt bort** | «Design» (har egen fane), «Åpne nettside» (står i menyen) og hele feltet «Hovedmeny (Offentlig nettsted)» |
 | **Tallene** | Hovedfaner, underfaner, planlagte og kladder står på kortet Sider i oversikten for Nettside. Tallet der er nå de publiserte sidene, slik teksten under alltid har sagt (`countPages` i `src/utils/menu.ts`) |
-| **Lyst eller mørkt innhold** | En sol eller en måne øverst i menyen ved siden av Admin, og i linjen øverst på mobil, i stedet for en hel linje over innholdet. Innholdet begynner helt øverst |
+| **Lyst eller mørkt innhold** | En sol eller en måne øverst i menyen ved siden av Admin (på mobil når menyen åpnes), i stedet for en hel linje over innholdet. Innholdet begynner helt øverst |
 | **Overskriften** | Var hvit i lyst innhold og syntes ikke. Følger nå temaet som de andre fanene |
 
 ---

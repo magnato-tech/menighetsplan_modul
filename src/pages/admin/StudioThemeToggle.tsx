@@ -66,6 +66,7 @@ export const StudioThemeIconButton: React.FC<StudioThemeIconButtonProps> = ({
       aria-label={label}
     >
       {isDark ? <Moon className="w-4 h-4 text-indigo-400" aria-hidden /> : <Sun className="w-4 h-4 text-amber-500" aria-hidden />}
+      <span className="sr-only">{label}</span>
     </button>
   );
 };

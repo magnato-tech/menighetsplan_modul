@@ -118,16 +118,13 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({ studio, activeTab,
           <Shield className="w-5 h-5 text-[var(--studio-icon)]" />
           <span className="font-black text-sm">Admin</span>
         </div>
-        <div className="flex items-center gap-2">
-          {contentThemeButton}
-          <button
-            type="button"
-            onClick={() => onToggleSidebar()}
-            className="p-2 rounded-lg bg-[var(--studio-surface)] text-[var(--studio-muted)] hover:text-[var(--studio-text)]"
-          >
-            {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => onToggleSidebar()}
+          className="p-2 rounded-lg bg-[var(--studio-surface)] text-[var(--studio-muted)] hover:text-[var(--studio-text)]"
+        >
+          {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        </button>
       </div>
 
       {/* ========================================================= */}
@@ -153,7 +150,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({ studio, activeTab,
                   <span>Oppdateres i sanntid</span>
                 </div>
               </div>
-              <div className="ml-auto hidden md:block">{contentThemeButton}</div>
+              <div className="ml-auto">{contentThemeButton}</div>
             </div>
             <p className="text-[11px] text-[var(--studio-muted)] pt-1">
               Fullskjerms administrasjon for {settings.churchName}
