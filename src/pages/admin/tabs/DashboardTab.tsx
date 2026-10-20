@@ -27,6 +27,7 @@ import { UpcomingGatheringsPanel } from "./dashboard/UpcomingGatheringsPanel";
 import type { StudioArea } from "../studioAreas";
 import { useLevel } from "../../../hooks/useLevel";
 import { hasPlanner } from "../../../utils/level";
+import { countPages } from "../../../utils/menu";
 
 interface DashboardTabProps {
   studio: StudioData;
@@ -43,6 +44,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ studio, area, onTabC
   const publicGatheringsCount = countPublicGatherings(adminGatherings);
   const withPlanner = hasPlanner(useLevel());
   const planning = area === "planlegging";
+  const pageCounts = countPages(pages);
   // What the planning opens with: the next gatherings, and what must be ordered in the nearest weeks
   const upcoming = planning ? upcomingGatherings(adminGatherings, adminTasks, 3) : [];
   const upcomingCount = planning ? upcomingGatherings(adminGatherings, [], Infinity).length : 0;
@@ -150,8 +152,13 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ studio, area, onTabC
             <span className="text-xs font-bold text-[var(--studio-muted)] uppercase tracking-wider">Sider</span>
             <FileText className="w-4 h-4 text-emerald-400" />
           </div>
-          <div className="text-3xl font-black text-[var(--studio-text)]">{pages.length}</div>
+          <div className="text-3xl font-black text-[var(--studio-text)]">{pageCounts.published}</div>
           <p className="text-[11px] text-[var(--studio-muted)]">Publiserte sider på nettsiden</p>
+          <p className="text-[11px] text-[var(--studio-muted)]">
+            {pageCounts.main} hovedfaner · {pageCounts.sub} underfaner
+            {pageCounts.scheduled > 0 && ` · ${pageCounts.scheduled} planlagt`}
+            {pageCounts.drafts > 0 && ` · ${pageCounts.drafts} ${pageCounts.drafts === 1 ? "kladd" : "kladder"}`}
+          </p>
         </div>
 
         <div

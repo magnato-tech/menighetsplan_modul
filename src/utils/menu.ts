@@ -88,3 +88,28 @@ export function pageUrl(page: Pick<CmsPage, "slug" | "linkUrl">): string {
   return page.linkUrl || (page.slug ? `/${page.slug}` : "/");
 }
 
+
+export interface PageCounts {
+  /** Pages at the top of the menu, and pages under one of them. */
+  main: number;
+  sub: number;
+  /** Visible on the website now. */
+  published: number;
+  /** Set to be published at a later time. */
+  scheduled: number;
+  drafts: number;
+}
+
+/** How many pages there are, where they sit in the menu, and how many are out on the website. */
+export function countPages(pages: CmsPage[], now = new Date()): PageCounts {
+  const isDraft = (p: CmsPage) => p.isPublished === false || p.status === "draft";
+  const published = pages.filter((p) => isPagePublished(p, now)).length;
+  const drafts = pages.filter(isDraft).length;
+  return {
+    main: pages.filter((p) => !getParentId(p)).length,
+    sub: pages.filter((p) => Boolean(getParentId(p))).length,
+    published,
+    scheduled: pages.length - published - drafts,
+    drafts,
+  };
+}

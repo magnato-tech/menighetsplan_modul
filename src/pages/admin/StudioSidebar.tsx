@@ -41,7 +41,7 @@ import { prefetchStudioTab } from "./studioTabLoaders";
 import { STUDIO_AREAS, STUDIO_AREA_NAMES, areaOfTab, type StudioArea } from "./studioAreas";
 import { usePendingProposalCounts } from "../../hooks/useMemberProposals";
 import { useStudioAppearance } from "./studioAppearance";
-import { StudioThemeToggle } from "./StudioThemeToggle";
+import { StudioThemeIconButton, StudioThemeToggle } from "./StudioThemeToggle";
 
 function tabPrefetchHandlers(tab: StudioTab) {
   return {
@@ -73,7 +73,10 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({ studio, activeTab,
   const inDemo = DEMO !== null;
   // The setup of the demo is in the menu only for its owner (see utils/demoOwner.ts)
   const demoOwner = useDemoOwner();
-  const { sidebarTheme, toggleSidebarTheme } = useStudioAppearance();
+  const { sidebarTheme, toggleSidebarTheme, contentTheme, toggleContentTheme } = useStudioAppearance();
+  const contentThemeButton = (
+    <StudioThemeIconButton theme={contentTheme} onToggle={toggleContentTheme} darkLabel="Mørkt innhold" lightLabel="Lyst innhold" />
+  );
   // The media library shows the images that come with the app next to the uploaded ones
   const mediaCount = media.filter((item) => item.status === "ready").length + useStockImageCount();
   // The add-ons that are on, each in the part its tab belongs to
@@ -137,7 +140,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({ studio, activeTab,
           {/* Header Brand */}
           <div className="space-y-1">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-sm">
+              <div className="w-8 h-8 shrink-0 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-sm">
                 <Shield className="w-4 h-4 text-amber-300" />
               </div>
               <div>
@@ -147,6 +150,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({ studio, activeTab,
                   <span>Oppdateres i sanntid</span>
                 </div>
               </div>
+              <div className="ml-auto">{contentThemeButton}</div>
             </div>
             <p className="text-[11px] text-[var(--studio-muted)] pt-1">
               Fullskjerms administrasjon for {settings.churchName}

@@ -28,13 +28,13 @@ const siderSidetre: HelpArticle = {
   formal: "Bygge menyen på nettsiden med hovedfaner og underfaner, og styre om en side er publisert.",
   hvor: "Velg Nettside øverst i menyen, så Sider & Innhold. Overskriften på siden er «Sider & Innhold på nettsiden».",
   steg: [
-    "Velg Ny hovedfane eller Legg til fane.",
+    "Trykk på den runde + øverst til høyre for en ny hovedfane.",
     "På en eksisterende hovedfane: opprett underfane, velg Rediger, eller slett.",
     "Dra faner for å endre rekkefølge.",
     "Bruk statusknappene i treet for å publisere eller sette en side til kladd.",
   ],
   knapper:
-    "Ny hovedfane, Legg til fane, Rediger, Design, Åpne nettside, Hovedmeny (Offentlig nettsted). Slett har tittelen Slett fane eller Slett underside. Underfane: «Opprett ny underfane som legger seg under denne fanen».",
+    "+ øverst til høyre (Ny hovedfane), Rediger. Slett har tittelen Slett fane eller Slett underside. Underfane: «Opprett ny underfane som legger seg under denne fanen».",
   etterLagring:
     "«Siden ble lagret og menystrukturen ble oppdatert!» Ved flytting: «Menyrekkefølgen ble oppdatert!» Ved publisering: «[tittel] er nå publisert på nettsiden!» Ved kladd: «[tittel] er satt til kladd (upublisert).» Ved sletting: «Siden ble slettet». Uten tittel: «Siden må ha en tittel».",
 };
@@ -44,7 +44,7 @@ const siderInnstillinger: HelpArticle = {
   title: "Sideinnstillinger",
   layout: "wide",
   formal: "Gi siden navn, adresse og plass i menyen.",
-  hvor: "Samme fane, i vinduet som åpnes ved Ny hovedfane, Legg til fane eller Rediger.",
+  hvor: "Samme fane, i vinduet som åpnes ved + (Ny hovedfane), ved + på en fane (ny underfane) eller ved Rediger.",
   steg: [
     "Fyll inn Sidetittel (Vises i meny og header).",
     "La Adresse (f.eks. om-oss) stå tom for å la den lages fra tittelen, eller skriv den selv.",
