@@ -1546,6 +1546,20 @@ Meldt av produkteier: å ta bort knappene i toppbanneret på forsiden ga ingen e
 | **Sier fra** | Over forhåndsvisningen står det når et nytt bilde eller innholdsblokkene først vises etter lagring |
 | **Merket over tittelen** | Merket med menighetens navn over tittelen på forsiden er tatt bort etter beskjed fra produkteier. Navnet står i logoen og i tittelen |
 
+### Forsiden og sosiale medier (20. oktober 2026)
+
+Bestilt av produkteier etter en sammenligning med nettsidene til andre menigheter i området: et mindre toppbilde med plass til innholdet under, roligere tekst på bildet, og lenker til sosiale medier.
+
+| Del | Hva som er levert |
+|---|---|
+| **Høyde på toppbildet** | Lav (halve skjermen), Middels (som før) eller Hele skjermen. Valget står i redigeringen av forsiden (`heroHeight`, `src/utils/heroLayout.ts`) |
+| **Tittelen på bildet** | Kraftig (som før) eller Rolig: tynnere og mindre skrift (`heroTitleStyle`) |
+| **Undertittelen** | Kan slås av med «Vis på siden». Da hentes heller ikke teksten fra Nettside-innstillinger (`showHeroSubtext`) |
+| **Sosiale medier** | Felt for Facebook, Instagram og YouTube i Nettside-innstillinger. Et felt som er fylt ut, gir et ikon nederst på nettsiden, og i menyen øverst så lenge «Vis ikonene også i menyen» er på. Noe som ikke er en lenke, gir ikke noe ikon (`src/utils/socialLinks.ts`) |
+| **Logoen** | Fantes fra før: «Vis logoen øverst på nettsiden» under logoen i Nettside-innstillinger. Uten den står navnet skrevet ut |
+
+Feltene er nye på sidene og i innstillingene. Reglene i databasen lar en administrator skrive dem som før, og en side lagret uten dem ser ut som før.
+
 ---
 
 

@@ -26,9 +26,13 @@ import { usePreviewPageDraft } from "../../hooks/usePreviewPageDraft";
 import { useMediaMap, useResolvedMediaUrl } from "../../hooks/useMediaMap";
 import { resolveMediaUrl } from "../../utils/media";
 import { HeroBackdrop } from "../../components/public/HeroBackdrop";
+import { heroHeightOf, heroSubtextOf, heroTitleStyleOf } from "../../utils/heroLayout";
 
 
 
+
+/** The least height of the picture at the top, for each choice (see utils/heroLayout.ts). */
+const HERO_MIN_HEIGHT = { low: "min-h-[50vh]", medium: "min-h-[72vh]", full: "min-h-[100svh]" } as const;
 
 interface PublicHomePageProps {
 
@@ -104,13 +108,13 @@ export const PublicHomePage: React.FC<PublicHomePageProps> = ({
 
 
 
-  const heroSubtext =
-
-    activePage?.summary ||
-
-    settings.welcomeSubtext ||
-
-    "Et åpent hjem for alle generasjoner. Vi samles til gudstjeneste, bønn og nære fellesskap der tro og hverdag møtes.";
+  const heroSubtext = heroSubtextOf(
+    activePage,
+    settings,
+    "Et åpent hjem for alle generasjoner. Vi samles til gudstjeneste, bønn og nære fellesskap der tro og hverdag møtes."
+  );
+  const heroHeight = heroHeightOf(activePage);
+  const calmTitle = heroTitleStyleOf(activePage) === "calm";
 
 
 
@@ -217,7 +221,7 @@ export const PublicHomePage: React.FC<PublicHomePageProps> = ({
         data-cms-preview-target={CMS_PREVIEW_TARGET_HERO}
 
         className={`relative overflow-hidden bg-gradient-to-b from-stone-900 via-primary-950 to-stone-900 text-white py-16 sm:py-24 lg:py-28 px-4 sm:px-6 lg:px-8 ${
-          heroImages.length > 0 ? "min-h-[72vh] flex items-center" : ""
+          heroImages.length > 0 ? `${HERO_MIN_HEIGHT[heroHeight]} flex items-center` : ""
         } ${menuOnHero ? "pt-32 sm:pt-40 lg:pt-44" : ""}`}
 
       >
@@ -234,19 +238,20 @@ export const PublicHomePage: React.FC<PublicHomePageProps> = ({
 
 
 
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-white leading-tight">
-
+            <h1
+              className={`text-white leading-tight ${
+                calmTitle
+                  ? "text-3xl sm:text-4xl lg:text-5xl font-normal tracking-normal"
+                  : "text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight"
+              }`}
+            >
               {heroHeadline}
-
             </h1>
-
-
-
-            <p className="max-w-2xl mx-auto text-base sm:text-lg text-stone-300 leading-relaxed font-normal">
-
-              {heroSubtext}
-
-            </p>
+            {heroSubtext && (
+              <p className="max-w-2xl mx-auto text-base sm:text-lg text-stone-300 leading-relaxed font-normal">
+                {heroSubtext}
+              </p>
+            )}
 
 
 

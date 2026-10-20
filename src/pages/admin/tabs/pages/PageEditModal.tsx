@@ -26,6 +26,7 @@ import { resolveShareableMediaUrl } from "../../../../utils/media";
 import { ContentBlockPickerModal } from "./ContentBlockPickerModal";
 import { useCms } from "../../../../context/CmsContext";
 import { useTimedMessage } from "../../../../hooks/useTimedMessage";
+import { HERO_HEIGHTS, HERO_TITLE_STYLES, heroHeightOf, heroTitleStyleOf, type HeroHeight, type HeroTitleStyle } from "../../../../utils/heroLayout";
 import { formatNorwegianDateTime } from "../../../../utils/dates";
 import { shareableImageUrl } from "../../../../utils/seoUtils";
 import { VisualBlockManager } from "./VisualBlockManager";
@@ -290,7 +291,7 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
 
   useEffect(() => {
     setPreviewRevision((r) => r + 1);
-  }, [editingPage.title, editingPage.summary, editingPage.heroTitle, editingPage.heroCtaText, editingPage.heroCtaLink, editingPage.heroCtaSecondaryText, editingPage.heroCtaSecondaryLink, editingPage.showHeroPrimaryCta, editingPage.showHeroSecondaryCta, editingPage.heroImage, editingPage.heroImages, editingPage.content, editingPage.isPublished, editingPage.linkUrl, cleanSlug]);
+  }, [editingPage.title, editingPage.summary, editingPage.heroTitle, editingPage.heroCtaText, editingPage.heroCtaLink, editingPage.heroCtaSecondaryText, editingPage.heroCtaSecondaryLink, editingPage.showHeroPrimaryCta, editingPage.showHeroSecondaryCta, editingPage.showHeroSubtext, editingPage.heroHeight, editingPage.heroTitleStyle, editingPage.heroZoom, editingPage.heroMenuOverlay, editingPage.heroImage, editingPage.heroImages, editingPage.content, editingPage.isPublished, editingPage.linkUrl, cleanSlug]);
 
   useEffect(() => {
     if (viewMode === "edit") return;
@@ -604,9 +605,22 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
 
         <div className="space-y-1">
           <div className="flex items-center justify-between">
-            <label className="text-xs font-semibold text-[var(--studio-muted)] block">
-              Ingress / Undertittel
-            </label>
+            <div className="flex items-center gap-3">
+              <label className="text-xs font-semibold text-[var(--studio-muted)] block">
+                Ingress / Undertittel
+              </label>
+              {isHomePage && (
+                <label className="flex items-center gap-2 cursor-pointer text-[11px] font-semibold text-[var(--studio-muted)]">
+                  <input
+                    type="checkbox"
+                    checked={editingPage.showHeroSubtext !== false}
+                    onChange={(e) => onUpdate({ showHeroSubtext: e.target.checked })}
+                    className="w-4 h-4 rounded text-indigo-600 bg-[var(--studio-panel-bg)] border-[var(--studio-border)] cursor-pointer"
+                  />
+                  <span>Vis på siden</span>
+                </label>
+              )}
+            </div>
             {editingPage.summary && (
               <button
                 type="button"
@@ -662,10 +676,36 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
         {(editingPage.linkUrl === "/" || editingPage.id === "page-forside" || editingPage.slug === "forside") && (
           <div className="space-y-2.5 p-3 rounded-xl bg-[var(--studio-row)] border border-[var(--studio-border)]">
             <div>
-              <span className="text-xs font-semibold text-[var(--studio-text)] block">Flere toppbilder og bevegelse</span>
+              <span className="text-xs font-semibold text-[var(--studio-text)] block">Toppbildet: størrelse, tittel og flere bilder</span>
               <p className="text-[11px] text-[var(--studio-muted)] leading-relaxed">
                 Med flere bilder toner toppen rolig fra det ene til det neste. Opptil tre bilder i alt.
               </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label className="space-y-1 text-xs font-semibold text-[var(--studio-muted)]">
+                <span className="block">Høyde på toppbildet</span>
+                <select
+                  value={heroHeightOf(editingPage)}
+                  onChange={(e) => onUpdate({ heroHeight: e.target.value as HeroHeight })}
+                  className="w-full px-3 py-2 rounded-xl bg-[var(--studio-panel-bg)] border border-[var(--studio-border)] text-[var(--studio-input-text)] text-xs"
+                >
+                  {HERO_HEIGHTS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="space-y-1 text-xs font-semibold text-[var(--studio-muted)]">
+                <span className="block">Tittelen på bildet</span>
+                <select
+                  value={heroTitleStyleOf(editingPage)}
+                  onChange={(e) => onUpdate({ heroTitleStyle: e.target.value as HeroTitleStyle })}
+                  className="w-full px-3 py-2 rounded-xl bg-[var(--studio-panel-bg)] border border-[var(--studio-border)] text-[var(--studio-input-text)] text-xs"
+                >
+                  {HERO_TITLE_STYLES.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </label>
             </div>
             {[0, 1].map((index) => (
               <CmsMediaPicker

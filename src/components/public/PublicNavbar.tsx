@@ -4,6 +4,8 @@ import { useCms } from "../../context/CmsContext";
 import { useFirebase } from "../../context/FirebaseDataContext";
 import { buildPublicMenu, pageUrl } from "../../utils/menu";
 import { menuLogoOf } from "../../utils/logo";
+import { socialInMenu, socialLinksOf } from "../../utils/socialLinks";
+import { SocialIcon } from "./SocialIcon";
 import {
   Menu,
   X,
@@ -66,6 +68,7 @@ export const PublicNavbar: React.FC = () => {
   );
 
   const logo = menuLogoOf(settings);
+  const social = socialInMenu(settings) ? socialLinksOf(settings) : [];
   // A congregation that keeps its logo off the top, has its own name written there, not the product's
   const nameInPlaceOfLogo = settings.hideLogoInMenu === true && settings.churchName.trim() !== "";
 
@@ -175,6 +178,23 @@ export const PublicNavbar: React.FC = () => {
 
           {/* Right Action buttons: Min Side & Admin Studio */}
           <div className="hidden sm:flex items-center gap-2.5">
+            {social.length > 0 && (
+              <div className="hidden lg:flex items-center gap-0.5" aria-label="Sosiale medier" role="group">
+                {social.map((link) => (
+                  <a
+                    key={link.kind}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={link.label}
+                    title={link.label}
+                    className={`inline-flex items-center justify-center w-9 h-9 rounded-lg transition-colors ${linkIdle}`}
+                  >
+                    <SocialIcon kind={link.kind} className="w-[18px] h-[18px]" />
+                  </a>
+                ))}
+              </div>
+            )}
             
 
             {/* Min Side Link */}
@@ -225,6 +245,22 @@ export const PublicNavbar: React.FC = () => {
       {/* Mobile Menu Dropdown */}
       {mobileMenuOpen && (
         <div className="lg:hidden border-t border-stone-200 bg-white px-4 pt-3 pb-6 space-y-3 shadow-lg max-h-[80vh] overflow-y-auto">
+          {social.length > 0 && (
+            <div className="flex items-center gap-1" aria-label="Sosiale medier" role="group">
+              {social.map((link) => (
+                <a
+                  key={link.kind}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={link.label}
+                  className="inline-flex items-center justify-center w-11 h-11 rounded-lg text-stone-600 hover:text-stone-900 hover:bg-stone-100"
+                >
+                  <SocialIcon kind={link.kind} />
+                </a>
+              ))}
+            </div>
+          )}
           <div className="space-y-1">
             {navigationItems.map((item) => {
               const hasSub = item.children.length > 0;

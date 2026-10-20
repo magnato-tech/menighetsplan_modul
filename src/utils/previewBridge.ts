@@ -34,6 +34,11 @@ export type WarmDraftFields = Partial<
     | "heroCtaSecondaryLink"
     | "showHeroPrimaryCta"
     | "showHeroSecondaryCta"
+    | "showHeroSubtext"
+    | "heroHeight"
+    | "heroTitleStyle"
+    | "heroZoom"
+    | "heroMenuOverlay"
     | "isPublished"
     | "inNavMenu"
     | "linkUrl"
@@ -61,6 +66,11 @@ const WARM_DRAFT_KEYS: (keyof WarmDraftFields)[] = [
   "heroCtaSecondaryLink",
   "showHeroPrimaryCta",
   "showHeroSecondaryCta",
+  "showHeroSubtext",
+  "heroHeight",
+  "heroTitleStyle",
+  "heroZoom",
+  "heroMenuOverlay",
   "isPublished",
   "inNavMenu",
   "linkUrl",
