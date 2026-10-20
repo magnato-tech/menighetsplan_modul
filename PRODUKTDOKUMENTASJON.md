@@ -138,7 +138,7 @@ Adminpanelet ligger på `/admin` og heter **Admin**. Øverst i menyen velges **P
 | Fane | Hva administratoren gjør | Status |
 |---|---|---|
 | **Oversikt** | Ser de tre neste arrangementene med bemanningen (forfall, ubesatt, venter), og hva som må ordnes de nærmeste fire ukene. Ett trykk åpner Bemanning på arrangementet | Levert. De neste arrangementene øverst 20. oktober |
-| **Arrangementer** | Oppretter, endrer og avlyser samlinger. Det raske skjemaet tar tittel, dato, klokkeslett, tema og sted, og gjør ingen gruppe ansvarlig: arrangementet legges i kalenderen. «Flere valg» åpner det store skjemaet, som også brukes ved redigering: slutt (også en annen dag), sted, bibeltekst, ansvarlig gruppe (kalenderen til en annen velges), gudstjeneste og synlighet. «Lag neste arrangement» kopierer oppgavene til en ny dato | Levert. Mal og serie i det store skjemaet er prøveutgaver (kapittel 14) |
+| **Arrangementer** | Oppretter, endrer og avlyser samlinger. «+» øverst åpner skjemaet for et nytt arrangement *(fra 20. oktober; det raske skjemaet over listen er tatt bort, for nye arrangementer legges mest inn ved semesterstart)*. Et trykk på et arrangement åpner Bemanning, «Kjøreplan» åpner Program. Skjemaet gjør ingen gruppe ansvarlig før en velges, og brukes også ved redigering: slutt (også en annen dag), sted, bibeltekst, ansvarlig gruppe (kalenderen til en annen velges), gudstjeneste og synlighet. «Lag neste arrangement» kopierer oppgavene til en ny dato | Levert. Mal og serie i det store skjemaet er prøveutgaver (kapittel 14) |
 | **Maler** | Holder malene for arrangementer som gjentas: tid, sted, bilde og tekst, program med roller, og oppgavene som skal bemannes. Legger inn standardmalen for gudstjeneste, og planlegger en serie fra en mal | Levert 12. oktober |
 | **Trenger oppfølging** | Ser forfall og ubesatte oppgaver per arrangement, det nærmeste først, de nærmeste fire ukene eller alt som kommer. Tildeler og forespør | Levert. Purr tatt bort 20. oktober (kapittel 11.3) |
 | **Grupper & husfellesskap** | Oppretter grupper, setter leder og nestleder, kategori, møteplan og om gruppen vises på nettsiden | Levert |
@@ -1500,7 +1500,7 @@ Bestilt av produkteier: en pastor som får en SMS om forfall, skal kunne bytte p
 | **Et bytte** | Forfall på den som ikke kan, så Tildel på samme rolle. En rolle som nettopp er endret, blir stående der den er til arrangementet åpnes igjen, så den ikke hopper bort fra fingeren |
 | **Ikon og tekst** | Ingen knapp har bare ikon med forklaring ved musepekeren: mobil har ingen musepeker. Bekreftet har hake, Forespurt klokke, Forfall varseltrekant. Instruksen åpnes fra rollenavnet, som har et dokumentikon |
 | **Arrangementet på mobil** | Rediger, Ny oppgave, Hent fra mal, Vis på nettsiden, Lag mal og Skriv ut står bak «…» |
-| **Arrangementer** | Listen viser Kommende først, fra det nærmeste, og Tidligere fra det siste som ble holdt. På mobil vises alltid kortene, og hele kortet åpner arrangementet. Flytt serie, Lag neste og Slett står bak «…» |
+| **Arrangementer** | Listen viser Kommende først, fra det nærmeste, og Tidligere fra det siste som ble holdt. På mobil vises alltid kortene, og hele kortet åpner arrangementet på Bemanning; «Kjøreplan» åpner Program. Flytt serie, Lag neste og Slett står bak «…». Det raske skjemaet over listen er erstattet av «+», som åpner det store skjemaet |
 | **Trenger oppfølging** | Per arrangement, det nærmeste først, med forfall før ubesatt. Filtrene er Må ordnes, Venter på svar og Alle, og 4 uker eller Alt som kommer. Purr er tatt bort. Menyen teller det som må ordnes de nærmeste fire ukene («3 må ordnes») i stedet for alt som er ubesatt fram til sommeren |
 | **Gruppeleder** | Banneret på ledersiden sier «oppgaver med forfall må fylles» |
 
@@ -1601,7 +1601,7 @@ Bestilt av produkteier etter en gjennomgang av skjemaet for arrangementer i eRed
 
 | Del | Hva | Status |
 |:---|:---|:---|
-| A1 | **Ett skjema i planleggeren.** Det raske skjemaet står, og «Flere valg» åpner det store, på en stor flate. Det samme skjemaet brukes ved redigering | **Levert 12. oktober** (kapittel 12) |
+| A1 | **Ett skjema i planleggeren.** Det raske skjemaet står, og «Flere valg» åpner det store, på en stor flate. Det samme skjemaet brukes ved redigering | **Levert 12. oktober** (kapittel 12). Fra 20. oktober åpner «+» det store skjemaet, og det raske er tatt bort |
 | A2 | **Bilde og tekst på arrangementet.** Feltene ligger i arrangementets eget skjema, i delen «På nettsiden»: bilde med bildetekst, ingress, lang tekst og lenke med knappetekst. «Forside-overstyring» i CMS-et er blitt «Arrangementer på nettsiden»: en oversikt som viser hva hvert arrangement mangler, og som åpner det samme skjemaet på delen om nettsiden | **Levert 12. oktober** (kapittel 12) |
 | A3 | **Nettsiden.** Bilde og ingress på kortene i «Neste gudstjeneste», «Hva skjer» og kalenderlisten. Egen side for hvert arrangement, som alle kort og kalenderen åpner. Bildet og ingressen følger med ved deling og i kalenderabonnementet. En nyhet som hører til et arrangement, har en faktaboks med tid og sted | **Levert 12. oktober** (kapittel 12) |
 | A4 | **«Lag neste arrangement»** kopierer også bilde, tekst og kjøreplan. I dag kopieres oppgavene, men ikke kjøreplanen | |
