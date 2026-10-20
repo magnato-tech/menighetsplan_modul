@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.53 · **Sist oppdatert:** 2026-10-14
+> **Dokumentversjon:** 4.54 · **Sist oppdatert:** 2026-10-20
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -137,10 +137,10 @@ Adminpanelet ligger på `/admin` og heter **Admin**. Øverst i menyen velges **P
 
 | Fane | Hva administratoren gjør | Status |
 |---|---|---|
-| **Oversikt** | Ser nøkkeltall og hva som haster | Levert |
+| **Oversikt** | Ser de tre neste arrangementene med bemanningen (forfall, ubesatt, venter), og hva som må ordnes de nærmeste fire ukene. Ett trykk åpner Bemanning på arrangementet | Levert. De neste arrangementene øverst 20. oktober |
 | **Arrangementer** | Oppretter, endrer og avlyser samlinger. Det raske skjemaet tar tittel, dato, klokkeslett, tema og sted, og gjør ingen gruppe ansvarlig: arrangementet legges i kalenderen. «Flere valg» åpner det store skjemaet, som også brukes ved redigering: slutt (også en annen dag), sted, bibeltekst, ansvarlig gruppe (kalenderen til en annen velges), gudstjeneste og synlighet. «Lag neste arrangement» kopierer oppgavene til en ny dato | Levert. Mal og serie i det store skjemaet er prøveutgaver (kapittel 14) |
 | **Maler** | Holder malene for arrangementer som gjentas: tid, sted, bilde og tekst, program med roller, og oppgavene som skal bemannes. Legger inn standardmalen for gudstjeneste, og planlegger en serie fra en mal | Levert 12. oktober |
-| **Trenger oppfølging** | Ser ubesatte oppgaver og akutte forfall på tvers av samlinger. Tildeler, forespør og åpner purretekst | Levert |
+| **Trenger oppfølging** | Ser forfall og ubesatte oppgaver per arrangement, det nærmeste først, de nærmeste fire ukene eller alt som kommer. Tildeler og forespør | Levert. Purr tatt bort 20. oktober (kapittel 11.3) |
 | **Grupper & husfellesskap** | Oppretter grupper, setter leder og nestleder, kategori, møteplan og om gruppen vises på nettsiden | Levert |
 | **Personer & roller** | Holder personregisteret: kontaktinfo, rolle, politiattest, perioder personen er borte, og offentlig profil med samtykke | Levert |
 | Detaljsider | Samling med kjøreplan, oppgave, gruppe og person har hver sin side | Levert |
@@ -682,15 +682,20 @@ Kontrakten står i `INTEGRASJON-MENIGHETSPLAN.md`. Det eksterne CMS-et (`menighe
 ### 11.1 «Lag neste arrangement»
 Oppretter en ny samling på valgt dato med samme klokkeslett, og kopierer oppgavene og behovet. Personlisten er tom, slik at nye kan tildeles eller forespørres.
 
-### 11.2 Kjøreplan
-Samlingssiden viser programmet og oppgavene på én tidslinje. Et programpunkt som er koblet til en oppgave, viser hvem som står på den. Et programpunkt uten oppgave har ingen ansvarlig, og en samling uten program viser bare oppgavene sine. Løsningen viser aldri et program eller et navn som ikke er registrert.
+### 11.2 Kjøreplan, Program og Bemanning
+Kjøreplanen alle ser (`/samling/:id`) viser programmet og oppgavene på én tidslinje. Et programpunkt som er koblet til en oppgave, viser hvem som står på den. Et programpunkt uten oppgave har ingen ansvarlig, og en samling uten program viser bare oppgavene sine. Løsningen viser aldri et program eller et navn som ikke er registrert.
 
-Kjøreplanen finnes i to utgaver. Den alle ser (`/samling/:id`, fra kalenderen på Min side) viser bare dem som har akseptert. Planleggingen (`/leder/samling/:id` og `/admin/samling/:id`) viser også forespurt, forfall og avslått, og der tildeles og flyttes det. En gruppeleder ser dette bare for gruppene hun leder; resten av programmet ser ut som i kjøreplanen for alle.
+Kjøreplanen alle ser, fra kalenderen på Min side, viser bare dem som har akseptert. Planleggingen (`/leder/samling/:id` og `/admin/samling/:id`) har to visninger *(levert 20. oktober)*:
+
+- **Program** (`?vis=program`): programpostene med klokkeslett, tema, rolle, team og hvem som er satt opp. Bemanningen endres ikke her. Administrator flytter programposter med dra og slipp.
+- **Bemanning** (`?vis=bemanning`, åpnes først): hver rolle én gang, også når programmet bruker den i flere programposter, med team, klokkeslettene den brukes, og personene. Øverst står «Må ordnes»: forfall, så ubesatt. Resten står per team. Tildel og Forespør står på en rolle med ledig plass. Et trykk på en person gir Bekreftet, Forespurt, Forfall og Slett, og et trykk på navnet øverst ringer når registeret har nummeret. Et trykk på rollenavnet viser instruksen.
+
+En gruppeleder ser hele programmet, med status på egne grupper og bare navn på dem som har akseptert i andre. Under Bemanning ser hun bare egne grupper, og kan gjøre det samme som administrator der.
 
 **Planlagt:** skjermbilde for å redigere programmet.
 
-### 11.3 Purring uten e-post
-Til en varslingstjeneste er koblet på: «Purr» lagrer tidspunktet på oppgaven og åpner en ferdig tekst med oppmøtedetaljer, som lederen kopierer og sender på SMS eller Messenger.
+### 11.3 Purring
+«Purr» er tatt bort *(20. oktober, produkteier)*: svarer ikke en person på forespørselen i appen, er det bedre å ringe. Under Bemanning ringer et trykk på navnet øverst i personmenyen. Feltet `lastReminded` blir liggende på eldre oppgaver, men skrives og leses ikke.
 
 ### 11.4 YouTube uten sporing
 YouTube-lenker på taler gjøres om til `youtube-nocookie.com`, slik at en besøkende ikke får sporingskapsler før videoen spilles av.
@@ -1479,7 +1484,29 @@ Bestilt av produkteier, etter mønster fra Planning Center: menyen i admin var l
 
 ### Trykk på raden i kjøreplanen (14. oktober 2026)
 
-Bestilt av produkteier: en gruppeleder kan trykke på en rad i egen gruppe i kjøreplanen. Planleggingen åpnes og går rett til den oppgaven. Radene kjennes på en liten pil til høyre og en tydeligere ramme når pekeren holdes over. Andre gruppers rader og programposter uten oppgave kan ikke trykkes på. Knappen «Åpne planlegging» er beholdt, nå grå, for administrator og for det som ikke har en rad.
+Bestilt av produkteier: en gruppeleder kan trykke på en rad i egen gruppe i kjøreplanen. Planleggingen åpnes og går rett til den oppgaven. Radene kjennes på en liten pil til høyre og en tydeligere ramme når pekeren holdes over. Andre gruppers rader og programposter uten oppgave kan ikke trykkes på. Knappen «Åpne planlegging» er beholdt, nå grå, for administrator og for det som ikke har en rad. *Fra 20. oktober åpnes rollen under Bemanning.*
+
+### Bemanning fra mobilen før neste gudstjeneste (20. oktober 2026)
+
+Bestilt av produkteier: en pastor som får en SMS om forfall, skal kunne bytte person på førstkommende gudstjeneste fra mobilen, raskt. Før var veien fire skjermer: oversikten viste tall for hele året, «Trenger oppfølging» viste hele året uten rekkefølge, knappen som åpnet et arrangement lå utenfor skjermen på mobil, og i arrangementet sto samme rolle på flere programposter.
+
+| Del | Hva som er levert |
+|---|---|
+| **Oversikten** | Planlegging åpner med de tre neste arrangementene. Hvert kort sier «Fullt bemannet», eller hvor mange forfall, ubesatte og som venter, og ett trykk åpner Bemanning. Kortet «Neste 4 uker» teller det som må ordnes, og hvor mange av dem som er forfall. «Arrangementer framover» erstatter «Gudstjenester», som talte alle arrangementer, også de som var holdt |
+| **Program og Bemanning** | De to visningene i kapittel 11.2 erstatter «Hele programmet», «Forfall / Mangler» og «Min gruppe». Linja over fanene teller forfall, ubesatt og venter, og fanen Bemanning har et merke med det som må ordnes |
+| **En rolle én gang** | Møteleder på åpningsord, bønn og kunngjøringer er én oppgave, og står én gang med klokkeslettene (`11:07 · 11:10 · 11:15`). Et bytte gjelder alle programpostene |
+| **Korte ord** | Personmenyen: Bekreftet, Forespurt, Forfall, Slett. «Grip inn / Tildel» og «Tildel flere» er Tildel og Forespør, og står bare når en plass er ledig. «Ubesatt (Trenger frivillig)» er Ubesatt. Svaret som het «Akseptert», heter Bekreftet overalt |
+| **Tildel og Forespør** | Åpner et ark nedenfra på mobil. Ett trykk på et navn setter personen på: bekreftet med Tildel, forespurt med Forespør. Teamets medlemmer står først, så resten av menigheten for administrator. Den som er borte den dagen eller står på en annen rolle samtidig, er merket og står lenger ned |
+| **Et bytte** | Forfall på den som ikke kan, så Tildel på samme rolle. En rolle som nettopp er endret, blir stående der den er til arrangementet åpnes igjen, så den ikke hopper bort fra fingeren |
+| **Ikon og tekst** | Ingen knapp har bare ikon med forklaring ved musepekeren: mobil har ingen musepeker. Bekreftet har hake, Forespurt klokke, Forfall varseltrekant. Instruksen åpnes fra rollenavnet, som har et dokumentikon |
+| **Arrangementet på mobil** | Rediger, Ny oppgave, Hent fra mal, Vis på nettsiden, Lag mal og Skriv ut står bak «…» |
+| **Arrangementer** | Listen viser Kommende først, fra det nærmeste, og Tidligere fra det siste som ble holdt. På mobil vises alltid kortene, og hele kortet åpner arrangementet. Flytt serie, Lag neste og Slett står bak «…» |
+| **Trenger oppfølging** | Per arrangement, det nærmeste først, med forfall før ubesatt. Filtrene er Må ordnes, Venter på svar og Alle, og 4 uker eller Alt som kommer. Purr er tatt bort. Menyen teller det som må ordnes de nærmeste fire ukene («3 må ordnes») i stedet for alt som er ubesatt fram til sommeren |
+| **Gruppeleder** | Banneret på ledersiden sier «oppgaver med forfall må fylles» |
+
+**Én regel.** Forfall, ubesatt og venter regnes ett sted (`staffingStateOf` i `src/utils/staffingRoster.ts`), og oversikten, arrangementet, «Trenger oppfølging» og menyen bruker den. Forfall: en ledig plass etter at noen har trukket seg. Ubesatt: en ledig plass ingen er spurt til. Venter: alle plasser er tatt, men noen har ikke svart. Er en ny spurt etter et forfall, venter oppgaven; den er ikke lenger noe å ordne.
+
+**Prøvd.** Typesjekk, tester og bygg kjører på grenen (`.github/workflows/sjekk.yml`). Skjermbildene er tatt i mobilbredde mot demoens data, som administrator og som gruppeleder, uten å endre noe.
 
 ---
 
@@ -1754,8 +1781,8 @@ Hver endring typesjekkes, testes og bygges før den regnes som ferdig. Regler fl
 | Fane | Hver rad viser minst | Handlinger |
 |:---|:---|:---|
 | **Sider & innhold** | Tittel, adresse, status (kladd, publisert, planlagt med tidspunkt), plass i menyen, sist endret | Rediger, forhåndsvis, flytt, slett med bekreftelse |
-| **Arrangementer** | Tittel, tidspunkt, sted, synlighet, bemanningsstatus med ikon og tekst | Rediger, avlys, opprett oppgaver, åpne kjøreplan, «Lag neste arrangement» |
-| **Trenger oppfølging** | Oppgave, samling og dato, plasser (`1/2`), status (`Mangler 1`, `Akutt forfall`) | Tildel, forespør, åpne purretekst |
+| **Arrangementer** | Tittel, tidspunkt, sted, synlighet, bemanningsstatus med ikon og tekst | Rediger, avlys, opprett oppgaver, åpne Program og Bemanning, «Lag neste arrangement» |
+| **Trenger oppfølging** | Per arrangement: oppgave, plasser (`1/2 bekreftet`), status (`Forfall`, `Ubesatt`, `Venter på svar`, `Under 48 t`) | Tildel, forespør, åpne Bemanning |
 | **Taler** | Tittel, dato, taler, serie, om det er lyd eller video | Rediger, legg til opptak |
 | **Personer & roller** | Navn, kontaktinfo, grupper og roller, politiattest, offentlig profil med samtykkestatus | Rediger, registrer samtykke, slett |
 | **Analysebord** | Hvert tall med periode, endring fra perioden før, og hva det bygger på. Et tall uten grunnlag vises som strek | Bytt periode, registrer og rett oppmøtetall, vis som tabell, last ned CSV |

@@ -13,7 +13,17 @@ import {
   Sliders,
   Headphones,
 } from "lucide-react";
-import { StudioData, StudioTab, countPublicGatherings, countUrgentTasks } from "../studio";
+import {
+  StudioData,
+  StudioTab,
+  NEAR_WEEKS,
+  countPublicGatherings,
+  isUrgentTask,
+  taskStateOf,
+  upcomingGatherings,
+  withinWeeks,
+} from "../studio";
+import { UpcomingGatheringsPanel } from "./dashboard/UpcomingGatheringsPanel";
 import type { StudioArea } from "../studioAreas";
 import { useLevel } from "../../../hooks/useLevel";
 import { hasPlanner } from "../../../utils/level";
@@ -31,9 +41,14 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ studio, area, onTabC
   const { adminGatherings, adminTasks } = studio;
   const { pages, news, sermons, staff, settings } = useCms();
   const publicGatheringsCount = countPublicGatherings(adminGatherings);
-  const urgentTasksCount = countUrgentTasks(adminTasks);
   const withPlanner = hasPlanner(useLevel());
   const planning = area === "planlegging";
+  // What the planning opens with: the next gatherings, and what must be ordered in the nearest weeks
+  const upcoming = planning ? upcomingGatherings(adminGatherings, adminTasks, 3) : [];
+  const upcomingCount = planning ? upcomingGatherings(adminGatherings, [], Infinity).length : 0;
+  const near = planning ? withinWeeks(adminTasks, NEAR_WEEKS) : [];
+  const nearToOrder = near.filter(isUrgentTask).length;
+  const nearForfall = near.filter((item) => taskStateOf(item) === "forfall").length;
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
@@ -42,7 +57,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ studio, area, onTabC
           <h1 className="text-2xl sm:text-3xl font-black text-[var(--studio-text)] tracking-tight">
             {planning ? "Planlegging" : "Nettside"}
           </h1>
-          <p className="text-xs sm:text-sm text-[var(--studio-muted)] mt-1">
+          <p className={`text-xs sm:text-sm text-[var(--studio-muted)] mt-1 ${planning ? "hidden sm:block" : ""}`}>
             {planning
               ? `Arrangementene, de frivillige og bemanningen i ${settings.churchName}.`
               : `Sidene, nyhetene, talene og utseendet på nettsiden til ${settings.churchName}.`}
@@ -68,6 +83,14 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ studio, area, onTabC
         </div>
       </div>
 
+      {planning && (
+        <UpcomingGatheringsPanel
+          upcoming={upcoming}
+          withPlanner={withPlanner}
+          onShowAll={() => onTabChange("planlegger-samlinger")}
+        />
+      )}
+
       {/* Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {planning && (
@@ -76,10 +99,10 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ studio, area, onTabC
           className="p-5 rounded-2xl bg-[var(--studio-surface)] border border-[var(--studio-border)] hover:border-indigo-500 cursor-pointer transition-all space-y-2"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-[var(--studio-muted)] uppercase tracking-wider">Gudstjenester</span>
+            <span className="text-xs font-bold text-[var(--studio-muted)] uppercase tracking-wider">Arrangementer framover</span>
             <Calendar className="w-4 h-4 text-[var(--studio-icon)]" />
           </div>
-          <div className="text-3xl font-black text-[var(--studio-text)]">{adminGatherings.length}</div>
+          <div className="text-3xl font-black text-[var(--studio-text)]">{upcomingCount}</div>
           <p className="text-[11px] text-[var(--studio-muted)]">{publicGatheringsCount} offentlig i kalenderen</p>
         </div>
         )}
@@ -90,16 +113,16 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ studio, area, onTabC
           className="p-5 rounded-2xl bg-[var(--studio-surface)] border border-[var(--studio-border)] hover:border-indigo-500 cursor-pointer transition-all space-y-2"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-[var(--studio-muted)] uppercase tracking-wider">Oppgaver</span>
+            <span className="text-xs font-bold text-[var(--studio-muted)] uppercase tracking-wider">Neste {NEAR_WEEKS} uker</span>
             <ListTodo className="w-4 h-4 text-amber-400" />
           </div>
-          <div className="text-3xl font-black text-[var(--studio-text)]">{adminTasks.length}</div>
+          <div className={`text-3xl font-black ${nearToOrder > 0 ? "text-rose-400" : "text-[var(--studio-text)]"}`}>{nearToOrder}</div>
           <p className="text-[11px] text-[var(--studio-muted)]">
-            {urgentTasksCount > 0 ? (
-              <span className="text-red-400 font-bold">{urgentTasksCount} trenger vikar!</span>
-            ) : (
-              "Alle vakter besatt"
-            )}
+            {nearToOrder === 0
+              ? "Ingenting må ordnes"
+              : nearForfall > 0
+              ? `må ordnes, ${nearForfall} av dem forfall`
+              : "må ordnes"}
           </p>
         </div>
         )}
@@ -222,7 +245,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ studio, area, onTabC
               onClick={() => onTabChange("planlegger-oppgaver")}
               className="w-full flex items-center justify-between p-3 rounded-xl bg-[var(--studio-bg)] hover:bg-[var(--studio-hover)]/80 text-[var(--studio-text)] font-semibold transition-colors text-left"
             >
-              <span>Sjekk vikarstatus og ubesatte oppgaver</span>
+              <span>Forfall og ubesatte oppgaver</span>
               <ListTodo className="w-4 h-4 text-rose-400" />
             </button>
             )}

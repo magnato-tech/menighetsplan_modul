@@ -169,8 +169,8 @@ describe("Bemanningsstatus", () => {
     globalRole: "member",
   }));
   assert(
-    described.map((d) => d.statusLabel).join(",") === "Forespurt,Akseptert,Avslått,Forfall",
-    "Svarene heter Forespurt, Akseptert, Avslått og Forfall"
+    described.map((d) => d.statusLabel).join(",") === "Forespurt,Bekreftet,Avslått,Forfall",
+    "Svarene heter Forespurt, Bekreftet, Avslått og Forfall"
   );
   assert(
     described.every((d) => d.response === d.assignment.response && d.person?.id === d.assignment.personId),

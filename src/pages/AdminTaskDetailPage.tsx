@@ -315,7 +315,7 @@ export const AdminTaskDetailPage: React.FC = () => {
                         {response === "withdrawn" ? "Forfall" : response === "declined" ? "Avslått" : "Forespurt"}
                       </span>
                     ) : (
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0 self-center" title="Akseptert" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0 self-center" title="Bekreftet" />
                     )}
                   </div>
                 ))}

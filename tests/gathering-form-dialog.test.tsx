@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 
@@ -250,6 +250,12 @@ describe("Det store skjemaet for et arrangement som finnes", () => {
 });
 
 describe("Arrangementer i admin", () => {
+  // The list opens on the coming events; the events below lie ahead of this day
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-01T12:00:00.000Z"));
+  });
+  afterEach(() => vi.useRealTimers());
   const stored = { gatherings: [] as Gathering[], tasks: [] as Task[], programs: [] as [string, Partial<Gathering>][] };
   const createGathering = vi.fn((data: NewGatheringInput) => {
     const gathering = buildGathering(data);

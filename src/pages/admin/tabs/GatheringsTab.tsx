@@ -21,17 +21,20 @@ import {
   LayoutGrid,
   Table2,
   Trash2,
+  MoreHorizontal,
+  ChevronRight,
 } from "lucide-react";
 import { StudioData, ShowFeedback } from "../studio";
 import { visibilityOf } from "../../../utils/visibility";
 import { DEFAULT_LOCATION, isWorshipService, locationOf } from "../../../utils/gatherings";
 import { NewGatheringDialog } from "../NewGatheringDialog";
 import { useFirebase } from "../../../context/FirebaseDataContext";
+import { useMediaQuery } from "../../../hooks/useMediaQuery";
 import { movedRestOfSeries } from "../../../utils/series";
 import { DeleteGatheringDialog, type StaffedTask } from "../DeleteGatheringDialog";
 import { MoveSeriesDialog } from "../MoveSeriesDialog";
 import { GatheringsTable } from "./gatherings/GatheringsTable";
-import { nextGatheringSort, sortGatherings, type GatheringSortDirection, type GatheringSortKey } from "../../../utils/gatheringList";
+import { gatheringsInPeriod, nextGatheringSort, type GatheringPeriod, type GatheringSortDirection, type GatheringSortKey } from "../../../utils/gatheringList";
 import { defaultGroupId, newGatheringForm, type GatheringFormValues } from "../../../utils/gatheringForm";
 
 interface GatheringsTabProps {
@@ -128,10 +131,20 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
   const { assignments, deleteGatheringWithStaffing, getPersonById } = useFirebase();
 
   // The events as a table or as cards, by date until the admin presses another column
-  const [view, setView] = useState<"cards" | "table">("table");
+  const [chosenView, setView] = useState<"cards" | "table">("table");
+  // A phone always gets the cards: a table does not fit it, and its last column is out of sight
+  const wide = useMediaQuery("(min-width: 768px)");
+  const view = wide ? chosenView : "cards";
   const [sortKey, setSortKey] = useState<GatheringSortKey>("date");
   const [sortDirection, setSortDirection] = useState<GatheringSortDirection>("asc");
-  const sortedGatherings = useMemo(() => sortGatherings(adminGatherings, sortKey, sortDirection), [adminGatherings, sortKey, sortDirection]);
+  // Coming events first; the held ones are a press away
+  const [period, setPeriod] = useState<GatheringPeriod>("kommende");
+  const sortedGatherings = useMemo(
+    () => gatheringsInPeriod(adminGatherings, period, Date.now(), sortKey, sortDirection),
+    [adminGatherings, period, sortKey, sortDirection]
+  );
+  // On a phone the secondary actions of a card are behind «…»
+  const [openActionsId, setOpenActionsId] = useState<string | null>(null);
   const handleSort = (key: GatheringSortKey) => {
     const next = nextGatheringSort(sortKey, sortDirection, key);
     setSortKey(next.key);
@@ -323,9 +336,25 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
         </form>
 
         <div className="flex items-center justify-between gap-3">
-          <p className="text-xs text-[var(--studio-muted)]">
+          <div className="inline-flex rounded-xl border border-[var(--studio-border)] bg-[var(--studio-surface)] p-0.5" role="group" aria-label="Periode">
+            {(["kommende", "tidligere"] as const).map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setPeriod(p)}
+                aria-pressed={period === p}
+                className={`px-3 py-2 rounded-lg text-xs font-bold cursor-pointer ${
+                  period === p ? "bg-[var(--studio-hover)] text-[var(--studio-text)]" : "text-[var(--studio-muted)] hover:text-[var(--studio-text)]"
+                }`}
+              >
+                {p === "kommende" ? "Kommende" : "Tidligere"}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-[var(--studio-muted)] ml-auto">
             {sortedGatherings.length} {sortedGatherings.length === 1 ? "arrangement" : "arrangementer"}
           </p>
+          {wide && (
           <div className="inline-flex rounded-xl border border-[var(--studio-border)] bg-[var(--studio-surface)] p-0.5">
             <button
               type="button"
@@ -350,6 +379,7 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
               Tabell
             </button>
           </div>
+          )}
         </div>
 
         {view === "table" && (
@@ -374,11 +404,13 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
             return (
               <div
                 key={g.id}
-                className="p-5 rounded-2xl bg-[var(--studio-surface)] border border-[var(--studio-border)] flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                className="p-4 sm:p-5 rounded-2xl bg-[var(--studio-surface)] border border-[var(--studio-border)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4"
               >
-                <div className="space-y-1">
+                {/* The whole card opens the event; on a phone that is the one thing it is for */}
+                <div className="flex items-start gap-2">
+                <Link to={`/admin/samling/${g.id}`} className="space-y-1 min-w-0 flex-1 group">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="font-bold text-[var(--studio-text)] text-base">{g.title}</h3>
+                    <h3 className="font-bold text-[var(--studio-text)] text-base group-hover:underline">{g.title}</h3>
                     {isWorshipService(g) && (
                       <span className="text-[10px] font-bold text-[var(--studio-accent-text)] bg-[var(--studio-accent-bg)] px-2 py-0.5 rounded">
                         Gudstjeneste
@@ -420,9 +452,19 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
                     {formatNorwegianDateTime(g.startsAt)} · {locationOf(g)}
                     {g.theme && ` · Tema: ${g.theme}`}
                   </p>
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setOpenActionsId(openActionsId === g.id ? null : g.id)}
+                  aria-expanded={openActionsId === g.id}
+                  aria-label={`Flere valg for ${g.title}`}
+                  className="sm:hidden p-2 -mr-2 rounded-lg text-[var(--studio-muted)] hover:bg-[var(--studio-hover)] cursor-pointer"
+                >
+                  <MoreHorizontal className="w-5 h-5" aria-hidden />
+                </button>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
+                <div className={`flex-wrap items-center gap-2 ${openActionsId === g.id ? "flex" : "hidden sm:flex"}`}>
                   {g.seriesId && (
                     <button
                       type="button"
@@ -465,7 +507,8 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
                     className="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs"
                   >
                     <ListTodo className="w-3.5 h-3.5" />
-                    <span>Oppgaver & Kjøreplan</span>
+                    <span>Program og bemanning</span>
+                    <ChevronRight className="w-3.5 h-3.5" aria-hidden />
                   </Link>
                 </div>
               </div>

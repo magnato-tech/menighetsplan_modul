@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import {
   useLeaderGatheringDetail,
@@ -6,31 +6,27 @@ import {
 } from "../hooks/useAppHooks";
 import { useTimedMessage } from "../hooks/useTimedMessage";
 import { studioTabUrl } from "../pages/admin/studio";
-import { buildRunSheet, programIndexOfRunSheetRow, reorderProgramSchedule, sharedRunSheet } from "../utils/runSheet";
+import { buildRunSheet, programIndexOfRunSheetRow, reorderProgramSchedule } from "../utils/runSheet";
+import { buildStaffingRoster, needsAction, summarizeStaffingRoster } from "../utils/staffingRoster";
 import { locationOf } from "../utils/gatherings";
 import {
   ArrowLeft,
   Calendar,
-  Clock,
   MapPin,
-  Users,
-  ShieldAlert,
-  ShieldCheck,
   CheckCircle2,
   AlertTriangle,
-  Info,
-  SlidersHorizontal,
+  Clock,
   Edit3,
   Plus,
   Printer,
   LayoutTemplate,
   Globe,
+  ListOrdered,
+  Users,
 } from "lucide-react";
-import { RunSheetRowCard } from "./gathering/RunSheetRowCard";
-import { SharedRunSheetRowCard } from "./gathering/SharedRunSheetRowCard";
-import { InstructionDialog } from "./gathering/InstructionDialog";
-import { AssignPersonDialog } from "./gathering/AssignPersonDialog";
-import { EditTaskDialog } from "./gathering/EditTaskDialog";
+import { ProgramView } from "./gathering/ProgramView";
+import { StaffingView } from "./gathering/StaffingView";
+import { GatheringActions, type GatheringAction } from "./gathering/GatheringActions";
 import { CreateTaskDialog } from "./gathering/CreateTaskDialog";
 import { ApplyTemplateDialog } from "./gathering/ApplyTemplateDialog";
 import { GatheringFormDialog } from "./gathering/GatheringFormDialog";
@@ -47,6 +43,18 @@ interface GatheringDetailViewProps {
   mode?: "admin" | "leader";
 }
 
+type View = "program" | "bemanning";
+
+/** The view named in the address (`?vis=program`). Bemanning is where the planning is done, and opens first. */
+function viewOf(value: string | null): View {
+  return value === "program" ? "program" : "bemanning";
+}
+
+/**
+ * The planning of one gathering, for an admin and for the leaders of the groups on it. Two views:
+ * «Program», the programme with who is set up, and «Bemanning», every role once with its people,
+ * where the staffing is changed. A leader sees the whole programme, and the staffing of their own groups.
+ */
 export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
   gatheringId,
   mode = "leader",
@@ -59,14 +67,10 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
     isDeputy,
     isAdmin: isUserAdmin,
     gathering,
-    myGroups,
-    currentUser,
-    involvedGroups,
     tasksWithDetails,
     programSchedule,
-    updateAssignmentStatus,
-    removeAssignment,
     updateGathering,
+    volunteerRoles,
   } = detail;
 
   // The form the event is changed in is the one it was made in (see utils/gatheringForm.ts)
@@ -74,119 +78,46 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
   const withPlanner = hasPlanner(useLevel());
 
   const isExplicitAdminView = mode === "admin" || (isUserAdmin && mode !== "leader");
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const fromRunSheet = searchParams.get("fra") === "kjoreplan";
   const { hash } = useLocation();
   const canAdminister = isUserAdmin || isExplicitAdminView;
-  // A group leader follows up the groups they lead. The rest of the programme reads as it does
-  // for everyone (see SharedRunSheetView): those who have accepted, and nothing about who is missing.
+  // A group leader changes the staffing of the groups they lead. The rest reads as it does for everyone.
   const limitToMyGroups = !canAdminister;
 
-  // Filter state
-  const [viewFilter, setViewFilter] = useState<"all" | "needs-action" | "my-group">("all");
-  const [selectedGroupFilter, setSelectedGroupFilter] = useState<string>("all");
-
-  // Modals
-  const [activeInterveneTaskId, setActiveInterveneTaskId] = useState<string | null>(null);
-  const [viewInstructionTask, setViewInstructionTask] = useState<{
-    taskId?: string;
-    title: string;
-    instruction: string;
-    volunteerRoleId?: string;
-    time?: string;
-    groupName?: string;
-  } | null>(null);
-
-
-  // Person status dropdown modal
-  const [activePersonActionId, setActivePersonActionId] = useState<string | null>(null);
-
-  // Admin: Edit Gathering modal
-  const [isEditingGathering, setIsEditingGathering] = useState<boolean>(false);
-
-  // Admin: Edit Task modal
-  const [editingTask, setEditingTask] = useState<{
-    id: string;
-    title: string;
-    volunteerRoleId?: string;
-    groupId?: string;
-    neededCount: number;
-    description: string;
-  } | null>(null);
-
-  // Admin: Create Task modal
-  const [isCreatingTask, setIsCreatingTask] = useState<boolean>(false);
-
+  const [isEditingGathering, setIsEditingGathering] = useState(false);
+  const [isCreatingTask, setIsCreatingTask] = useState(false);
   const [isApplyingTemplate, setIsApplyingTemplate] = useState(false);
   const { templates: gatheringTemplates } = useGatheringTemplates();
-
-  // Toast feedback
   const [toastMessage, showToast] = useTimedMessage<string>();
 
-  const [draggedProgramIndex, setDraggedProgramIndex] = useState<number | null>(null);
-  const [dragOverProgramIndex, setDragOverProgramIndex] = useState<number | null>(null);
-  const canReorderProgram = canAdminister && viewFilter === "all" && selectedGroupFilter === "all";
-
-  // The programme and the tasks on one timeline, built from what is registered and nothing else
-  const { volunteerRoles } = detail;
-
-  const integratedSchedule = useMemo(
+  // The programme and the tasks, built from what is registered and nothing else
+  const runSheet = useMemo(
     () => buildRunSheet(programSchedule, tasksWithDetails, volunteerRoles),
     [programSchedule, tasksWithDetails, volunteerRoles]
   );
+  const programRows = useMemo(() => runSheet.filter((row) => programIndexOfRunSheetRow(row.id) !== null), [runSheet]);
+  const roster = useMemo(() => {
+    const rows = buildStaffingRoster(programSchedule, tasksWithDetails, volunteerRoles);
+    return limitToMyGroups ? rows.filter((row) => row.isMyGroup) : rows;
+  }, [programSchedule, tasksWithDetails, volunteerRoles, limitToMyGroups]);
+  const summary = summarizeStaffingRoster(roster);
+  const toOrder = roster.filter((row) => needsAction(row.state)).length;
 
-  // The groups that have tasks in the schedule, for filtering
-  const groupsInSchedule = useMemo(() => {
-    const map = new Map<string, { id: string; name: string; count: number }>();
-    integratedSchedule.forEach((r) => {
-      if (!r.groupId) return;
-      const curr = map.get(r.groupId) || { id: r.groupId, name: r.groupName || "Gruppe", count: 0 };
-      curr.count += 1;
-      map.set(r.groupId, curr);
-    });
-    return Array.from(map.values());
-  }, [integratedSchedule]);
-
-  // The same rows as everyone reads them, for the groups a leader does not lead
-  const sharedRows = useMemo(
-    () => new Map(sharedRunSheet(integratedSchedule, currentUser.id).map((row) => [row.id, row])),
-    [integratedSchedule, currentUser.id]
-  );
-
-  // Filtered rows based on view filters
-  const filteredSchedule = useMemo(() => {
-    return integratedSchedule.filter((row) => {
-      if (selectedGroupFilter !== "all" && row.groupId !== selectedGroupFilter) {
-        return false;
-      }
-      if (viewFilter === "my-group") {
-        return row.isMyGroup;
-      }
-      if (viewFilter === "needs-action") {
-        return (!limitToMyGroups || row.isMyGroup) && (!row.isFullyCovered || row.hasForfall);
-      }
-      return true;
-    });
-  }, [integratedSchedule, viewFilter, selectedGroupFilter, limitToMyGroups]);
-
-  // Opened from a row in the run sheet (#schedule-row-…): go to that row once it is drawn
-  const scrolledTo = useRef<string | null>(null);
-  useEffect(() => {
-    const id = hash.slice(1);
-    if (!id || scrolledTo.current === id) return;
-    const target = document.getElementById(id);
-    if (!target) return;
-    scrolledTo.current = id;
-    target.scrollIntoView({ block: "center" });
-  }, [hash, filteredSchedule]);
-
-  // Staffing barometer calculations
-  const myGroupTasks = tasksWithDetails.filter((t) => t.isMyGroup);
-  const followedTasks = limitToMyGroups ? myGroupTasks : tasksWithDetails;
-  const totalTasks = followedTasks.length;
-  const vacantTasks = followedTasks.filter((t) => t.task.status === "vacant" || t.hasWithdrawn);
-  const coveredTasks = followedTasks.filter((t) => t.isFullyCovered);
-  const myGroupNames = myGroups.map((g) => g.name).join(", ");
+  // Opened from a row of the run sheet everyone sees (#schedule-row-…): that row's role in Bemanning
+  const focusTaskId = useMemo(() => {
+    const rowId = hash.replace(/^#schedule-row-/, "");
+    if (!rowId || rowId === hash) return null;
+    const index = programIndexOfRunSheetRow(rowId);
+    if (index !== null) return programSchedule[index]?.taskId ?? null;
+    return rowId.startsWith("task-") ? rowId.slice("task-".length) : null;
+  }, [hash, programSchedule]);
+  const view: View = searchParams.get("vis") ? viewOf(searchParams.get("vis")) : "bemanning";
+  const showView = (next: View) => {
+    const params = new URLSearchParams(searchParams);
+    params.set("vis", next);
+    setSearchParams(params, { replace: true });
+  };
 
   // Access check
   if (!gathering || !hasAccess) {
@@ -220,56 +151,21 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
     );
   }
 
-  // Status changer handler
-  const handleStatusChange = (assignmentId: string, newResponse: "confirmed" | "pending" | "withdrawn" | "declined", personName?: string) => {
-    const res = updateAssignmentStatus(assignmentId, newResponse);
-    if (res.success) {
-      setActivePersonActionId(null);
-      const label =
-        newResponse === "confirmed"
-          ? "Akseptert"
-          : newResponse === "pending"
-          ? "Forespurt"
-          : newResponse === "withdrawn"
-          ? "Forfall"
-          : "Avslått";
-      showToast(`Status for ${personName || "personen"} ble endret til ${label}.`);
-    } else {
-      showToast(res.error || "Kunne ikke oppdatere status.");
-    }
-  };
-
   const handleProgramReorder = (from: number, to: number) => {
     if (from === to) return;
     const res = updateGathering(gathering.id, { programSchedule: reorderProgramSchedule(programSchedule, from, to) });
-    if (res.success) showToast("Programpostene er flyttet.");
+    if (res.success) showToast("Programposten er flyttet.");
     else showToast(res.error || "Programmet kunne ikke lagres.");
-  };
-
-  // Unassign handler
-  const handleRemovePerson = (assignmentId: string, personName?: string) => {
-    const res = removeAssignment(assignmentId);
-    if (res.success) {
-      setActivePersonActionId(null);
-      showToast(`${personName || "Personen"} ble fjernet fra oppgaven.`);
-    } else {
-      showToast(res.error || "Kunne ikke fjerne tildeling.");
-    }
   };
 
   // A template made of this event, as it stands: its programme, its tasks and how it is presented
   const handleMakeTemplate = async () => {
     const template = templateFromGathering(
       gathering,
-      tasksWithDetails.map((detail) => detail.task),
+      tasksWithDetails.map((item) => item.task),
       volunteerRoles
     );
     if (await saveGatheringTemplate(template)) showToast(`Malen «${template.name}» er laget. Du finner den under Maler i menyen.`);
-  };
-
-  // Print function
-  const handlePrint = () => {
-    window.print();
   };
 
   // Opened with «Åpne planlegging» from the run sheet everyone sees: back goes there
@@ -279,11 +175,27 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
     ? studioTabUrl("planlegger-samlinger")
     : "/leder?tab=samlinger";
 
-  const backLabel = fromRunSheet
-    ? "Tilbake til kjøreplanen"
-    : isExplicitAdminView
-    ? "Tilbake til arrangementer"
-    : "Tilbake til samlingsoversikt";
+  const backLabel = fromRunSheet ? "Kjøreplanen" : isExplicitAdminView ? "Arrangementer" : "Samlinger";
+
+  const actions: GatheringAction[] = [
+    ...(canAdminister
+      ? [
+          { key: "edit", label: "Rediger", icon: Edit3, onClick: () => setIsEditingGathering(true) },
+          { key: "task", label: "Ny oppgave", icon: Plus, onClick: () => setIsCreatingTask(true), primary: true },
+          ...(withPlanner
+            ? [{ key: "template", label: "Hent fra mal", icon: LayoutTemplate, onClick: () => setIsApplyingTemplate(true), primary: true }]
+            : []),
+          ...(isExplicitAdminView ? [{ key: "web", label: "Vis på nettsiden", icon: Globe, to: studioTabUrl("cms-overstyringer") }] : []),
+          { key: "make-template", label: "Lag mal", icon: LayoutTemplate, onClick: handleMakeTemplate },
+        ]
+      : []),
+    { key: "print", label: "Skriv ut", icon: Printer, onClick: () => window.print() },
+  ];
+
+  const tabClass = (active: boolean) =>
+    `flex-1 py-2 px-2 rounded-lg text-center text-sm transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+      active ? "bg-white text-slate-900 shadow-xs font-bold" : "text-slate-600 hover:text-slate-900 font-semibold"
+    }`;
 
   return (
     <div
@@ -295,447 +207,166 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
     >
       {/* Toast feedback banner */}
       {toastMessage && (
-        <div className="bg-emerald-600 text-white text-xs font-semibold px-4 py-2.5 text-center flex items-center justify-center gap-2 shadow-xs transition-all animate-fadeIn print:hidden">
+        <div
+          role="status"
+          className="sticky top-[var(--demo-strip,0px)] z-30 bg-emerald-600 text-white text-xs font-semibold px-4 py-2.5 text-center flex items-center justify-center gap-2 shadow-xs animate-fadeIn print:hidden"
+        >
           <CheckCircle2 className="w-4 h-4" />
           <span>{toastMessage}</span>
         </div>
       )}
 
-      {/* Header Container */}
       <div className="p-4 bg-white border-b border-slate-200/80 space-y-3 print:border-b-2 print:border-slate-800 print:p-2">
-        {/* Navigation Breadcrumb - hidden in print */}
-        <div className="flex flex-wrap items-center justify-between gap-2 print:hidden">
+        <div className="flex items-center justify-between gap-2 print:hidden">
           <Link
             to={backLink}
             id="btn-back-to-group-or-admin"
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/80 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer whitespace-nowrap"
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/80 px-2.5 py-2 rounded-lg transition-colors whitespace-nowrap"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>{backLabel}</span>
           </Link>
 
-          <div className="flex flex-wrap items-center justify-end gap-2 whitespace-nowrap">
-            {canAdminister && (
-              <>
-                <button
-                  type="button"
-                  id="btn-admin-edit-gathering"
-                  onClick={() => setIsEditingGathering(true)}
-                  className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200/90 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer shadow-2xs"
-                  title="Rediger tittel, dato, tid og sted"
-                >
-                  <Edit3 className="w-3.5 h-3.5 text-slate-500" />
-                  <span>Rediger</span>
-                </button>
-                {withPlanner && (
-                  <button
-                    type="button"
-                    id="btn-apply-template"
-                    onClick={() => setIsApplyingTemplate(true)}
-                    className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/80 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
-                    title="Fyll inn program og oppgaver fra en mal"
-                  >
-                    <LayoutTemplate className="w-3.5 h-3.5" />
-                    <span>Hent fra mal</span>
-                  </button>
-                )}
-                <button
-                  type="button"
-                  id="btn-admin-add-task"
-                  onClick={() => setIsCreatingTask(true)}
-                  className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/80 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Ny oppgave</span>
-                </button>
-                {isExplicitAdminView && (
-                  <Link
-                    to={studioTabUrl("cms-overstyringer")}
-                    className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200/90 px-2.5 py-1.5 rounded-lg transition-colors shadow-2xs"
-                    title="Bilde, tekst og om arrangementet er fremhevet på nettsiden"
-                  >
-                    <Globe className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Vis på nettsiden</span>
-                  </Link>
-                )}
-                <button
-                  type="button"
-                  onClick={handleMakeTemplate}
-                  className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200/90 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer shadow-2xs"
-                  title="Lager en mal av arrangementet, med programmet og oppgavene"
-                >
-                  <LayoutTemplate className="w-3.5 h-3.5 text-slate-500" />
-                  <span>Lag mal</span>
-                </button>
-              </>
-            )}
-
-            <button
-              type="button"
-              id="btn-print-schedule"
-              onClick={handlePrint}
-              className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
-              title="Skriv ut eller lagre kjøreplan som PDF"
-            >
-              <Printer className="w-3.5 h-3.5 text-slate-500" />
-              <span className="hidden sm:inline">Skriv ut</span>
-            </button>
-
+          <div className="flex items-center gap-2">
             <span
-              className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+              className={`hidden sm:inline text-[10px] font-bold px-2 py-0.5 rounded-full border ${
                 isExplicitAdminView
                   ? "bg-purple-100 text-purple-800 border-purple-200"
                   : "bg-emerald-100 text-emerald-800 border-emerald-200"
               }`}
             >
-              {isExplicitAdminView ? "Admin-visning" : isDeputy ? "Nestleder" : "Gruppeleder"}
+              {isExplicitAdminView ? "Admin" : isDeputy ? "Nestleder" : "Gruppeleder"}
             </span>
+            <GatheringActions actions={actions} />
           </div>
         </div>
 
-        {/* Gathering Title & Metadata */}
         <div>
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-100">
-              {gathering.type === "arrangement" ? "Gudstjeneste / Arrangement" : "Samling"}
-            </span>
-          </div>
-          <h1 className="text-lg sm:text-xl font-extrabold text-slate-900 mt-1 leading-tight">
-            {gathering.title}
-          </h1>
-
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-600 mt-1.5 font-medium">
+          <h1 className="text-lg sm:text-xl font-extrabold text-slate-900 leading-tight">{gathering.title}</h1>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-600 mt-1 font-medium">
             <span className="flex items-center gap-1">
               <Calendar className="w-3.5 h-3.5 text-slate-400" />
               {formatNorwegianDateTime(gathering.startsAt)}
             </span>
-            {gathering.location && (
-              <span className="flex items-center gap-1">
-                <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                {gathering.location}
-              </span>
-            )}
-            <span className="flex items-center gap-1 text-slate-500">
-              <Users className="w-3.5 h-3.5 text-slate-400" />
-              {involvedGroups.length} {involvedGroups.length === 1 ? "tjenestegruppe" : "tjenestegrupper"} involvert
+            <span className="flex items-center gap-1">
+              <MapPin className="w-3.5 h-3.5 text-slate-400" />
+              {locationOf(gathering)}
             </span>
           </div>
+          {gathering.theme && <p className="text-xs text-slate-500 mt-1">Tema: {gathering.theme}</p>}
         </div>
 
-        {/* Staffing Barometer / Status Banner. Not for an event without tasks: nobody is lacking where nobody is asked for */}
-        {totalTasks > 0 && (
-        <div
-          id="gathering-staffing-barometer"
-          className={`p-3 rounded-2xl border flex items-center justify-between gap-3 text-xs ${
-            vacantTasks.length > 0
-              ? "bg-red-50/80 border-red-200 text-red-900"
-              : coveredTasks.length === totalTasks && totalTasks > 0
-              ? "bg-emerald-50/80 border-emerald-200 text-emerald-900"
-              : "bg-amber-50/80 border-amber-200 text-amber-900"
-          }`}
-        >
-          <div className="flex items-center gap-2.5 min-w-0">
-            {vacantTasks.length > 0 ? (
-              <ShieldAlert className="w-5 h-5 text-red-600 shrink-0" />
-            ) : coveredTasks.length === totalTasks && totalTasks > 0 ? (
-              <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0" />
+        {/* The staffing in one line. Not for an event without tasks: nobody is lacking where nobody is asked for */}
+        {summary.total > 0 && (
+          <button
+            type="button"
+            id="gathering-staffing-barometer"
+            onClick={() => showView("bemanning")}
+            className={`w-full p-2.5 rounded-xl border flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-bold text-left cursor-pointer print:hidden ${
+              toOrder > 0
+                ? "bg-red-50 border-red-200 text-red-900"
+                : summary.venter > 0
+                ? "bg-amber-50 border-amber-200 text-amber-900"
+                : "bg-emerald-50 border-emerald-200 text-emerald-900"
+            }`}
+          >
+            {toOrder === 0 && summary.venter === 0 ? (
+              <span className="flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" aria-hidden />
+                Fullt bemannet
+              </span>
             ) : (
-              <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
+              <>
+                {summary.forfall > 0 && (
+                  <span className="flex items-center gap-1">
+                    <AlertTriangle className="w-4 h-4 text-red-600" aria-hidden />
+                    {summary.forfall} forfall
+                  </span>
+                )}
+                {summary.ubesatt > 0 && (
+                  <span className="flex items-center gap-1">
+                    <AlertTriangle className="w-4 h-4 text-red-600" aria-hidden />
+                    {summary.ubesatt} ubesatt
+                  </span>
+                )}
+                {summary.venter > 0 && (
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-4 h-4 text-amber-600" aria-hidden />
+                    {summary.venter} venter på svar
+                  </span>
+                )}
+              </>
             )}
-            <div className="min-w-0">
-              <span className="font-bold block truncate">
-                {vacantTasks.length > 0
-                  ? `${vacantTasks.length} ${vacantTasks.length === 1 ? "oppgave krever oppfølging (forfall/vikar)" : "oppgaver krever oppfølging"}`
-                  : coveredTasks.length === totalTasks && totalTasks > 0
-                  ? "Fullt bemannet arrangement"
-                  : "Mangler bemanning på noen oppgaver"}
-              </span>
-              <span className="text-[11px] opacity-80 block truncate">
-                {limitToMyGroups ? `${myGroupNames}: ` : "Total dekning: "}
-                {coveredTasks.length} av {totalTasks} oppgaver dekket
-              </span>
-            </div>
-          </div>
-
-          <div className="shrink-0 flex items-center gap-1 font-bold text-xs">
-            <span
-              className={`px-2 py-0.5 rounded-full ${
-                vacantTasks.length > 0
-                  ? "bg-red-200/80 text-red-900"
-                  : coveredTasks.length === totalTasks && totalTasks > 0
-                  ? "bg-emerald-200/80 text-emerald-900"
-                  : "bg-amber-200/80 text-amber-900"
-              }`}
-            >
-              {coveredTasks.length}/{totalTasks}
+            <span className="ml-auto font-semibold opacity-80">
+              {limitToMyGroups ? "Dine grupper: " : ""}
+              {summary.dekket} av {summary.total} dekket
             </span>
-          </div>
-        </div>
+          </button>
         )}
 
-        {/* View Filter Controls - hidden in print */}
-        <div className="space-y-2 pt-1 print:hidden">
-          {/* Main quick tabs */}
-          <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl text-xs font-semibold">
-            <button
-              type="button"
-              id="tab-filter-all"
-              onClick={() => setViewFilter("all")}
-              className={`flex-1 py-1.5 px-2 rounded-lg text-center transition-all cursor-pointer ${
-                viewFilter === "all"
-                  ? "bg-white text-slate-900 shadow-xs font-bold"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              Hele programmet ({integratedSchedule.length})
-            </button>
-
-            <button
-              type="button"
-              id="tab-filter-needs-action"
-              onClick={() => setViewFilter("needs-action")}
-              className={`flex-1 py-1.5 px-2 rounded-lg text-center transition-all cursor-pointer flex items-center justify-center gap-1 ${
-                viewFilter === "needs-action"
-                  ? "bg-white text-red-700 shadow-xs font-bold"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              <span>Forfall / Mangler</span>
-              {vacantTasks.length > 0 && (
-                <span className="w-4 h-4 rounded-full bg-red-100 text-red-700 text-[10px] font-bold flex items-center justify-center">
-                  {vacantTasks.length}
-                </span>
-              )}
-            </button>
-
-            {limitToMyGroups && myGroups.length > 0 && (
-              <button
-                type="button"
-                id="tab-filter-my-group"
-                onClick={() => setViewFilter("my-group")}
-                className={`flex-1 py-1.5 px-2 rounded-lg text-center transition-all cursor-pointer ${
-                  viewFilter === "my-group"
-                    ? "bg-white text-emerald-800 shadow-xs font-bold"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                {myGroups.length > 1 ? "Mine grupper" : "Min gruppe"} ({myGroupTasks.length})
-              </button>
-            )}
-          </div>
-
-          {/* Group Filter Dropdown / Pills for Admin & Multigroup view */}
-          {!limitToMyGroups && groupsInSchedule.length > 1 && (
-            <div className="flex items-center gap-1 overflow-x-auto pb-0.5 text-[11px] scrollbar-none">
-              <span className="text-slate-400 font-bold uppercase text-[10px] pr-1 flex items-center gap-0.5">
-                <SlidersHorizontal className="w-3 h-3" />
-                Gruppe:
+        <div role="tablist" aria-label="Visning" className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl print:hidden">
+          <button
+            type="button"
+            role="tab"
+            id="tab-program"
+            aria-selected={view === "program"}
+            onClick={() => showView("program")}
+            className={tabClass(view === "program")}
+          >
+            <ListOrdered className="w-4 h-4" aria-hidden />
+            Program
+          </button>
+          <button
+            type="button"
+            role="tab"
+            id="tab-bemanning"
+            aria-selected={view === "bemanning"}
+            onClick={() => showView("bemanning")}
+            className={tabClass(view === "bemanning")}
+          >
+            <Users className="w-4 h-4" aria-hidden />
+            Bemanning
+            {toOrder > 0 && (
+              <span className="min-w-5 h-5 px-1.5 rounded-full bg-red-600 text-white text-[11px] font-bold flex items-center justify-center" aria-label={`${toOrder} må ordnes`}>
+                {toOrder}
               </span>
-              <button
-                type="button"
-                onClick={() => setSelectedGroupFilter("all")}
-                className={`px-2 py-0.5 rounded-full border font-medium transition-colors shrink-0 cursor-pointer ${
-                  selectedGroupFilter === "all"
-                    ? "bg-slate-800 text-white border-slate-800 font-bold"
-                    : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-                }`}
-              >
-                Alle ({integratedSchedule.length})
-              </button>
-              {groupsInSchedule.map((g) => (
-                <button
-                  key={g.id}
-                  type="button"
-                  onClick={() => setSelectedGroupFilter(g.id)}
-                  className={`px-2 py-0.5 rounded-full border font-medium transition-colors shrink-0 cursor-pointer ${
-                    selectedGroupFilter === g.id
-                      ? "bg-indigo-600 text-white border-indigo-600 font-bold"
-                      : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-                  }`}
-                >
-                  {g.name} ({g.count})
-                </button>
-              ))}
-            </div>
-          )}
+            )}
+          </button>
         </div>
       </div>
 
-      {/* Schedule & Bemanning Content */}
-      <div className="p-3 sm:p-4 space-y-2 flex-1 print:p-0 print:space-y-1">
-        <div className="flex items-center justify-between px-1 print:hidden">
-          <h2 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-            <Clock className="w-3.5 h-3.5 text-slate-500" />
-            <span>Kjøreplan & «Hvem gjør hva»</span>
-          </h2>
-          <span className="text-[11px] text-slate-400">
-            Viser {filteredSchedule.length} av {integratedSchedule.length} punkter
-            {canReorderProgram && programSchedule.length > 1 ? " · Dra i håndtaket for å flytte programposter" : ""}
-          </span>
-        </div>
-
-        {/* Print-only Header */}
+      <div className="p-3 sm:p-4 space-y-2 flex-1 print:p-0">
+        {/* Print-only header */}
         <div className="hidden print:block mb-4 border-b border-slate-300 pb-2">
           <h1 className="text-xl font-bold text-black">{gathering.title}</h1>
           <p className="text-xs text-slate-600">
             {formatNorwegianDateTime(gathering.startsAt)} • {locationOf(gathering)}
           </p>
-          <p className="text-[10px] text-slate-500 mt-1">
-            Offisiell kjøreplan og bemanningsliste – Menighetsplan
-          </p>
+          <p className="text-[10px] text-slate-500 mt-1">{view === "program" ? "Program" : "Bemanning"}</p>
         </div>
 
-        {integratedSchedule.length === 0 ? (
-          <div className="p-8 text-center bg-white rounded-2xl border border-slate-200/80 space-y-2">
-            <Info className="w-8 h-8 text-slate-300 mx-auto" />
-            <p className="text-xs font-bold text-slate-700">Arrangementet har ikke noe program ennå</p>
-            <p className="text-[11px] text-slate-400">
-              {canAdminister
-                ? withPlanner
-                  ? "Bruk «Hent fra mal» for et ferdig program, eller legg inn den første oppgaven med «Ny oppgave»."
-                  : "Legg inn den første oppgaven med «Ny oppgave». Den blir første punkt i kjøreplanen."
-                : "Ingen oppgaver eller programpunkter er lagt inn."}
-            </p>
-            {canAdminister && withPlanner && (
-              <button
-                type="button"
-                onClick={() => setIsApplyingTemplate(true)}
-                className="inline-flex items-center gap-1.5 mt-2 px-4 py-2 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-xl cursor-pointer"
-              >
-                <LayoutTemplate className="w-4 h-4" />
-                Hent fra mal
-              </button>
-            )}
-          </div>
-        ) : filteredSchedule.length === 0 ? (
-          <div className="p-8 text-center bg-white rounded-2xl border border-slate-200/80 space-y-2">
-            <Info className="w-8 h-8 text-slate-300 mx-auto" />
-            <p className="text-xs font-bold text-slate-700">Ingen programpunkter matcher filteret</p>
-            <p className="text-[11px] text-slate-400">
-              Prøv å endre filteret til «Hele programmet» eller velg en annen gruppe.
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                setViewFilter("all");
-                setSelectedGroupFilter("all");
-              }}
-              className="text-xs text-indigo-600 hover:text-indigo-800 font-bold underline cursor-pointer mt-1"
-            >
-              Nullstill alle filtre
-            </button>
-          </div>
+        {view === "program" ? (
+          <ProgramView
+            rows={programRows}
+            canAdminister={canAdminister}
+            onReorder={canAdminister ? handleProgramReorder : undefined}
+            focusRowId={null}
+            emptyHint={
+              canAdminister && withPlanner
+                ? "Bruk «Hent fra mal» for et ferdig program. Oppgavene står under Bemanning."
+                : "Oppgavene står under Bemanning."
+            }
+          />
         ) : (
-          <div className="space-y-2 print:space-y-1">
-            {filteredSchedule.map((row) => {
-              const programIndex = programIndexOfRunSheetRow(row.id);
-              const reorderRow = canReorderProgram && programIndex !== null;
-              const shared = limitToMyGroups && !row.isMyGroup ? sharedRows.get(row.id) : undefined;
-              if (shared) {
-                return (
-                  <SharedRunSheetRowCard
-                    key={row.id}
-                    row={shared}
-                    onShowInstruction={(shown) =>
-                      setViewInstructionTask({
-                        title: shown.roleTitle ? `${shown.title} – ${shown.roleTitle}` : shown.title,
-                        instruction: shown.instruction || "",
-                        time: shown.meetAt || shown.time,
-                        groupName: shown.groupName,
-                      })
-                    }
-                  />
-                );
-              }
-              return (
-                <RunSheetRowCard
-                  key={row.id}
-                  row={row}
-                  canIntervene={canAdminister || row.isMyGroup}
-                  canAdminister={canAdminister}
-                  openMenuAssignmentId={activePersonActionId}
-                  onToggleMenu={setActivePersonActionId}
-                  onStatusChange={handleStatusChange}
-                  onRemovePerson={handleRemovePerson}
-                  onShowInstruction={(shown) =>
-                    setViewInstructionTask({
-                      taskId: shown.task?.id,
-                      title: shown.roleTitle ? `${shown.title} – ${shown.roleTitle}` : shown.title,
-                      instruction: shown.instruction || "",
-                      volunteerRoleId: shown.task?.volunteerRoleId,
-                      time: shown.time,
-                      groupName: shown.groupName,
-                    })
-                  }
-                  onAssign={setActiveInterveneTaskId}
-                  onEditTask={(task) =>
-                    setEditingTask({
-                      id: task.id,
-                      title: task.title,
-                      volunteerRoleId: task.volunteerRoleId,
-                      groupId: task.groupId,
-                      neededCount: task.neededCount || 1,
-                      description: task.description || "",
-                    })
-                  }
-                  canReorder={reorderRow}
-                  isDragging={reorderRow && draggedProgramIndex === programIndex}
-                  isDragOver={reorderRow && dragOverProgramIndex === programIndex}
-                  onProgramDragStart={(event) => {
-                    setDraggedProgramIndex(programIndex);
-                    event.dataTransfer.effectAllowed = "move";
-                    event.dataTransfer.setData("text/plain", String(programIndex));
-                  }}
-                  onProgramDragEnd={() => {
-                    setDraggedProgramIndex(null);
-                    setDragOverProgramIndex(null);
-                  }}
-                  onProgramDragOver={(event) => {
-                    event.preventDefault();
-                    event.dataTransfer.dropEffect = "move";
-                    if (dragOverProgramIndex !== programIndex) setDragOverProgramIndex(programIndex);
-                  }}
-                  onProgramDrop={(event) => {
-                    event.preventDefault();
-                    if (draggedProgramIndex !== null && programIndex !== null) handleProgramReorder(draggedProgramIndex, programIndex);
-                    setDraggedProgramIndex(null);
-                    setDragOverProgramIndex(null);
-                  }}
-                />
-              );
-            })}
-          </div>
+          <StaffingView
+            detail={detail}
+            rows={roster}
+            canAdminister={canAdminister}
+            focusTaskId={focusTaskId}
+            showToast={showToast}
+          />
         )}
       </div>
-
-      {viewInstructionTask && (
-        <InstructionDialog
-          detail={detail}
-          task={viewInstructionTask}
-          canAdminister={canAdminister}
-          showToast={showToast}
-          onClose={() => setViewInstructionTask(null)}
-        />
-      )}
-
-      {activeInterveneTaskId && (
-        <AssignPersonDialog
-          detail={detail}
-          taskId={activeInterveneTaskId}
-          canAdminister={canAdminister}
-          showToast={showToast}
-          onClose={() => setActiveInterveneTaskId(null)}
-        />
-      )}
-
-      {editingTask && (
-        <EditTaskDialog
-          detail={detail}
-          task={editingTask}
-          showToast={showToast}
-          onClose={() => setEditingTask(null)}
-        />
-      )}
 
       <CreateTaskDialog
         detail={detail}
