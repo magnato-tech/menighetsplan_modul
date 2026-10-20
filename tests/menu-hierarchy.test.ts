@@ -1,7 +1,7 @@
 import { describe } from "vitest";
 import { assert } from "./assert";
 import { initialCmsPages, type CmsPage } from "../src/data/cmsData";
-import { buildPageTree, buildPublicMenu, findOrphanPages, withoutPage, pageUrl } from "../src/utils/menu";
+import { buildPageTree, buildPublicMenu, countPages, findOrphanPages, withoutPage, pageUrl } from "../src/utils/menu";
 
 describe("Menystruktur og CMS-sider", () => {
   const page = (id: string, extra: Partial<CmsPage> = {}): CmsPage => ({
@@ -150,4 +150,23 @@ describe("Menystruktur og CMS-sider", () => {
   assert(reorderedTree[0].page.menuOrder === 1, "Første element etter reorder har menuOrder 1");
   assert(reorderedTree[1].page.menuOrder === 2, "Andre element etter reorder har menuOrder 2");
   assert(reorderedTree[2].page.menuOrder === 3, "Tredje element etter reorder har menuOrder 3");
+
+  // Counting for the overview: the menu, and what is out on the website
+  {
+    const now = new Date("2026-10-20T10:00:00.000Z");
+    const counted = countPages(
+      [
+        page("a"),
+        page("b", { isPublished: false }),
+        page("c", { parentId: "a" }),
+        page("d", { parentId: "a", publishAt: "2026-11-01T10:00:00.000Z" }),
+        page("e", { status: "draft", parentId: "a" }),
+      ],
+      now
+    );
+    assert(counted.main === 2 && counted.sub === 3, "Hovedfaner og underfaner telles hver for seg");
+    assert(counted.published === 2, "Bare det som er ute på nettsiden nå, telles som publisert");
+    assert(counted.scheduled === 1 && counted.drafts === 2, "Planlagte sider og kladder telles hver for seg");
+    assert(counted.published + counted.scheduled + counted.drafts === 5, "Hver side telles én gang");
+  }
 });

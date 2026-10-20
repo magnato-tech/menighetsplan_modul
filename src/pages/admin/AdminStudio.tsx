@@ -28,7 +28,6 @@ import { parseAdminDetailRoute } from "../../utils/adminStudioRoutes";
 
 import { StudioAppearanceProvider, useStudioAppearance } from "./studioAppearance";
 
-import { StudioThemeToggle } from "./StudioThemeToggle";
 
 import { studioBg } from "./studioTheme";
 
@@ -202,7 +201,7 @@ function AdminStudioContent() {
 
   const [searchParams] = useSearchParams();
 
-  const { contentTheme, toggleContentTheme } = useStudioAppearance();
+  const { contentTheme } = useStudioAppearance();
 
 
 
@@ -387,24 +386,6 @@ function AdminStudioContent() {
         className={`flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 ${studioBg}`}
 
       >
-
-        <div className="mb-4 flex justify-end">
-
-          <StudioThemeToggle
-
-            theme={contentTheme}
-
-            onToggle={toggleContentTheme}
-
-            darkLabel="Mørkt innhold"
-
-            lightLabel="Lyst innhold"
-
-            className="w-auto min-w-[11rem]"
-
-          />
-
-        </div>
 
 
 
