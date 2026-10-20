@@ -1535,6 +1535,17 @@ Bestilt av produkteier: Sider-fanen hadde to knapper som gjorde det samme, knapp
 | **Lyst eller mørkt innhold** | En sol eller en måne øverst i menyen ved siden av Admin (på mobil når menyen åpnes), i stedet for en hel linje over innholdet. Innholdet begynner helt øverst |
 | **Overskriften** | Var hvit i lyst innhold og syntes ikke. Følger nå temaet som de andre fanene |
 
+### Forhåndsvisningen viser endringer før lagring (20. oktober 2026)
+
+Meldt av produkteier: å ta bort knappene i toppbanneret på forsiden ga ingen endring i forhåndsvisningen før siden var lagret.
+
+| Del | Hva som er levert |
+|---|---|
+| **Årsaken** | Siden som redigeres, legges i nettleserens minne så forhåndsvisningen kan lese den. Den ble lagt der tre ganger, med opplastede bilder som tekst. Med tre toppbilder ble det mer enn nettleseren gir plass til (om lag 5 MB), lagringen feilet uten å si fra, og forhåndsvisningen viste siden slik den sist var lagret |
+| **Nå** | Siden legges der én gang; de to andre stedene sier bare hvilken side det er. Sider som er redigert før i samme økt, fjernes først. Får siden likevel ikke plass, legges den der uten bildene (forhåndsvisningen viser dem slik de er lagret), og så uten innholdsblokkene (`writeDraftSnapshot` i `src/utils/previewBridge.ts`, med test) |
+| **Sier fra** | Over forhåndsvisningen står det når et nytt bilde eller innholdsblokkene først vises etter lagring |
+| **Merket over tittelen** | Merket med menighetens navn over tittelen på forsiden er tatt bort etter beskjed fra produkteier. Navnet står i logoen og i tittelen |
+
 ---
 
 

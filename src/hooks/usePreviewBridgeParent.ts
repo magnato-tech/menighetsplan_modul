@@ -8,6 +8,7 @@ import {
   postToPreview,
   writeDraftSnapshot,
   type PreviewToCmsMessage,
+  type SnapshotFit,
   type WarmDraftFields,
 } from "../utils/previewBridge";
 
@@ -20,6 +21,8 @@ interface UsePreviewBridgeParentOptions {
   onPreviewLocation?: (path: string, hash: string) => void;
   onPreviewBlocked?: () => void;
   onIframeReady?: (msg: Extract<PreviewToCmsMessage, { type: "preview:ready" }>) => void;
+  /** How much of the page the preview got the last time it was stored (see writeDraftSnapshot). */
+  onSnapshotFit?: (fit: SnapshotFit) => void;
 }
 
 export function usePreviewBridgeParent({
@@ -31,6 +34,7 @@ export function usePreviewBridgeParent({
   onPreviewLocation,
   onPreviewBlocked,
   onIframeReady,
+  onSnapshotFit,
 }: UsePreviewBridgeParentOptions) {
   const warmPendingRef = useRef<WarmDraftFields | null>(null);
   const revisionRef = useRef(revision);
@@ -42,10 +46,11 @@ export function usePreviewBridgeParent({
       revisionRef.current,
       blocks
     );
-    writeDraftSnapshot(snapshot, previousSlugRef.current);
+    const fit = writeDraftSnapshot(snapshot, previousSlugRef.current);
     previousSlugRef.current = snapshot.slug || "";
+    onSnapshotFit?.(fit);
     return snapshot;
-  }, [editingPage, blocks]);
+  }, [editingPage, blocks, onSnapshotFit]);
 
   const sendWarmDraft = useCallback(
     (immediate = false) => {

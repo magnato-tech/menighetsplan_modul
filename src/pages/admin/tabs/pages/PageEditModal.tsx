@@ -35,6 +35,7 @@ import {
   buildEmbeddedPreviewUrl,
   buildNewTabPreviewUrl,
   writeDraftSnapshot,
+  type SnapshotFit,
 } from "../../../../utils/previewBridge";
 import {
   parseContentToVisualBlocks,
@@ -144,6 +145,7 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
   const [previewRevision, setPreviewRevision] = useState(0);
   const [previewLocationPath, setPreviewLocationPath] = useState<string | null>(null);
   const [previewBlockedNotice, setPreviewBlockedNotice] = useState(false);
+  const [snapshotFit, setSnapshotFit] = useState<SnapshotFit>("full");
 
   // View mode state: edit (full-width form), split (side-by-side with real frontend), preview (full-width real frontend)
   const [viewMode, setViewMode] = useState<"edit" | "split" | "preview">(() => {
@@ -273,23 +275,22 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
       setPreviewBlockedNotice(true);
       window.setTimeout(() => setPreviewBlockedNotice(false), 4000);
     },
+    onSnapshotFit: setSnapshotFit,
   });
 
   const handleSaveActiveDraftToStorage = () => {
-    try {
-      const snapshot = buildDraftSnapshot(
-        { ...editingPage, slug: cleanSlug, blocks: visualBlocks },
-        previewRevision,
-        visualBlocks
-      );
-      writeDraftSnapshot(snapshot, previousSlugRef.current);
-      previousSlugRef.current = cleanSlug;
-    } catch {}
+    const snapshot = buildDraftSnapshot(
+      { ...editingPage, slug: cleanSlug, blocks: visualBlocks },
+      previewRevision,
+      visualBlocks
+    );
+    setSnapshotFit(writeDraftSnapshot(snapshot, previousSlugRef.current));
+    previousSlugRef.current = cleanSlug;
   };
 
   useEffect(() => {
     setPreviewRevision((r) => r + 1);
-  }, [editingPage.title, editingPage.summary, editingPage.heroTitle, editingPage.heroCtaText, editingPage.heroCtaLink, editingPage.heroCtaSecondaryText, editingPage.heroCtaSecondaryLink, editingPage.heroImage, editingPage.content, editingPage.isPublished, editingPage.linkUrl, cleanSlug]);
+  }, [editingPage.title, editingPage.summary, editingPage.heroTitle, editingPage.heroCtaText, editingPage.heroCtaLink, editingPage.heroCtaSecondaryText, editingPage.heroCtaSecondaryLink, editingPage.showHeroPrimaryCta, editingPage.showHeroSecondaryCta, editingPage.heroImage, editingPage.heroImages, editingPage.content, editingPage.isPublished, editingPage.linkUrl, cleanSlug]);
 
   useEffect(() => {
     if (viewMode === "edit") return;
@@ -405,6 +406,15 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
             <span className="text-[11px] text-[var(--studio-muted)] font-mono bg-[var(--studio-bg)] px-2 py-0.5 rounded border border-[var(--studio-border)] hidden sm:inline">
               {previewLocationPath || targetPath}
             </span>
+            {snapshotFit !== "full" && (
+              <span className="text-[11px] text-amber-300" role="status">
+                {snapshotFit === "saved-images"
+                  ? "Nye bilder vises her når siden er lagret"
+                  : snapshotFit === "fields-only"
+                    ? "Siden er for stor til å vises før lagring: innholdsblokkene vises slik de sist ble lagret"
+                    : "Siden er for stor til å vises før lagring: lagre for å se endringene"}
+              </span>
+            )}
             {previewBlockedNotice && (
               <span className="text-[11px] text-amber-300 hidden sm:inline">
                 Admin og Min side åpnes ikke i forhåndsvisningen
