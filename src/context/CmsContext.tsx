@@ -14,6 +14,7 @@ import { reportWriteError } from "../services/writeErrors";
 import { saveAddonChoice, subscribeAddons } from "../services/addons";
 import type { AddonChoices, AddonId } from "../utils/addons";
 import { newId } from "../utils/id";
+import { buildPageRecord } from "../utils/pageRecord";
 import {
   CmsPage,
   CmsNewsArticle,
@@ -222,64 +223,7 @@ const writes = {
   setAddon: (id: AddonId, on: boolean) =>
     attempt(on ? "slå på modulen" : "slå av modulen", () => saveAddonChoice(id, on)),
   savePage: (pageData: Partial<CmsPage> & { id?: string }) => {
-    const resolvedParent =
-      pageData.parentPageId !== undefined
-        ? pageData.parentPageId
-        : pageData.parentId || null;
-
-    const resolvedOrder =
-      typeof pageData.menuOrder === "number"
-        ? pageData.menuOrder
-        : typeof pageData.navOrder === "number"
-        ? pageData.navOrder
-        : 99;
-
-    const isPublished = pageData.isPublished !== false;
-    const publishAt = pageData.publishAt?.trim() || pageData.publishedAt?.trim() || undefined;
-    const isFutureScheduled = Boolean(
-      isPublished && publishAt && new Date(publishAt).getTime() > Date.now()
-    );
-
-    const resolvedStatus: "draft" | "published" | "scheduled" = !isPublished
-      ? "draft"
-      : isFutureScheduled
-      ? "scheduled"
-      : "published";
-
-    const page: CmsPage = {
-      id: pageData.id || newId("page"),
-      slug: (pageData.slug || `side-${Date.now()}`).toLowerCase().trim().replace(/^\//, ""),
-      title: pageData.title || "Uten tittel",
-      summary: pageData.summary || "",
-      content: pageData.content || "",
-      isPublished,
-      status: resolvedStatus,
-      parentPageId: resolvedParent,
-      parentId: resolvedParent, // dual compatibility alias
-      menuOrder: resolvedOrder,
-      navOrder: resolvedOrder, // dual compatibility alias
-      inNavMenu: pageData.inNavMenu !== false,
-      // Left out of the stored document when the page has no link of its own
-      linkUrl: pageData.linkUrl || undefined,
-      updatedAt: new Date().toISOString(),
-      heroImage: pageData.heroImage || "",
-      heroImageAlt: pageData.heroImageAlt?.trim() || undefined,
-      heroImages: (pageData.heroImages || []).filter(Boolean).slice(0, 2),
-      heroZoom: pageData.heroZoom !== false,
-      heroMenuOverlay: pageData.heroMenuOverlay !== false,
-      heroTitle: pageData.heroTitle || "",
-      heroCtaText: pageData.heroCtaText || "",
-      heroCtaLink: pageData.heroCtaLink || "",
-      heroCtaSecondaryText: pageData.heroCtaSecondaryText || "",
-      heroCtaSecondaryLink: pageData.heroCtaSecondaryLink || "",
-      showHeroPrimaryCta: pageData.showHeroPrimaryCta !== false,
-      showHeroSecondaryCta: pageData.showHeroSecondaryCta !== false,
-      showHero: true,
-      metaDescription: pageData.metaDescription?.trim() || undefined,
-      ogImage: pageData.ogImage?.trim() || undefined,
-      publishAt,
-      publishedAt: publishAt,
-    };
+    const page = buildPageRecord(pageData, new Date(), () => newId("page"));
     return attempt("lagre siden", () => createDocument(CMS_COLLECTIONS.PAGES, page));
   },
 

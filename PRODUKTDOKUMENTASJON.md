@@ -1562,6 +1562,8 @@ Feltene er nye på sidene og i innstillingene. Reglene i databasen lar en admini
 
 **Lagre øverst.** Linjen øverst i redigeringen av en side (tittel, Rediger/Splitt/Forhåndsvis, lukk) blir stående når siden rulles, og har fått knappen Lagre. Lagre side nederst står som før.
 
+**Rettet samme dag:** de tre valgene for toppbildet (høyde, tittel og «Vis på siden» for undertittelen) ble vist i forhåndsvisningen, men forsvant ved Lagre. Siden som lagres, bygges av en fast liste med felt, og de nye feltene sto ikke på den. Listen ligger nå i `buildPageRecord` i `src/utils/pageRecord.ts`, og `tests/page-record.test.ts` feiler for et felt på en side som ikke blir med når den lagres.
+
 ---
 
 
