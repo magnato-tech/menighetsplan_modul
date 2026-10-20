@@ -1,6 +1,6 @@
 # Produktdokumentasjon: Menighetsplan
 
-> **Dokumentversjon:** 4.54 · **Sist oppdatert:** 2026-10-20
+> **Dokumentversjon:** 4.55 · **Sist oppdatert:** 2026-10-20
 > **Status:** Single Source of Truth (SSOT) for produktet. Dokumentet lever i kildekoden og oppdateres sammen med funksjonaliteten.
 > **Plattform:** React 19, TypeScript, Tailwind CSS 4, Cloud Firestore (`europe-west3`, Frankfurt), Express, PWA.
 > **Søsterdokumenter:** `ARKITEKTUR.md` (hvordan koden er bygget), `CLAUDE.md` (regler for kodeendringer), `INTEGRASJON-MENIGHETSPLAN.md` (kontrakten for det offentlige API-et).
@@ -138,7 +138,7 @@ Adminpanelet ligger på `/admin` og heter **Admin**. Øverst i menyen velges **P
 | Fane | Hva administratoren gjør | Status |
 |---|---|---|
 | **Oversikt** | Ser de tre neste arrangementene med bemanningen (forfall, ubesatt, venter), og hva som må ordnes de nærmeste fire ukene. Ett trykk åpner Bemanning på arrangementet | Levert. De neste arrangementene øverst 20. oktober |
-| **Arrangementer** | Oppretter, endrer og avlyser samlinger. Det raske skjemaet tar tittel, dato, klokkeslett, tema og sted, og gjør ingen gruppe ansvarlig: arrangementet legges i kalenderen. «Flere valg» åpner det store skjemaet, som også brukes ved redigering: slutt (også en annen dag), sted, bibeltekst, ansvarlig gruppe (kalenderen til en annen velges), gudstjeneste og synlighet. «Lag neste arrangement» kopierer oppgavene til en ny dato | Levert. Mal og serie i det store skjemaet er prøveutgaver (kapittel 14) |
+| **Arrangementer** | Oppretter, endrer og avlyser samlinger. «Nytt arrangement» åpner skjemaet, som også brukes ved redigering, og som ikke gjør noen gruppe ansvarlig før en velges: slutt (også en annen dag), sted, bibeltekst, ansvarlig gruppe (kalenderen til en annen velges), gudstjeneste og synlighet. «Lag neste arrangement» kopierer oppgavene til en ny dato | Levert. Mal og serie i det store skjemaet er prøveutgaver (kapittel 14) |
 | **Maler** | Holder malene for arrangementer som gjentas: tid, sted, bilde og tekst, program med roller, og oppgavene som skal bemannes. Legger inn standardmalen for gudstjeneste, og planlegger en serie fra en mal | Levert 12. oktober |
 | **Trenger oppfølging** | Ser forfall og ubesatte oppgaver per arrangement, det nærmeste først, de nærmeste fire ukene eller alt som kommer. Tildeler og forespør | Levert. Purr tatt bort 20. oktober (kapittel 11.3) |
 | **Grupper & husfellesskap** | Oppretter grupper, setter leder og nestleder, kategori, møteplan og om gruppen vises på nettsiden | Levert |
@@ -1507,6 +1507,17 @@ Bestilt av produkteier: en pastor som får en SMS om forfall, skal kunne bytte p
 **Én regel.** Forfall, ubesatt og venter regnes ett sted (`staffingStateOf` i `src/utils/staffingRoster.ts`), og oversikten, arrangementet, «Trenger oppfølging» og menyen bruker den. Forfall: en ledig plass etter at noen har trukket seg. Ubesatt: en ledig plass ingen er spurt til. Venter: alle plasser er tatt, men noen har ikke svart. Er en ny spurt etter et forfall, venter oppgaven; den er ikke lenger noe å ordne.
 
 **Prøvd.** Typesjekk, tester og bygg kjører på grenen (`.github/workflows/sjekk.yml`). Skjermbildene er tatt i mobilbredde mot demoens data, som administrator og som gruppeleder, uten å endre noe.
+
+
+### Arrangementet åpner Bemanning, og ingen raskt skjema (20. oktober 2026)
+
+Bestilt av produkteier etter første slipp samme morgen. Arrangementer planlegges for det meste ved semesterstart, så skjemaet for et nytt arrangement skal ikke ta plassen øverst i listen.
+
+| Del | Hva som er levert |
+|---|---|
+| **Nytt arrangement** | Det raske skjemaet («Opprett ny samling», «Legg til i planleggeren» og «Flere valg») er tatt bort. Knappen «Nytt arrangement» øverst åpner det store skjemaet direkte, tomt. Listen står nå øverst |
+| **Trykk på arrangementet** | Kortet og tittelen i tabellen åpner Bemanning |
+| **Kjøreplan** | Knappen på kortet og i tabellen heter Kjøreplan og åpner Program |
 
 ---
 

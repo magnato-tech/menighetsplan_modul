@@ -15,7 +15,6 @@ import {
   AlertTriangle,
   X,
   CalendarPlus,
-  SlidersHorizontal,
   Repeat,
   CalendarClock,
   LayoutGrid,
@@ -96,37 +95,19 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
   // ==========================================
   // NY SAMLING FORM STATE (PLANLEGGER)
   // ==========================================
-  const [newGatheringTitle, setNewGatheringTitle] = useState("");
-  const [newGatheringDate, setNewGatheringDate] = useState("");
-  const [newGatheringTime, setNewGatheringTime] = useState("11:00");
-  const [newGatheringTheme, setNewGatheringTheme] = useState("");
-  const [newGatheringLocation, setNewGatheringLocation] = useState("");
-  const [newGatheringIsWorship, setNewGatheringIsWorship] = useState(true);
   // An event is not handed to a group here. It goes to the group that holds the calendar, and who
   // does what, is settled task by task on the run sheet. The full form can still name a group.
   const groups = adminGroups.map(({ group }) => group);
   const responsibleGroupId = defaultGroupId(groups, adminGatherings.map((item) => item.gathering));
 
-  // The full form, opened with what has been written in the quick one
+  // New events are made in the full form. They are mostly planned at the start of a term, so the
+  // form stays out of the way until «Nytt arrangement» is pressed.
   const [fullForm, setFullForm] = useState<GatheringFormValues | null>(null);
   const openFullForm = () =>
     setFullForm(
-      newGatheringForm({
-        title: newGatheringTitle,
-        date: newGatheringDate,
-        time: newGatheringTime,
-        theme: newGatheringTheme,
-        location: newGatheringLocation,
-        groupId: responsibleGroupId,
-        isGudstjeneste: newGatheringIsWorship,
-      })
+      newGatheringForm({ title: "", date: "", time: "11:00", theme: "", location: "", groupId: responsibleGroupId, isGudstjeneste: true })
     );
-  const emptyQuickForm = () => {
-    setNewGatheringTitle("");
-    setNewGatheringDate("");
-    setNewGatheringTheme("");
-    setNewGatheringLocation("");
-  };
+
 
   const { assignments, deleteGatheringWithStaffing, getPersonById } = useFirebase();
 
@@ -207,35 +188,6 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
     else showFeedback(res.error || "Kunne ikke slette arrangementet", "error");
   };
 
-  const handleCreateGathering = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newGatheringTitle || !newGatheringDate) {
-      showFeedback("Tittel og dato må fylles ut", "error");
-      return;
-    }
-    if (!responsibleGroupId) {
-      showFeedback("Opprett en gruppe først. Arrangementene må ha en gruppe å ligge i.", "error");
-      return;
-    }
-
-    const iso = combineDateAndTimeToIso(newGatheringDate, newGatheringTime);
-    createGathering({
-      title: newGatheringTitle,
-      groupId: responsibleGroupId,
-      startsAt: iso,
-      type: "arrangement",
-      location: newGatheringLocation.trim() || undefined,
-      theme: newGatheringTheme.trim() || undefined,
-      isGudstjeneste: newGatheringIsWorship,
-    });
-
-    setNewGatheringTitle("");
-    setNewGatheringDate("");
-    setNewGatheringTheme("");
-    setNewGatheringLocation("");
-    showFeedback("Ny samling opprettet og synkronisert til kalenderen!");
-  };
-
   return (
     <>
       <div className="max-w-5xl mx-auto space-y-6">
@@ -246,94 +198,16 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
               Full oversikt over menighetens samlinger. Opprett nye og administrer oppgaver.
             </p>
           </div>
+          <button
+            type="button"
+            onClick={openFullForm}
+            className="self-start sm:self-auto px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold flex items-center gap-1.5 shadow-sm cursor-pointer"
+          >
+            <Plus className="w-4 h-4" aria-hidden />
+            Nytt arrangement
+          </button>
         </div>
 
-        {/* Quick Create Gathering Form */}
-        <form onSubmit={handleCreateGathering} className="p-5 rounded-2xl bg-[var(--studio-surface)] border border-[var(--studio-border)] space-y-3">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
-            <Plus className="w-3.5 h-3.5" />
-            <span>Opprett ny samling</span>
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
-            <div className="sm:col-span-2">
-              <input
-                type="text"
-                value={newGatheringTitle}
-                onChange={(e) => setNewGatheringTitle(e.target.value)}
-                placeholder="Tittel, f.eks. Søndagsgudstjeneste & dåp"
-                className="w-full px-3 py-2 rounded-xl bg-[var(--studio-input)] border border-[var(--studio-border)] text-[var(--studio-input-text)]"
-                required
-              />
-            </div>
-            <div>
-              <input
-                type="date"
-                value={newGatheringDate}
-                onChange={(e) => setNewGatheringDate(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-[var(--studio-input)] border border-[var(--studio-border)] text-[var(--studio-input-text)]"
-                required
-              />
-            </div>
-            <div>
-              <input
-                type="time"
-                value={newGatheringTime}
-                onChange={(e) => setNewGatheringTime(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-[var(--studio-input)] border border-[var(--studio-border)] text-[var(--studio-input-text)]"
-                required
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
-            <div className="sm:col-span-2">
-              <input
-                type="text"
-                value={newGatheringTheme}
-                onChange={(e) => setNewGatheringTheme(e.target.value)}
-                placeholder="Valgfritt tema..."
-                className="w-full px-3 py-2 rounded-xl bg-[var(--studio-input)] border border-[var(--studio-border)] text-[var(--studio-input-text)]"
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <input
-                type="text"
-                value={newGatheringLocation}
-                onChange={(e) => setNewGatheringLocation(e.target.value)}
-                aria-label="Sted"
-                placeholder={`Sted (${DEFAULT_LOCATION} når feltet står tomt)`}
-                className="w-full px-3 py-2 rounded-xl bg-[var(--studio-input)] border border-[var(--studio-border)] text-[var(--studio-input-text)]"
-              />
-            </div>
-          </div>
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1">
-            <label className="flex items-center gap-2 text-xs text-[var(--studio-muted)] cursor-pointer">
-              <input
-                type="checkbox"
-                checked={newGatheringIsWorship}
-                onChange={(e) => setNewGatheringIsWorship(e.target.checked)}
-                className="w-4 h-4 rounded text-indigo-600 focus:ring-0"
-              />
-              <span>Dette er en gudstjeneste</span>
-            </label>
-            <div className="w-full sm:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-              {/* Everything else an event can have: end, place, Bible text, who sees it, a template to start from and a series */}
-              <button
-                type="button"
-                onClick={openFullForm}
-                className="px-4 py-2 rounded-xl bg-[var(--studio-bg)] hover:bg-[var(--studio-hover)] border border-[var(--studio-border)] text-[var(--studio-text)] text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                <SlidersHorizontal className="w-3.5 h-3.5 text-[var(--studio-icon)]" />
-                Flere valg
-              </button>
-              <button
-                type="submit"
-                className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-sm"
-              >
-                Legg til i planleggeren
-              </button>
-            </div>
-          </div>
-        </form>
 
         <div className="flex items-center justify-between gap-3">
           <div className="inline-flex rounded-xl border border-[var(--studio-border)] bg-[var(--studio-surface)] p-0.5" role="group" aria-label="Periode">
@@ -408,7 +282,7 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
               >
                 {/* The whole card opens the event; on a phone that is the one thing it is for */}
                 <div className="flex items-start gap-2">
-                <Link to={`/admin/samling/${g.id}`} className="space-y-1 min-w-0 flex-1 group">
+                <Link to={`/admin/samling/${g.id}?vis=bemanning`} className="space-y-1 min-w-0 flex-1 group">
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 className="font-bold text-[var(--studio-text)] text-base group-hover:underline">{g.title}</h3>
                     {isWorshipService(g) && (
@@ -503,11 +377,11 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
                   </button>
 
                   <Link
-                    to={`/admin/samling/${g.id}`}
+                    to={`/admin/samling/${g.id}?vis=program`}
                     className="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs"
                   >
                     <ListTodo className="w-3.5 h-3.5" />
-                    <span>Program og bemanning</span>
+                    <span>Kjøreplan</span>
                     <ChevronRight className="w-3.5 h-3.5" aria-hidden />
                   </Link>
                 </div>
@@ -519,7 +393,7 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
       </div>
 
       {fullForm && (
-        <NewGatheringDialog studio={studio} showFeedback={showFeedback} initial={fullForm} onCreated={emptyQuickForm} onClose={() => setFullForm(null)} />
+        <NewGatheringDialog studio={studio} showFeedback={showFeedback} initial={fullForm} onClose={() => setFullForm(null)} />
       )}
 
       {deleting && (

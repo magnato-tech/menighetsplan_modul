@@ -121,12 +121,13 @@ describe("Arrangementene som tabell", () => {
     expect(screen.queryByRole("button", { name: /Slett resten/ })).toBeNull();
   });
 
-  test("hver linje fører til kjøreplanen, og kan slettes eller følges av et nytt arrangement", () => {
+  test("hver linje fører til kjøreplanen (Program) og tittelen til bemanningen, og kan slettes eller følges av et nytt arrangement", () => {
     handlers.onNext.mockClear();
     handlers.onDelete.mockClear();
     show();
     const meeting = lines()[1];
-    expect(within(meeting).getByRole("link", { name: "Kjøreplan" }).getAttribute("href")).toBe("/admin/samling/mote");
+    expect(within(meeting).getByRole("link", { name: "Kjøreplan" }).getAttribute("href")).toBe("/admin/samling/mote?vis=program");
+    expect(within(meeting).getByRole("link", { name: "Menighetsmøte" }).getAttribute("href")).toBe("/admin/samling/mote?vis=bemanning");
     fireEvent.click(within(meeting).getByRole("button", { name: /^Lag neste arrangement/ }));
     fireEvent.click(within(meeting).getByRole("button", { name: /^Slett Menighetsmøte/ }));
     expect(handlers.onNext.mock.calls[0][0].gathering.id).toBe("mote");

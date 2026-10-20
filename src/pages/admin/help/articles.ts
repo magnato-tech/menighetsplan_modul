@@ -229,19 +229,18 @@ const arrangementer: HelpArticle = {
   formal: "Legge inn en samling og åpne kjøreplanen for oppgaver den dagen.",
   hvor: "Velg Planlegging øverst i menyen, så Arrangementer. Overskrift: Gudstjenester & Møter. Listen viser Kommende først; Tidligere viser dem som er holdt. Trykk på et arrangement for å åpne det. Tilbake-lenke: Arrangementer.",
   steg: [
-    "Under Opprett ny samling: skriv tittel, dato og klokkeslett. Tema og sted er valgfritt. Står stedet tomt, brukes menighetens faste sted.",
-    "Huk av Dette er en gudstjeneste hvis det gjelder.",
-    "Trykk Legg til i planleggeren.",
-    "Trenger arrangementet mer enn dette, trykk Flere valg. Da åpnes hele skjemaet, med det du har skrevet: sluttid, slutt en annen dag, bibeltekst, ansvarlig gruppe og hvem som ser arrangementet. Et arrangement ligger i kalenderen uten ansvarlig gruppe til du velger en der.",
-    "Start fra en mal i det store skjemaet fyller ut skjemaet, og arrangementet får malens program og oppgaver. På et arrangement som allerede finnes bruker du Hent fra mal i kjøreplanen. Rediger malen (penn på malen, eller Rediger malen før du oppretter) åpner malen før arrangementet lages. Malene lages under Maler i menyen, eller med Lag mal på et arrangement som alt er satt opp.",
+    "Trykk Nytt arrangement øverst. Skjemaet åpnes med tittel, dato, klokkeslett, sted, tema, bibeltekst, ansvarlig gruppe og hvem som ser arrangementet. Står stedet tomt, brukes menighetens faste sted. Et arrangement ligger i kalenderen uten ansvarlig gruppe til du velger en der.",
+    "Huk av Dette er en gudstjeneste hvis det gjelder, og trykk Opprett arrangement.",
+    "Start fra en mal fyller ut skjemaet, og arrangementet får malens program og oppgaver. På et arrangement som allerede finnes bruker du Hent fra mal. Rediger malen (penn på malen, eller Rediger malen før du oppretter) åpner malen før arrangementet lages. Malene lages under Maler i menyen, eller med Lag mal på et arrangement som alt er satt opp.",
+    "Trykk på et arrangement for å åpne Bemanning. Kjøreplan åpner Program.",
     "Gjenta som serie: velg hvor ofte og siste dato. Dagene vises med hake, og en dag kan tas ut før serien opprettes. Flytt resten av serien står på hvert arrangement i en serie. Arrangementer slettes ett om gangen: står det folk på oppgavene, kommer en advarsel som sier hvem, og ett trykk tar alle av og sletter arrangementet.",
     "For å gjenta et arrangement: åpne neste arrangement, sett ny dato, og bekreft. Oppgavene kopieres uten personer.",
     "I arrangementet: Rediger åpner det samme store skjemaet, der arrangementet også kan avlyses. Under Program kan admin dra i håndtaket på en programpost for å flytte den. Bemanningen gjøres under Bemanning (se den artikkelen). På mobil står Rediger, Ny oppgave, Hent fra mal, Lag mal og Skriv ut bak «…».",
   ],
   knapper:
-    "Plassholder tittel: «Tittel, f.eks. Søndagsgudstjeneste & dåp». Plassholder tema: «Valgfritt tema...». Tom gruppe: «Ingen grupper finnes ennå». Knapp: Legg til i planleggeren.",
+    "Nytt arrangement, Opprett arrangement, Kommende, Tidligere, Kjøreplan, Lag neste arrangement, Flytt resten av serien, Slett. På mobil står de tre siste bak «…».",
   etterLagring:
-    "«Ny samling opprettet og synkronisert til kalenderen!» Ved kopi: «Nytt arrangement opprettet for [dato] med [antall] oppgaver klonet!» «Tittel og dato må fylles ut». «Opprett en gruppe først. Arrangementene må ha en gruppe å ligge i.»",
+    "«Nytt arrangement opprettet og lagt i kalenderen!» Ved kopi: «Nytt arrangement opprettet for [dato] med [antall] oppgaver klonet!» «Tittel og dato må fylles ut». «Opprett en gruppe først. Arrangementene må ha en gruppe å ligge i.»",
 };
 
 const bemanning: HelpArticle = {

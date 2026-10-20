@@ -289,22 +289,22 @@ describe("Arrangementer i admin", () => {
     fireEvent.click(screen.getByRole("button", { name: "Kort" }));
     return view;
   };
-  const quickTitle = () => screen.getByPlaceholderText("Tittel, f.eks. Søndagsgudstjeneste & dåp") as HTMLInputElement;
   const openFullForm = () => {
-    fireEvent.click(screen.getByRole("button", { name: "Flere valg" }));
+    fireEvent.click(screen.getByRole("button", { name: "Nytt arrangement" }));
     return screen.getByRole("dialog", { name: "Nytt arrangement" });
   };
 
-  test("«Flere valg» åpner det store skjemaet med det som er skrevet, og oppretter arrangementet derfra", () => {
+  test("listen har ikke et raskt skjema: «Nytt arrangement» åpner det store skjemaet", () => {
     show();
-    fireEvent.change(quickTitle(), { target: { value: "Høstfest" } });
-    fireEvent.change(screen.getByPlaceholderText("Valgfritt tema..."), { target: { value: "Takk" } });
+    expect(screen.queryByPlaceholderText("Tittel, f.eks. Søndagsgudstjeneste & dåp")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Legg til i planleggeren" })).toBeNull();
     const form = openFullForm();
-    expect((within(form).getByLabelText("Tittel") as HTMLInputElement).value).toBe("Høstfest");
-    expect((within(form).getByLabelText("Tema (valgfritt)") as HTMLInputElement).value).toBe("Takk");
+    expect((within(form).getByLabelText("Tittel") as HTMLInputElement).value).toBe("");
     // No group is suggested as responsible: the event lies in the calendar until one is chosen
     expect((within(form).getByLabelText("Ansvarlig gruppe") as HTMLSelectElement).value).toBe("kalender");
 
+    fireEvent.change(within(form).getByLabelText("Tittel"), { target: { value: "Høstfest" } });
+    fireEvent.change(within(form).getByLabelText("Tema (valgfritt)"), { target: { value: "Takk" } });
     fireEvent.change(within(form).getByLabelText("Dato"), { target: { value: "2026-10-18" } });
     fireEvent.change(within(form).getByLabelText("Sted"), { target: { value: "Storsalen" } });
     fireEvent.click(within(form).getByRole("button", { name: "Opprett arrangement" }));
@@ -315,34 +315,6 @@ describe("Arrangementer i admin", () => {
     expect(createTask).not.toHaveBeenCalled();
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(showFeedback).toHaveBeenCalledWith("Nytt arrangement opprettet og lagt i kalenderen!");
-    expect(quickTitle().value).toBe("");
-  });
-
-  test("det raske skjemaet lagrer fortsatt med én gang", () => {
-    show();
-    fireEvent.change(quickTitle(), { target: { value: "Gudstjeneste" } });
-    fireEvent.change(document.querySelector('input[type="date"]') as HTMLInputElement, { target: { value: "2026-10-18" } });
-    fireEvent.change(screen.getByLabelText("Sted"), { target: { value: " Torget " } });
-    fireEvent.click(screen.getByRole("button", { name: "Legg til i planleggeren" }));
-
-    // With the place, and in the calendar: no group is made responsible from here
-    expect(createGathering).toHaveBeenCalledWith(expect.objectContaining({ title: "Gudstjeneste", location: "Torget", groupId: "kalender" }));
-    expect(screen.queryByRole("dialog")).toBeNull();
-    expect((screen.getByLabelText("Sted") as HTMLInputElement).value).toBe("");
-  });
-
-  test("det raske skjemaet spør om sted og ikke om ansvarlig gruppe, og et tomt sted lagres ikke", () => {
-    show();
-    expect(screen.queryByLabelText("Ansvarlig gruppe")).toBeNull();
-    expect((screen.getByLabelText("Sted") as HTMLInputElement).placeholder).toBe("Sted (Kirken når feltet står tomt)");
-    fireEvent.change(quickTitle(), { target: { value: "Årsmøte" } });
-    fireEvent.change(document.querySelector('input[type="date"]') as HTMLInputElement, { target: { value: "2027-01-19" } });
-    fireEvent.click(screen.getByRole("button", { name: "Legg til i planleggeren" }));
-    expect(vi.mocked(createGathering).mock.calls[0][0].location).toBeUndefined();
-
-    // What is written, follows into the full form
-    fireEvent.change(screen.getByLabelText("Sted"), { target: { value: "Bedehuset" } });
-    expect((within(openFullForm()).getByLabelText("Sted") as HTMLInputElement).value).toBe("Bedehuset");
   });
 
   test("et arrangement fra en mal får malens program og oppgaver", () => {
