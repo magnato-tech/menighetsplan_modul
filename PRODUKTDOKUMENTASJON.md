@@ -1509,7 +1509,7 @@ Bestilt av produkteier: en pastor som får en SMS om forfall, skal kunne bytte p
 **Prøvd.** Typesjekk, tester og bygg kjører på grenen (`.github/workflows/sjekk.yml`). Skjermbildene er tatt i mobilbredde mot demoens data, som administrator og som gruppeleder, uten å endre noe.
 
 
-### Arrangementet åpner Bemanning, og ingen raskt skjema (20. oktober 2026)
+### Arrangementet åpner Bemanning, og uten raskt skjema (20. oktober 2026)
 
 Bestilt av produkteier etter første slipp samme morgen. Arrangementer planlegges for det meste ved semesterstart, så skjemaet for et nytt arrangement skal ikke ta plassen øverst i listen.
 
