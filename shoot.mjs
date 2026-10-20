@@ -81,6 +81,9 @@ await run("pc", { viewport: { width: 1280, height: 900 } }, async (page, shot, s
     await go(page, "/admin?tab=planlegger-oppgaver");
     await shot("03-oppfolging", false);
     await page.locator("section div.rounded-2xl").first().screenshot({ path: "out/hjelp-oppgaver.png" });
+    await go(page, "/admin?tab=planlegger-samlinger");
+    await shot("04-arrangementer", false);
+    await page.locator("h2", { hasText: "Gudstjenester & Møter" }).locator("xpath=../..").screenshot({ path: "out/hjelp-arrangementer.png" });
   });
 });
 fs.writeFileSync("out/log.txt", log.join("\n") + "\n");

@@ -14,7 +14,7 @@ jobs:
           path: tools
       - uses: actions/checkout@v4
         with:
-          ref: mobil-bemanning
+          ref: klikk-og-pluss
           path: app
       - uses: actions/setup-node@v4
         with:
