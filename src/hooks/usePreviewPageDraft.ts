@@ -11,6 +11,7 @@ import {
   type WarmDraftFields,
 } from "../utils/previewBridge";
 import { pageUrl } from "../utils/menu";
+import { scrollToPreviewTarget } from "../utils/previewScroll";
 import { useCms } from "../context/CmsContext";
 
 /**
@@ -74,7 +75,8 @@ export function usePreviewPageDraft(
       }
       if (msg.type === "cms:focus") {
         const target = document.querySelector(`[data-cms-preview-target="${msg.blockId}"]`);
-        target?.scrollIntoView({ behavior: "smooth", block: "start" });
+        // Below the website's menu, so the top of the section is not hidden behind it
+        if (target) scrollToPreviewTarget(target);
       }
     };
 
