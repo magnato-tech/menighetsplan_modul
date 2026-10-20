@@ -18,8 +18,7 @@ import {
   ExternalLink,
   Monitor,
   Tablet,
-  Smartphone,
-} from "lucide-react";
+  Smartphone, Save } from "lucide-react";
 import { CmsMediaPicker } from "../../../../components/admin/CmsMediaPicker";
 import { useMediaMap } from "../../../../hooks/useMediaMap";
 import { resolveShareableMediaUrl } from "../../../../utils/media";
@@ -1076,7 +1075,8 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
           : "max-w-4xl mx-auto w-full"
       }`}
     >
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--studio-border)] pb-3">
+      {/* The top bar stays in view while the page scrolls, so Lagre is always within reach */}
+      <div className="sticky top-0 z-30 -mx-4 sm:-mx-6 -mt-4 sm:-mt-6 px-4 sm:px-6 pt-4 sm:pt-6 rounded-t-2xl bg-[var(--studio-surface)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--studio-border)] pb-3">
         <h3 className="text-sm font-bold text-[var(--studio-text)] flex items-center gap-2">
           <Edit3 className="w-4 h-4 text-[var(--studio-icon)]" />
           <span>
@@ -1143,6 +1143,15 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
           </a>
 
           <button
+            type="submit"
+            className="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-sm flex items-center gap-1.5 cursor-pointer transition-colors"
+            title="Lagre siden"
+          >
+            <Save className="w-4 h-4" aria-hidden />
+            <span>Lagre</span>
+          </button>
+
+          <button
             type="button"
             onClick={onClose}
             className="p-1.5 rounded-lg text-[var(--studio-muted)] hover:text-[var(--studio-text)] hover:bg-[var(--studio-hover)] cursor-pointer transition-colors"
@@ -1162,7 +1171,7 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
           <div className="w-full lg:w-[460px] xl:w-[500px] 2xl:w-[540px] shrink-0 space-y-4 overflow-y-auto max-h-[82vh] pr-2">
             {renderFormFields()}
           </div>
-          <div className="flex-1 min-w-0 w-full sticky top-0">
+          <div className="flex-1 min-w-0 w-full sticky top-24">
             {renderLiveFrontendPreview()}
           </div>
         </div>

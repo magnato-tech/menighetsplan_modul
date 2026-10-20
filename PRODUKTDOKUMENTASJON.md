@@ -1560,6 +1560,8 @@ Bestilt av produkteier etter en sammenligning med nettsidene til andre menighete
 
 Feltene er nye på sidene og i innstillingene. Reglene i databasen lar en administrator skrive dem som før, og en side lagret uten dem ser ut som før.
 
+**Lagre øverst.** Linjen øverst i redigeringen av en side (tittel, Rediger/Splitt/Forhåndsvis, lukk) blir stående når siden rulles, og har fått knappen Lagre. Lagre side nederst står som før.
+
 ---
 
 

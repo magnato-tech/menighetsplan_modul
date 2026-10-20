@@ -103,7 +103,7 @@ const siderPublisering: HelpArticle = {
     "Huk av Aktiver publisering hvis siden skal vises.",
     "Huk av Vis i offentlig meny hvis den skal ligge i toppmenyen.",
     "Valgfritt: sett Publiseringsdato & tidspunkt (Planlegging), eller bruk I morgen 09:00.",
-    "Trykk Lagre side. Avbryt lukker uten å lagre.",
+    "Trykk Lagre øverst, som alltid står synlig, eller Lagre side nederst. Avbryt lukker uten å lagre.",
   ],
   knapper:
     "Aktiver publisering — «Når aktivert, vil siden være synlig for publikum (eller automatisk fra planlagt dato).» Vis i offentlig meny — «Vises i toppmenyen eller nedtrekksmenyen. Slått av er siden bare tilgjengelig via direkte lenke.» Nullstill dato (publiser umiddelbart). Lagre side.",
