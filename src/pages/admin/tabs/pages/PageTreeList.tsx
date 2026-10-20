@@ -388,7 +388,7 @@ export const PageTreeList: React.FC<PageTreeListProps> = ({
                 toggleCollapse(parent.id);
               }
             }}
-            className={`p-4 sm:p-5 rounded-2xl border transition-all space-y-3 relative scroll-mt-20 ${
+            className={`p-4 sm:p-5 rounded-2xl border transition-all space-y-3 relative scroll-mt-[calc(var(--demo-strip,0px)+4.5rem)] ${
               highlightedId === parent.id ? "ring-2 ring-indigo-500" : ""
             } ${
               hasChildren ? "cursor-default select-none" : ""
@@ -672,7 +672,7 @@ export const PageTreeList: React.FC<PageTreeListProps> = ({
                       id={`side-${child.id}`}
                       onDragOver={(e) => handleDragOverSub(e, child.id, parent.id)}
                       onDrop={(e) => handleDropSub(e, child.id, parent.id, item.children)}
-                      className={`p-3 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 relative scroll-mt-20 ${
+                      className={`p-3 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 relative scroll-mt-[calc(var(--demo-strip,0px)+4.5rem)] ${
                         highlightedId === child.id ? "ring-2 ring-indigo-500" : ""
                       } before:absolute before:-left-3 sm:before:-left-6 before:top-1/2 before:w-3 sm:before:w-6 before:h-0.5 before:bg-indigo-500/30 ${
                         isSubDragged

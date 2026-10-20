@@ -1574,6 +1574,9 @@ Bestilt av produkteier: på PC skal nettsidens meny stå øverst i Sider, så de
 | **Trykk** | Listen ruller til siden. En fane som er foldet sammen, åpnes, og siden lyser kort opp |
 | **Hvor man er** | Hovedfanen som står øverst i listen, er markert i linjen |
 | **Kladder og skjulte** | Står med, dempet og merket «Kladd», «Planlagt» eller «Ikke i menyen» (`buildMenuBar` i `src/utils/menu.ts`) |
+| **Står fast øverst (rettet samme dag)** | Meldt av produkteier: linjen rullet ut av bildet. Innholdsfeltet i admin var satt opp som om det rullet for seg selv, mens det var vinduet som rullet, og da sto linjen bare fast inne i feltet. Feltet ruller ikke lenger for seg selv (`AdminStudio.tsx`), og linjen står under demo-stripen. Det samme gjelder linjen med Lagre øverst i redigeringen av en side. Sidemenyen i admin står også fast ved siden av innholdet på store skjermer, og ruller for seg selv når den er høyere enn skjermen (`StudioSidebar.tsx`); på mobil skyves den inn som før. En side man hopper til, legger seg rett under linjen (`tests/admin-stays-on-top.test.tsx`) |
+| **Over redigeringen (bestilt samme kveld)** | Mens en side redigeres, står menylinjen over redigeringen, med hovedfanen til siden merket. En side i menyen åpnes i redigeringen. Kollaps og Utvid står ikke der. Bare på store skjermer, som linjen over listen |
+| **Endringer som ikke er lagret** | Før redigeringen lukkes eller bytter til en annen side (fra menylinjen, fra Rediger i listen eller med + for en ny side), spørres det om endringene skal lagres: «Lagre», «Forkast endringene» eller «Bli her». Før ble endringene borte uten spørsmål ved Avbryt og lukk. Om noe er endret, avgjøres av om siden ville blitt lagret annerledes enn da den ble åpnet eller sist lagret (`pageFingerprint` i `src/utils/pageRecord.ts`, `UnsavedChangesDialog.tsx`). Å gå til en annen fane i admin eller lukke nettleseren spør ikke ennå |
 | **Kollaps alle og Utvid alle** | Står i linjen på store skjermer, og over listen som før på mobil |
 
 ### Forsiden, trinn 1: rent bilde og stillere standard (20. oktober 2026)
@@ -1600,7 +1603,11 @@ Bestilt av produkteier etter planen fra samme dag. Avgjort før bygging: hvert b
 | **Tekststørrelse** | Liten, middels, stor eller ekstra stor. Til den er valgt, følger størrelsen stilen som før: stor når tittelen er kraftig, middels når den er rolig (`heroTitleSize`) |
 | **Skrift** | Som overskriftene, rund og vennlig (Nunito), klassisk serif (Playfair Display), store bokstaver (Oswald) eller håndskrift (Caveat). Skriftene ligger i appen (`public/skrifter`), så nettsiden henter ingenting fra Google, og bare den valgte lastes (`heroTitleFont`) |
 
-Valgene står i feltet «Toppbildet: størrelse, tittel og flere bilder» i redigeringen av forsiden. En side lagret før ser ut som før.
+Tekststørrelse og skrift står rett under «Tittel i Hero» når forsiden redigeres. Titlene til bilde 2 og 3 og pilene står i feltet «Toppbildet: størrelse, tittel og flere bilder». Tittelfeltet til et bilde står der alltid, men er grått til bildet er valgt. En side lagret før ser ut som før.
+
+**Lagre lukker ikke siden lenger** (meldt av produkteier da trinn 2 ble prøvd): siden blir stående åpen etter Lagre, så man kan fortsette, og Lukk går tilbake til listen. En ny side får id-en sin før første lagring, så neste Lagre oppdaterer den samme siden (`handleSavePage` i `src/components/admin/AdminCmsPanel.tsx`, `tests/page-save-stays-open.test.tsx`). Gjelder alle sider.
+
+**Rediger viser hele redigeringen** (meldt av produkteier samme kveld): redigeringen åpnes over listen. Trykket man Rediger på en side langt nede, kom den inn over skjermen, og bare nederste del syntes. Nå legger den seg øverst på skjermen, rett under demo-stripen, når den åpnes, men ikke ved Lagre. Når den lukkes, står siden som ble redigert, midt på skjermen igjen (`handleOpenEditPage` og `handleCloseEditor` i `AdminCmsPanel.tsx`).
 
 Alle nye felt på en side går gjennom `buildPageRecord` i `src/utils/pageRecord.ts` (ellers forsvinner de ved Lagre), inn i `WARM_DRAFT_KEYS` i `src/utils/previewBridge.ts` (så forhåndsvisningen viser dem med en gang) og i `Required<CmsPage>`-prøven i `tests/page-record.test.ts`. Valgene for toppbildet ligger i `src/utils/heroLayout.ts`, og står i redigeringen i feltet «Toppbildet: størrelse, tittel og flere bilder» i `PageEditModal.tsx`.
 

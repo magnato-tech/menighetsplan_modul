@@ -8,10 +8,13 @@ interface PageMenuBarProps {
   activeId: string | null;
   /** Scrolls the list to a page; a sub-page names the main tab it stands under. */
   onJump: (pageId: string, parentId?: string) => void;
-  onCollapseAll: () => void;
-  onExpandAll: () => void;
-  /** «Kollaps alle» and «Utvid alle» only mean something when a tab has sub-pages. */
-  canFold: boolean;
+  onCollapseAll?: () => void;
+  onExpandAll?: () => void;
+  /** «Kollaps alle» and «Utvid alle» only mean something when a tab has sub-pages, and only over the list. */
+  canFold?: boolean;
+  /** Stays at the top while the list scrolls. Over the editor it stands still, and lies above the editor's own
+   *  line (z-30), so the drop-downs are not hidden behind it. */
+  sticky?: boolean;
 }
 
 const StateTag: React.FC<{ state: MenuBarState }> = ({ state }) =>
@@ -30,10 +33,10 @@ const closeOnEscape = (event: React.KeyboardEvent) => {
  * The website's menu at the top of the page list, on a large screen: a click on a main tab, or on a
  * sub-page under it, scrolls the list there. It stays at the top while the list scrolls.
  */
-export const PageMenuBar: React.FC<PageMenuBarProps> = ({ items, activeId, onJump, onCollapseAll, onExpandAll, canFold }) => (
+export const PageMenuBar: React.FC<PageMenuBarProps> = ({ items, activeId, onJump, onCollapseAll, onExpandAll, canFold = false, sticky = true }) => (
   <nav
     aria-label="Menyen på nettsiden"
-    className="flex sticky top-0 z-20 items-center justify-between gap-3 px-3 py-2 rounded-xl border border-[var(--studio-border)] bg-[var(--studio-surface)] shadow-sm"
+    className={`flex ${sticky ? "sticky top-[var(--demo-strip,0px)] z-20" : "relative z-40"} items-center justify-between gap-3 px-3 py-2 rounded-xl border border-[var(--studio-border)] bg-[var(--studio-surface)] shadow-sm`}
     onKeyDown={closeOnEscape}
   >
     <ul className="flex flex-wrap items-center gap-1">

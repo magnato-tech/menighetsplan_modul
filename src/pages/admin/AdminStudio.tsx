@@ -379,11 +379,13 @@ function AdminStudioContent() {
 
 
 
+      {/* The window scrolls, not this area: an area that only looked like it scrolled held on to everything
+          meant to stay at the top while scrolling (the menu bar in Sider, the line with Lagre in the editor) */}
       <main
 
         data-studio-theme={contentTheme}
 
-        className={`flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 ${studioBg}`}
+        className={`flex-1 min-w-0 p-4 sm:p-6 lg:p-8 ${studioBg}`}
 
       >
 

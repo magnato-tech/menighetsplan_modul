@@ -37,7 +37,7 @@ const siderSidetre: HelpArticle = {
   knapper:
     "+ øverst til høyre (Ny hovedfane), Rediger. Slett har tittelen Slett fane eller Slett underside. Underfane: «Opprett ny underfane som legger seg under denne fanen».",
   etterLagring:
-    "«Siden ble lagret og menystrukturen ble oppdatert!» Ved flytting: «Menyrekkefølgen ble oppdatert!» Ved publisering: «[tittel] er nå publisert på nettsiden!» Ved kladd: «[tittel] er satt til kladd (upublisert).» Ved sletting: «Siden ble slettet». Uten tittel: «Siden må ha en tittel».",
+    "«Siden ble lagret og menystrukturen ble oppdatert!» Siden blir stående åpen, så du kan fortsette; lukk den for å komme tilbake til listen. Har du endret noe uten å lagre, spør admin før siden lukkes eller du går til en annen side: «Lagre», «Forkast endringene» eller «Bli her». På PC står nettsidens meny over redigeringen, og en side i menyen åpnes der. Ved flytting: «Menyrekkefølgen ble oppdatert!» Ved publisering: «[tittel] er nå publisert på nettsiden!» Ved kladd: «[tittel] er satt til kladd (upublisert).» Ved sletting: «Siden ble slettet». Uten tittel: «Siden må ha en tittel».",
 };
 
 const siderInnstillinger: HelpArticle = {
@@ -68,7 +68,7 @@ const siderHero: HelpArticle = {
     "Skriv Tittel i Hero.",
     "Velg bilde med bildevelgeren. Se Mediebibliotek.",
     "Skriv knappetekst for Primærknapp og Sekundærknapp, og huk av Vis på siden for dem som skal vises.",
-    "På forsiden: velg Høyde på toppbildet (Lav, Middels eller Hele skjermen) og om Tittelen på bildet skal være Kraftig eller Rolig. Undertittelen kan slås av med Vis på siden ved Ingress / Undertittel.",
+    "På forsiden: velg Høyde på toppbildet (Lav, Middels eller Hele skjermen) og om Tittelen på bildet skal være Kraftig eller Rolig. Tekststørrelse og Skrift på tittelen står rett under Tittel i Hero. Toppbilde 2 og 3 kan få hver sin tittel når bildet er valgt; tomt felt gir hovedtittelen. Med flere bilder står prikker under bildet, og piler på sidene kan slås på. Undertittelen kan slås av med Vis på siden ved Ingress / Undertittel.",
     "På forsiden: velg hvordan Menyen øverst ligger (over bildet uten bakgrunn, med svak skygge, eller som hvit linje) og hvor mørkt Slør over bildet skal være. En lys logo til bruk over bildet, og menyord med store bokstaver, velges i Nettside-innstillinger.",
   ],
   knapper:

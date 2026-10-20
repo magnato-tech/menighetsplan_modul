@@ -130,9 +130,10 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({ studio, activeTab,
       {/* ========================================================= */}
       {/* SIDEBAR NAVIGATION (FULLSKJERMS ARBEIDSFLATE)            */}
       {/* ========================================================= */}
+      {/* On a phone it slides in over the page. On a larger screen it stands fixed beside the content while the window scrolls, and scrolls on its own if it is taller than the screen */}
       <aside
         data-studio-theme={sidebarTheme}
-        className={`fixed md:static top-[var(--demo-strip,0px)] bottom-0 left-0 z-40 w-64 bg-[var(--studio-panel-bg)] border-r border-[var(--studio-border)] text-[var(--studio-text)] flex flex-col justify-between transition-transform duration-200 ${
+        className={`fixed md:sticky md:self-start md:h-[calc(100vh-var(--demo-strip,0px))] md:shrink-0 top-[var(--demo-strip,0px)] bottom-0 left-0 z-40 w-64 bg-[var(--studio-panel-bg)] border-r border-[var(--studio-border)] text-[var(--studio-text)] flex flex-col justify-between transition-transform duration-200 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         }`}
       >

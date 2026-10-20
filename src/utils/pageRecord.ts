@@ -6,6 +6,16 @@ import { heroExtrasOf, heroHeightOf, heroMenuStyleOf, heroTitleFontOf, heroTitle
  * be named here: a field left out is lost on Lagre, while the preview (which reads the editor) still
  * shows it. `tests/page-record.test.ts` fails for a field of CmsPage that does not survive.
  */
+/**
+ * What the page in the editor would be stored as, leaving out the time of saving. Two pages with the
+ * same fingerprint are saved alike, so the editor holds changes that are not saved when the fingerprint
+ * differs from the one taken when the page was opened or last saved.
+ */
+export function pageFingerprint(pageData: Partial<CmsPage> & { id?: string }): string {
+  const record = buildPageRecord(pageData, new Date(0), () => "");
+  return JSON.stringify({ ...record, updatedAt: "" });
+}
+
 export function buildPageRecord(
   pageData: Partial<CmsPage> & { id?: string },
   now: Date,
