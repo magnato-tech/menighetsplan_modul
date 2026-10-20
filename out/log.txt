@@ -1,19 +1,30 @@
-mobil console: Failed to load resource: the server responded with a status of 400 ()
-mobil shot 01-oversikt http://localhost:4173/admin
-mobil shot 02-bemanning http://localhost:4173/admin/samling/gathering-1?vis=bemanning
-mobil shot 03-personmeny http://localhost:4173/admin/samling/gathering-1?vis=bemanning
-mobil shot 04-tildel http://localhost:4173/admin/samling/gathering-1?vis=bemanning
-mobil shot 05-instruks http://localhost:4173/admin/samling/gathering-1?vis=bemanning
-mobil shot 06-flere-valg http://localhost:4173/admin/samling/gathering-1?vis=bemanning
-mobil shot 07-program http://localhost:4173/admin/samling/gathering-1?vis=program
-mobil shot 08-arrangementer http://localhost:4173/admin?tab=planlegger-samlinger
-mobil shot 09-oppfolging http://localhost:4173/admin?tab=planlegger-oppgaver
-leder console: Failed to load resource: the server responded with a status of 400 ()
-leder shot 01-start http://localhost:4173/leder
-leder shot 02-bemanning http://localhost:4173/leder/samling/gathering-1
-leder shot 03-program http://localhost:4173/leder/samling/gathering-1?vis=program
-pc shot 01-oversikt http://localhost:4173/admin
-pc shot 02-bemanning http://localhost:4173/admin/samling/gathering-1?vis=bemanning
-pc shot 03-oppfolging http://localhost:4173/admin?tab=planlegger-oppgaver
-pc shot 04-arrangementer http://localhost:4173/admin?tab=planlegger-samlinger
-pc FAIL oppfolging: TimeoutError: locator.screenshot: Timeout 29994.828999999998ms exceeded.
+pc dashboard
+pc planlegger-oppgaver
+pc planlegger-samlinger
+pc planlegger-grupper
+pc planlegger-personer
+pc planlegger-roller
+pc planlegger-maler
+pc arshjul
+pc analyse
+pc cms-sider
+pc cms-nyheter
+pc cms-design
+pc epost
+pc samling
+pc oppgave
+mobil dashboard
+mobil planlegger-oppgaver
+mobil planlegger-samlinger
+mobil planlegger-grupper
+mobil planlegger-personer
+mobil planlegger-roller
+mobil planlegger-maler
+mobil arshjul
+mobil analyse
+mobil cms-sider
+mobil cms-nyheter
+mobil cms-design
+mobil epost
+mobil samling
+mobil oppgave
