@@ -56,4 +56,7 @@ print('   Website previews (.site-theme) and screens drawn for a light backgroun
 print('[data-studio-theme="light"] {')
 print('\n'.join(rules))
 print(f'  :is({", ".join(darkbg)}).text-white:not(.site-theme *, [data-ui="light"] *) {{ color: #0f172a; }}')
+# White text inside a panel that was dark and is now light, unless it sits on a coloured button of its own
+strong=", ".join(f".bg-{h}-{n}" for h in P for n in ("500","600"))
+print(f'  :is({", ".join(darkbg)}) .text-white:not([class*="bg-"], :is({strong}) *, .site-theme *, [data-ui="light"] *) {{ color: #0f172a; }}')
 print('}')

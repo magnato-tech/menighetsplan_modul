@@ -1508,6 +1508,20 @@ Bestilt av produkteier: en pastor som får en SMS om forfall, skal kunne bytte p
 
 **Prøvd.** Typesjekk, tester og bygg kjører på grenen (`.github/workflows/sjekk.yml`). Skjermbildene er tatt i mobilbredde mot demoens data, som administrator og som gruppeleder, uten å endre noe.
 
+
+### Lyst innhold i admin (20. oktober 2026)
+
+Bestilt av produkteier: i «Lyst innhold» var bakgrunnen grå, og merker og navn sto i mørke farger laget for natt-visningen (mørk rød med rosa tekst, mørk grønn med lys grønn tekst).
+
+| Del | Hva som er levert |
+|---|---|
+| **Bakgrunnen** | Hvit. Kort og felt er nesten hvite, med lys grå kant |
+| **Fargene** | Fanene i admin er skrevet i en mørk palett. I lyst innhold blir hver mørk bakgrunn lys i samme farge, lys tekst blir mørk, og kantene lyse. Hvit tekst i et panel som er blitt lyst, blir mørk; på en farget knapp blir den stående |
+| **Unntak** | Forhåndsvisningen av nettsiden og arrangementet (Program og Bemanning), som alt er tegnet for lys bakgrunn, beholder fargene sine |
+| **Natt** | Uendret |
+
+Fargene ligger i `src/admin-light.css`, skrevet av `scripts/admin-light-css.py`. En test (`tests/admin-light-css.test.ts`) feiler hvis en klasse i en mørk farge legges til i admin uten å få en lys utgave; da kjøres skriptet på nytt.
+
 ---
 
 
