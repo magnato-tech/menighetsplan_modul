@@ -233,7 +233,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ studio, area, onTabC
           <div className="space-y-2 text-xs">
             <button
               type="button"
-              onClick={() => onTabChange("planlegger-samlinger")}
+              onClick={() => onCreateIn("planlegger-samlinger")}
               className="w-full flex items-center justify-between p-3 rounded-xl bg-[var(--studio-bg)] hover:bg-[var(--studio-hover)]/80 text-[var(--studio-text)] font-semibold transition-colors text-left"
             >
               <span>Opprett ny gudstjeneste eller samling</span>

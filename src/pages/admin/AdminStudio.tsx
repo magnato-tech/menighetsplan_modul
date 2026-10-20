@@ -520,7 +520,12 @@ function AdminStudioContent() {
 
         <StudioTabPanel tab="planlegger-samlinger" activeTab={activeTab} visited={visitedTabs.includes("planlegger-samlinger")}>
 
-          <LazyGatheringsTab studio={studio} showFeedback={showFeedback} />
+          <LazyGatheringsTab
+            studio={studio}
+            showFeedback={showFeedback}
+            createRequested={createRequest === "planlegger-samlinger"}
+            onCreateHandled={clearCreateRequest}
+          />
 
         </StudioTabPanel>
 

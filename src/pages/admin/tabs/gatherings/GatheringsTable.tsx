@@ -61,7 +61,7 @@ export const GatheringsTable: React.FC<GatheringsTableProps> = ({ rows, sortKey,
               <tr key={g.id} className="border-b border-[var(--studio-border)] last:border-b-0 align-middle">
                 <td className="px-3 py-2.5 whitespace-nowrap font-semibold text-[var(--studio-text)]">{when}</td>
                 <td className="px-3 py-2.5">
-                  <Link to={`/admin/samling/${g.id}`} className="font-bold text-[var(--studio-text)] hover:underline">
+                  <Link to={`/admin/samling/${g.id}?vis=bemanning`} className="font-bold text-[var(--studio-text)] hover:underline">
                     {g.title}
                   </Link>
                   <div className="flex flex-wrap items-center gap-1.5 mt-0.5 text-[10px] text-[var(--studio-muted)]">
@@ -111,7 +111,7 @@ export const GatheringsTable: React.FC<GatheringsTableProps> = ({ rows, sortKey,
                       <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
                     </button>
                     <Link
-                      to={`/admin/samling/${g.id}`}
+                      to={`/admin/samling/${g.id}?vis=program`}
                       className="inline-flex items-center gap-1.5 px-3 h-8 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold whitespace-nowrap"
                     >
                       <ListTodo className="w-3.5 h-3.5" aria-hidden="true" />
