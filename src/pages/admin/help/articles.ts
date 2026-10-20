@@ -69,6 +69,7 @@ const siderHero: HelpArticle = {
     "Velg bilde med bildevelgeren. Se Mediebibliotek.",
     "Skriv knappetekst for Primærknapp og Sekundærknapp, og huk av Vis på siden for dem som skal vises.",
     "På forsiden: velg Høyde på toppbildet (Lav, Middels eller Hele skjermen) og om Tittelen på bildet skal være Kraftig eller Rolig. Undertittelen kan slås av med Vis på siden ved Ingress / Undertittel.",
+    "På forsiden: velg hvordan Menyen øverst ligger (over bildet uten bakgrunn, med svak skygge, eller som hvit linje) og hvor mørkt Slør over bildet skal være. En lys logo til bruk over bildet, og menyord med store bokstaver, velges i Nettside-innstillinger.",
   ],
   knapper:
     "Hero / Toppbanner, Tittel i Hero, Toppbildet: størrelse, tittel og flere bilder, Høyde på toppbildet, Tittelen på bildet, Primærknapp, Sekundærknapp, Vis på siden. Plassholder for knappetekst: «Knappetekst». På forsiden brukes «Se hva som skjer» og «Bli kjent med oss» som plassholdere.",

@@ -3,7 +3,9 @@ import { Link, useLocation } from "react-router-dom";
 import { useCms } from "../../context/CmsContext";
 import { useFirebase } from "../../context/FirebaseDataContext";
 import { buildPublicMenu, pageUrl } from "../../utils/menu";
-import { menuLogoOf } from "../../utils/logo";
+import { menuLogoOf, overlayLogoOf } from "../../utils/logo";
+import { heroMenuStyleOf } from "../../utils/heroLayout";
+import { usePreviewPageDraft } from "../../hooks/usePreviewPageDraft";
 import { socialInMenu, socialLinksOf } from "../../utils/socialLinks";
 import { SocialIcon } from "./SocialIcon";
 import {
@@ -34,10 +36,16 @@ export const PublicNavbar: React.FC = () => {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
-  const homePage = pages.find((p) => p.slug === "" || p.linkUrl === "/");
-  const isPreview = /[?&](preview=true|embedded=1)/.test(location.search);
-  const onHero = location.pathname === "/" && Boolean(homePage?.heroImage) && homePage?.heroMenuOverlay !== false && !isPreview;
+  const savedHome = pages.find((p) => p.slug === "" || p.linkUrl === "/");
+  // In the editor's preview the front page is the one being edited, so the menu follows its choices too
+  const { draftPage } = usePreviewPageDraft(savedHome, "/");
+  const homePage = draftPage ?? savedHome;
+  // The preview in a tab of its own has a banner at the top, and keeps the menu off the picture
+  const isPreviewTab = /[?&]preview=true/.test(location.search) && !/[?&]embedded=1/.test(location.search);
+  const menuStyle = heroMenuStyleOf(homePage);
+  const onHero = location.pathname === "/" && Boolean(homePage?.heroImage) && menuStyle !== "white" && !isPreviewTab;
   const overlay = onHero && !scrolled && !mobileMenuOpen;
+  const capitals = settings.menuUppercase === true ? "uppercase tracking-wider" : "";
   const linkIdle = overlay ? "text-white/90 hover:text-white hover:bg-white/15" : "text-stone-600 hover:text-stone-900 hover:bg-stone-100/70";
   const linkActive = overlay ? "text-white bg-white/20 font-bold" : "text-primary-900 bg-primary-50/80 font-bold";
 
@@ -68,25 +76,34 @@ export const PublicNavbar: React.FC = () => {
   );
 
   const logo = menuLogoOf(settings);
+  // Over the picture a light version of the logo stands on its own; the ordinary one stands on a light plate
+  const logoOnHero = overlay ? overlayLogoOf(settings) : undefined;
   const social = socialInMenu(settings) ? socialLinksOf(settings) : [];
-  // A congregation that keeps its logo off the top, has its own name written there, not the product's
-  const nameInPlaceOfLogo = settings.hideLogoInMenu === true && settings.churchName.trim() !== "";
+    // Without a logo at the top the congregation's own name stands there, never the product's
+  const nameInPlaceOfLogo = settings.churchName.trim() !== "";
 
   return (
     <header
       data-menu-on-hero={overlay ? "true" : undefined}
       className={`${onHero ? "fixed inset-x-0" : "sticky"} top-[var(--demo-strip,0px)] z-50 border-b transition-colors duration-300 ${
         overlay
-          ? "bg-gradient-to-b from-stone-950/75 to-transparent border-transparent"
+          ? menuStyle === "clear"
+            ? "bg-transparent border-transparent"
+            : "bg-gradient-to-b from-stone-950/75 to-transparent border-transparent"
           : "bg-white/95 backdrop-blur-md border-stone-200/80 shadow-xs"
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 sm:h-20">
           {/* Logo & Brand Name */}
-          {logo ? (
-            // The logo says the name itself. Over a picture it stands on a light plate, so it can be read.
-            <Link to="/" aria-label={`${settings.churchName}, til forsiden`} className={`flex items-center ${overlay ? "bg-white/95 rounded-xl px-3 py-1.5 shadow-sm" : ""}`}>
+          {logoOnHero ? (
+            // Over the picture: the light logo on its own, or the ordinary one on a light plate so it can be read
+            <Link to="/" aria-label={`${settings.churchName}, til forsiden`} className={`flex items-center ${logoOnHero.plate ? "bg-white/95 rounded-xl px-3 py-1.5 shadow-sm" : ""}`}>
+              <img src={logoOnHero.src} alt={settings.churchName} className="h-9 sm:h-11 w-auto max-w-[60vw] object-contain" />
+            </Link>
+          ) : logo ? (
+            // The logo says the name itself
+            <Link to="/" aria-label={`${settings.churchName}, til forsiden`} className="flex items-center">
               <img src={logo} alt={settings.churchName} className="h-9 sm:h-11 w-auto max-w-[60vw] object-contain" />
             </Link>
           ) : (
@@ -122,7 +139,7 @@ export const PublicNavbar: React.FC = () => {
                   <Link
                     key={item.page.id}
                     to={item.targetUrl}
-                    className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
+                    className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all ${capitals} ${
                       item.isActive
                         ? linkActive
                         : linkIdle
@@ -137,7 +154,7 @@ export const PublicNavbar: React.FC = () => {
                 <div className="relative group" key={item.page.id}>
                   <Link
                     to={item.targetUrl}
-                    className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
+                    className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-all ${capitals} ${
                       item.isActive
                         ? linkActive
                         : linkIdle

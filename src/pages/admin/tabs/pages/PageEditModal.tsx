@@ -25,7 +25,7 @@ import { resolveShareableMediaUrl } from "../../../../utils/media";
 import { ContentBlockPickerModal } from "./ContentBlockPickerModal";
 import { useCms } from "../../../../context/CmsContext";
 import { useTimedMessage } from "../../../../hooks/useTimedMessage";
-import { HERO_HEIGHTS, HERO_TITLE_STYLES, heroHeightOf, heroTitleStyleOf, type HeroHeight, type HeroTitleStyle } from "../../../../utils/heroLayout";
+import { HERO_HEIGHTS, HERO_MENU_STYLES, HERO_TITLE_STYLES, HERO_VEILS, heroHeightOf, heroMenuStyleOf, heroTitleStyleOf, heroVeilOf, type HeroHeight, type HeroMenuStyle, type HeroTitleStyle, type HeroVeil } from "../../../../utils/heroLayout";
 import { formatNorwegianDateTime } from "../../../../utils/dates";
 import { shareableImageUrl } from "../../../../utils/seoUtils";
 import { VisualBlockManager } from "./VisualBlockManager";
@@ -290,7 +290,7 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
 
   useEffect(() => {
     setPreviewRevision((r) => r + 1);
-  }, [editingPage.title, editingPage.summary, editingPage.heroTitle, editingPage.heroCtaText, editingPage.heroCtaLink, editingPage.heroCtaSecondaryText, editingPage.heroCtaSecondaryLink, editingPage.showHeroPrimaryCta, editingPage.showHeroSecondaryCta, editingPage.showHeroSubtext, editingPage.heroHeight, editingPage.heroTitleStyle, editingPage.heroZoom, editingPage.heroMenuOverlay, editingPage.heroImage, editingPage.heroImages, editingPage.content, editingPage.isPublished, editingPage.linkUrl, cleanSlug]);
+  }, [editingPage.title, editingPage.summary, editingPage.heroTitle, editingPage.heroCtaText, editingPage.heroCtaLink, editingPage.heroCtaSecondaryText, editingPage.heroCtaSecondaryLink, editingPage.showHeroPrimaryCta, editingPage.showHeroSecondaryCta, editingPage.showHeroSubtext, editingPage.heroHeight, editingPage.heroTitleStyle, editingPage.heroZoom, editingPage.heroMenuOverlay, editingPage.heroMenuStyle, editingPage.heroVeil, editingPage.heroImage, editingPage.heroImages, editingPage.content, editingPage.isPublished, editingPage.linkUrl, cleanSlug]);
 
   useEffect(() => {
     if (viewMode === "edit") return;
@@ -728,15 +728,35 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
               />
               <span>Rolig zoom på toppbildet</span>
             </label>
-            <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-[var(--studio-text)]">
-              <input
-                type="checkbox"
-                checked={editingPage.heroMenuOverlay !== false}
-                onChange={(e) => onUpdate({ heroMenuOverlay: e.target.checked })}
-                className="w-4 h-4 rounded text-indigo-600 bg-[var(--studio-panel-bg)] border-[var(--studio-border)] cursor-pointer"
-              />
-              <span>Menyen ligger oppå toppbildet til man scroller</span>
-            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label className="space-y-1 text-xs font-semibold text-[var(--studio-muted)]">
+                <span className="block">Menyen øverst</span>
+                <select
+                  value={heroMenuStyleOf(editingPage)}
+                  onChange={(e) => {
+                    const heroMenuStyle = e.target.value as HeroMenuStyle;
+                    onUpdate({ heroMenuStyle, heroMenuOverlay: heroMenuStyle !== "white" });
+                  }}
+                  className="w-full px-3 py-2 rounded-xl bg-[var(--studio-panel-bg)] border border-[var(--studio-border)] text-[var(--studio-input-text)] text-xs"
+                >
+                  {HERO_MENU_STYLES.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="space-y-1 text-xs font-semibold text-[var(--studio-muted)]">
+                <span className="block">Slør over bildet</span>
+                <select
+                  value={heroVeilOf(editingPage)}
+                  onChange={(e) => onUpdate({ heroVeil: e.target.value as HeroVeil })}
+                  className="w-full px-3 py-2 rounded-xl bg-[var(--studio-panel-bg)] border border-[var(--studio-border)] text-[var(--studio-input-text)] text-xs"
+                >
+                  {HERO_VEILS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
           </div>
         )}
 

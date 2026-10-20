@@ -31,3 +31,15 @@ export function logoOf(settings: { logoUrl?: string }): string | undefined {
 export function menuLogoOf(settings: { logoUrl?: string; hideLogoInMenu?: boolean }): string | undefined {
   return settings.hideLogoInMenu === true ? undefined : logoOf(settings);
 }
+
+/**
+ * The logo over the front page picture: the light version when there is one, standing on its own,
+ * else the ordinary logo on a light plate. Nothing when the logo is kept off the top.
+ */
+export function overlayLogoOf(settings: { logoUrl?: string; logoOnDarkUrl?: string; hideLogoInMenu?: boolean }): { src: string; plate: boolean } | undefined {
+  if (settings.hideLogoInMenu === true) return undefined;
+  const light = logoOf({ logoUrl: settings.logoOnDarkUrl });
+  if (light) return { src: light, plate: false };
+  const logo = logoOf(settings);
+  return logo ? { src: logo, plate: true } : undefined;
+}

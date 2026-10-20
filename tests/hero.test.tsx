@@ -63,6 +63,7 @@ beforeEach(() => {
   home.heroImages = undefined;
   home.heroZoom = undefined;
   home.heroMenuOverlay = undefined;
+  home.heroMenuStyle = undefined;
   Object.defineProperty(window, "scrollY", { value: 0, configurable: true });
 });
 afterEach(() => {
@@ -160,6 +161,12 @@ describe("Valgene for toppbildet på forsiden", () => {
     expect(h1.className).not.toContain("font-black");
   });
 
+  test("uten slør står bildet rent, og teksten får skygge så den kan leses", () => {
+    vis({ heroVeil: "none" });
+    expect(hero().querySelector('[data-hero-backdrop] div[class*="bg-gradient"]')).toBeNull();
+    expect(hero().querySelector("h1")!.className).toContain("text-shadow");
+  });
+
   test("undertittelen kan slås av, og da står det ingen tekst fra innstillingene heller", () => {
     vis({ showHeroSubtext: false });
     expect(hero().textContent).not.toContain(home.summary);
@@ -210,8 +217,21 @@ describe("Menyen oppå toppbildet", () => {
     home.heroImage = bilde;
   });
 
-  test("i forhåndsvisningen i admin ligger menyen ikke over innholdet", () => {
-    expect(meny("/?preview=true&embedded=1").className).toContain("sticky");
+  test("forhåndsvisningen i redigeringen viser menyen som nettsiden, men ikke forhåndsvisningen i egen fane", () => {
+    expect(meny("/?preview=true&embedded=1").className).toContain("fixed");
+    cleanup();
+    expect(meny("/?preview=true").className).toContain("sticky");
+  });
+
+  test("menyen kan ligge helt uten bakgrunn over bildet, eller som hvit linje", () => {
+    home.heroMenuStyle = "clear";
+    const header = meny("/");
+    expect(header.className).toContain("bg-transparent");
+    expect(header.className).not.toContain("bg-gradient-to-b");
+    cleanup();
+    home.heroMenuStyle = "white";
+    expect(meny("/").className).toContain("sticky");
+    home.heroMenuStyle = undefined;
   });
 
   test("når mobilmenyen åpnes, blir linjen hvit så punktene kan leses", () => {
@@ -232,17 +252,21 @@ describe("Toppbildet i redigeringen", () => {
     return { ...view, onUpdate };
   };
 
-  test("forsiden har bryterne for zoom og meny, og de står på til de slås av", () => {
+  test("forsiden har valgene for zoom, meny og slør, som før til de endres", () => {
     const { getByLabelText, onUpdate } = rediger(home);
     const zoom = getByLabelText("Rolig zoom på toppbildet") as HTMLInputElement;
-    const overlay = getByLabelText("Menyen ligger oppå toppbildet til man scroller") as HTMLInputElement;
+    const menu = getByLabelText("Menyen øverst") as HTMLSelectElement;
+    const veil = getByLabelText("Slør over bildet") as HTMLSelectElement;
     expect(zoom.checked).toBe(true);
-    expect(overlay.checked).toBe(true);
+    expect(menu.value).toBe("shade");
+    expect(veil.value).toBe("dark");
 
     fireEvent.click(zoom);
     expect(onUpdate).toHaveBeenCalledWith({ heroZoom: false });
-    fireEvent.click(overlay);
-    expect(onUpdate).toHaveBeenCalledWith({ heroMenuOverlay: false });
+    fireEvent.change(menu, { target: { value: "white" } });
+    expect(onUpdate).toHaveBeenCalledWith({ heroMenuStyle: "white", heroMenuOverlay: false });
+    fireEvent.change(veil, { target: { value: "none" } });
+    expect(onUpdate).toHaveBeenCalledWith({ heroVeil: "none" });
   });
 
   test("en vanlig side har ikke disse valgene", () => {

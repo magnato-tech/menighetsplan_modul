@@ -27,6 +27,8 @@ const full: Required<CmsPage> = {
   heroImages: ["https://example.org/to.jpg"],
   heroZoom: false,
   heroMenuOverlay: false,
+  heroMenuStyle: "white",
+  heroVeil: "light",
   heroHeight: "low",
   heroTitleStyle: "calm",
   showHeroSubtext: false,

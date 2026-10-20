@@ -8,6 +8,8 @@ interface HeroBackdropProps {
   /** Each image starts a little enlarged and settles slowly. */
   zoom?: boolean;
   secondsPerImage?: number;
+  /** How dark the veil over the picture is (see utils/heroLayout.ts). Dark unless chosen. */
+  veil?: "none" | "light" | "dark";
 }
 
 /** Visitors who have asked their device for less motion get a still image. */
@@ -20,7 +22,7 @@ const prefersReducedMotion = (): boolean =>
  * The picture behind the hero: calm rather than busy. One image at a time, a slow zoom out,
  * and a long fade to the next. The dark veil on top keeps the headline readable on any photo.
  */
-export const HeroBackdrop: React.FC<HeroBackdropProps> = ({ images, alt = "", zoom = true, secondsPerImage = 8 }) => {
+export const HeroBackdrop: React.FC<HeroBackdropProps> = ({ images, alt = "", zoom = true, secondsPerImage = 8, veil = "dark" }) => {
   const count = images.length;
   // The image on its way out keeps its zoom while it fades, so it does not jump back to size
   const [shown, setShown] = useState({ active: 0, leaving: -1 });
@@ -54,7 +56,8 @@ export const HeroBackdrop: React.FC<HeroBackdropProps> = ({ images, alt = "", zo
           />
         );
       })}
-      <div className="absolute inset-0 bg-gradient-to-t from-stone-900/95 via-stone-900/70 to-stone-900/40" />
+      {veil === "dark" && <div className="absolute inset-0 bg-gradient-to-t from-stone-900/95 via-stone-900/70 to-stone-900/40" />}
+      {veil === "light" && <div className="absolute inset-0 bg-gradient-to-t from-stone-900/50 via-stone-900/20 to-stone-900/10" />}
     </div>
   );
 };

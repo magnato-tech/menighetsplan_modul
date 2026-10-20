@@ -26,7 +26,7 @@ import { usePreviewPageDraft } from "../../hooks/usePreviewPageDraft";
 import { useMediaMap, useResolvedMediaUrl } from "../../hooks/useMediaMap";
 import { resolveMediaUrl } from "../../utils/media";
 import { HeroBackdrop } from "../../components/public/HeroBackdrop";
-import { heroHeightOf, heroSubtextOf, heroTitleStyleOf } from "../../utils/heroLayout";
+import { heroHeightOf, heroMenuStyleOf, heroSubtextOf, heroTitleStyleOf, heroVeilOf } from "../../utils/heroLayout";
 
 
 
@@ -125,7 +125,11 @@ export const PublicHomePage: React.FC<PublicHomePageProps> = ({
     .filter(Boolean)
     .slice(0, 3);
   // With the menu on top of the hero (see PublicNavbar.tsx), the headline is moved down clear of it
-  const menuOnHero = heroImages.length > 0 && activePage?.heroMenuOverlay !== false && !isPreviewMode && !isEmbedded;
+  // The embedded preview in the editor shows it as the website does; the preview in a tab of its own has a banner on top
+  const menuOnHero = heroImages.length > 0 && heroMenuStyleOf(activePage) !== "white" && (!isPreviewMode || isEmbedded);
+  const veil = heroVeilOf(activePage);
+  // Without the dark veil the text gets a soft shadow, so it can still be read on a light picture
+  const textShadow = veil === "dark" ? "" : "[text-shadow:0_2px_14px_rgba(0,0,0,0.55)]";
   const heroImageAlt = activePage?.heroImageAlt?.trim() || "";
 
   const showPrimaryCta = activePage?.showHeroPrimaryCta !== false;
@@ -226,11 +230,11 @@ export const PublicHomePage: React.FC<PublicHomePageProps> = ({
 
       >
 
-          <HeroBackdrop images={heroImages} alt={heroImageAlt} zoom={activePage?.heroZoom !== false} />
+          <HeroBackdrop images={heroImages} alt={heroImageAlt} zoom={activePage?.heroZoom !== false} veil={veil} />
 
 
 
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-96 bg-primary-500/10 rounded-full blur-3xl pointer-events-none" />
+          {veil === "dark" && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-96 bg-primary-500/10 rounded-full blur-3xl pointer-events-none" />}
 
 
 
@@ -239,7 +243,7 @@ export const PublicHomePage: React.FC<PublicHomePageProps> = ({
 
 
             <h1
-              className={`text-white leading-tight ${
+              className={`text-white leading-tight ${textShadow} ${
                 calmTitle
                   ? "text-3xl sm:text-4xl lg:text-5xl font-normal tracking-normal"
                   : "text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight"
@@ -248,7 +252,7 @@ export const PublicHomePage: React.FC<PublicHomePageProps> = ({
               {heroHeadline}
             </h1>
             {heroSubtext && (
-              <p className="max-w-2xl mx-auto text-base sm:text-lg text-stone-300 leading-relaxed font-normal">
+              <p className={`max-w-2xl mx-auto text-base sm:text-lg leading-relaxed font-normal ${veil === "dark" ? "text-stone-300" : `text-white ${textShadow}`}`}>
                 {heroSubtext}
               </p>
             )}
