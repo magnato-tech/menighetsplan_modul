@@ -289,9 +289,11 @@ describe("PageEditModal & PublicStaticPage: Ekte forhåndsvisning i ny fane", ()
     // Klikk på forhåndsvisningslenken
     fireEvent.click(previewLink);
 
-    // Verifiser at utkastet er lagret i sessionStorage
-    const storedDraft = sessionStorage.getItem("cms_preview_draft_gudstjenester");
-    expect(storedDraft).toBeDefined();
+    // Verifiser at utkastet er lagret i sessionStorage: én gang under id-en, og adressen peker dit
+    const pointer = sessionStorage.getItem("cms_preview_draft_gudstjenester");
+    expect(pointer).toBeTruthy();
+    const storedDraft = sessionStorage.getItem(`cms_preview_draft_id_${JSON.parse(pointer!).id}`);
+    expect(storedDraft).toBeTruthy();
     expect(JSON.parse(storedDraft!).title).toBe("Gudstjenester");
   });
 
