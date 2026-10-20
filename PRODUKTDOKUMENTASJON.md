@@ -1589,6 +1589,21 @@ Bestilt av produkteier: et rent bilde med menyen over, som hos andre menigheter 
 | **Store bokstaver** | Menyord med store bokstaver, valgt i Nettside-innstillinger (`menuUppercase`) |
 | **Forhåndsvisningen** | Viser menyen over bildet og valgene for den, slik nettsiden gjør. Uten logo står menighetens navn øverst, ikke produktets |
 
+### Forsiden, trinn 2: planlagt, ikke bygget (20. oktober 2026)
+
+Godkjent av produkteier som plan. Trinn 1 er bygget og ligger i demoen. Trinn 2 er ikke påbegynt.
+
+| Del | Hva som skal bygges |
+|---|---|
+| **Tekst per bilde** | Hvert toppbilde i karusellen får sitt eget tittelfelt, og teksten bytter sammen med bildet. Tomt felt gir hovedtittelen. Ingress og knapper er felles. Produkteier har ikke avgjort om hvert bilde også skal ha egen ingress: spør før det bygges |
+| **Prikker og piler** | Prikker under bildet, og piler som valg, så den besøkende kan bla selv |
+| **Tekststørrelse** | Tittelen på bildet: liten, middels, stor eller ekstra stor |
+| **Skrift** | Tittelen på bildet: som overskriftene, rund og vennlig, klassisk serif, store bokstaver eller håndskrift. Bare den valgte skriften lastes. Produkteier kan ha en bestemt skrift i tankene: spør før listen låses |
+
+Alle nye felt på en side går gjennom `buildPageRecord` i `src/utils/pageRecord.ts` (ellers forsvinner de ved Lagre), inn i `WARM_DRAFT_KEYS` i `src/utils/previewBridge.ts` (så forhåndsvisningen viser dem med en gang) og i `Required<CmsPage>`-prøven i `tests/page-record.test.ts`. Valgene for toppbildet ligger i `src/utils/heroLayout.ts`, og står i redigeringen i feltet «Toppbildet: størrelse, tittel og flere bilder» i `PageEditModal.tsx`.
+
+**Ikke sluppet til menighetene ennå** (ligger i `main`, ikke i `stabil`): menylinjen i Sider og trinn 1. Produkteier sjekker dem i demoen før de slippes.
+
 ---
 
 
