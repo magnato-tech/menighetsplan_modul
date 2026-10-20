@@ -1609,7 +1609,23 @@ Tekststørrelse og skrift står rett under «Tittel i Hero» når forsiden redig
 
 **Rediger viser hele redigeringen** (meldt av produkteier samme kveld): redigeringen åpnes over listen. Trykket man Rediger på en side langt nede, kom den inn over skjermen, og bare nederste del syntes. Nå legger den seg øverst på skjermen, rett under demo-stripen, når den åpnes, men ikke ved Lagre. Når den lukkes, står siden som ble redigert, midt på skjermen igjen (`handleOpenEditPage` og `handleCloseEditor` i `AdminCmsPanel.tsx`).
 
+**Forhåndsvisningen viser toppen av seksjonen** (meldt av produkteier samme kveld): når en seksjon velges i redigeringen, ruller forhåndsvisningen til den. Før ble den lagt helt øverst, bak nettsidens meny, så overskriften var skjult. Nå legges den rett under menyen med litt luft, på PC, nettbrett og mobil. Høyden på menyen måles når det rulles (`src/utils/previewScroll.ts`, `tests/preview-scroll.test.ts`).
+
 Alle nye felt på en side går gjennom `buildPageRecord` i `src/utils/pageRecord.ts` (ellers forsvinner de ved Lagre), inn i `WARM_DRAFT_KEYS` i `src/utils/previewBridge.ts` (så forhåndsvisningen viser dem med en gang) og i `Required<CmsPage>`-prøven i `tests/page-record.test.ts`. Valgene for toppbildet ligger i `src/utils/heroLayout.ts`, og står i redigeringen i feltet «Toppbildet: størrelse, tittel og flere bilder» i `PageEditModal.tsx`.
+
+### «Hva skjer»: valg, oppsett og bilder fra modulen (20. oktober 2026)
+
+Bestilt av produkteier etter en gjennomgang av hvordan andre nettsideverktøy redigerer slike moduler. Med: trinn 1 uten trykk i forhåndsvisningen, og trinn 2 uten bildeform.
+
+| Del | Hva som er levert |
+|---|---|
+| **Arrangementene som vises nå** | Under «Rediger presentasjon» står arrangementene modulen viser, med lite bilde, dato og hva de mangler («Mangler bilde», «Mangler tekst»). «Bilde og tekst» åpner arrangementets eget skjema der man står, og det lagres på arrangementet, ikke på siden (`WhatsOnEventsEditor.tsx`) |
+| **Antall** | 3, 4, 6 eller 8. Uten valg 4, som før |
+| **Hvilke arrangementer** | Alle offentlige (som før), bare gudstjenester, bare fremhevede, eller én gruppe. Grupper uten offentlige arrangementer framover står ikke i listen, og en gruppe som ikke er valgt, viser ingenting (`src/utils/whatsOn.ts`) |
+| **Oppsett** | Rutenett (som før), liste med bildet ved siden av, karusell som kan blas (piler på PC, sveip på mobil), eller ett stort kort og resten små |
+| **Vis på kortet** | Ingressen, klokkeslettet og stedet kan tas bort hver for seg |
+
+Valgene lagres i modulen på siden, som tittel og bakgrunn, og vises i forhåndsvisningen etter «Bruk endringer». En side lagret før ser ut som før. Ikke med ennå: å trykke på et kort i forhåndsvisningen, bildeform (hele plakaten), bevegelse og standardbilde.
 
 **Ikke sluppet til menighetene ennå** (ligger i `main`, ikke i `stabil`): menylinjen i Sider, trinn 1 og trinn 2. Produkteier sjekker dem i demoen før de slippes.
 

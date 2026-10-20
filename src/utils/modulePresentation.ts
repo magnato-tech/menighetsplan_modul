@@ -1,4 +1,5 @@
 import type { DynamicModuleType, GroupsModuleFields, VisualBlock } from "./cmsBlocks";
+import { WHATS_ON_COUNTS, WHATS_ON_LAYOUTS, WHATS_ON_SELECTIONS } from "./whatsOn";
 
 /** Key-value presentation config stored in VisualBlock.rawContent for dynamic modules. */
 export type ModulePresentationConfig = Record<string, string>;
@@ -6,10 +7,13 @@ export type ModulePresentationConfig = Record<string, string>;
 export interface ModulePresentationField {
   key: string;
   label: string;
-  type: "text" | "textarea" | "url" | "link" | "color" | "image" | "select";
+  /** «toggle» is a box to tick, stored as "on" or "off". «group» picks one of the congregation's groups. */
+  type: "text" | "textarea" | "url" | "link" | "color" | "image" | "select" | "toggle" | "group";
   placeholder?: string;
   help?: string;
   options?: { value: string; label: string }[];
+  /** Shown only while another field has this value. */
+  showWhen?: { key: string; value: string };
 }
 
 function parseRaw(raw: string): ModulePresentationConfig {
@@ -46,6 +50,13 @@ export const MODULE_PRESENTATION_DEFAULTS: Record<DynamicModuleType, ModulePrese
   },
   "module-calendar": {
     title: "",
+    count: "4",
+    selection: "all",
+    groupId: "",
+    layout: "grid",
+    showSummary: "on",
+    showTime: "on",
+    showLocation: "on",
     backgroundImage: "",
     backgroundColor: "",
   },
@@ -112,6 +123,24 @@ export const MODULE_PRESENTATION_FIELDS: Record<DynamicModuleType, ModulePresent
       type: "text",
       placeholder: "Tom = «Hva skjer i [menighetsnavn]»",
     },
+    {
+      key: "count",
+      label: "Antall arrangementer",
+      type: "select",
+      options: WHATS_ON_COUNTS.map((count) => ({ value: String(count), label: String(count) })),
+    },
+    { key: "selection", label: "Hvilke arrangementer", type: "select", options: WHATS_ON_SELECTIONS },
+    {
+      key: "groupId",
+      label: "Gruppe",
+      type: "group",
+      help: "Bare grupper som har offentlige arrangementer framover, står i listen.",
+      showWhen: { key: "selection", value: "group" },
+    },
+    { key: "layout", label: "Oppsett", type: "select", options: WHATS_ON_LAYOUTS },
+    { key: "showSummary", label: "Vis ingressen", type: "toggle" },
+    { key: "showTime", label: "Vis klokkeslett", type: "toggle" },
+    { key: "showLocation", label: "Vis sted", type: "toggle" },
     { key: "backgroundImage", label: "Bakgrunnsbilde", type: "image" },
     { key: "backgroundColor", label: "Bakgrunnsfarge", type: "color" },
   ],

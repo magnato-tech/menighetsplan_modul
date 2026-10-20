@@ -6,6 +6,9 @@ import {
 } from "../../utils/modulePresentation";
 import { CmsMediaPicker } from "./CmsMediaPicker";
 import { CmsLinkPicker } from "./CmsLinkPicker";
+import { WhatsOnEventsEditor } from "./WhatsOnEventsEditor";
+import { useFirebase } from "../../context/FirebaseDataContext";
+import { whatsOnGroupIds } from "../../utils/whatsOn";
 
 const fieldClass =
   "w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white text-xs focus:outline-hidden focus:border-indigo-500";
@@ -18,6 +21,23 @@ interface ModulePresentationEditorProps {
   dataSourceNote?: string;
   currentPageId?: string;
 }
+
+/** The groups with coming public events, to pick the one whose events «Hva skjer» shows. */
+const GroupSelect: React.FC<{ value: string; onChange: (groupId: string) => void }> = ({ value, onChange }) => {
+  const { gatherings, groups } = useFirebase();
+  const ids = whatsOnGroupIds(gatherings, Date.now());
+  const options = groups.filter((group) => ids.includes(group.id) || group.id === value);
+  return (
+    <select className={fieldClass} value={value} onChange={(e) => onChange(e.target.value)}>
+      <option value="">Velg gruppe</option>
+      {options.map((group) => (
+        <option key={group.id} value={group.id}>
+          {group.name}
+        </option>
+      ))}
+    </select>
+  );
+};
 
 export const ModulePresentationEditor: React.FC<ModulePresentationEditorProps> = ({
   moduleType,
@@ -47,6 +67,32 @@ export const ModulePresentationEditor: React.FC<ModulePresentationEditorProps> =
       )}
 
       {fields.map((field) => {
+        if (field.showWhen && (config[field.showWhen.key] || "") !== field.showWhen.value) return null;
+
+        if (field.type === "toggle") {
+          return (
+            <label key={field.key} className="flex items-center gap-2 cursor-pointer text-[11px] font-semibold text-slate-300">
+              <input
+                type="checkbox"
+                checked={config[field.key] !== "off"}
+                onChange={(e) => set(field.key, e.target.checked ? "on" : "off")}
+                className="w-4 h-4 rounded text-indigo-600 bg-slate-950 border-slate-700 cursor-pointer"
+              />
+              <span>{field.label}</span>
+            </label>
+          );
+        }
+
+        if (field.type === "group") {
+          return (
+            <label key={field.key} className="space-y-1 block">
+              <span className="text-[10px] font-semibold text-slate-400">{field.label}</span>
+              <GroupSelect value={config[field.key] || ""} onChange={(groupId) => set(field.key, groupId)} />
+              {field.help && <p className="text-[10px] text-slate-500">{field.help}</p>}
+            </label>
+          );
+        }
+
         if (field.type === "image") {
           const altKey = `${field.key}Alt`;
           return (
@@ -148,6 +194,8 @@ export const ModulePresentationEditor: React.FC<ModulePresentationEditorProps> =
           </label>
         );
       })}
+
+      {moduleType === "module-calendar" && <WhatsOnEventsEditor config={config} />}
     </div>
   );
 };

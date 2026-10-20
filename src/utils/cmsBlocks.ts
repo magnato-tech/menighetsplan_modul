@@ -94,9 +94,9 @@ export const DYNAMIC_MODULES_META: Record<DynamicModuleType, DynamicModuleMeta> 
   "module-calendar": {
     type: "module-calendar",
     title: "Hva skjer",
-    description: "De fire neste offentlige arrangementene, uten kalender-merkelapp eller lenke.",
+    description: "De neste offentlige arrangementene som kort. Antall, utvalg og oppsett velges i modulen.",
     dataSource: "Arrangementskalenderen (Firebase)",
-    supportedVariants: [{ id: "grid", label: "4 kort" }],
+    supportedVariants: [{ id: "grid", label: "Arrangementskort" }],
   },
   "module-kalender": {
     type: "module-kalender",
@@ -549,7 +549,7 @@ export function staticPreviewText(block: VisualBlock): string {
     const config = readModulePresentation(block);
     if (block.type === "module-calendar") {
       const text = config.title?.trim() || block.title;
-      const summary = text ? `Hva skjer: ${text}` : "Hva skjer (4 kort)";
+      const summary = text ? `Hva skjer: ${text}` : "Hva skjer";
       return summary.length > 90 ? `${summary.slice(0, 87)}...` : summary;
     }
     if (block.type === "module-kalender") {
