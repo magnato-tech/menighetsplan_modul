@@ -1,7 +1,7 @@
 import { describe } from "vitest";
 import { assert } from "./assert";
 import { initialCmsPages, type CmsPage } from "../src/data/cmsData";
-import { buildPageTree, buildPublicMenu, countPages, findOrphanPages, withoutPage, pageUrl } from "../src/utils/menu";
+import { buildMenuBar, buildPageTree, buildPublicMenu, countPages, findOrphanPages, withoutPage, pageUrl } from "../src/utils/menu";
 
 describe("Menystruktur og CMS-sider", () => {
   const page = (id: string, extra: Partial<CmsPage> = {}): CmsPage => ({
@@ -168,5 +168,23 @@ describe("Menystruktur og CMS-sider", () => {
     assert(counted.published === 2, "Bare det som er ute på nettsiden nå, telles som publisert");
     assert(counted.scheduled === 1 && counted.drafts === 2, "Planlagte sider og kladder telles hver for seg");
     assert(counted.published + counted.scheduled + counted.drafts === 5, "Hver side telles én gang");
+  }
+
+  // The menu bar at the top of the page list in the admin
+  {
+    const now = new Date("2026-10-20T10:00:00.000Z");
+    const bar = buildMenuBar(
+      buildPageTree([
+        page("om-oss", { navOrder: 2 }),
+        page("forside", { navOrder: 1 }),
+        page("kladd", { navOrder: 3, isPublished: false }),
+        page("skjult", { navOrder: 4, inNavMenu: false }),
+        page("visjon", { parentId: "om-oss", navOrder: 1, publishAt: "2026-11-01T10:00:00.000Z" }),
+      ]),
+      now
+    );
+    assert(bar.map((item) => item.id).join(",") === "forside,om-oss,kladd,skjult", "Menylinjen har hovedfanene i menyens rekkefølge, også kladder og skjulte");
+    assert(bar[2].state === "draft" && bar[3].state === "hidden" && bar[0].state === "published", "Menylinjen merker kladder og sider som ikke står i menyen");
+    assert(bar[1].children.length === 1 && bar[1].children[0].state === "scheduled", "Undersidene står under hovedfanen, merket når de er planlagt");
   }
 });

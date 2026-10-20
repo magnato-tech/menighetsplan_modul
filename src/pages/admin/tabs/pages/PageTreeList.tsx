@@ -1,7 +1,10 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { CmsPage } from "../../../../data/cmsData";
-import { PageNode, pageUrl, getMenuOrder } from "../../../../utils/menu";
+import { PageNode, pageUrl, getMenuOrder, buildMenuBar } from "../../../../utils/menu";
+import { useTimedMessage } from "../../../../hooks/useTimedMessage";
+import { PageMenuBar } from "./PageMenuBar";
+import { useMediaQuery } from "../../../../hooks/useMediaQuery";
 import {
   Folder,
   FileText,
@@ -100,6 +103,51 @@ export const PageTreeList: React.FC<PageTreeListProps> = ({
       localStorage.setItem("menighetsplan_collapsed_pages", JSON.stringify([]));
     } catch {}
   };
+
+  // The website's menu at the top: a click scrolls the list to the page, opening its tab if it is folded
+  const menuBar = useMemo(() => buildMenuBar(hierarchicalPages), [hierarchicalPages]);
+  // Only on a large screen: the bar is for the computer, not the phone. Where it cannot tell, it is left out
+  const wide = useMediaQuery("(min-width: 1024px)", false);
+  const [highlightedId, highlight] = useTimedMessage<string>(1800);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [jumpTarget, setJumpTarget] = useState<string | null>(null);
+
+  const jumpTo = (pageId: string, parentId?: string) => {
+    const folded = parentId ?? pageId;
+    if (collapsedParentIds.has(folded) && (parentId || hierarchicalPages.some((n) => n.page.id === pageId && n.children.length > 0))) {
+      toggleCollapse(folded);
+    }
+    setJumpTarget(pageId);
+  };
+
+  // Scrolled after the list is drawn, so a tab that was just opened has its sub-pages in place
+  useEffect(() => {
+    if (!jumpTarget) return;
+    document.getElementById(`side-${jumpTarget}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    highlight(jumpTarget);
+    setJumpTarget(null);
+  }, [jumpTarget, highlight]);
+
+  // The main tab in view is marked in the menu bar
+  useEffect(() => {
+    if (typeof IntersectionObserver === "undefined") return;
+    const visible = new Set<string>();
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          const id = (entry.target as HTMLElement).dataset.menuPage;
+          if (!id) continue;
+          if (entry.isIntersecting) visible.add(id);
+          else visible.delete(id);
+        }
+        const first = hierarchicalPages.find((n) => visible.has(n.page.id));
+        if (first) setActiveId(first.page.id);
+      },
+      { rootMargin: "-90px 0px -55% 0px" }
+    );
+    document.querySelectorAll<HTMLElement>("[data-menu-page]").forEach((element) => observer.observe(element));
+    return () => observer.disconnect();
+  }, [hierarchicalPages, wide]);
 
   // Helper to reorder an array of items by moving one item before or after a target
   const moveInArray = (list: string[], sourceId: string, targetId: string, position: "before" | "after") => {
@@ -276,8 +324,19 @@ export const PageTreeList: React.FC<PageTreeListProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Hierarchy toolbar with Collapse/Expand All controls */}
-      {hierarchicalPages.some((n) => n.children.length > 0) && (
+      {wide && menuBar.length > 0 && (
+        <PageMenuBar
+          items={menuBar}
+          activeId={activeId}
+          onJump={jumpTo}
+          onCollapseAll={handleCollapseAll}
+          onExpandAll={handleExpandAll}
+          canFold={hierarchicalPages.some((n) => n.children.length > 0)}
+        />
+      )}
+
+      {/* Hierarchy toolbar with Collapse/Expand All controls. On a large screen they stand in the menu bar */}
+      {!wide && hierarchicalPages.some((n) => n.children.length > 0) && (
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1 py-1 text-xs border-b border-[var(--studio-border)] pb-2">
           <div className="flex items-center gap-2 text-[var(--studio-muted)]">
             <span className="text-[11px] font-medium text-[var(--studio-muted)]">
@@ -320,6 +379,8 @@ export const PageTreeList: React.FC<PageTreeListProps> = ({
         return (
           <div
             key={parent.id}
+            id={`side-${parent.id}`}
+            data-menu-page={parent.id}
             onDragOver={(e) => handleDragOverTop(e, parent.id)}
             onDrop={(e) => handleDropTop(e, parent.id)}
             onDoubleClick={() => {
@@ -327,7 +388,9 @@ export const PageTreeList: React.FC<PageTreeListProps> = ({
                 toggleCollapse(parent.id);
               }
             }}
-            className={`p-4 sm:p-5 rounded-2xl border transition-all space-y-3 relative ${
+            className={`p-4 sm:p-5 rounded-2xl border transition-all space-y-3 relative scroll-mt-20 ${
+              highlightedId === parent.id ? "ring-2 ring-indigo-500" : ""
+            } ${
               hasChildren ? "cursor-default select-none" : ""
             } ${
               isBeingDragged
@@ -606,9 +669,12 @@ export const PageTreeList: React.FC<PageTreeListProps> = ({
                   return (
                     <div
                       key={child.id}
+                      id={`side-${child.id}`}
                       onDragOver={(e) => handleDragOverSub(e, child.id, parent.id)}
                       onDrop={(e) => handleDropSub(e, child.id, parent.id, item.children)}
-                      className={`p-3 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 relative before:absolute before:-left-3 sm:before:-left-6 before:top-1/2 before:w-3 sm:before:w-6 before:h-0.5 before:bg-indigo-500/30 ${
+                      className={`p-3 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 relative scroll-mt-20 ${
+                        highlightedId === child.id ? "ring-2 ring-indigo-500" : ""
+                      } before:absolute before:-left-3 sm:before:-left-6 before:top-1/2 before:w-3 sm:before:w-6 before:h-0.5 before:bg-indigo-500/30 ${
                         isSubDragged
                           ? "opacity-40 border-dashed border-indigo-400 bg-[var(--studio-panel-bg)]"
                           : isSubOver

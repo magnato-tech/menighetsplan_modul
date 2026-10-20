@@ -113,3 +113,41 @@ export function countPages(pages: CmsPage[], now = new Date()): PageCounts {
     drafts,
   };
 }
+
+/** How a page stands for visitors, as the menu bar in the admin marks it. */
+export type MenuBarState = "published" | "scheduled" | "draft" | "hidden";
+
+export interface MenuBarItem {
+  id: string;
+  title: string;
+  state: MenuBarState;
+  children: { id: string; title: string; state: MenuBarState }[];
+}
+
+export const MENU_BAR_STATE_LABELS: Record<Exclude<MenuBarState, "published">, string> = {
+  draft: "Kladd",
+  scheduled: "Planlagt",
+  hidden: "Ikke i menyen",
+};
+
+/** Draft first, then scheduled, then left out of the menu: what keeps a visitor from seeing it in the menu. */
+export function menuBarStateOf(page: CmsPage, now = new Date()): MenuBarState {
+  if (page.isPublished === false || page.status === "draft") return "draft";
+  if (!isPagePublished(page, now)) return "scheduled";
+  if (page.inNavMenu === false) return "hidden";
+  return "published";
+}
+
+/**
+ * The menu bar at the top of the page list in the admin: every main tab in the order of the menu on the
+ * website, with its sub-pages. Unlike the website's menu it has drafts and hidden pages too, marked, so
+ * every page in the list can be reached from it.
+ */
+export function buildMenuBar(tree: PageNode[], now = new Date()): MenuBarItem[] {
+  return tree.map(({ page, children }) => ({
+    id: page.id,
+    title: page.title,
+    state: menuBarStateOf(page, now),
+    children: children.map((child) => ({ id: child.id, title: child.title, state: menuBarStateOf(child, now) })),
+  }));
+}

@@ -31,6 +31,7 @@ const siderSidetre: HelpArticle = {
     "Trykk på den runde + øverst til høyre for en ny hovedfane.",
     "På en eksisterende hovedfane: opprett underfane, velg Rediger, eller slett.",
     "Dra faner for å endre rekkefølge.",
+    "På PC står menyen på nettsiden øverst i listen. Trykk på en fane, eller hold musen over den og velg en underside, så ruller listen dit.",
     "Bruk statusknappene i treet for å publisere eller sette en side til kladd.",
   ],
   knapper:
