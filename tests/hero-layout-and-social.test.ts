@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
-import { heroHeightOf, heroSubtextOf, heroTitleStyleOf } from "../src/utils/heroLayout";
+import { heroHeightOf, heroMenuStyleOf, heroSubtextOf, heroTitleStyleOf, heroVeilOf, withQuietHero } from "../src/utils/heroLayout";
+import { overlayLogoOf } from "../src/utils/logo";
 import { socialInMenu, socialLinksOf, socialUrlOf } from "../src/utils/socialLinks";
 
 describe("Toppbildet på forsiden", () => {
@@ -33,5 +34,28 @@ describe("Lenker til sosiale medier", () => {
   test("ikonene står i menyen til det slås av", () => {
     expect(socialInMenu({})).toBe(true);
     expect(socialInMenu({ showSocialInMenu: false })).toBe(false);
+  });
+});
+
+describe("Menyen og sløret over toppbildet", () => {
+  test("en side lagret før valgene fantes, ser ut som før", () => {
+    expect(heroMenuStyleOf({})).toBe("shade");
+    expect(heroMenuStyleOf({ heroMenuOverlay: false })).toBe("white");
+    expect(heroMenuStyleOf({ heroMenuOverlay: false, heroMenuStyle: "clear" })).toBe("clear");
+    expect(heroVeilOf({})).toBe("dark");
+    expect(heroVeilOf({ heroVeil: "none" })).toBe("none");
+  });
+
+  test("en ny side begynner uten knapper og undertittel, men en side som har valgt, beholder valget", () => {
+    expect(withQuietHero({})).toMatchObject({ showHeroPrimaryCta: false, showHeroSecondaryCta: false, showHeroSubtext: false });
+    expect(withQuietHero({ showHeroPrimaryCta: true, showHeroSubtext: true })).toMatchObject({ showHeroPrimaryCta: true, showHeroSecondaryCta: false, showHeroSubtext: true });
+  });
+
+  test("over bildet står den lyse logoen alene, ellers den vanlige på plate", () => {
+    const logo = "data:image/png;base64,AAA";
+    const light = "data:image/png;base64,BBB";
+    expect(overlayLogoOf({ logoUrl: logo, logoOnDarkUrl: light })).toEqual({ src: light, plate: false });
+    expect(overlayLogoOf({ logoUrl: logo })).toEqual({ src: logo, plate: true });
+    expect(overlayLogoOf({ logoUrl: logo, logoOnDarkUrl: light, hideLogoInMenu: true })).toBeUndefined();
   });
 });

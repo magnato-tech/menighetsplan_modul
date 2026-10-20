@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useCms } from "../../context/CmsContext";
 import { CmsPage } from "../../data/cmsData";
 import { buildPageTree, findOrphanPages, getParentId } from "../../utils/menu";
+import { QUIET_HERO } from "../../utils/heroLayout";
 import { Plus } from "lucide-react";
 import { ShowFeedback } from "../../pages/admin/studio";
 import { PageTreeList } from "../../pages/admin/tabs/pages/PageTreeList";
@@ -51,6 +52,8 @@ export const AdminCmsPanel: React.FC<AdminCmsPanelProps> = ({
       parentId: parentVal,
       menuOrder: nextOrder,
       navOrder: nextOrder,
+      // A new page begins without buttons and line under the headline; they are switched on when wanted
+      ...QUIET_HERO,
     });
     setIsNewPage(true);
   };

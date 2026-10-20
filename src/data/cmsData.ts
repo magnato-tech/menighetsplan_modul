@@ -57,6 +57,10 @@ export interface CmsPage {
   heroTitleStyle?: "bold" | "calm";
   /** The line under the headline on the front page. Shown unless switched off. */
   showHeroSubtext?: boolean;
+  /** What lies behind the menu over the front page picture (see utils/heroLayout.ts). From heroMenuOverlay unless chosen. */
+  heroMenuStyle?: "clear" | "shade" | "white";
+  /** The veil over the front page picture, so the text can be read. Dark unless chosen. */
+  heroVeil?: "none" | "light" | "dark";
   heroTitle?: string;
   heroCtaText?: string;
   heroCtaLink?: string;
@@ -247,6 +251,10 @@ export interface CmsSettings {
   logoUrl?: string;
   /** The logo is kept off the top of the website, and the name is written out there. It still stands on the sign-in page. */
   hideLogoInMenu?: boolean;
+  /** A light version of the logo, for the menu over the front page picture. With it the logo stands without the white plate. */
+  logoOnDarkUrl?: string;
+  /** The words in the menu at the top of the website are written in capitals. */
+  menuUppercase?: boolean;
   address: string;
   phone: string;
   email: string;
@@ -549,6 +557,10 @@ Et åpent hjem for alle generasjoner. Vi samles til gudstjeneste, bønn og nære
 
 :::module-giving[card]
 :::`,
+    // Few congregations use buttons and a line under the headline on the picture; the demo begins without
+    showHeroPrimaryCta: false,
+    showHeroSecondaryCta: false,
+    showHeroSubtext: false,
     isPublished: true,
     status: "published",
     parentPageId: null,

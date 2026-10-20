@@ -29,7 +29,7 @@ export const SiteSettingsTab: React.FC = () => {
   // The logo is read from the file and kept in the form as text. It is stored with the rest when the form is saved.
   const logoInput = useRef<HTMLInputElement>(null);
   const [logoError, setLogoError] = useState<string | null>(null);
-  const chooseLogo = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const readLogoInto = (key: "logoUrl" | "logoOnDarkUrl") => (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
@@ -38,11 +38,14 @@ export const SiteSettingsTab: React.FC = () => {
     if (error) return;
     const reader = new FileReader();
     reader.onload = () => {
-      if (typeof reader.result === "string") setSettingsForm((form) => ({ ...form, logoUrl: reader.result as string }));
+      if (typeof reader.result === "string") setSettingsForm((form) => ({ ...form, [key]: reader.result as string }));
     };
     reader.onerror = () => setLogoError("Filen kunne ikke leses. Prøv igjen.");
     reader.readAsDataURL(file);
   };
+  const chooseLogo = readLogoInto("logoUrl");
+  const lightLogoInput = useRef<HTMLInputElement>(null);
+  const lightLogo = logoOf({ logoUrl: settingsForm.logoOnDarkUrl });
   const logo = logoOf(settingsForm);
 
   const handleSaveSettings = async (e: React.FormEvent) => {
@@ -156,6 +159,46 @@ export const SiteSettingsTab: React.FC = () => {
                 <span>Vis logoen øverst på nettsiden</span>
               </label>
             )}
+            <div className="space-y-2 pt-2 border-t border-[var(--studio-border)]">
+              <p className="font-semibold text-[var(--studio-muted)]">Lys logo over toppbildet (valgfri)</p>
+              <p className="text-[var(--studio-muted)]">
+                En hvit eller lys utgave av logoen, med gjennomsiktig bakgrunn. Den brukes når menyen ligger over bildet på forsiden, og står da uten den hvite platen.
+              </p>
+              {lightLogo && (
+                <div className="inline-flex p-3 rounded-xl" style={{ background: "#44403c" }}>
+                  <img src={lightLogo} alt={`Lys logo til ${settingsForm.churchName}`} className="h-10 w-auto max-w-full object-contain" />
+                </div>
+              )}
+              <div className="flex flex-wrap items-center gap-2">
+                <input ref={lightLogoInput} type="file" accept="image/png,image/svg+xml,image/webp" onChange={readLogoInto("logoOnDarkUrl")} aria-label="Fil med lys logo" className="sr-only" />
+                <button
+                  type="button"
+                  onClick={() => lightLogoInput.current?.click()}
+                  className="px-3 py-2 rounded-xl border border-[var(--studio-border)] bg-[var(--studio-input)] text-[var(--studio-text)] font-bold flex items-center gap-2 cursor-pointer"
+                >
+                  <ImagePlus className="w-4 h-4" aria-hidden="true" />
+                  <span>{lightLogo ? "Bytt lys logo" : "Velg lys logo"}</span>
+                </button>
+                {lightLogo && (
+                  <button
+                    type="button"
+                    onClick={() => setSettingsForm({ ...settingsForm, logoOnDarkUrl: undefined })}
+                    className="px-3 py-2 rounded-xl border border-[var(--studio-border)] text-[var(--studio-muted)] font-bold flex items-center gap-2 cursor-pointer"
+                  >
+                    <Trash2 className="w-4 h-4" aria-hidden="true" />
+                    <span>Fjern lys logo</span>
+                  </button>
+                )}
+              </div>
+            </div>
+            <label className="flex items-center gap-2 text-[var(--studio-text)] cursor-pointer pt-2 border-t border-[var(--studio-border)]">
+              <input
+                type="checkbox"
+                checked={settingsForm.menuUppercase === true}
+                onChange={(event) => setSettingsForm({ ...settingsForm, menuUppercase: event.target.checked ? true : undefined })}
+              />
+              <span>Menyord med store bokstaver (OM OSS, BLI MED)</span>
+            </label>
             {logo && settingsForm.hideLogoInMenu === true && (
               <p className="text-[var(--studio-muted)]">Navnet står skrevet ut øverst på nettsiden. Logoen vises på innloggingssiden.</p>
             )}
@@ -165,7 +208,7 @@ export const SiteSettingsTab: React.FC = () => {
                 <span>{logoError}</span>
               </p>
             )}
-            {logo !== logoOf(settings) && !logoError && <p className="text-[var(--studio-muted)]">Trykk «Lagre alle innstillinger» nederst for å ta endringen i bruk.</p>}
+            {(logo !== logoOf(settings) || lightLogo !== logoOf({ logoUrl: settings.logoOnDarkUrl })) && !logoError && <p className="text-[var(--studio-muted)]">Trykk «Lagre alle innstillinger» nederst for å ta endringen i bruk.</p>}
           </div>
 
           <div className="space-y-1 text-xs">

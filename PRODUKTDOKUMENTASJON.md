@@ -1576,6 +1576,19 @@ Bestilt av produkteier: på PC skal nettsidens meny stå øverst i Sider, så de
 | **Kladder og skjulte** | Står med, dempet og merket «Kladd», «Planlagt» eller «Ikke i menyen» (`buildMenuBar` i `src/utils/menu.ts`) |
 | **Kollaps alle og Utvid alle** | Står i linjen på store skjermer, og over listen som før på mobil |
 
+### Forsiden, trinn 1: rent bilde og stillere standard (20. oktober 2026)
+
+Bestilt av produkteier: et rent bilde med menyen over, som hos andre menigheter i området, og ingen knapper eller ingress før noen slår dem på.
+
+| Del | Hva som er levert |
+|---|---|
+| **Standard** | En ny side, forsiden i demoens eksempelmenighet og sidene i demoens menighetssett begynner uten knapper og undertittel på toppbildet (`withQuietHero` i `src/utils/heroLayout.ts`). Sider som alt er lagret, beholder valgene sine |
+| **Menyen øverst** | Over bildet uten bakgrunn, over bildet med svak skygge (som før), eller hvit linje med bildet under. Erstatter av/på-valget; en side lagret før får det samme som den hadde (`heroMenuStyle`) |
+| **Slør over bildet** | Ingen, lett eller mørkt (som før). Uten mørkt slør får teksten en myk skygge (`heroVeil`) |
+| **Lys logo** | Valgfri lys utgave av logoen i Nettside-innstillinger. Over bildet står den uten den hvite platen (`logoOnDarkUrl`, `overlayLogoOf` i `src/utils/logo.ts`) |
+| **Store bokstaver** | Menyord med store bokstaver, valgt i Nettside-innstillinger (`menuUppercase`) |
+| **Forhåndsvisningen** | Viser menyen over bildet og valgene for den, slik nettsiden gjør. Uten logo står menighetens navn øverst, ikke produktets |
+
 ---
 
 

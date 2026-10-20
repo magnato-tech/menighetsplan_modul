@@ -1,5 +1,5 @@
 import type { CmsPage } from "../data/cmsData";
-import { heroHeightOf, heroTitleStyleOf } from "./heroLayout";
+import { heroHeightOf, heroMenuStyleOf, heroTitleStyleOf, heroVeilOf } from "./heroLayout";
 
 /**
  * The page as it is stored, built from what the editor holds. Every field the editor can change must
@@ -44,7 +44,10 @@ export function buildPageRecord(
     heroImageAlt: pageData.heroImageAlt?.trim() || undefined,
     heroImages: (pageData.heroImages || []).filter(Boolean).slice(0, 2),
     heroZoom: pageData.heroZoom !== false,
-    heroMenuOverlay: pageData.heroMenuOverlay !== false,
+    heroMenuStyle: heroMenuStyleOf(pageData),
+    // Kept in step for anything that still reads the older on/off choice
+    heroMenuOverlay: heroMenuStyleOf(pageData) !== "white",
+    heroVeil: heroVeilOf(pageData),
     heroHeight: heroHeightOf(pageData),
     heroTitleStyle: heroTitleStyleOf(pageData),
     showHeroSubtext: pageData.showHeroSubtext !== false,

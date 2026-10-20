@@ -7,6 +7,7 @@ import { withoutStaffPictures } from "./demoPortraits";
 import { GATHERING_TEMPLATE_RECORD } from "../data/settingsRecords";
 import { collectionPrefixOf } from "./demoSite";
 import { weeksBetween, withLiveDates } from "./liveDates";
+import { withQuietHero } from "./heroLayout";
 
 // The rules for resetting the demo's database: which database may be reset, what each
 // congregation in the demo is made of, what is written and removed, and how a document is handed
@@ -100,7 +101,9 @@ export function siteDocuments(example: MockDocument[], set: SiteSet | null, now:
       // The settings document is addressed by its place, not by a field in it
       const { id, ...withoutId } = document;
       const isSettings = collection === CMS_COLLECTIONS.SETTINGS && id === CMS_SETTINGS_DOC_ID;
-      return { collection, id, data: withLiveDates(isSettings ? withoutId : document, weeks) };
+      // The pages of a set begin like a new page: without buttons and line under the headline on the picture
+      const data = collection === CMS_COLLECTIONS.PAGES ? withQuietHero(document) : document;
+      return { collection, id, data: withLiveDates(isSettings ? withoutId : data, weeks) };
     })
   );
 
