@@ -4,8 +4,8 @@ mobil shot 02-bemanning http://localhost:4173/admin/samling/gathering-1?vis=bema
 mobil shot 03-personmeny http://localhost:4173/admin/samling/gathering-1?vis=bemanning
 mobil shot 04-tildel http://localhost:4173/admin/samling/gathering-1?vis=bemanning
 mobil shot 05-instruks http://localhost:4173/admin/samling/gathering-1?vis=bemanning
-mobil FAIL meny: TimeoutError: locator.click: Timeout 30000ms exceeded.
-mobil FAIL program: TimeoutError: locator.click: Timeout 30000ms exceeded.
+mobil shot 06-flere-valg http://localhost:4173/admin/samling/gathering-1?vis=bemanning
+mobil shot 07-program http://localhost:4173/admin/samling/gathering-1?vis=program
 mobil shot 08-arrangementer http://localhost:4173/admin?tab=planlegger-samlinger
 mobil shot 09-oppfolging http://localhost:4173/admin?tab=planlegger-oppgaver
 leder console: Failed to load resource: the server responded with a status of 400 ()
@@ -16,3 +16,4 @@ pc shot 01-oversikt http://localhost:4173/admin
 pc shot 02-bemanning http://localhost:4173/admin/samling/gathering-1?vis=bemanning
 pc shot 03-oppfolging http://localhost:4173/admin?tab=planlegger-oppgaver
 pc shot 04-arrangementer http://localhost:4173/admin?tab=planlegger-samlinger
+pc FAIL oppfolging: TimeoutError: locator.screenshot: Timeout 29994.828999999998ms exceeded.
