@@ -79,11 +79,12 @@ export function heroVeilOf(page: Partial<Pick<CmsPage, "heroVeil">> | null | und
  */
 export const QUIET_HERO = { showHeroPrimaryCta: false, showHeroSecondaryCta: false, showHeroSubtext: false } as const;
 
-export function withQuietHero<T extends Partial<Pick<CmsPage, "showHeroPrimaryCta" | "showHeroSecondaryCta" | "showHeroSubtext">>>(page: T): T {
+export function withQuietHero<T extends object>(page: T): T {
+  const chosen = page as Partial<Pick<CmsPage, "showHeroPrimaryCta" | "showHeroSecondaryCta" | "showHeroSubtext">>;
   return {
     ...page,
-    showHeroPrimaryCta: page.showHeroPrimaryCta ?? QUIET_HERO.showHeroPrimaryCta,
-    showHeroSecondaryCta: page.showHeroSecondaryCta ?? QUIET_HERO.showHeroSecondaryCta,
-    showHeroSubtext: page.showHeroSubtext ?? QUIET_HERO.showHeroSubtext,
+    showHeroPrimaryCta: chosen.showHeroPrimaryCta ?? QUIET_HERO.showHeroPrimaryCta,
+    showHeroSecondaryCta: chosen.showHeroSecondaryCta ?? QUIET_HERO.showHeroSecondaryCta,
+    showHeroSubtext: chosen.showHeroSubtext ?? QUIET_HERO.showHeroSubtext,
   };
 }
