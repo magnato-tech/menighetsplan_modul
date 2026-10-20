@@ -31,6 +31,10 @@ const full: Required<CmsPage> = {
   heroVeil: "light",
   heroHeight: "low",
   heroTitleStyle: "calm",
+  heroTitleSize: "xlarge",
+  heroTitleFont: "script",
+  heroImageTitles: ["Søndag kl. 11"],
+  heroArrows: true,
   showHeroSubtext: false,
   heroTitle: "Velkommen",
   heroCtaText: "Se hva som skjer",
@@ -71,8 +75,21 @@ describe("Når en side lagres", () => {
     expect(record.heroTitleStyle).toBe("calm");
   });
 
+  test("tittelen på et toppbilde følger bildet når et bilde foran tas ut", () => {
+    const saved = buildPageRecord(
+      { title: "Forside", heroImages: ["", "https://example.org/tre.jpg"], heroImageTitles: ["Borte", " Bli med "] },
+      now,
+      () => "ny"
+    );
+    expect(saved.heroImages).toEqual(["https://example.org/tre.jpg"]);
+    expect(saved.heroImageTitles).toEqual(["Bli med"]);
+  });
+
   test("en side uten valgene lagres slik den alltid har sett ut", () => {
     const plain = buildPageRecord({ title: "Om oss", slug: "om-oss" }, now, () => "ny");
+    expect(plain.heroTitleSize).toBeUndefined();
+    expect(plain.heroTitleFont).toBe("heading");
+    expect(plain.heroArrows).toBe(false);
     expect(plain.showHeroSubtext).toBe(true);
     expect(plain.heroHeight).toBe("medium");
     expect(plain.heroTitleStyle).toBe("bold");

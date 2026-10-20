@@ -1,0 +1,9 @@
+Skriftene i denne mappen brukes til tittelen på forsidens toppbilde (se src/utils/heroLayout.ts).
+Hver fil er den latinske delen (med æ, ø og å) av skriften, hentet fra Google Fonts.
+
+nunito.woff2    Nunito            Copyright The Nunito Project Authors
+playfair.woff2  Playfair Display  Copyright The Playfair Project Authors
+oswald.woff2    Oswald            Copyright The Oswald Project Authors
+caveat.woff2    Caveat            Copyright The Caveat Project Authors
+
+Alle er utgitt under SIL Open Font License, versjon 1.1: https://openfontlicense.org

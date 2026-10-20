@@ -61,6 +61,8 @@ const synlig = (root: ParentNode) => [...root.querySelectorAll("img")].filter((i
 beforeEach(() => {
   reducedMotion(false);
   home.heroImages = undefined;
+  home.heroImageTitles = undefined;
+  home.heroArrows = undefined;
   home.heroZoom = undefined;
   home.heroMenuOverlay = undefined;
   home.heroMenuStyle = undefined;
@@ -167,10 +169,88 @@ describe("Valgene for toppbildet på forsiden", () => {
     expect(hero().querySelector("h1")!.className).toContain("text-shadow");
   });
 
+  test("tittelen har fire størrelser, og følger stilen til en er valgt", () => {
+    vis({});
+    expect(hero().querySelector("h1")!.className).toContain("lg:text-6xl");
+    cleanup();
+    vis({ heroTitleStyle: "calm" });
+    expect(hero().querySelector("h1")!.className).toContain("lg:text-5xl");
+    cleanup();
+    vis({ heroTitleStyle: "calm", heroTitleSize: "xlarge" });
+    expect(hero().querySelector("h1")!.className).toContain("lg:text-7xl");
+    cleanup();
+    vis({ heroTitleSize: "small" });
+    expect(hero().querySelector("h1")!.className).toContain("lg:text-4xl");
+  });
+
+  test("bare den valgte skriften hentes, og overskriftenes egen henter ingen", () => {
+    vis({});
+    expect(hero().querySelector("style")).toBeNull();
+    expect(hero().querySelector("h1")!.getAttribute("style") ?? "").not.toContain("font-family");
+    cleanup();
+    vis({ heroTitleFont: "script" });
+    const css = hero().querySelector("style")!.textContent!;
+    expect(css).toContain("/skrifter/caveat.woff2");
+    expect(css).not.toContain("nunito");
+    expect(hero().querySelector("h1")!.style.fontFamily).toContain("Caveat");
+    cleanup();
+    vis({ heroTitleFont: "caps" });
+    expect(hero().querySelector("h1")!.className).toContain("uppercase");
+  });
+
   test("undertittelen kan slås av, og da står det ingen tekst fra innstillingene heller", () => {
     vis({ showHeroSubtext: false });
     expect(hero().textContent).not.toContain(home.summary);
     expect(hero().querySelector("p")).toBeNull();
+  });
+});
+
+describe("Flere toppbilder med hver sin tittel", () => {
+  const hero = () => document.querySelector(`[data-cms-preview-target="${CMS_PREVIEW_TARGET_HERO}"]`)!;
+  const vis = (page: Partial<CmsPage>) =>
+    render(
+      <MemoryRouter>
+        <PublicHomePage pageOverride={{ ...home, heroTitle: "Velkommen", ...page }} />
+      </MemoryRouter>
+    );
+
+  test("tittelen bytter sammen med bildet, og et bilde uten egen tittel viser hovedtittelen", () => {
+    vi.useFakeTimers();
+    vis({ heroImages: [tre[1], tre[2]], heroImageTitles: ["Søndag kl. 11", ""] });
+    expect(hero().querySelector("h1")!.textContent).toBe("Velkommen");
+    act(() => void vi.advanceTimersByTime(8000));
+    expect(synlig(hero())).toEqual([tre[1]]);
+    expect(hero().querySelector("h1")!.textContent).toBe("Søndag kl. 11");
+    act(() => void vi.advanceTimersByTime(8000));
+    expect(hero().querySelector("h1")!.textContent).toBe("Velkommen");
+  });
+
+  test("prikkene under bildet lar den besøkende bla selv", () => {
+    vis({ heroImages: [tre[1], tre[2]], heroImageTitles: ["Søndag kl. 11", "Bli med"] });
+    const dots = [...hero().querySelectorAll("[data-hero-dots] button")];
+    expect(dots).toHaveLength(3);
+    expect(dots[0].getAttribute("aria-current")).toBe("true");
+    fireEvent.click(dots[2]);
+    expect(synlig(hero())).toEqual([tre[2]]);
+    expect(hero().querySelector("h1")!.textContent).toBe("Bli med");
+    expect(hero().querySelector("[data-hero-dots] button[aria-current]")!.getAttribute("aria-label")).toBe("Bilde 3 av 3");
+  });
+
+  test("pilene er et valg, og går rundt", () => {
+    vis({ heroImages: [tre[1]] });
+    expect(hero().querySelector('[aria-label="Neste bilde"]')).toBeNull();
+    cleanup();
+    vis({ heroImages: [tre[1]], heroArrows: true });
+    fireEvent.click(hero().querySelector('[aria-label="Forrige bilde"]')!);
+    expect(synlig(hero())).toEqual([tre[1]]);
+    fireEvent.click(hero().querySelector('[aria-label="Neste bilde"]')!);
+    expect(synlig(hero())).toEqual([tre[0]]);
+  });
+
+  test("med ett bilde er det verken prikker eller piler", () => {
+    vis({ heroArrows: true });
+    expect(hero().querySelector("[data-hero-dots]")).toBeNull();
+    expect(hero().querySelector('[aria-label="Neste bilde"]')).toBeNull();
   });
 });
 
@@ -267,6 +347,18 @@ describe("Toppbildet i redigeringen", () => {
     expect(onUpdate).toHaveBeenCalledWith({ heroMenuStyle: "white", heroMenuOverlay: false });
     fireEvent.change(veil, { target: { value: "none" } });
     expect(onUpdate).toHaveBeenCalledWith({ heroVeil: "none" });
+  });
+
+  test("et toppbilde får eget tittelfelt, og tittelen følger bildet når et bilde foran tas ut", () => {
+    const { getByLabelText, onUpdate } = rediger({ ...home, heroImages: [tre[1], tre[2]], heroImageTitles: ["Søndag", "Bli med"] });
+    fireEvent.change(getByLabelText("Tittel på toppbilde 2"), { target: { value: "Søndag kl. 11" } });
+    expect(onUpdate).toHaveBeenCalledWith({ heroImageTitles: ["Søndag kl. 11", "Bli med"] });
+    fireEvent.change(getByLabelText("Tekststørrelse på tittelen"), { target: { value: "xlarge" } });
+    expect(onUpdate).toHaveBeenCalledWith({ heroTitleSize: "xlarge" });
+    fireEvent.change(getByLabelText("Skrift på tittelen"), { target: { value: "serif" } });
+    expect(onUpdate).toHaveBeenCalledWith({ heroTitleFont: "serif" });
+    fireEvent.click(getByLabelText("Piler på sidene av bildet"));
+    expect(onUpdate).toHaveBeenCalledWith({ heroArrows: true });
   });
 
   test("en vanlig side har ikke disse valgene", () => {

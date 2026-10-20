@@ -37,6 +37,10 @@ export type WarmDraftFields = Partial<
     | "showHeroSubtext"
     | "heroHeight"
     | "heroTitleStyle"
+    | "heroTitleSize"
+    | "heroTitleFont"
+    | "heroImageTitles"
+    | "heroArrows"
     | "heroZoom"
     | "heroMenuOverlay"
     | "heroMenuStyle"
@@ -71,6 +75,10 @@ const WARM_DRAFT_KEYS: (keyof WarmDraftFields)[] = [
   "showHeroSubtext",
   "heroHeight",
   "heroTitleStyle",
+  "heroTitleSize",
+  "heroTitleFont",
+  "heroImageTitles",
+  "heroArrows",
   "heroZoom",
   "heroMenuOverlay",
   "heroMenuStyle",

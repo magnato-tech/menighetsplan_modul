@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 
 interface HeroBackdropProps {
   /** One to three images. With more than one, the hero fades from one to the next. */
@@ -10,6 +10,14 @@ interface HeroBackdropProps {
   secondsPerImage?: number;
   /** How dark the veil over the picture is (see utils/heroLayout.ts). Dark unless chosen. */
   veil?: "none" | "light" | "dark";
+  /** Which image is on show, when the page keeps track of it (see useHeroSlides). Otherwise the backdrop turns by itself. */
+  shown?: HeroShown;
+}
+
+/** The image on show, and the one fading out (-1 for none). */
+export interface HeroShown {
+  active: number;
+  leaving: number;
 }
 
 /** Visitors who have asked their device for less motion get a still image. */
@@ -19,23 +27,49 @@ const prefersReducedMotion = (): boolean =>
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /**
- * The picture behind the hero: calm rather than busy. One image at a time, a slow zoom out,
- * and a long fade to the next. The dark veil on top keeps the headline readable on any photo.
+ * Which of the hero images is on show. It turns to the next by itself, unless the visitor has asked for
+ * less motion. `go` shows a chosen image, and the clock starts again from there.
  */
-export const HeroBackdrop: React.FC<HeroBackdropProps> = ({ images, alt = "", zoom = true, secondsPerImage = 8, veil = "dark" }) => {
-  const count = images.length;
+export function useHeroSlides(count: number, secondsPerImage = 8) {
   // The image on its way out keeps its zoom while it fades, so it does not jump back to size
-  const [shown, setShown] = useState({ active: 0, leaving: -1 });
+  const [shown, setShown] = useState<HeroShown>({ active: 0, leaving: -1 });
+  const [restart, setRestart] = useState(0);
 
   useEffect(() => {
     setShown({ active: 0, leaving: -1 });
+  }, [count]);
+
+  useEffect(() => {
     if (count < 2 || prefersReducedMotion()) return;
     const timer = window.setInterval(
       () => setShown(({ active }) => ({ active: (active + 1) % count, leaving: active })),
       secondsPerImage * 1000
     );
     return () => window.clearInterval(timer);
-  }, [count, secondsPerImage]);
+  }, [count, secondsPerImage, restart]);
+
+  const go = useCallback(
+    (index: number) => {
+      if (count < 2) return;
+      const target = ((index % count) + count) % count;
+      setShown(({ active }) => (active === target ? { active, leaving: -1 } : { active: target, leaving: active }));
+      setRestart((n) => n + 1);
+    },
+    [count]
+  );
+
+  return { shown, go };
+}
+
+/**
+ * The picture behind the hero: calm rather than busy. One image at a time, a slow zoom out,
+ * and a long fade to the next. The dark veil on top keeps the headline readable on any photo.
+ */
+export const HeroBackdrop: React.FC<HeroBackdropProps> = ({ images, alt = "", zoom = true, secondsPerImage = 8, veil = "dark", shown: shownByPage }) => {
+  const count = images.length;
+  // Kept by the page when it is given, so the backdrop does not keep a clock of its own as well
+  const own = useHeroSlides(shownByPage ? 0 : count, secondsPerImage);
+  const shown = shownByPage ?? own.shown;
 
   if (count === 0) return null;
 

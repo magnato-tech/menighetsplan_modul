@@ -55,6 +55,14 @@ export interface CmsPage {
   heroHeight?: "low" | "medium" | "full";
   /** The headline on the front page picture: heavy and large, or lighter and calmer. Heavy unless chosen. */
   heroTitleStyle?: "bold" | "calm";
+  /** How large the headline on the picture is (see utils/heroLayout.ts). Follows heroTitleStyle unless chosen. */
+  heroTitleSize?: "small" | "medium" | "large" | "xlarge";
+  /** The typeface of the headline on the picture (see utils/heroLayout.ts). The headings' own unless chosen. */
+  heroTitleFont?: "heading" | "rounded" | "serif" | "caps" | "script";
+  /** A title for each of the extra hero images, in the same order as heroImages. Empty gives the main headline. */
+  heroImageTitles?: string[];
+  /** Arrows on the sides of the front page picture, so the visitor can go to the next. Off unless chosen; the dots are always there with more than one image. */
+  heroArrows?: boolean;
   /** The line under the headline on the front page. Shown unless switched off. */
   showHeroSubtext?: boolean;
   /** What lies behind the menu over the front page picture (see utils/heroLayout.ts). From heroMenuOverlay unless chosen. */

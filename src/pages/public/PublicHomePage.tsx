@@ -25,8 +25,21 @@ import {
 import { usePreviewPageDraft } from "../../hooks/usePreviewPageDraft";
 import { useMediaMap, useResolvedMediaUrl } from "../../hooks/useMediaMap";
 import { resolveMediaUrl } from "../../utils/media";
-import { HeroBackdrop } from "../../components/public/HeroBackdrop";
-import { heroHeightOf, heroMenuStyleOf, heroSubtextOf, heroTitleStyleOf, heroVeilOf } from "../../utils/heroLayout";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { HeroBackdrop, useHeroSlides } from "../../components/public/HeroBackdrop";
+import {
+  HERO_TITLE_SIZE_CLASSES,
+  heroFontFaceCss,
+  heroFontFamily,
+  heroHeightOf,
+  heroMenuStyleOf,
+  heroSlidesOf,
+  heroSubtextOf,
+  heroTitleFontOf,
+  heroTitleSizeOf,
+  heroTitleStyleOf,
+  heroVeilOf,
+} from "../../utils/heroLayout";
 
 
 
@@ -115,15 +128,26 @@ export const PublicHomePage: React.FC<PublicHomePageProps> = ({
   );
   const heroHeight = heroHeightOf(activePage);
   const calmTitle = heroTitleStyleOf(activePage) === "calm";
+  const titleSize = heroTitleSizeOf(activePage);
+  const titleFont = heroTitleFontOf(activePage);
 
 
 
   const heroImage = useResolvedMediaUrl(activePage?.heroImage);
   const mediaById = useMediaMap();
-  // The main image and up to two more. With several, the hero fades from one to the next.
-  const heroImages = [heroImage, ...(activePage?.heroImages ?? []).map((value) => resolveMediaUrl(value, mediaById, "web"))]
-    .filter(Boolean)
-    .slice(0, 3);
+  // The main image and up to two more, each with its headline. With several, the hero fades from one to the next.
+  const slides = heroSlidesOf(
+    heroImage,
+    (activePage?.heroImages ?? []).map((value) => resolveMediaUrl(value, mediaById, "web")),
+    activePage?.heroImageTitles,
+    heroHeadline
+  );
+  const heroImages = slides.map((slide) => slide.src);
+  const { shown, go } = useHeroSlides(heroImages.length);
+  const shownHeadline = slides[shown.active]?.title ?? heroHeadline;
+  // The headline fades in anew only when the pictures have titles of their own
+  const titlesTurn = new Set(slides.map((slide) => slide.title)).size > 1;
+  const showArrows = activePage?.heroArrows === true;
   // With the menu on top of the hero (see PublicNavbar.tsx), the headline is moved down clear of it
   // The embedded preview in the editor shows it as the website does; the preview in a tab of its own has a banner on top
   const menuOnHero = heroImages.length > 0 && heroMenuStyleOf(activePage) !== "white" && (!isPreviewMode || isEmbedded);
@@ -230,7 +254,7 @@ export const PublicHomePage: React.FC<PublicHomePageProps> = ({
 
       >
 
-          <HeroBackdrop images={heroImages} alt={heroImageAlt} zoom={activePage?.heroZoom !== false} veil={veil} />
+          <HeroBackdrop images={heroImages} alt={heroImageAlt} zoom={activePage?.heroZoom !== false} veil={veil} shown={shown} />
 
 
 
@@ -242,14 +266,17 @@ export const PublicHomePage: React.FC<PublicHomePageProps> = ({
 
 
 
+            {titleFont !== "heading" && <style>{heroFontFaceCss(titleFont)}</style>}
             <h1
-              className={`text-white leading-tight ${textShadow} ${
-                calmTitle
-                  ? "text-3xl sm:text-4xl lg:text-5xl font-normal tracking-normal"
-                  : "text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight"
+              key={titlesTurn ? shownHeadline : undefined}
+              style={{ fontFamily: heroFontFamily(titleFont) }}
+              className={`text-white leading-tight ${textShadow} ${HERO_TITLE_SIZE_CLASSES[titleSize]} ${
+                calmTitle ? "font-normal" : "font-black"
+              } ${titleFont === "caps" ? "uppercase tracking-wide" : calmTitle ? "tracking-normal" : "tracking-tight"} ${
+                titlesTurn ? "hero-title-in" : ""
               }`}
             >
-              {heroHeadline}
+              {shownHeadline}
             </h1>
             {heroSubtext && (
               <p className={`max-w-2xl mx-auto text-base sm:text-lg leading-relaxed font-normal ${veil === "dark" ? "text-stone-300" : `text-white ${textShadow}`}`}>
@@ -276,6 +303,48 @@ export const PublicHomePage: React.FC<PublicHomePageProps> = ({
             />
 
           </div>
+
+          {heroImages.length > 1 && showArrows && (
+            <>
+              <button
+                type="button"
+                onClick={() => go(shown.active - 1)}
+                aria-label="Forrige bilde"
+                className="hidden sm:flex absolute left-4 lg:left-8 top-1/2 -translate-y-1/2 z-20 w-11 h-11 items-center justify-center rounded-full bg-black/25 hover:bg-black/45 text-white backdrop-blur-sm transition-colors"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+              <button
+                type="button"
+                onClick={() => go(shown.active + 1)}
+                aria-label="Neste bilde"
+                className="hidden sm:flex absolute right-4 lg:right-8 top-1/2 -translate-y-1/2 z-20 w-11 h-11 items-center justify-center rounded-full bg-black/25 hover:bg-black/45 text-white backdrop-blur-sm transition-colors"
+              >
+                <ChevronRight className="w-6 h-6" />
+              </button>
+            </>
+          )}
+
+          {heroImages.length > 1 && (
+            <div data-hero-dots className="absolute bottom-4 sm:bottom-6 inset-x-0 z-20 flex justify-center gap-1">
+              {heroImages.map((src, index) => (
+                <button
+                  key={`${index}-${src}`}
+                  type="button"
+                  onClick={() => go(index)}
+                  aria-label={`Bilde ${index + 1} av ${heroImages.length}`}
+                  aria-current={index === shown.active ? "true" : undefined}
+                  className="p-1.5 group"
+                >
+                  <span
+                    className={`block h-2.5 rounded-full shadow-sm transition-all duration-300 ${
+                      index === shown.active ? "w-7 bg-white" : "w-2.5 bg-white/50 group-hover:bg-white/80"
+                    }`}
+                  />
+                </button>
+              ))}
+            </div>
+          )}
 
       </section>
 

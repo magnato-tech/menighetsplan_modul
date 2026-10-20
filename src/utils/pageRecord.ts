@@ -1,5 +1,5 @@
 import type { CmsPage } from "../data/cmsData";
-import { heroHeightOf, heroMenuStyleOf, heroTitleStyleOf, heroVeilOf } from "./heroLayout";
+import { heroExtrasOf, heroHeightOf, heroMenuStyleOf, heroTitleFontOf, heroTitleSizeOf, heroTitleStyleOf, heroVeilOf } from "./heroLayout";
 
 /**
  * The page as it is stored, built from what the editor holds. Every field the editor can change must
@@ -42,7 +42,9 @@ export function buildPageRecord(
     updatedAt: now.toISOString(),
     heroImage: pageData.heroImage || "",
     heroImageAlt: pageData.heroImageAlt?.trim() || undefined,
-    heroImages: (pageData.heroImages || []).filter(Boolean).slice(0, 2),
+    heroImages: heroExtrasOf(pageData.heroImages, pageData.heroImageTitles).heroImages,
+    heroImageTitles: heroExtrasOf(pageData.heroImages, pageData.heroImageTitles).heroImageTitles.map((title) => title.trim()),
+    heroArrows: pageData.heroArrows === true,
     heroZoom: pageData.heroZoom !== false,
     heroMenuStyle: heroMenuStyleOf(pageData),
     // Kept in step for anything that still reads the older on/off choice
@@ -50,6 +52,9 @@ export function buildPageRecord(
     heroVeil: heroVeilOf(pageData),
     heroHeight: heroHeightOf(pageData),
     heroTitleStyle: heroTitleStyleOf(pageData),
+    // Left out until chosen, so the size keeps following the style
+    heroTitleSize: pageData.heroTitleSize ? heroTitleSizeOf(pageData) : undefined,
+    heroTitleFont: heroTitleFontOf(pageData),
     showHeroSubtext: pageData.showHeroSubtext !== false,
     heroTitle: pageData.heroTitle || "",
     heroCtaText: pageData.heroCtaText || "",

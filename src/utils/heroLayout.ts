@@ -16,7 +16,7 @@ export const HERO_TITLE_STYLES: { value: HeroTitleStyle; label: string }[] = [
   { value: "calm", label: "Rolig" },
 ];
 
-type HeroFields = Pick<CmsPage, "heroHeight" | "heroTitleStyle" | "showHeroSubtext" | "summary">;
+type HeroFields = Pick<CmsPage, "heroHeight" | "heroTitleStyle" | "heroTitleSize" | "heroTitleFont" | "showHeroSubtext" | "summary">;
 
 /** The height chosen for the front page picture. A page saved before the choice existed keeps the middle one. */
 export function heroHeightOf(page: Partial<HeroFields> | null | undefined): HeroHeight {
@@ -25,6 +25,109 @@ export function heroHeightOf(page: Partial<HeroFields> | null | undefined): Hero
 
 export function heroTitleStyleOf(page: Partial<HeroFields> | null | undefined): HeroTitleStyle {
   return page?.heroTitleStyle === "calm" ? "calm" : "bold";
+}
+
+/** How large the headline on the picture is. */
+export type HeroTitleSize = "small" | "medium" | "large" | "xlarge";
+
+export const HERO_TITLE_SIZES: { value: HeroTitleSize; label: string }[] = [
+  { value: "small", label: "Liten" },
+  { value: "medium", label: "Middels" },
+  { value: "large", label: "Stor" },
+  { value: "xlarge", label: "Ekstra stor" },
+];
+
+/** The text size of the headline on a phone, a tablet and a large screen. */
+export const HERO_TITLE_SIZE_CLASSES: Record<HeroTitleSize, string> = {
+  small: "text-2xl sm:text-3xl lg:text-4xl",
+  medium: "text-3xl sm:text-4xl lg:text-5xl",
+  large: "text-4xl sm:text-5xl lg:text-6xl",
+  xlarge: "text-5xl sm:text-6xl lg:text-7xl",
+};
+
+/** The size chosen for the headline. Unless chosen, it follows the style, as before: large when heavy, medium when calm. */
+export function heroTitleSizeOf(page: Partial<HeroFields> | null | undefined): HeroTitleSize {
+  const size = page?.heroTitleSize;
+  if (size === "small" || size === "medium" || size === "large" || size === "xlarge") return size;
+  return heroTitleStyleOf(page) === "calm" ? "medium" : "large";
+}
+
+/** The typeface of the headline on the picture: the headings' own, or one of four that come with the app. */
+export type HeroTitleFont = "heading" | "rounded" | "serif" | "caps" | "script";
+
+export const HERO_TITLE_FONTS: { value: HeroTitleFont; label: string }[] = [
+  { value: "heading", label: "Som overskriftene" },
+  { value: "rounded", label: "Rund og vennlig" },
+  { value: "serif", label: "Klassisk serif" },
+  { value: "caps", label: "Store bokstaver" },
+  { value: "script", label: "Håndskrift" },
+];
+
+// The font files lie in public/skrifter (latin letters, æ, ø and å included), so a visitor fetches nothing from elsewhere
+const HERO_FONT_FACES: Record<Exclude<HeroTitleFont, "heading">, { family: string; file: string; weights: string; fallback: string }> = {
+  rounded: { family: "Nunito", file: "/skrifter/nunito.woff2", weights: "400 800", fallback: "ui-rounded, system-ui, sans-serif" },
+  serif: { family: "Playfair Display", file: "/skrifter/playfair.woff2", weights: "400 900", fallback: "Georgia, 'Times New Roman', serif" },
+  caps: { family: "Oswald", file: "/skrifter/oswald.woff2", weights: "300 700", fallback: "'Arial Narrow', system-ui, sans-serif" },
+  script: { family: "Caveat", file: "/skrifter/caveat.woff2", weights: "400 700", fallback: "'Segoe Script', cursive" },
+};
+
+export function heroTitleFontOf(page: Partial<HeroFields> | null | undefined): HeroTitleFont {
+  const font = page?.heroTitleFont;
+  return font === "rounded" || font === "serif" || font === "caps" || font === "script" ? font : "heading";
+}
+
+/**
+ * The font rule for the chosen typeface, to lie in a style element by the headline. The browser
+ * downloads a font file only when a rule names it and text uses it, so only the chosen one is fetched.
+ * Empty for the headings' own font.
+ */
+export function heroFontFaceCss(font: HeroTitleFont): string {
+  if (font === "heading") return "";
+  const face = HERO_FONT_FACES[font];
+  return `@font-face{font-family:'${face.family}';font-style:normal;font-weight:${face.weights};font-display:swap;src:url(${face.file}) format('woff2');}`;
+}
+
+/** The font family for the headline, or nothing for the headings' own. */
+export function heroFontFamily(font: HeroTitleFont): string | undefined {
+  if (font === "heading") return undefined;
+  const face = HERO_FONT_FACES[font];
+  return `'${face.family}', ${face.fallback}`;
+}
+
+/** One picture at the top and the headline it shows. */
+export interface HeroSlide {
+  src: string;
+  title: string;
+}
+
+/**
+ * The extra pictures with their own titles, in step: a picture taken out takes its title with it,
+ * and the ones after move up. At most two.
+ */
+export function heroExtrasOf(images: string[] | undefined, titles: string[] | undefined): { heroImages: string[]; heroImageTitles: string[] } {
+  const kept = (images ?? [])
+    .map((src, index) => ({ src, title: titles?.[index] ?? "" }))
+    .filter((extra) => Boolean(extra.src))
+    .slice(0, 2);
+  return { heroImages: kept.map((extra) => extra.src), heroImageTitles: kept.map((extra) => extra.title) };
+}
+
+/**
+ * The pictures at the top, at most three: the main one with the main headline, then the extra ones,
+ * each with its own title. An extra picture without a title shows the main headline.
+ */
+export function heroSlidesOf(
+  main: string | null | undefined,
+  extras: (string | null | undefined)[],
+  extraTitles: string[] | undefined,
+  headline: string
+): HeroSlide[] {
+  return [
+    { src: main || "", title: headline },
+    ...extras.map((src, index) => ({ src: src || "", title: extraTitles?.[index]?.trim() || headline })),
+  ]
+    .filter((slide) => Boolean(slide.src))
+    .slice(0, 3);
 }
 
 /**

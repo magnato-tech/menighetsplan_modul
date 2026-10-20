@@ -1589,20 +1589,22 @@ Bestilt av produkteier: et rent bilde med menyen over, som hos andre menigheter 
 | **Store bokstaver** | Menyord med store bokstaver, valgt i Nettside-innstillinger (`menuUppercase`) |
 | **Forhåndsvisningen** | Viser menyen over bildet og valgene for den, slik nettsiden gjør. Uten logo står menighetens navn øverst, ikke produktets |
 
-### Forsiden, trinn 2: planlagt, ikke bygget (20. oktober 2026)
+### Forsiden, trinn 2: tittel per bilde, prikker, størrelse og skrift (20. oktober 2026)
 
-Godkjent av produkteier som plan. Trinn 1 er bygget og ligger i demoen. Trinn 2 er ikke påbegynt.
+Bestilt av produkteier etter planen fra samme dag. Avgjort før bygging: hvert bilde får bare egen tittel (ingress og knapper er felles), og skriftene er listen i planen.
 
-| Del | Hva som skal bygges |
+| Del | Hva som er levert |
 |---|---|
-| **Tekst per bilde** | Hvert toppbilde i karusellen får sitt eget tittelfelt, og teksten bytter sammen med bildet. Tomt felt gir hovedtittelen. Ingress og knapper er felles. Produkteier har ikke avgjort om hvert bilde også skal ha egen ingress: spør før det bygges |
-| **Prikker og piler** | Prikker under bildet, og piler som valg, så den besøkende kan bla selv |
-| **Tekststørrelse** | Tittelen på bildet: liten, middels, stor eller ekstra stor |
-| **Skrift** | Tittelen på bildet: som overskriftene, rund og vennlig, klassisk serif, store bokstaver eller håndskrift. Bare den valgte skriften lastes. Produkteier kan ha en bestemt skrift i tankene: spør før listen låses |
+| **Tittel per bilde** | Toppbilde 2 og 3 har hvert sitt tittelfelt, og tittelen bytter sammen med bildet og toner inn. Tomt felt gir hovedtittelen («Tittel i Hero»). Tas et bilde ut, følger tittelen bildet sitt (`heroImageTitles`, `heroExtrasOf` og `heroSlidesOf` i `src/utils/heroLayout.ts`) |
+| **Prikker og piler** | Med flere bilder står prikker under bildet, og den besøkende kan bla selv; klokka starter på nytt fra bildet som er valgt. Piler på sidene er et valg, og vises ikke på mobil (`heroArrows`, `useHeroSlides` i `src/components/public/HeroBackdrop.tsx`). Den som har bedt om mindre bevegelse, får ingen automatisk bytting, men kan bla med prikkene |
+| **Tekststørrelse** | Liten, middels, stor eller ekstra stor. Til den er valgt, følger størrelsen stilen som før: stor når tittelen er kraftig, middels når den er rolig (`heroTitleSize`) |
+| **Skrift** | Som overskriftene, rund og vennlig (Nunito), klassisk serif (Playfair Display), store bokstaver (Oswald) eller håndskrift (Caveat). Skriftene ligger i appen (`public/skrifter`), så nettsiden henter ingenting fra Google, og bare den valgte lastes (`heroTitleFont`) |
+
+Valgene står i feltet «Toppbildet: størrelse, tittel og flere bilder» i redigeringen av forsiden. En side lagret før ser ut som før.
 
 Alle nye felt på en side går gjennom `buildPageRecord` i `src/utils/pageRecord.ts` (ellers forsvinner de ved Lagre), inn i `WARM_DRAFT_KEYS` i `src/utils/previewBridge.ts` (så forhåndsvisningen viser dem med en gang) og i `Required<CmsPage>`-prøven i `tests/page-record.test.ts`. Valgene for toppbildet ligger i `src/utils/heroLayout.ts`, og står i redigeringen i feltet «Toppbildet: størrelse, tittel og flere bilder» i `PageEditModal.tsx`.
 
-**Ikke sluppet til menighetene ennå** (ligger i `main`, ikke i `stabil`): menylinjen i Sider og trinn 1. Produkteier sjekker dem i demoen før de slippes.
+**Ikke sluppet til menighetene ennå** (ligger i `main`, ikke i `stabil`): menylinjen i Sider, trinn 1 og trinn 2. Produkteier sjekker dem i demoen før de slippes.
 
 ---
 
