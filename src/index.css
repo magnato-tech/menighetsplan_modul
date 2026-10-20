@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./admin-light.css";
 
 /*
  * The website's theme colours. `primary` and `accent` are what the public pages use
@@ -91,16 +92,16 @@
 }
 
 [data-studio-theme="light"] {
-  --studio-bg: #e2e8f0;
+  --studio-bg: #ffffff;
   --studio-panel-bg: #f8fafc;
-  --studio-surface: #ffffff;
+  --studio-surface: #f8fafc;
   --studio-row: #f1f5f9;
   --studio-text: #0f172a;
   --studio-muted: #475569;
-  --studio-border: #cbd5e1;
+  --studio-border: #e2e8f0;
   --studio-input: #ffffff;
   --studio-input-text: #0f172a;
-  --studio-hover: #e2e8f0;
+  --studio-hover: #f1f5f9;
   --studio-overlay: rgb(15 23 42 / 0.45);
   --studio-link: #4338ca;
   --studio-link-hover: #3730a3;
