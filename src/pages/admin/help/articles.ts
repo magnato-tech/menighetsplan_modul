@@ -118,7 +118,7 @@ const siderRedigere: HelpArticle = {
   steg: [
     "Sider & Innhold åpner i **Rediger**, med siden du redigerte sist, eller Forsiden. Trykk en fane i menylinjen over redigeringen for å gå til en annen side. På smal skjerm velger du siden i listen **Side**. Adminmenyen til venstre blir smal med bare ikoner, så redigeringen får plass. **››** øverst åpner den igjen.",
     "**⋯** ved Historikk har **Kopier siden** og **Slett siden**. **×** lukker siden og går til Sidestruktur.",
-    "Velg **Rediger**, **Splitt** eller **Forhåndsvis**. Splitt viser nettsiden ved siden av feltene.",
+    "Velg **Rediger**, **Splitt** eller **Forhåndsvis**. Splitt viser nettsiden ved siden av feltene. Dra streken mellom feltene og nettsiden for å gjøre feltene bredere, og dobbeltklikk på den for standard. De tre A-ene øverst gjør teksten i feltene større.",
     "Listen **Seksjoner** viser alt på siden: sideinnstillinger, toppbildet, hver blokk, søk og deling, og publisering. Trykk på en seksjon, så vises bare feltene til den, og forhåndsvisningen viser den.",
     "Dra en blokk i listen for å endre rekkefølgen. Øyet ved en blokk skjuler den på nettsiden uten å slette den. **Legg til blokk eller modul** nederst setter inn tekst, bilde eller en ferdig modul.",
     "Trykk på en seksjon i forhåndsvisningen, så åpnes feltene til den.",

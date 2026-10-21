@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from "react";
+import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { CmsPage } from "../../../../data/cmsData";
 import {
   Edit3,
@@ -37,6 +37,8 @@ import { ensureSectionAnchors } from "../../../../utils/cmsLinks";
 import { PageSectionNav, type PageSection } from "../../../../components/admin/PageSectionNav";
 import { readStoredFlag, writeStoredFlag } from "../../../../utils/storedFlag";
 import { useMediaQuery } from "../../../../hooks/useMediaQuery";
+import { usePaneWidth } from "../../../../hooks/usePaneWidth";
+import { EditorTextSizeControl, useEditorTextSize, EDITOR_TEXT_ZOOM } from "../../../../components/admin/EditorTextSize";
 import { SettingsSection } from "./editor/SettingsSection";
 import { HeroSection } from "./editor/HeroSection";
 import { SeoSection } from "./editor/SeoSection";
@@ -62,15 +64,17 @@ export function scrollIntoColumn(element: HTMLElement, offset = 16): boolean {
 export function scrollPreviewToTarget(
   scrollRoot: HTMLElement,
   target: HTMLElement,
-  offset = 16
+  offset = 16,
+  // A scaled frame is placed at frame.top on screen, and drawn at frame.scale of its own pixels.
+  frame: { top: number; scale: number } = { top: 0, scale: 1 }
 ): boolean {
   const rootRect = scrollRoot.getBoundingClientRect();
   const targetRect = target.getBoundingClientRect();
   const visibleTop = rootRect.top + offset;
   const visibleBottom = rootRect.bottom - offset;
-  const targetTop = targetRect.top;
-  const targetBottom = targetRect.bottom;
-  const targetHeight = targetRect.height;
+  const targetTop = frame.top + targetRect.top * frame.scale;
+  const targetBottom = frame.top + targetRect.bottom * frame.scale;
+  const targetHeight = targetRect.height * frame.scale;
   const rootHeight = rootRect.height;
 
   if (targetTop >= visibleTop && targetBottom <= visibleBottom) {
@@ -90,6 +94,16 @@ export function scrollPreviewToTarget(
   scrollRoot.scrollTo({ top: Math.max(0, scrollTop), behavior: "smooth" });
   return true;
 }
+
+// Pixel sizes of the split view. The preview never gets less than PREVIEW_MIN_PX.
+const FIELDS_MIN_PX = 380;
+const PREVIEW_MIN_PX = 480;
+const SECTION_LIST_PX = 220;
+const GAP_PX = 24; // gap-6 in the layout
+const DIVIDER_PX = 10;
+const KEY_STEP_PX = 24;
+// The desktop preview is laid out at this width, and scaled down when its column is narrower.
+const DESKTOP_PREVIEW_PX = 1280;
 
 export interface PageEditModalProps {
   editingPage: Partial<CmsPage>;
@@ -130,6 +144,25 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
   const [previewLocationPath, setPreviewLocationPath] = useState<string | null>(null);
   const [previewBlockedNotice, setPreviewBlockedNotice] = useState(false);
   const [snapshotFit, setSnapshotFit] = useState<SnapshotFit>("full");
+  // The fields column width the user dragged to. null is the default (40 %). liveFieldsWidth is set while dragging.
+  const { width: storedFieldsWidth, setWidth: setFieldsWidth } = usePaneWidth("menighetsplan:feltbredde");
+  const [liveFieldsWidth, setLiveFieldsWidth] = useState<number | null>(null);
+  const fieldsWidth = liveFieldsWidth ?? storedFieldsWidth;
+  const fieldsRef = useRef<HTMLDivElement>(null);
+  const splitRowRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef<{ startX: number; startWidth: number; latest: number } | null>(null);
+  // The text size applies to the fields only, not to the preview or the section list
+  const [textSize, setTextSize] = useEditorTextSize();
+  const fieldsZoomStyle: React.CSSProperties = { zoom: EDITOR_TEXT_ZOOM[textSize] };
+  // Height of the desktop preview frame, which follows the window height
+  const [viewportHeight, setViewportHeight] = useState(() => (typeof window !== "undefined" ? window.innerHeight : 800));
+  useEffect(() => {
+    const onResize = () => setViewportHeight(window.innerHeight);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+  // Width of the preview's scroll box, measured while the preview is shown
+  const [previewAvailableWidth, setPreviewAvailableWidth] = useState<number | null>(null);
 
   // View mode state: edit (full-width form), split (side-by-side with real frontend), preview (full-width real frontend)
   // «Historikk»: the earlier versions of the page, one of which can be put back into the editor
@@ -178,6 +211,23 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
 
   // Responsive device simulation in preview area: desktop (full width), tablet (768px), mobile (390px)
   const [previewDevice, setPreviewDevice] = useState<"desktop" | "tablet" | "mobile">("desktop");
+  // Desktop in a column narrower than 1280 px is scaled to fit, so it keeps the desktop layout. null: no scaling.
+  const previewScale =
+    previewDevice === "desktop" && previewAvailableWidth && previewAvailableWidth < DESKTOP_PREVIEW_PX
+      ? Math.max(previewAvailableWidth / DESKTOP_PREVIEW_PX, 0.25)
+      : null;
+  // Ref callback: the observer lives as long as the preview is mounted, which happens again after a layout change.
+  const attachPreviewScroll = useCallback((node: HTMLDivElement | null) => {
+    previewScrollRef.current = node;
+    // Without ResizeObserver (tests) the frame is never scaled
+    if (!node || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver((entries) => setPreviewAvailableWidth(entries[0].contentRect.width));
+    observer.observe(node);
+    return () => {
+      observer.disconnect();
+      previewScrollRef.current = null;
+    };
+  }, []);
 
   // Search and share card preview values
   const siteHost = window.location.host;
@@ -358,7 +408,12 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
     const scrollIfNeeded = () => {
       const target = findTarget();
       const container = previewScrollRef.current;
-      if (target && container) scrollPreviewToTarget(container, target);
+      // A scaled frame sits at its own top on screen, and is drawn smaller than its layout
+      const frame =
+        previewScale !== null && previewIframeRef.current
+          ? { top: previewIframeRef.current.getBoundingClientRect().top, scale: previewScale }
+          : undefined;
+      if (target && container) scrollPreviewToTarget(container, target, 16, frame);
       else target?.scrollIntoView({ behavior: "smooth", block: "start" });
     };
 
@@ -381,10 +436,94 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
       window.cancelAnimationFrame(frame);
       resizeObserver?.disconnect();
     };
-  }, [focusedPreviewTarget, previewDevice, viewMode, sendFocus]);
+  }, [focusedPreviewTarget, previewDevice, previewScale, viewMode, sendFocus]);
+
+  // Beside the fields the width style is set only on wide screens; below lg the columns stack.
+  const fieldsColumnClass = wideEdit ? "shrink-0" : "w-full";
+  const fieldsStyle: React.CSSProperties | undefined = wideEdit
+    ? {
+        width: fieldsWidth ?? undefined,
+        flexBasis: fieldsWidth ? undefined : "40%",
+        // A width kept from a wider screen still leaves the preview its least width
+        maxWidth: `calc(100% - ${(showNav ? SECTION_LIST_PX + 3 * GAP_PX : 2 * GAP_PX) + DIVIDER_PX + PREVIEW_MIN_PX}px)`,
+      }
+    : undefined;
+
+  // The fields column can be shown narrower or wider. The preview keeps the rest of the row.
+  const clampFieldsWidth = (px: number, withList: boolean): number => {
+    const rowWidth = splitRowRef.current?.getBoundingClientRect().width ?? 0;
+    // Without a measured row (tests, hidden) there is no upper limit
+    const upper =
+      rowWidth > 0
+        ? rowWidth - (withList ? SECTION_LIST_PX + 3 * GAP_PX : 2 * GAP_PX) - DIVIDER_PX - PREVIEW_MIN_PX
+        : Infinity;
+    return Math.round(Math.max(FIELDS_MIN_PX, Math.min(px, upper)));
+  };
+
+  const endFieldsDrag = () => {
+    const drag = dragRef.current;
+    if (!drag) return;
+    dragRef.current = null;
+    // A click without moving keeps the default width instead of fixing today's measure
+    if (drag.latest !== drag.startWidth) setFieldsWidth(drag.latest);
+    setLiveFieldsWidth(null);
+  };
+
+  // The line between the fields and the preview. It is hidden below lg, where the columns stack.
+  const renderSplitter = (withList: boolean) => {
+    const dragging = liveFieldsWidth !== null;
+    return (
+      <>
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Dra for å endre bredden på feltene"
+          aria-valuenow={fieldsWidth ?? undefined}
+          tabIndex={0}
+          title="Dra for å endre bredden. Dobbeltklikk for standard."
+          onPointerDown={(e) => {
+            // Keeps the drag going when the pointer leaves the line
+            e.currentTarget.setPointerCapture?.(e.pointerId);
+            const startWidth = fieldsRef.current?.getBoundingClientRect().width ?? 0;
+            dragRef.current = { startX: e.clientX, startWidth, latest: startWidth };
+            setLiveFieldsWidth(startWidth);
+          }}
+          onPointerMove={(e) => {
+            const drag = dragRef.current;
+            if (!drag) return;
+            drag.latest = clampFieldsWidth(drag.startWidth + e.clientX - drag.startX, withList);
+            setLiveFieldsWidth(drag.latest);
+          }}
+          onPointerUp={endFieldsDrag}
+          onPointerCancel={endFieldsDrag}
+          onDoubleClick={() => {
+            setLiveFieldsWidth(null);
+            setFieldsWidth(null);
+          }}
+          onKeyDown={(e) => {
+            if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+            e.preventDefault();
+            const current = fieldsWidth ?? fieldsRef.current?.getBoundingClientRect().width ?? 0;
+            const step = e.key === "ArrowRight" ? KEY_STEP_PX : -KEY_STEP_PX;
+            setFieldsWidth(clampFieldsWidth(current + step, withList));
+          }}
+          className="hidden lg:flex group w-2.5 shrink-0 self-stretch cursor-col-resize justify-center rounded-sm focus:outline-none"
+        >
+          <span
+            className={`w-px h-full transition-colors group-hover:bg-indigo-500 group-focus-visible:bg-indigo-500 ${
+              dragging ? "bg-indigo-500" : "bg-[var(--studio-border)]"
+            }`}
+          />
+        </div>
+        {/* While dragging, a transparent layer keeps the preview iframe from taking the pointer */}
+        {dragging && <div className="fixed inset-0 z-50 cursor-col-resize" aria-hidden="true" />}
+      </>
+    );
+  };
 
   // Real frontend preview container: exact 1:1 public website rendering
   const renderLiveFrontendPreview = () => {
+    const frameHeight = Math.round(viewportHeight * 0.7);
 
     return (
       <div className="flex flex-col h-full bg-[var(--studio-bg)] border border-[var(--studio-border)] rounded-2xl overflow-hidden shadow-2xl">
@@ -394,6 +533,9 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
             <span className="font-bold text-[var(--studio-text)]">Ekte nettside-rendering</span>
             <span className="text-[var(--studio-muted)] hidden xl:inline">· 1:1 produksjonslayout & tema</span>
+            {previewScale !== null && (
+              <span className="text-[var(--studio-muted)]">· vist i {Math.round(previewScale * 100)} %</span>
+            )}
           </div>
 
           {/* Enhetsvelger: Desktop (Full) | Nettbrett | Mobil */}
@@ -472,7 +614,7 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
         </div>
 
         <div
-          ref={previewScrollRef}
+          ref={attachPreviewScroll}
           className="cms-preview-scroll-root flex-1 overflow-y-auto bg-[var(--studio-overlay)] p-2 sm:p-4 max-h-[82vh] flex justify-center items-start"
         >
           <style>{`
@@ -488,13 +630,24 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
                 ? "w-[768px] max-w-full rounded-2xl shadow-2xl border-4 border-[var(--studio-border)]"
                 : "w-[390px] max-w-full rounded-3xl shadow-2xl border-8 border-[var(--studio-border)]"
             }`}
+            style={previewScale !== null ? { height: frameHeight } : undefined}
           >
             <iframe
               ref={previewIframeRef}
               key={`${editingPage.id || "new"}-${cleanSlug}`}
               title="Forhåndsvisning av nettsiden"
               src={embeddedPreviewUrl}
-              className="w-full min-h-[70vh] border-0 bg-white"
+              className={previewScale !== null ? "block border-0 bg-white" : "w-full min-h-[70vh] border-0 bg-white"}
+              style={
+                previewScale !== null
+                  ? {
+                      width: DESKTOP_PREVIEW_PX,
+                      height: frameHeight / previewScale,
+                      transform: `scale(${previewScale})`,
+                      transformOrigin: "top left",
+                    }
+                  : undefined
+              }
               onLoad={() => {
                 handleSaveActiveDraftToStorage();
                 sendWarmDraft(true);
@@ -702,6 +855,8 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
           </button>
         </div>
 
+        {viewMode !== "preview" && <EditorTextSizeControl value={textSize} onChange={setTextSize} />}
+
         {navFits && navCollapsed && (
           <button
             type="button"
@@ -833,20 +988,26 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
           {renderLiveFrontendPreview()}
         </div>
       ) : viewMode === "split" && showNav ? (
-        <div className="flex flex-col lg:flex-row gap-6 items-start w-full">
+        <div ref={splitRowRef} className="flex flex-col lg:flex-row gap-6 items-start w-full">
           {renderSectionNav()}
-          <div className="w-[480px] shrink-0 space-y-4 overflow-y-auto max-h-[82vh] pr-2">
-            {renderActiveSection()}
+          <div ref={fieldsRef} className={`${fieldsColumnClass} space-y-4 overflow-y-auto max-h-[82vh] pr-2`} style={fieldsStyle}>
+            <div className="space-y-4" style={fieldsZoomStyle}>
+              {renderActiveSection()}
+            </div>
           </div>
+          {renderSplitter(true)}
           <div className="flex-1 min-w-0 w-full sticky top-[calc(var(--demo-strip,0px)+6rem)]">
             {renderLiveFrontendPreview()}
           </div>
         </div>
       ) : viewMode === "split" ? (
-        <div className="flex flex-col lg:flex-row gap-6 items-start w-full">
-          <div className="w-full lg:w-[460px] xl:w-[500px] 2xl:w-[540px] shrink-0 space-y-4 overflow-y-auto max-h-[82vh] pr-2">
-            {renderFormFields()}
+        <div ref={splitRowRef} className="flex flex-col lg:flex-row gap-6 items-start w-full">
+          <div ref={fieldsRef} className={`${fieldsColumnClass} space-y-4 overflow-y-auto max-h-[82vh] pr-2`} style={fieldsStyle}>
+            <div className="space-y-4" style={fieldsZoomStyle}>
+              {renderFormFields()}
+            </div>
           </div>
+          {renderSplitter(false)}
           <div className="flex-1 min-w-0 w-full sticky top-[calc(var(--demo-strip,0px)+6rem)]">
             {renderLiveFrontendPreview()}
           </div>
@@ -854,12 +1015,14 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
       ) : viewMode === "edit" && showNav ? (
         <div className="flex flex-col lg:flex-row gap-6 items-start w-full">
           {renderSectionNav()}
-          <div className="flex-1 min-w-0 space-y-4">
-            {renderActiveSection()}
+          <div className="flex-1 min-w-0">
+            <div className="space-y-4" style={fieldsZoomStyle}>
+              {renderActiveSection()}
+            </div>
           </div>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-4" style={fieldsZoomStyle}>
           {renderFormFields()}
         </div>
       )}
