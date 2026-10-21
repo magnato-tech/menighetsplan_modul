@@ -1,41 +1,93 @@
-import { describe } from "vitest";
-import { assert } from "./assert";
-import { defaultHelpArticleId, findHelpArticle, helpArticles, helpSections } from "../src/pages/admin/help/articles";
-import { helpArticleImageSrc } from "../src/pages/admin/help/HelpArticleView";
-import { studioTabUrl } from "../src/pages/admin/studio";
-import { existsSync } from "node:fs";
+import { describe, expect, test } from "vitest";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
+import {
+  defaultHelpArticleId,
+  findHelpArticle,
+  helpArticleIdForTab,
+  helpArticles,
+  helpButtonNames,
+  searchHelp,
+} from "../src/pages/admin/help/articles";
+import { helpArticleImageSrc } from "../src/pages/admin/help/HelpArticleView";
+import { STUDIO_TABS, studioTabUrl } from "../src/pages/admin/studio";
 
-describe("Hjelpeartikler", () => {
-  const articles = helpArticles();
-  const ids = articles.map((article) => article.id);
+// Hjelp in the admin: one article per task, a picture from the demo for each, every tab in the menu
+// covered, and every button the help names found in the app.
 
-  assert(new Set(ids).size === ids.length, "Hver hjelpeartikkel har et unikt anker");
-  assert(findHelpArticle(defaultHelpArticleId).id === defaultHelpArticleId, "Standardartikkelen finnes");
-  assert(findHelpArticle("finnes-ikke").id === defaultHelpArticleId, "Ukjent anker åpner standardartikkelen");
-  assert(
-    helpSections[0]?.items.some((item) => item.kind === "menu" && item.title === "Sider & Innhold" && item.articles.length === 6),
-    "Sider & Innhold har seks underpunkter"
-  );
-  assert(
-    articles.every((article) => article.formal && article.hvor && article.steg.length > 0 && article.knapper && article.etterLagring),
-    "Hver artikkel har formål, hvor, steg, knapper og etter lagring"
-  );
-  assert(
-    articles.every((article) => article.layout === "wide" || article.layout === "tall"),
-    "Hver artikkel har layout wide eller tall"
-  );
-  assert(
-    articles.filter((article) => article.layout === "tall").map((article) => article.id).sort().join(",") ===
-      "sider-hero,sider-innhold,sider-sok",
-    "Høye bilder er hero, innhold og søk"
-  );
-  assert(
-    studioTabUrl("cms-hjelp") === "/admin?tab=cms-hjelp",
-    "Hjelpeartikler lenker til cms-hjelp, ikke en ukjent tab"
-  );
-  for (const article of articles) {
-    const imagePath = path.join(process.cwd(), "public", helpArticleImageSrc(article.id).slice(1));
-    assert(existsSync(imagePath), `Hjelpebilde finnes for ${article.id}`);
-  }
+const articles = helpArticles();
+
+/** All the app's own source text, except the help itself, to look the names of buttons up in. */
+function appSource(dir: string): string {
+  return readdirSync(dir)
+    .map((name) => {
+      const full = path.join(dir, name);
+      if (statSync(full).isDirectory()) return appSource(full);
+      if (!/\.tsx?$/.test(name) || full.includes(path.join("admin", "help"))) return "";
+      return readFileSync(full, "utf8");
+    })
+    .join("\n");
+}
+
+describe("Artiklene", () => {
+  test("hver har et eget anker, og et ukjent anker åpner Kom i gang", () => {
+    const ids = articles.map((article) => article.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(findHelpArticle(defaultHelpArticleId).id).toBe(defaultHelpArticleId);
+    expect(findHelpArticle("finnes-ikke").id).toBe(defaultHelpArticleId);
+  });
+
+  test("hver har vei dit, en innledning og høyst seks korte steg", () => {
+    for (const article of articles) {
+      expect(article.hvor, article.id).toBeTruthy();
+      expect(article.intro, article.id).toBeTruthy();
+      expect(article.steg.length, article.id).toBeGreaterThan(0);
+      expect(article.steg.length, article.id).toBeLessThanOrEqual(6);
+    }
+  });
+
+  test("hver med bilde har et skjermbilde", () => {
+    for (const article of articles.filter((candidate) => !candidate.utenBilde)) {
+      const imagePath = path.join(process.cwd(), "public", helpArticleImageSrc(article.id).slice(1));
+      expect(existsSync(imagePath), article.id).toBe(true);
+    }
+  });
+
+  test("lenkene under «Se også» går til artikler som finnes", () => {
+    const ids = new Set(articles.map((article) => article.id));
+    for (const article of articles) {
+      for (const id of article.seOgsa ?? []) expect(ids.has(id), `${article.id} → ${id}`).toBe(true);
+    }
+  });
+
+  test("knappene hjelpen nevner, finnes i appen", () => {
+    const source = appSource(path.join(process.cwd(), "src"));
+    for (const article of articles) {
+      for (const name of helpButtonNames(article)) expect(source.includes(name), `${article.id}: «${name}»`).toBe(true);
+    }
+  });
+});
+
+describe("Hjelp for fanen man kom fra", () => {
+  test("hver fane i menyen har sin artikkel", () => {
+    const own = STUDIO_TABS.filter((tab) => !["dashboard", "cms-hjelp", "database-admin", "demo-oppsett"].includes(tab));
+    for (const tab of own) expect(articles.find((article) => article.tabs?.includes(tab)), tab).toBeTruthy();
+  });
+
+  test("fra Aktuelt & Nyheter åpnes nyhetsartikkelen, fra Oversikt den for delen man er i", () => {
+    expect(helpArticleIdForTab("cms-nyheter", "nettside")).toBe("nyheter");
+    expect(helpArticleIdForTab("dashboard", "planlegging")).toBe("oversikt");
+    expect(helpArticleIdForTab("dashboard", "nettside")).toBe("kom-i-gang");
+    expect(studioTabUrl("cms-hjelp")).toBe("/admin?tab=cms-hjelp");
+  });
+});
+
+describe("Søket", () => {
+  test("finner artiklene med ordene, de med ordet i tittelen først", () => {
+    expect(searchHelp("historikk").map((article) => article.id)).toContain("sider-lagre");
+    expect(searchHelp("siste dag").map((article) => article.id)).toContain("nyheter");
+    expect(searchHelp("Kalender")[0].title).toBe("Kalender");
+    expect(searchHelp("")).toEqual([]);
+    expect(searchHelp("finnesikkeiappen")).toEqual([]);
+  });
 });

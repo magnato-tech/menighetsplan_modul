@@ -17,6 +17,7 @@ import { useTimedMessage } from "../../hooks/useTimedMessage";
 import { StudioSidebar } from "./StudioSidebar";
 import { UnsavedChangesContext, useUnsavedRegistry } from "../../hooks/useUnsavedChanges";
 import { UnsavedChangesDialog } from "./tabs/pages/UnsavedChangesDialog";
+import { helpArticleIdForTab } from "./help/articles";
 
 import { AddonGate } from "./AddonGate";
 
@@ -267,7 +268,8 @@ function AdminStudioContent() {
 
     openTab(tab);
 
-    navigate(studioTabUrl(tab));
+    // Help opens on the article for the tab one came from
+    navigate(tab === "cms-hjelp" ? `${studioTabUrl(tab)}#${helpArticleIdForTab(activeTab, area)}` : studioTabUrl(tab));
 
     setSidebarOpen(false);
 

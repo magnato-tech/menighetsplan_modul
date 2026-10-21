@@ -1,15 +1,31 @@
-export type HelpArticleImageLayout = "wide" | "tall";
+import type { StudioTab } from "../studio";
+import type { StudioArea } from "../studioAreas";
+
+// Hjelp in the admin: one article per task, in the order of the admin menu. Each has the way there,
+// a picture from the demo, a few short steps, and a line on what is good to know or to watch out for.
+// A button or field is written **like this**, as it is named in the app, and shown in bold; a test
+// checks that each such name is found in the app, so the help never points to a button that is gone.
 
 export interface HelpArticle {
   id: string;
   title: string;
-  /** wide: full column under intro. tall: right column beside intro and steps. */
-  layout: HelpArticleImageLayout;
-  formal: string;
+  /** The way there, as in the menu: «Nettside → Aktuelt & Nyheter». */
   hvor: string;
+  /** One sentence: what the task is for. */
+  intro: string;
   steg: string[];
-  knapper: string;
-  etterLagring: string;
+  /** The most useful thing to know, in one to three sentences. */
+  godt?: string;
+  /** Only where something can go wrong. */
+  passPa?: string;
+  /** Articles that belong together. */
+  seOgsa?: string[];
+  /** The admin tabs whose help opens on this article. */
+  tabs?: StudioTab[];
+  /** Shown only while this add-on module is on, as its tab is. */
+  addon?: "analysebord" | "nettsidebesok";
+  /** Without a picture: the tab is not in the demo, where the pictures are taken. */
+  utenBilde?: boolean;
 }
 
 export interface HelpSection {
@@ -21,375 +37,578 @@ export type HelpNavItem =
   | { kind: "article"; article: HelpArticle }
   | { kind: "menu"; title: string; articles: HelpArticle[] };
 
+// ---------------------------------------------------------------- Kom i gang
+
+const komIGang: HelpArticle = {
+  id: "kom-i-gang",
+  title: "Slik er admin bygget",
+  hvor: "Menyen til venstre",
+  intro: "Admin har to deler: Planlegging, der arrangementene og de frivillige ligger, og Nettside, der nettsiden lages.",
+  steg: [
+    "Velg **Planlegging** eller **Nettside** øverst i menyen. Menyen under viser fanene i den delen.",
+    "Under Nettside: **Sider & Innhold** for menyen og sidene, **Aktuelt & Nyheter**, **Taler & Prekener**, **Lederskap & Stab**, **Mediebibliotek**, **Tema & Designsystem** og **Nettside-innstillinger**.",
+    "Under Planlegging: **Kalender**, **Trenger oppfølging**, **Grupper & Husfellesskap**, **Personer**, **Maler**, **Årshjul**, **Send e-post** og **Roller**.",
+    "**Åpne offentlig nettside** viser nettsiden i en ny fane. **Gå til Min Side** viser din egen side som frivillig.",
+  ],
+  godt: "Arrangementene legges inn én gang, i kalenderen under Planlegging, og vises på nettsiden av seg selv. Sol eller måne øverst i menyen bytter mellom lyst og mørkt utseende på admin.",
+  seOgsa: ["nytt", "tips"],
+  tabs: ["dashboard"],
+};
+
+const nytt: HelpArticle = {
+  id: "nytt",
+  title: "Nytt i oktober",
+  hvor: "Nettside → Sider & Innhold, Aktuelt & Nyheter og Mediebibliotek",
+  intro: "Det som er nytt i nettsidedelen av admin høsten 2026.",
+  steg: [
+    "**Historikk** i redigeringen av en side eller en nyhet henter fram en tidligere versjon.",
+    "Teksten i en blokk skrives med knapper for overskrift, fet, kursiv, lister og lenke, uten tegn.",
+    "Har du endret noe uten å lagre, står det **Ikke lagret** ved fanen i menyen, og admin spør før du går.",
+    "Trykk på en seksjon i forhåndsvisningen, så åpnes den i redigeringen. Valgene i en modul vises med en gang.",
+    "Opplastede bilder lagres i et eget bildelager, ikke inne i sidene.",
+    "En nyhet uten siste dag gir et spørsmål om når den skal gå ut.",
+  ],
+  seOgsa: ["sider-lagre", "sider-innhold", "nyheter", "mediebibliotek"],
+  utenBilde: true,
+};
+
+const tips: HelpArticle = {
+  id: "tips",
+  title: "Seks tips for den som redigerer",
+  hvor: "Gode vaner",
+  intro: "Det som gjør nettsiden god å lese, og arbeidet lett å holde i orden.",
+  steg: [
+    "Se på mobil: de fleste leser på telefonen. Velg **Mobil** i forhåndsvisningen.",
+    "Korte avsnitt: én tanke per avsnitt, og en overskrift der det skifter.",
+    "Bilder som passer: liggende bilder, og bare personer som har sagt ja.",
+    "Én kilde: arrangementer legges inn i kalenderen, ikke skrives på en side.",
+    "Gi nyheter en siste dag, så går de ut av forsiden av seg selv.",
+    "Lagre ofte. Lagret noe feil, finner du det igjen under **Historikk**.",
+  ],
+  godt: "Valget mellom lyst og mørkt gjelder bare admin. Nettsidens farger velges under Tema & Designsystem.",
+  seOgsa: ["kom-i-gang"],
+  utenBilde: true,
+};
+
+// ---------------------------------------------------------------- Nettside: Sider & Innhold
+
 const siderSidetre: HelpArticle = {
   id: "sider-sidetre",
-  title: "Sidetre",
-  layout: "wide",
-  formal: "Bygge menyen på nettsiden med hovedfaner og underfaner, og styre om en side er publisert.",
-  hvor: "Velg Nettside øverst i menyen, så Sider & Innhold. Overskriften på siden er «Sider & Innhold på nettsiden».",
+  title: "Menyen og sidene",
+  hvor: "Nettside → Sider & Innhold",
+  intro: "Listen er nettsidens meny: hovedfaner med underfaner, i den rekkefølgen de står i menyen.",
   steg: [
-    "Trykk på den runde + øverst til høyre for en ny hovedfane.",
-    "På en eksisterende hovedfane: opprett underfane, velg Rediger, eller slett.",
-    "Dra faner for å endre rekkefølge.",
-    "På PC står menyen på nettsiden øverst i listen. Trykk på en fane, eller hold musen over den og velg en underside, så ruller listen dit.",
-    "Bruk statusknappene i treet for å publisere eller sette en side til kladd.",
+    "Den runde **+** øverst lager en ny hovedfane. **+ Underfane** på en fane lager en side under den.",
+    "Gi siden **Sidetittel**, og la **Adresse** stå tom, så lages den fra tittelen. **Hovedfane / Forelder** flytter siden under en annen fane.",
+    "Dra en side for å flytte den, eller bruk pilene opp og ned.",
+    "Trykk på statusen for å publisere en side eller sette den til kladd.",
   ],
-  knapper:
-    "+ øverst til høyre (Ny hovedfane), Rediger. Slett har tittelen Slett fane eller Slett underside. Underfane: «Opprett ny underfane som legger seg under denne fanen».",
-  etterLagring:
-    "«Siden ble lagret og menystrukturen ble oppdatert!» Siden blir stående åpen, så du kan fortsette; lukk den for å komme tilbake til listen. Har du endret noe uten å lagre, spør admin før siden lukkes eller du går til en annen side: «Lagre», «Forkast endringene» eller «Bli her». På PC står nettsidens meny over redigeringen, og en side i menyen åpnes der. Ved flytting: «Menyrekkefølgen ble oppdatert!» Ved publisering: «[tittel] er nå publisert på nettsiden!» Ved kladd: «[tittel] er satt til kladd (upublisert).» Ved sletting: «Siden ble slettet». Uten tittel: «Siden må ha en tittel».",
+  godt: "Menylinjen øverst er nettsidens meny: trykk en fane, så ruller listen dit. På mobil står **Kollaps alle** og **Utvid alle** over listen.",
+  seOgsa: ["sider-redigere", "sider-publisering"],
+  tabs: ["cms-sider"],
 };
 
-const siderInnstillinger: HelpArticle = {
-  id: "sider-innstillinger",
-  title: "Sideinnstillinger",
-  layout: "wide",
-  formal: "Gi siden navn, adresse og plass i menyen.",
-  hvor: "Samme fane, i vinduet som åpnes ved + (Ny hovedfane), ved + på en fane (ny underfane) eller ved Rediger.",
+const siderRedigere: HelpArticle = {
+  id: "sider-redigere",
+  title: "Redigere en side",
+  hvor: "Nettside → Sider & Innhold → Rediger",
+  intro: "Redigeringen viser feltene til venstre og nettsiden slik den blir, til høyre.",
   steg: [
-    "Fyll inn Sidetittel (Vises i meny og header).",
-    "La Adresse (f.eks. om-oss) stå tom for å la den lages fra tittelen, eller skriv den selv.",
-    "Velg Hovedfane / Forelder hvis siden skal ligge under en annen fane.",
-    "Sett Rekkefølge i meny.",
+    "Trykk **Rediger** på siden. Redigeringen legger seg øverst, med nettsidens meny over.",
+    "Velg **Rediger**, **Splitt** eller **Forhåndsvis**. Splitt viser nettsiden ved siden av feltene.",
+    "Trykk på en seksjon til venstre, så viser forhåndsvisningen toppen av den. Trykk på en seksjon i forhåndsvisningen, så åpnes den til venstre.",
+    "**Legg til blokk eller modul** setter inn tekst, bilde eller en ferdig modul. Dra blokkene for å endre rekkefølgen.",
   ],
-  knapper:
-    "Plassholder for tittel: «f.eks. Om oss, Barn & Unge, Kontakt». Plassholder for adresse: «om-oss (eller genereres automatisk fra tittel)». Vindustittel: Opprett ny underfane, Opprett ny hovedfane, eller «Rediger side: [tittel]».",
-  etterLagring:
-    "Samme melding som når du trykker Lagre side: «Siden ble lagret og menystrukturen ble oppdatert!» Tittel er påkrevd. Tom adresse blir laget fra tittelen.",
-};
-
-const siderHero: HelpArticle = {
-  id: "sider-hero",
-  title: "Hero og knapper",
-  layout: "tall",
-  formal: "Sette toppbanner, overskrift og inntil to knapper øverst på siden.",
-  hvor: "Samme redigeringsvindu, seksjonen Hero / Toppbanner.",
-  steg: [
-    "Skriv Tittel i Hero.",
-    "Velg bilde med bildevelgeren. Se Mediebibliotek.",
-    "Skriv knappetekst for Primærknapp og Sekundærknapp, og huk av Vis på siden for dem som skal vises.",
-    "På forsiden: velg Høyde på toppbildet (Lav, Middels eller Hele skjermen) og om Tittelen på bildet skal være Kraftig eller Rolig. Tekststørrelse og Skrift på tittelen står rett under Tittel i Hero. Toppbilde 2 og 3 kan få hver sin tittel når bildet er valgt; tomt felt gir hovedtittelen. Med flere bilder står prikker under bildet, og piler på sidene kan slås på. Undertittelen kan slås av med Vis på siden ved Ingress / Undertittel.",
-    "På forsiden: velg hvordan Menyen øverst ligger (over bildet uten bakgrunn, med svak skygge, eller som hvit linje) og hvor mørkt Slør over bildet skal være. En lys logo til bruk over bildet, og menyord med store bokstaver, velges i Nettside-innstillinger.",
-  ],
-  knapper:
-    "Hero / Toppbanner, Tittel i Hero, Toppbildet: størrelse, tittel og flere bilder, Høyde på toppbildet, Tittelen på bildet, Primærknapp, Sekundærknapp, Vis på siden. Plassholder for knappetekst: «Knappetekst». På forsiden brukes «Se hva som skjer» og «Bli kjent med oss» som plassholdere.",
-  etterLagring:
-    "Banner og knapper vises på den offentlige siden etter Lagre side, når siden er publisert. Bilde kan stå tomt.",
+  godt: "Se siden som **Desktop**, **Nettbrett** eller **Mobil**. **Forhåndsvis i ny fane** viser hele siden for seg.",
+  passPa: "Et nytt bilde vises i forhåndsvisningen først etter lagring. Det står en melding over forhåndsvisningen når det er slik.",
+  seOgsa: ["sider-innhold", "sider-lagre"],
 };
 
 const siderInnhold: HelpArticle = {
   id: "sider-innhold",
-  title: "Innhold og blokker",
-  layout: "tall",
-  formal: "Sette sammen sidens innhold av blokker, blant annet tekst, bilder og moduler som henter arrangementer.",
-  hvor: "Samme redigeringsvindu, innholdsdelen under hero.",
+  title: "Tekst og blokker",
+  hvor: "Nettside → Sider & Innhold → Rediger → Rediger innhold",
+  intro: "En side er bygget av blokker. Teksten i en blokk skrives slik den skal se ut, med knapper over feltet.",
   steg: [
-    "Velg Rediger, Splitt eller Forhåndsvis.",
-    "Legg inn en blokk fra blokkvelgeren, eller velg Rediger innhold på en eksisterende blokk.",
-    "Dra blokker for å endre rekkefølge.",
-    "Forhåndsvis med Desktop, Nettbrett eller Mobil, eller Forhåndsvis i ny fane.",
+    "Trykk **Rediger innhold** på en blokk.",
+    "Skriv i feltet **Tekst**. Merk ord og trykk **Fet**, **Kursiv** eller **Lenke**.",
+    "I en tekstblokk lager **Overskrift** og **Underoverskrift** overskrifter, og **Punktliste** og **Nummerert liste** lister.",
+    "**Lenke**: merk ordene, skriv adressen eller velg en side, og trykk **Bruk**.",
+    "Trykk **Bruk endringer**, og lagre siden til slutt.",
   ],
-  knapper:
-    "Rediger, Splitt, Forhåndsvis, Rediger innhold, Desktop, Nettbrett, Mobil, Forhåndsvis i ny fane, Ny fane. Blokkategorier: Dynamisk, Struktur, Media & Tekst, Typografi, Varsler, Interaksjon, Personer & Roller. Eksempler: Neste gudstjeneste, Hva skjer, Kalender.",
-  etterLagring:
-    "Blokkene vises på siden etter Lagre side. Dynamiske blokker viser arrangementer som allerede er satt til offentlig eller fremhevet. Tittel er det eneste feltet som avvises hvis det mangler.",
+  godt: "I bilde med tekst, infoboks og kort er det bare Fet, Kursiv og Lenke, fordi nettsiden bare viser det der. **Vis som tekst** viser tegnene (## og -) for den som vil skrive dem selv.",
+  passPa: "Har teksten tegn feltet ikke har knapper for, for eksempel et sitat, vises den som vanlig tekst med en melding. Ingenting blir borte.",
+  seOgsa: ["sider-redigere", "sider-moduler"],
+};
+
+const siderLagre: HelpArticle = {
+  id: "sider-lagre",
+  title: "Lagre, Historikk og advarselen",
+  hvor: "Nettside → Sider & Innhold → Rediger",
+  intro: "Siden blir stående åpen når du lagrer, og en tidligere versjon kan hentes tilbake.",
+  steg: [
+    "Trykk **Lagre** øverst, eller **Lagre side** nederst. Lukk med X eller **Avbryt**.",
+    "Har du endret noe, spør admin før siden lukkes: **Lagre**, **Forkast endringene** eller **Bli her**.",
+    "Lagret noe feil? **Historikk** øverst viser de 30 siste versjonene. **Gjenopprett** legger en versjon inn i redigeringen.",
+    "Trykk **Lagre** for å beholde versjonen du hentet tilbake.",
+  ],
+  godt: "Går du til en annen fane, blir det du skrev liggende, og menyen viser **Ikke lagret** ved fanen. **Gå til Min Side**, **Logg ut** og nettleseren spør før noe går tapt.",
+  seOgsa: ["sider-redigere", "nyheter"],
+};
+
+const siderHero: HelpArticle = {
+  id: "sider-hero",
+  title: "Toppbildet på forsiden",
+  hvor: "Nettside → Sider & Innhold → Forside → Rediger → Hero / Toppbanner",
+  intro: "Toppbildet er det første besøkende ser: bilde, tittel og meny.",
+  steg: [
+    "Skriv **Tittel i Hero**, og velg **Tekststørrelse på tittelen** og **Skrift på tittelen** rett under.",
+    "Velg bakgrunnsbildet. Opptil tre bilder bytter av seg selv; bilde 2 og 3 kan få egen tittel.",
+    "Velg **Høyde på toppbildet** og hvordan **Tittelen på bildet** skal stå.",
+    "**Menyen øverst**: over bildet, eller som en hvit linje med bildet under. **Slør over bildet** gjør teksten lettere å lese.",
+  ],
+  godt: "Undertittel og knapper er av til du huker av **Vis på siden**. Prikker under bildet kommer av seg selv, piler slår du på.",
+  passPa: "Et bilde med tekst på kan kuttes i kantene. Bruk helst bilder uten tekst i toppbildet.",
+  seOgsa: ["sider-redigere", "innstillinger"],
+};
+
+const siderModuler: HelpArticle = {
+  id: "sider-moduler",
+  title: "Modulene",
+  hvor: "Nettside → Sider & Innhold → Rediger → Legg til blokk eller modul",
+  intro: "En modul fyller seg selv fra der innholdet hører hjemme: kalenderen, nyhetene, talene eller gruppene.",
+  steg: [
+    "Trykk **Legg til blokk eller modul**. Finn for eksempel **Neste gudstjeneste**, **Hva skjer** eller **Kalender**, og trykk **Sett inn denne blokken**.",
+    "Trykk **Rediger innhold** på modulen. Endre tittel, merkelapp, tekst, bakgrunnsbilde eller bakgrunnsfarge.",
+    "Forhåndsvisningen viser valgene med en gang. Trykk **Ferdig**, og lagre siden til slutt.",
+  ],
+  godt: "Innholdet i en modul endres der det hører hjemme: en tale under Taler & Prekener, en nyhet under Aktuelt & Nyheter, et arrangement i kalenderen.",
+  seOgsa: ["sider-hvaskjer", "nyheter", "taler"],
+};
+
+const siderHvaSkjer: HelpArticle = {
+  id: "sider-hvaskjer",
+  title: "Hva skjer",
+  hvor: "Nettside → Sider & Innhold → Forside → Rediger → Hva skjer → Rediger innhold",
+  intro: "Hva skjer viser de neste arrangementene fra kalenderen som kort.",
+  steg: [
+    "Velg antall og hvilke arrangementer: alle, gudstjenester, fremhevede eller én gruppe.",
+    "Velg oppsett: rutenett, liste, karusell, eller ett stort og resten små.",
+    "Kryss av for ingress, klokkeslett og sted. Velg **Bevegelse når kortene kommer til syne** og et **Standardbilde**.",
+    "Under **Arrangementene som vises nå**: **Bilde og tekst** der det mangler.",
+  ],
+  godt: "Trykk på et kort i forhåndsvisningen for å åpne Bilde og tekst for det arrangementet. Standardbildet vises bare på arrangementer uten eget bilde.",
+  seOgsa: ["forside", "sider-moduler"],
 };
 
 const siderPublisering: HelpArticle = {
   id: "sider-publisering",
   title: "Publisering",
-  layout: "wide",
-  formal: "Bestemme om siden er synlig for publikum, om den ligger i menyen, og om den skal vente til et tidspunkt.",
-  hvor: "Samme redigeringsvindu, seksjonen Publisering & Synlighet.",
+  hvor: "Nettside → Sider & Innhold → Rediger → Publisering & Synlighet",
+  intro: "Bestem om siden vises, om den står i menyen, og om den skal vente til et tidspunkt.",
   steg: [
-    "Huk av Aktiver publisering hvis siden skal vises.",
-    "Huk av Vis i offentlig meny hvis den skal ligge i toppmenyen.",
-    "Valgfritt: sett Publiseringsdato & tidspunkt (Planlegging), eller bruk I morgen 09:00.",
-    "Trykk Lagre øverst, som alltid står synlig, eller Lagre side nederst. Avbryt lukker uten å lagre.",
+    "**Aktiver publisering** viser siden på nettsiden.",
+    "**Vis i offentlig meny** legger den i menyen. Uten den nås siden bare med lenken.",
+    "Skal siden komme senere, sett **Publiseringsdato & tidspunkt (Planlegging)**, eller trykk **I morgen 09:00**.",
+    "Trykk **Lagre**.",
   ],
-  knapper:
-    "Aktiver publisering — «Når aktivert, vil siden være synlig for publikum (eller automatisk fra planlagt dato).» Vis i offentlig meny — «Vises i toppmenyen eller nedtrekksmenyen. Slått av er siden bare tilgjengelig via direkte lenke.» Nullstill dato (publiser umiddelbart). Lagre side.",
-  etterLagring:
-    "«Siden ble lagret og menystrukturen ble oppdatert!» En planlagt side telles som «planlagt» i sidetreet til tidspunktet er passert. Publisering og meny er på som standard for en ny side. Dato er valgfri.",
+  godt: "En kladd vises ikke på nettsiden. En planlagt side kommer av seg selv på tidspunktet.",
+  seOgsa: ["sider-sidetre", "sider-sok"],
 };
 
 const siderSok: HelpArticle = {
   id: "sider-sok",
-  title: "Søkemotorer og deling",
-  layout: "tall",
-  formal: "Styre hvordan siden vises i søk og når noen deler lenken.",
-  hvor: "Samme redigeringsvindu, seksjonen for søk og deling.",
+  title: "Søk og deling",
+  hvor: "Nettside → Sider & Innhold → Rediger → Søkemotoroptimalisering (SEO) & Delingskort",
+  intro: "Bestem hva Google viser, og hvordan siden ser ut når noen deler lenken.",
   steg: [
-    "Skriv en kort beskrivelse, eller bruk Bruk som SEO-beskrivelse fra ingressen.",
-    "Velg delebilde, eller la feltet stå tomt.",
-    "Se Forhåndsvisning av delebilde på sosiale medier.",
-    "Trykk Lagre side.",
+    "Åpne **Søkemotoroptimalisering (SEO) & Delingskort** nederst i redigeringen.",
+    "Skriv en kort beskrivelse, eller trykk **Bruk som SEO-beskrivelse** for å bruke ingressen.",
+    "Velg et delebilde, eller la det stå tomt, så brukes toppbildet.",
+    "Trykk **Lagre**.",
   ],
-  knapper:
-    "«Tilpass hvordan siden vises på Google, Facebook og andre sosiale medier.» Plassholder: «Kort beskrivelse (ca. 150-160 tegn) som Google viser under sidetittelen...» «La stå tom for å bruke hovedbildet automatisk når det har en delbar adresse.» Tom forhåndsvisning: «Intet bilde valgt (standard logo/toppbanner benyttes)». Bruk som SEO-beskrivelse.",
-  etterLagring:
-    "Tittel, beskrivelse og bilde brukes på den offentlige siden og i delingskortet etter Lagre side. Beskrivelse og delebilde er valgfrie.",
+  godt: "En beskrivelse på 150–160 tegn passer best i Google. Et delebilde som er liggende, vises best på Facebook.",
+  seOgsa: ["sider-publisering", "mediebibliotek"],
+};
+
+// ---------------------------------------------------------------- Nettside: de andre fanene
+
+const forside: HelpArticle = {
+  id: "forside",
+  title: "Arrangementer på nettsiden",
+  hvor: "Nettside → Arrangementer på nettsiden",
+  intro: "Gi arrangementene bilde og tekst, og bestem hvilke som løftes fram, vises eller holdes interne.",
+  steg: [
+    "Se etter arrangementer merket «Mangler bilde og tekst», «Mangler bilde» eller «Mangler tekst». **Har bilde og tekst** betyr at alt er på plass.",
+    "Trykk **Bilde og tekst**. Velg et liggende bilde, og skriv en kort ingress. Trykk **Lagre endringer**.",
+    "**Fremhev** løfter arrangementet fram på forsiden. **Offentlig** viser det i kalenderen. **Kun intern** skjuler det fra nettsiden.",
+    "Er arrangementet laget fra en mal med bilde: **Bruk malens bilde**, eller **Gi dem bildet fra malen** for alle på en gang.",
+  ],
+  godt: "Bildet vises på kortet på forsiden og på arrangementets egen side. Hvert arrangement i en serie har sitt eget bilde.",
+  seOgsa: ["sider-hvaskjer", "arrangementer", "maler"],
+  tabs: ["cms-overstyringer"],
 };
 
 const nyheter: HelpArticle = {
   id: "nyheter",
   title: "Aktuelt & Nyheter",
-  layout: "wide",
-  formal: "Publisere en nyhet som vises på nettsiden.",
-  hvor: "Nettside, Aktuelt & Nyheter. Overskrift på siden: Aktuelt & Nyhetsartikler.",
+  hvor: "Nettside → Aktuelt & Nyheter",
+  intro: "Nyheter vises på forsiden og i nyhetslisten, og kan gå ut av seg selv.",
   steg: [
-    "Trykk Ny artikkel.",
-    "Fyll inn Tittel, velg Kategori, og kontroller Forfatter.",
-    "Skriv Ingress / Sammendrag og Artikkeltekst.",
-    "Handler artikkelen om et arrangement, velg det under Hører til arrangement. Da går artikkelen ut av forsiden av seg selv dagen etter arrangementet.",
-    "Skal artikkelen stå til en bestemt dag, sett datoen i Vises til og med. Uten arrangement og uten dato står den til du tar den ut.",
-    "La Publiser artikkelen direkte på nettsiden stå på, eller slå den av.",
-    "Trykk Lagre artikkel. Avbryt lukker skjemaet.",
-    "Senere: Rediger, eller slett etter bekreftelse «Vil du slette artikkelen [tittel]?»",
+    "Trykk **Ny artikkel**. Skriv tittel, ingress og tekst, og velg kategori og bilde.",
+    "Handler nyheten om et arrangement i kalenderen, velg det under **Hører til arrangement (valgfritt)**. Da går nyheten ut dagen etter.",
+    "Ellers: sett siste dag i **Vises til og med (valgfritt)**.",
+    "Trykk **Lagre artikkel**. **Historikk** viser tidligere versjoner.",
   ],
-  knapper:
-    "Skriv ny artikkel eller «Rediger artikkel: [tittel]». Kategorier: Aktuelt, Gudstjeneste, Ungdom, Misjon, Familie. Plassholder tittel: «f.eks. Flott oppstart for høstens søndagsskole». Plassholder ingress: «En kort innledning som fanger oppmerksomheten...» Lenke ut har tittel Les artikkel.",
-  etterLagring:
-    "«Nyhetsartikkelen ble lagret og publisert!» Skjemaet lukkes, og artikkelen ligger i listen med kategori, forfatter og dato, og med hvor lenge den vises. En artikkel som er utløpt, står i listen merket Utløpt, og kan gis en ny dato. Ved sletting: «Artikkelen ble slettet». Uten tittel: «Artikkelen må ha en tittel».",
+  godt: "Lagrer du uten siste dag og uten arrangement, spør admin når nyheten skal gå ut, og foreslår datoen teksten nevner. En nyhet som er gått ut, er merket **Utløpt** i listen, og lenken virker fortsatt.",
+  passPa: "En nyhet uten siste dag blir stående på forsiden til noen fjerner den. Velg **Lagre uten siste dag** bare for saker som skal stå.",
+  seOgsa: ["sider-lagre", "arrangementer"],
+  tabs: ["cms-nyheter"],
 };
 
 const taler: HelpArticle = {
   id: "taler",
   title: "Taler & Prekener",
-  layout: "wide",
-  formal: "Legge en tale inn i prekenarkivet, med taler, bibeltekst og lenke til opptak.",
-  hvor: "Nettside, Taler & Prekener. Overskrift: Taler & Prekenarkiv.",
+  hvor: "Nettside → Taler & Prekener",
+  intro: "Legg en tale inn i talearkivet, med lyd, Spotify eller video.",
   steg: [
-    "Trykk Legg til tale.",
-    "Fyll inn tittel, taler, dato, bibeltekst, serie og lenker til lyd eller video.",
-    "Trykk Lagre tale.",
-    "Senere: Rediger, eller slett. Knappens tittel er Slett tale.",
+    "Trykk **Legg til tale**. Skriv tittel, taler, dato og bibeltekst.",
+    "Legg inn lydfil, Spotify-lenke eller video. Én er nok.",
+    "Velg gjerne et bilde og en serie, og skriv et kort sammendrag.",
+    "Trykk **Lagre tale**.",
   ],
-  knapper:
-    "Legg til ny tale eller «Rediger tale: [tittel]». Plassholdere: «f.eks. Guds rike er kommet nær», «f.eks. Pastor Kari Nordmann», «f.eks. Markus 1,14–15», «f.eks. Vandring gjennom Markus».",
-  etterLagring:
-    "«Talen ble lagret og publisert til prekenarkivet!» Ved sletting: «Talen ble slettet». Uten tittel: «Talen må ha en tittel». Taler-feltet er også påkrevd. Lyd og video er valgfrie.",
+  godt: "Den nyeste talen vises på forsiden. YouTube vises uten sporing. En serie gjør det lett å finne taler som hører sammen.",
+  seOgsa: ["sider-moduler"],
+  tabs: ["cms-taler"],
 };
 
 const lederskap: HelpArticle = {
   id: "lederskap",
   title: "Lederskap & Stab",
-  layout: "wide",
-  formal: "Vise ansatte og menighetsråd på nettsiden, hentet fra personregisteret og ledergruppen.",
-  hvor: "Nettside, Lederskap & Stab. Overskriften er den samme.",
+  hvor: "Nettside → Lederskap & Stab",
+  intro: "Vis stab og menighetsråd på nettsiden, hentet fra personregisteret og ledergruppen.",
   steg: [
-    "Trykk Legg til person i staben.",
-    "Velg en person som ikke allerede står i staben, og bekreft.",
-    "Personen får rollen Medarbeider og vises offentlig.",
-    "For å endre navn, bilde eller biografi: Rediger personkort eller Rediger profil.",
-    "Menighetsrådet hentes fra ledergruppen. Hvem som sitter der, endres under Grupper & Husfellesskap.",
+    "Trykk **Legg til person i staben**, og velg personen fra registeret.",
+    "**Rediger personkort**: rolle, bilde og et par setninger.",
+    "Registrer samtykket. Da står det **Synlig på nettsiden** på kortet.",
+    "Sett inn staben på en side med en personblokk, for eksempel på «Om oss».",
   ],
-  knapper:
-    "Legg til person i staben, Rediger personkort, Rediger profil. Forklaring på siden: «Her administreres menighetens ansatte (stab) og valgte lederskap (menighetsråd).»",
-  etterLagring:
-    "«Personen er nå registrert som ansatt i staben!» Feil: «Kunne ikke legge til som ansatt.» Du må velge en person.",
+  godt: "Menighetsrådet hentes fra ledergruppen. Hvem som sitter der, endres under Grupper & Husfellesskap.",
+  passPa: "Står det **Mangler samtykke**, vises ikke personen på nettsiden. Registrer bare at noen har sagt ja når du har spurt dem.",
+  seOgsa: ["personer", "grupper"],
+  tabs: ["cms-stab"],
 };
 
 const mediebibliotek: HelpArticle = {
   id: "mediebibliotek",
   title: "Mediebibliotek",
-  layout: "wide",
-  formal: "Bruke bildene som følger med, og laste opp egne, på sider og i moduler uten å forlate redigeringen.",
-  hvor: "Nettside, Mediebibliotek. Samme bibliotek åpnes fra bildevelgeren mens du redigerer en side.",
+  hvor: "Nettside → Mediebibliotek, og bildevelgeren i redigeringen",
+  intro: "Bildene som kan brukes på nettsiden: de som følger med appen, og menighetens egne.",
   steg: [
-    "Øverst ligger Bilder som følger med. Søk etter for eksempel fellesskap, familie eller høst.",
-    "For å laste opp et eget bilde: skriv Tittel i biblioteket, Standardtekst for skjermleser (påkrevd) og eventuelt emneord.",
-    "Trykk Velg fil og last opp.",
-    "I en side: trykk Bibliotek. Trykk på et bilde som følger med, eller velg et opplastet bilde og Bruk dette bildet. Eller lim inn en adresse med URL og Bruk, eller velg et ferdig kirkebilde.",
-    "Bytt bilde og Fjern bilde endrer valget på siden. Arkiver og Slett permanent ligger i biblioteket.",
+    "**Bibliotek**: bilder som følger med appen, med fotograf og kilde. Søk etter for eksempel fellesskap eller høst.",
+    "**Last opp nytt bilde**: et bilde fra maskinen. Det gjøres mindre og lagres i bildelageret.",
+    "**URL**: lim inn adressen til et bilde på nettet.",
+    "Skriv en kort beskrivelse når bildet viser noe viktig. Det leses opp for den som ikke ser.",
   ],
-  knapper:
-    "Søk i bildene som følger med, Last opp nytt bilde, Vis arkiverte, Bruk dette bildet, Arkiver, Gjenopprett, Slett permanent, Bibliotek, URL, Kirkebilder, Bytt bilde, Fjern bilde.",
-  etterLagring:
-    "Bildet ligger i rutenettet og kan velges på sider. «Bildet kan ikke slettes fordi det brukes i innhold.» «Opplastingen feilet. Prøv igjen.» «Standardtekst for skjermleser er påkrevd ved opplasting.» «Adressen må starte med https://, media: eller data:».",
+  godt: "Står kortet **Bilder lagret inne i sidene** her, trykk **Flytt til bildelageret**. Sidene ser ut som før, men blir lettere.",
+  passPa: "Bruk bare bilder av personer som har sagt ja. Bildelageret kan leses av alle som har lenken.",
+  seOgsa: ["sider-sok", "forside"],
+  tabs: ["cms-medier"],
 };
 
-const forside: HelpArticle = {
-  id: "forside",
-  title: "Arrangementer på nettsiden",
-  layout: "wide",
-  formal: "Bestemme hvilke arrangementer som løftes på forsiden, vises i den offentlige kalenderen, eller holdes interne.",
-  hvor: "Nettside, Arrangementer på nettsiden. Hvert arrangement viser om det mangler bilde eller tekst. Bilde og tekst åpner arrangementets skjema, på delen På nettsiden.",
+const tema: HelpArticle = {
+  id: "tema",
+  title: "Tema & Designsystem",
+  hvor: "Nettside → Tema & Designsystem",
+  intro: "Farger, skrift og hjørner for hele nettsiden.",
   steg: [
-    "Finn arrangementet i listen.",
-    "Trykk Fremhev, Offentlig eller Kun intern.",
+    "Trykk på et av de fem ferdige temaene, eller lag ditt eget.",
+    "**Primærfarge (Hovedprofil)** brukes til knapper og meny, **Aksentfarge (Detaljer & Kontraster)** til merker.",
+    "Velg bakgrunnstone, skrift og hvor runde hjørnene skal være.",
+    "Trykk **Lagre designtema**. Det gjelder hele nettsiden med en gang.",
   ],
-  knapper:
-    "Fremhev («Lås til toppen av forsiden»), Offentlig («Vises i offentlig kalender»), Kun intern («Skjul fra offentlig visning (kun intern planlegger)»). Merker: Fremhevet på forsiden, Offentlig i kalender, Kun intern (skjult på nett).",
-  etterLagring:
-    "«Synlighet oppdatert til: Fremhevet på forsiden», «Synlighet oppdatert til: Offentlig kalender» eller «Synlighet oppdatert til: Kun intern». Merket på kortet byttes med en gang. Arrangementet må allerede finnes under Arrangementer.",
+  godt: "Teksten blir lesbar uansett farge. **Tilbakestill** tar deg tilbake til slik det var.",
+  seOgsa: ["innstillinger"],
+  tabs: ["cms-design"],
+};
+
+const innstillinger: HelpArticle = {
+  id: "innstillinger",
+  title: "Nettside-innstillinger",
+  hvor: "Nettside → Nettside-innstillinger",
+  intro: "Det som gjelder hele nettsiden: navn, logo, kontakt, gaver og sosiale medier.",
+  steg: [
+    "Navn og velkomst: navn, slagord, overskrift og ingress på forsiden.",
+    "Logo: **Velg logo**, og eventuelt **Velg lys logo** for menyen over toppbildet.",
+    "Kontakt og gaver: adresse, telefon, e-post, kontortid, Vipps, kontonummer og organisasjonsnummer.",
+    "Sosiale medier: lim inn lenkene. Trykk **Lagre alle innstillinger**.",
+  ],
+  godt: "Et felt som står tomt, vises ikke på nettsiden. Farger og skrift ligger under Tema & Designsystem.",
+  seOgsa: ["tema", "sider-hero"],
+  tabs: ["cms-innstillinger"],
+};
+
+const besok: HelpArticle = {
+  id: "besok",
+  title: "Besøk på nettsiden",
+  hvor: "Analyse → Besøk på nettsiden",
+  intro: "Hvordan nettsiden brukes: besøk, mest leste sider og hva som bør ryddes.",
+  steg: [
+    "Velg periode: 7 dager, 4 uker, 3 måneder eller 12 måneder.",
+    "Se besøk, mest leste sider og når besøkene kommer.",
+    "«Sider som aldri åpnes» og «Adresser som ikke finnes» viser hva som bør ryddes.",
+    "«Fører besøket til noe?» teller trykk på telefon, e-post og avspilte taler.",
+  ],
+  godt: "Tellingen er anonym, uten informasjonskapsler, så ingen samtykkeboks trengs. Slå på at besøk fra din egen nettleser ikke telles.",
+  seOgsa: ["moduler"],
+  tabs: ["nettsidebesok"],
+  addon: "nettsidebesok",
+  utenBilde: true,
+};
+
+// ---------------------------------------------------------------- Planlegging
+
+const oversikt: HelpArticle = {
+  id: "oversikt",
+  title: "Oversikt",
+  hvor: "Planlegging → Oversikt",
+  intro: "Det som skjer framover, og det som må ordnes, på ett sted.",
+  steg: [
+    "**Kommende arrangementer** viser de neste arrangementene med forfall, ubesatte oppgaver og dem som venter på svar.",
+    "Trykk på et arrangement for å åpne bemanningen.",
+    "Tallene viser arrangementer framover og det som må ordnes de neste fire ukene.",
+    "Hurtighandlingene lager en ny samling eller åpner det som må følges opp.",
+  ],
+  godt: "**Se nettsiden live** og **Min Side** står øverst, så du raskt ser det menigheten ser.",
+  seOgsa: ["bemanning", "oppgaver", "arrangementer"],
 };
 
 const arrangementer: HelpArticle = {
   id: "arrangementer",
-  title: "Kalender og arrangementer",
-  layout: "wide",
-  formal: "Se arrangementene som måned, uke, kort eller tabell, legge inn en samling og åpne kjøreplanen for oppgaver den dagen.",
-  hvor: "Velg Planlegging øverst i menyen, så Kalender. Overskrift: Kalender. Kort og Tabell viser Kommende først; Tidligere viser dem som er holdt. Trykk på et arrangement for å åpne det. Tilbake-lenke: Kalender.",
+  title: "Kalender",
+  hvor: "Planlegging → Kalender",
+  intro: "Kalenderen er der arrangementene lages. Det som legges inn her, viser nettsiden av seg selv.",
   steg: [
-    "Velg visning øverst: Måned, Uke, Kort eller Tabell. På mobil står Uke og Kort. I Måned og Uke blar du med pilene, og I dag går tilbake til i dag. Et trykk på en ledig plass på en dag åpner skjemaet for et nytt arrangement den dagen. Arrangementer flyttes ikke i kalenderen: de åpnes.",
-    "Knappene Alle, Gudstjenester, Husgrupper, Tjenestegrupper og Andre velger hva som vises, i alle visningene. Flere kan være på samtidig. Tjenestegrupper er teamenes egne samlinger; bønnemøter, ungdomsmøter og andre åpne arrangementer står under Andre. Visningen og knappene huskes i nettleseren.",
-    "Trykk + øverst til høyre. Skjemaet for et nytt arrangement åpnes: tittel, dato og klokkeslett, og om du vil sluttid, sted, tema, bibeltekst, ansvarlig gruppe og hvem som ser arrangementet. Står stedet tomt, brukes menighetens faste sted. Et arrangement ligger i kalenderen uten ansvarlig gruppe til du velger en.",
-    "Trykk Opprett arrangement.",
-    "Trykk på et arrangement for å åpne Bemanning. Kjøreplan åpner Program.",
-    "Start fra en mal i det store skjemaet fyller ut skjemaet, og arrangementet får malens program og oppgaver. På et arrangement som allerede finnes bruker du Hent fra mal i kjøreplanen. Rediger malen (penn på malen, eller Rediger malen før du oppretter) åpner malen før arrangementet lages. Malene lages under Maler i menyen, eller med Lag mal på et arrangement som alt er satt opp.",
-    "Gjenta som serie: velg hvor ofte og siste dato. Dagene vises med hake, og en dag kan tas ut før serien opprettes. Flytt resten av serien står på hvert arrangement i en serie. Arrangementer slettes ett om gangen: står det folk på oppgavene, kommer en advarsel som sier hvem, og ett trykk tar alle av og sletter arrangementet.",
-    "For å gjenta et arrangement: åpne neste arrangement, sett ny dato, og bekreft. Oppgavene kopieres uten personer.",
-    "I arrangementet: Rediger åpner det samme store skjemaet, der arrangementet også kan avlyses. Under Program kan admin dra i håndtaket på en programpost for å flytte den. Bemanningen gjøres under Bemanning (se den artikkelen). På mobil står Rediger, Ny oppgave, Hent fra mal, Lag mal og Skriv ut bak «…».",
+    "Velg **Måned**, **Uke**, **Kort** eller **Tabell**. På mobil står Uke og Kort.",
+    "Filterknappene **Alle**, **Gudstjenester**, **Husgrupper**, **Tjenestegrupper** og **Andre** velger hva som vises.",
+    "Trykk på en ledig plass en dag, eller **+** øverst, for et nytt arrangement. Trykk **Opprett arrangement**.",
+    "Trykk på et arrangement for å åpne bemanning og kjøreplan. **Rediger** endrer eller avlyser det.",
   ],
-  knapper:
-    "+ (Nytt arrangement), Alle, Gudstjenester, Husgrupper, Tjenestegrupper, Andre, Måned, Uke, Kort, Tabell, I dag, Kommende, Tidligere, Kjøreplan, Opprett arrangement.",
-  etterLagring:
-    "«Nytt arrangement opprettet og lagt i kalenderen!» Ved kopi: «Nytt arrangement opprettet for [dato] med [antall] oppgaver klonet!» «Tittel og dato må fylles ut». «Opprett en gruppe først. Arrangementene må ha en gruppe å ligge i.»",
+  godt: "Start fra en mal, så får arrangementet malens program og oppgaver. **Gjenta som serie** lager mange på en gang. Rød prikk betyr at frivillige mangler.",
+  seOgsa: ["bemanning", "maler", "forside"],
+  tabs: ["planlegger-samlinger"],
 };
 
 const bemanning: HelpArticle = {
   id: "bemanning",
   title: "Bemanning",
-  layout: "wide",
-  formal: "Fikse forfall og fylle ledige roller på et arrangement, også fra mobilen.",
-  hvor: "Oversikt i Planlegging viser de neste arrangementene. Trykk på ett, så åpnes Bemanning. Arrangementet har to visninger: Program og Bemanning.",
+  hvor: "Planlegging → Kalender → et arrangement → Bemanning",
+  intro: "Fyll ledige oppgaver og ordne forfall på et arrangement, også fra mobilen.",
   steg: [
-    "Program viser programpostene med rolle, team, tema og hvem som er satt opp. Her endres ikke bemanningen.",
-    "Bemanning viser hver rolle én gang, også når den brukes i flere programposter. Øverst står Må ordnes: forfall og ubesatte roller. Resten står per team.",
-    "Trykk på en person for å endre: Bekreftet, Forespurt, Forfall eller Slett. Har personen telefonnummer, ringer du ved å trykke på navnet øverst.",
-    "Har en rolle en ledig plass, står Tildel og Forespør under den. Tildel setter personen på som bekreftet (avtalt allerede). Forespør sender en forespørsel til Min side.",
-    "Et bytte: trykk på den som ikke kan og velg Forfall. Trykk så Tildel på samme rolle og velg den nye.",
-    "Trykk på rollenavnet for å se instruksen.",
-    "En gruppeleder ser hele programmet, og bemanningen til sine egne grupper.",
+    "Øverst står **Må ordnes**: forfall og ubesatte roller. Resten står per team.",
+    "Trykk på en person for å sette **Bekreftet**, **Forespurt** eller **Forfall**.",
+    "Ved en ledig plass: **Tildel** setter personen på som avtalt, **Forespør** sender en forespørsel til Min Side.",
+    "Bytte: sett **Forfall** på den som ikke kan, og **Tildel** en ny på samme rolle.",
   ],
-  knapper:
-    "Program, Bemanning, Tildel, Forespør, Bekreftet, Forespurt, Forfall, Slett. Merker: Forfall, Ubesatt, Venter på svar, Dekket.",
-  etterLagring:
-    "«[Navn]: Forfall», «[Navn] er tildelt [rolle].», «[Navn] er forespurt som [rolle].», «[Navn] er slettet fra oppgaven.» En rolle du nettopp har endret, blir stående der den er til du åpner arrangementet igjen.",
+  godt: "Trykk på rollenavnet for å se instruksen. **Program** viser kjøreplanen; der endres ikke bemanningen. En gruppeleder ser bemanningen til sine egne grupper.",
+  seOgsa: ["oppgaver", "roller"],
 };
 
 const oppgaver: HelpArticle = {
   id: "oppgaver",
   title: "Trenger oppfølging",
-  layout: "wide",
-  formal: "Se forfall og ubesatte roller på arrangementene som kommer, og tildele en person.",
-  hvor: "Planlegging, Trenger oppfølging. Overskrift: Trenger oppfølging. Tallet i menyen er det som må ordnes de nærmeste fire ukene.",
+  hvor: "Planlegging → Trenger oppfølging",
+  intro: "Alt som må ordnes på arrangementene som kommer: forfall og ubesatte oppgaver.",
   steg: [
-    "Oppgavene står per arrangement, det nærmeste først. Trykk på arrangementet for å åpne Bemanning.",
-    "Velg Må ordnes, Venter på svar eller Alle, og 4 uker eller Alt som kommer.",
-    "Trykk Tildel eller Forespør på en oppgave, velg person og bekreft.",
+    "Oppgavene står per arrangement, det nærmeste først.",
+    "Velg **Må ordnes**, **Venter på svar** eller **Alle**, og **4 uker** eller **Alt som kommer**.",
+    "Trykk **Tildel** eller **Forespør** på en oppgave, velg person og bekreft.",
   ],
-  knapper:
-    "Må ordnes, Venter på svar, Alle, 4 uker, Alt som kommer, Bemanning, Tildel, Forespør, Rediger. Merket Under 48 t står på forfall og ubesatte roller når arrangementet er under to døgn unna.",
-  etterLagring:
-    "«Personen er tildelt.» eller «Forespørselen er sendt.» Uten person: «Velg en person».",
+  godt: "Tallet i menyen er det som må ordnes de neste fire ukene. Merket **Under 48 t** står når arrangementet er under to døgn unna.",
+  seOgsa: ["bemanning"],
+  tabs: ["planlegger-oppgaver"],
 };
 
 const grupper: HelpArticle = {
   id: "grupper",
   title: "Grupper & Husfellesskap",
-  layout: "wide",
-  formal: "Opprette en gruppe og sette leder, nestleder og deltakere.",
-  hvor: "Planlegging, Grupper & Husfellesskap. Overskrift: Grupper & Fellesskap. Detalj: Administrer gruppe, merket Gruppeadministrasjon. Tilbake: Tilbake til grupper.",
+  hvor: "Planlegging → Grupper & Husfellesskap",
+  intro: "Tjenestegrupper, husgrupper og ledergrupper, med leder, nestleder og deltakere.",
   steg: [
-    "Trykk Opprett ny gruppe.",
-    "Skriv navn, velg type, leder og eventuell beskrivelse.",
-    "Trykk Opprett gruppe.",
-    "Filtrer med Alle, Ledergrupper, Strategigrupper, Tjenestegrupper, Husgrupper eller Interessegrupper.",
-    "Åpne gruppen. Sett Leder og Nestleder, legg til deltakere med Legg til deltaker, eller Fjern.",
-    "Trykk Lagre endringer for gruppen.",
+    "Trykk **Opprett ny gruppe**. Skriv navn, velg type og leder, og trykk **Opprett gruppe**.",
+    "Trykk **Administrer gruppe**. Sett **Leder** og **Nestleder**, og legg til deltakere med **Legg til deltaker**.",
+    "Trykk **Lagre endringer**.",
   ],
-  knapper:
-    "Ledergruppe, Strategigruppe, Tjenestegruppe, Husgruppe, Interessegruppe. Plassholder: «f.eks. Turgruppe & Friluft eller Vekstgruppe Bønn». Felt: Leder. På kortet: «Leder: [navn]» eller «Ikke satt». I detalj: Deltakere i gruppen, merker Leder, Nestleder, Deltaker.",
-  etterLagring:
-    "«Gruppen [navn] ble opprettet!» Kortet viser antall deltakere og leder. «Gruppen må ha et navn».",
+  godt: "Gruppelederen ser bemanningen for sin gruppe og legger inn oppgavene framover. Ledergruppen er menighetsrådet på nettsiden.",
+  seOgsa: ["personer", "lederskap"],
+  tabs: ["planlegger-grupper"],
 };
 
 const personer: HelpArticle = {
   id: "personer",
   title: "Personer",
-  layout: "wide",
-  formal: "Holde kontaktinfo, tilgang, fravær og offentlig profil oppdatert for én person.",
-  hvor: "Planlegging, Personer. Overskrift: Personregister. Åpne med Åpne i tabellen eller Rediger person & fravær i kortvisning. Merket Personkort. Tilbake: Tilbake til personregister.",
+  hvor: "Planlegging → Personer",
+  intro: "Personregisteret: kontaktinfo, tilgang, fravær og offentlig profil.",
   steg: [
-    "Søk, eller bytt mellom Kort og Tabell.",
-    "Åpne personen.",
-    "Oppdater navn, telefon, e-post, tilgang, Politiattest (gyldig til dato) og fravær.",
-    "Under Offentlig profil på nettsiden bestemmer du hva som kan vises utad.",
-    "Trykk Lagre alle personopplysninger & tilganger.",
-    "For å hente inn mange fra Cornerstone: eksporter personene som CSV, trykk Hent inn fra Cornerstone og velg filen. Du ser hvem som blir lagt inn før noe lagres. Bare navn, e-post, telefon, fødselsdato og medlemskap hentes. Er filen en Excel-fil, lagrer du den som CSV i Excel først.",
+    "Søk, eller bytt mellom **Kort** og **Tabell**. Åpne personen.",
+    "Oppdater navn, telefon, e-post, tilgang, politiattest og fravær.",
+    "Under **Offentlig profil på nettsiden** bestemmer du hva som kan vises utad.",
+    "Trykk **Lagre alle personopplysninger & tilganger**.",
   ],
-  knapper:
-    "Søk: «Søk etter navn, gruppe, tilgang eller kontaktinfo...» Kolonner: Navn, Tilgang, Grupper, E-post, Telefon, Handling. Merker: GRUPPELEDER, NESTLEDER, FRIVILLIG, ADMINISTRATOR. FRIVILLIG står bare på den som er med i en tjenestegruppe; den som ikke er det, har en strek. Filteret Ikke i noen tjenestegruppe viser dem du kan spørre.",
-  etterLagring:
-    "Fravær som legges til, bekreftes med «Fraværsperiode lagt til!» Offentlig visning krever at offentlig profil er slått på.",
+  godt: "E-postadressen her er den personen logger inn med på Min Side. Mange personer hentes inn fra Cornerstone med **Hent inn fra Cornerstone**.",
+  passPa: "Registeret har personopplysninger. Del ikke skjermbilder eller lister fra det utenfor admin.",
+  seOgsa: ["grupper", "lederskap"],
+  tabs: ["planlegger-personer"],
 };
+
+const maler: HelpArticle = {
+  id: "maler",
+  title: "Maler",
+  hvor: "Planlegging → Maler",
+  intro: "En mal er oppskriften på et arrangement som holdes igjen og igjen: tid, sted, program og oppgaver.",
+  steg: [
+    "Trykk **Ny mal**, eller **Legg inn standardmal for gudstjeneste**.",
+    "Gi malen tid, sted, program og oppgaver, og gjerne et bilde.",
+    "**Planlegg serie** lager arrangementer fra malen, så ligger de klare i kalenderen.",
+    "**Rediger** endrer malen.",
+  ],
+  godt: "Et arrangement laget fra en mal kan få malens bilde under Arrangementer på nettsiden.",
+  seOgsa: ["arrangementer", "forside"],
+  tabs: ["planlegger-maler"],
+};
+
+const arshjul: HelpArticle = {
+  id: "arshjul",
+  title: "Årshjul",
+  hvor: "Planlegging → Årshjul",
+  intro: "Administrative frister og det som kommer igjen hvert år, måned for måned.",
+  steg: [
+    "Måneden vi er i, er merket **Nå**.",
+    "Trykk **Ny frist**, skriv hva det gjelder, og velg måned og dag.",
+    "**Endre** eller **Ta ut** en frist som ikke passer.",
+  ],
+  godt: "Årshjulet starter med et standardårshjul. Endrer du det, lagres det som menighetens eget.",
+  tabs: ["arshjul"],
+};
+
+const roller: HelpArticle = {
+  id: "roller",
+  title: "Roller",
+  hvor: "Planlegging → Roller",
+  intro: "Tjenesterollene på arrangementene, med instruks og team.",
+  steg: [
+    "Trykk **Ny rolle**. Skriv navn, og velg **Tjenesteteam (valgfritt)**.",
+    "Trykk **Instruks** på rollen, og skriv hva den som har rollen, skal gjøre. Trykk **Lagre instruks**.",
+    "**Legg inn standardroller** gir en ferdig liste å starte med.",
+  ],
+  godt: "Instruksen vises for den frivillige på Min Side og i bemanningen.",
+  seOgsa: ["bemanning", "maler"],
+  tabs: ["planlegger-roller"],
+};
+
+const epost: HelpArticle = {
+  id: "epost",
+  title: "Send e-post",
+  hvor: "Planlegging → Send e-post",
+  intro: "Si fra til ledere og frivillige, eller send nyhetsbrev til medlemmene.",
+  steg: [
+    "Under **Start med**: velg en ferdig tekst, for eksempel **Nyhetsbrev**, eller **Tom e-post**.",
+    "Under **Hvem skal ha den**: velg mottakere. Antallet står under listen.",
+    "Skriv emne og tekst. Merk ord og bruk knappene over feltet.",
+    "Trykk **Send prøve til meg** først, og så sendeknappen.",
+  ],
+  godt: "Hver person får sin egen e-post, og ingen ser de andres adresser. **Slik ser den ut** viser e-posten før du sender.",
+  passPa: "Sendt e-post kan ikke kalles tilbake. Les prøven før du sender til alle.",
+  tabs: ["epost"],
+};
+
+// ---------------------------------------------------------------- Innsikt og moduler
 
 const analysebord: HelpArticle = {
   id: "analysebord",
   title: "Analysebord",
-  layout: "wide",
-  formal:
-    "Se menighetens liv i tall over en periode: oppmøte på gudstjenestene, frivillighet og bemanning, grupper og fellesskap, personregisteret og nettsiden. Hvert tall sammenlignes med perioden før.",
-  hvor: "Planlegging, Analysebord. Overskrift: Analysebord.",
+  hvor: "Analyse → Analysebord",
+  intro: "Menighetens liv i tall over en periode, sammenlignet med perioden før.",
   steg: [
-    "Velg periode: Siste 4 uker, Siste 3 måneder eller Siste 12 måneder.",
-    "Under Oppmøte: trykk på en søyle, eller Registrer i listen Mangler oppmøtetall, for å skrive inn hvor mange som var til stede.",
-    "Fyll inn Voksne og Barn, og eventuelt Merknad (valgfritt). Trykk Lagre oppmøtetall.",
-    "Bytt mellom Gudstjenester og Alle arrangementer, eller trykk Vis som tabell for å se tallene i en tabell.",
-    "Trykk Last ned CSV for å hente oppmøtetallene til et regneark, f.eks. til årsmeldingen.",
-    "Les Kan trenge avlastning og Ikke brukt i perioden før neste vaktliste lages. Navnene åpner personkortet.",
-    "Bemanning per arrangement viser hvor mange samlinger som hadde alle plasser bekreftet, og hvilke som manglet folk.",
-    "Flere oppgaver på samme samling viser hvem som har hatt to eller flere oppgaver på samme samling, for eksempel bilde og møteleder, og de vanligste kombinasjonene. Der kjøreplanen har klokkeslett for oppgavene, sies det fra om to av dem er samtidig.",
-    "Oppgaver og aktiviteter per måned viser hvor stor del av menigheten som har 0, 1, 2 … 8 eller flere i en vanlig måned. Bytt mellom Oppgaver og Aktiviteter.",
-    "Hver enkelt er en tabell per person. Velg Sorter etter, eller huk av Bare de som har vært med.",
-    "Trykk Tilpass bordet for å velge hvilke moduler du vil se, eller trykk øyet øverst til høyre på en modul for å skjule den. Vis alle tar alt tilbake.",
-    "Datagrunnlag nederst sier hva tallene bygger på, og hva som ikke er målt.",
+    "Velg periode: **Siste 4 uker**, **Siste 3 måneder** eller **Siste 12 måneder**.",
+    "Trykk på en søyle under Oppmøte, eller **Registrer**, for å skrive inn hvor mange som var der.",
+    "Les hvem som kan trenge avlastning, og hvem som ikke er brukt, før neste vaktliste lages.",
+    "**Tilpass bordet** velger hvilke deler du ser. **Last ned CSV** henter tallene til et regneark.",
   ],
-  knapper:
-    "Siste 4 uker, Siste 3 måneder, Siste 12 måneder, Tilpass bordet, Gudstjenester, Alle arrangementer, Vis som tabell, Vis som diagram, Last ned CSV, Registrer, Endre, Oppgaver, Aktiviteter, Sorter etter, Bare de som har vært med, Vis alle. I vinduet for oppmøte: Registrer oppmøtetall eller Endre oppmøtetall, Lagre oppmøtetall, Avbryt, Fjern tellingen. I Tilpass bordet: en avkrysning per modul, Vis alle og Ferdig. En samling uten tall vises som en lav grå strek merket Ikke registrert.",
-  etterLagring:
-    "«Oppmøtetallet for «[samling]» er lagret.» Søylen og snittet oppdateres med en gang. Ved fjerning: «Oppmøtetallet for «[samling]» er fjernet.» Uten tall: «Skriv inn hvor mange som var til stede.» Når en modul skjules: ««[modul]» er skjult. Du får den tilbake under Tilpass bordet.» Valget lagres på den aktive brukeren. I demoen kan du under Database og Testdata simulere et halvår med menighetsliv for å prøve bordet; i menighetens egen app finnes ikke det valget.",
+  godt: "Datagrunnlag nederst sier hva tallene bygger på, og hva som ikke er målt.",
+  seOgsa: ["moduler"],
+  tabs: ["analyse"],
+  addon: "analysebord",
+};
+
+const moduler: HelpArticle = {
+  id: "moduler",
+  title: "Moduler",
+  hvor: "Moduler",
+  intro: "Tilleggsmoduler som slås av og på for menigheten.",
+  steg: [
+    "Les hva modulen gjør, på kortet.",
+    "Slå den på med bryteren. Fanen dukker opp i menyen.",
+    "Slå den av igjen når den ikke trengs. Ingenting slettes.",
+  ],
+  godt: "Analysebord og Besøk på nettsiden er moduler. Det som står under Planlagt, er ikke laget ennå.",
+  seOgsa: ["analysebord", "besok"],
+  tabs: ["moduler"],
+  utenBilde: true,
 };
 
 export const helpSections: HelpSection[] = [
   {
-    title: "For nettsideredaktører",
+    title: "Kom i gang",
+    items: [
+      { kind: "article", article: komIGang },
+      { kind: "article", article: nytt },
+      { kind: "article", article: tips },
+    ],
+  },
+  {
+    title: "Nettside",
     items: [
       {
         kind: "menu",
         title: "Sider & Innhold",
-        articles: [siderSidetre, siderInnstillinger, siderHero, siderInnhold, siderPublisering, siderSok],
+        articles: [siderSidetre, siderRedigere, siderInnhold, siderLagre, siderHero, siderModuler, siderHvaSkjer, siderPublisering, siderSok],
       },
+      { kind: "article", article: forside },
       { kind: "article", article: nyheter },
       { kind: "article", article: taler },
       { kind: "article", article: lederskap },
       { kind: "article", article: mediebibliotek },
-      { kind: "article", article: forside },
+      { kind: "article", article: tema },
+      { kind: "article", article: innstillinger },
+      { kind: "article", article: besok },
     ],
   },
   {
-    title: "For planleggere og administratorer",
+    title: "Planlegging",
     items: [
+      { kind: "article", article: oversikt },
       { kind: "article", article: arrangementer },
       { kind: "article", article: bemanning },
       { kind: "article", article: oppgaver },
       { kind: "article", article: grupper },
       { kind: "article", article: personer },
+      { kind: "article", article: maler },
+      { kind: "article", article: arshjul },
+      { kind: "article", article: epost },
+      { kind: "article", article: roller },
     ],
   },
   {
-    title: "Innsikt",
-    items: [{ kind: "article", article: analysebord }],
+    title: "Innsikt og moduler",
+    items: [
+      { kind: "article", article: analysebord },
+      { kind: "article", article: moduler },
+    ],
   },
 ];
 
-export const defaultHelpArticleId = siderSidetre.id;
-
-/** The article help opens on when nothing is asked for: the first one for the part of the admin that is open. */
-export const firstHelpArticleIdFor = (area: "planlegging" | "nettside"): string =>
-  area === "planlegging" ? arrangementer.id : defaultHelpArticleId;
+export const defaultHelpArticleId = komIGang.id;
 
 export function helpArticles(): HelpArticle[] {
   return helpSections.flatMap((section) =>
@@ -398,5 +617,42 @@ export function helpArticles(): HelpArticle[] {
 }
 
 export function findHelpArticle(id: string): HelpArticle {
-  return helpArticles().find((article) => article.id === id) ?? siderSidetre;
+  return helpArticles().find((article) => article.id === id) ?? komIGang;
+}
+
+/**
+ * The article help opens on, coming from a tab: that tab's own article, or for the overview, the one
+ * for the part of the admin that is open.
+ */
+export function helpArticleIdForTab(tab: StudioTab | null, area: StudioArea): string {
+  if (tab === "dashboard" || tab === null) return area === "planlegging" ? oversikt.id : komIGang.id;
+  return helpArticles().find((article) => article.tabs?.includes(tab))?.id ?? (area === "planlegging" ? oversikt.id : komIGang.id);
+}
+
+/** The article help opens on when nothing is asked for: the first one for the part of the admin that is open. */
+export const firstHelpArticleIdFor = (area: StudioArea): string => helpArticleIdForTab(null, area);
+
+/** The words of an article, without the marks for buttons, for searching in. */
+export function helpArticleText(article: HelpArticle): string {
+  return [article.title, article.hvor, article.intro, ...article.steg, article.godt ?? "", article.passPa ?? ""]
+    .join(" ")
+    .replace(/\*\*/g, "");
+}
+
+/** The articles whose words hold every word searched for, best hits (in the title) first. */
+export function searchHelp(query: string, articles: HelpArticle[] = helpArticles()): HelpArticle[] {
+  const words = query.toLowerCase().split(/\s+/).filter((word) => word.length > 1);
+  if (words.length === 0) return [];
+  return articles
+    .filter((article) => {
+      const text = helpArticleText(article).toLowerCase();
+      return words.every((word) => text.includes(word));
+    })
+    .sort((a, b) => Number(words.some((word) => b.title.toLowerCase().includes(word))) - Number(words.some((word) => a.title.toLowerCase().includes(word))));
+}
+
+/** The names of buttons and fields an article points to, written **like this**. */
+export function helpButtonNames(article: HelpArticle): string[] {
+  const text = [...article.steg, article.godt ?? "", article.passPa ?? ""].join(" ");
+  return [...text.matchAll(/\*\*(.+?)\*\*/g)].map((match) => match[1]);
 }
