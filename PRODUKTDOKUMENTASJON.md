@@ -1641,7 +1641,7 @@ Bestilt av produkteier etter en sammenligning med EventMaster: en kalender for a
 | **Filterknapper** | Alle, Gudstjenester, Husgrupper, Tjenestegrupper og Andre, felles for alle visningene. Flere kan være på samtidig. Hvert arrangement står under nøyaktig én: en gudstjeneste er en gudstjeneste uansett gruppe; husgruppenes samlinger er Husgrupper; et teams egne samlinger (gruppesamling eller kun intern) er Tjenestegrupper; alt annet, som bønnemøter, ungdomsmøter og lederskapets møter, er Andre (`calendarKindOf` i `src/utils/adminCalendar.ts`). Ingen egne tagger |
 | **Merker** | Fargen følger knappen. Kun interne er svakere med kant, avlyste er streket over, og en rød prikk viser at frivillige mangler |
 
-**Ikke sluppet til menighetene ennå** (ligger i `main`, ikke i `stabil`): menylinjen i Sider, trinn 1 og trinn 2. Produkteier sjekker dem i demoen før de slippes.
+**Sluppet til menighetene 21. oktober 2026** (`stabil` flyttet fram til `6f9bc98` etter beskjed fra produkteier): menylinjen i Sider, forsiden trinn 1 og 2, Lagre som holder siden åpen, menyene som står fast, advarselen om endringer som ikke er lagret, forhåndsvisningen som viser toppen av seksjonen, «Hva skjer» med valg, kalenderen i planleggingen, fargene i lys admin og navnet på tekstblokker. Databasereglene var ikke endret, så ingenting måtte limes inn hos Lillesand.
 
 ---
 
