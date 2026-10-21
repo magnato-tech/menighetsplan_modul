@@ -38,4 +38,15 @@ describe("Lyst innhold i admin", () => {
   test("forhåndsvisningen av nettsiden og visninger tegnet for lys bakgrunn beholder fargene sine", () => {
     expect(css).toContain(':not(.site-theme *, [data-ui="light"] *)');
   });
+
+  test("en farge for når musen holdes over, gjelder bare da, så en knapp ikke ser avslått ut", () => {
+    const hoverRules = css.split(/\r?\n/).filter((line) => line.trimStart().startsWith(".hover\\:"));
+    expect(hoverRules.length).toBeGreaterThan(0);
+    expect(hoverRules.filter((line) => !line.includes(":hover:not("))).toEqual([]);
+  });
+
+  test("en farget knapp blir mørkere under musen, ikke lys", () => {
+    const rule = css.split(/\r?\n/).find((line) => line.trimStart().startsWith(".hover\\:bg-indigo-700:"))!;
+    expect(rule).toContain("#4338ca");
+  });
 });

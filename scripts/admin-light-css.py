@@ -29,15 +29,20 @@ P={ # 50,100,200,500,600,700 (Tailwind v3 hexes)
 'purple':['#faf5ff','#f3e8ff','#e9d5ff','#a855f7','#9333ea','#7e22ce'],
 'fuchsia':['#fdf4ff','#fae8ff','#f5d0fe','#d946ef','#c026d3','#a21caf'],
 }
+GREYS={'slate','gray','zinc','stone','neutral'}
 slate_text={'200':'#1e293b','300':'#334155','400':'#64748b'}
 files=sys.argv[1:] or ['src/pages/admin','src/components/admin','src/pages/AdminGroupDetailPage.tsx','src/pages/AdminPersonDetailPage.tsx','src/pages/AdminTaskDetailPage.tsx']
 txt=subprocess.run(['grep','-rhoE',r'\b((hover|group-hover|focus):)?(bg|text|border)-('+'|'.join(P)+r')-(950|900|800|700|400|300|200|100)(/[0-9]+)?\b']+files,capture_output=True,text=True).stdout.split()
 rules=[];darkbg=[]
 def esc(c): return re.sub(r'([:/.])',r'\\\1',c)
 for tok in sorted(set(txt)):
-    m=re.match(r'((hover|group-hover|focus):)?(bg|text|border)-(\w+)-(\d+)(/\d+)?$',tok); v,_,kind,h,sh,op=m.groups(); pal=P[h]
+    # v is the variant's name ("hover"), not the prefix with its colon, so the rule below gets its :hover
+    m=re.match(r'((hover|group-hover|focus):)?(bg|text|border)-(\w+)-(\d+)(/\d+)?$',tok); _,v,kind,h,sh,op=m.groups(); pal=P[h]
     val=None
     if kind=='bg' and sh in('950','900','800'): val=pal[1] if v else pal[0]
+    # A coloured button (bg-indigo-600) darkens to 700 under the mouse, on a light page as on a dark one.
+    # Only a grey 700 is the hover of a dark panel, and turns light with it
+    elif kind=='bg' and sh=='700' and v and h not in GREYS: val=pal[5]
     elif kind=='bg' and sh=='700': val=pal[2] if v else pal[1]
     elif kind=='text' and sh in('200','300','400','100'):
         val=slate_text.get(sh,pal[5]) if h=='slate' else pal[5]
