@@ -62,8 +62,8 @@ const renderMenu = (area: StudioArea = "planlegging") => {
 };
 
 const PLANNER_ITEMS = [/Trenger oppfølging/, /Grupper & Husfellesskap/, /^Roller/];
-// On both levels: in the planning («Arrangementer», not «Arrangementer på nettsiden»), and the website
-const IN_BOTH = [/^Arrangementer(?! på nettsiden)/, /^Personer/];
+// On both levels: in the planning («Kalender»), and the website
+const IN_BOTH = [/^Kalender/, /^Personer/];
 const WEBSITE = [/Sider & Innhold/, /Nyheter/, /Design/, /^Arrangementer på nettsiden/];
 /** Every part of the menu has what it should. */
 const expectInMenu = (planning: RegExp[], website: RegExp[]) => {

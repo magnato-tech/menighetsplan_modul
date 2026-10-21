@@ -186,7 +186,7 @@ describe("Menyen i admin", () => {
     const planning = renderMenu("planlegging");
     expect(planning.getByRole("heading", { name: "Admin" })).toBeTruthy();
     expect(planning.getByRole("tab", { name: "Planlegging" }).getAttribute("aria-selected")).toBe("true");
-    expect(planning.getByRole("button", { name: /^Arrangementer/ })).toBeTruthy();
+    expect(planning.getByRole("button", { name: /^Kalender/ })).toBeTruthy();
     expect(planning.queryByRole("button", { name: /Sider & Innhold/ })).toBeNull();
     // In both parts
     for (const name of [/^Oversikt$/, /^Hjelp$/, /Moduler/]) expect(planning.getByRole("button", { name })).toBeTruthy();

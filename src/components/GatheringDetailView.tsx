@@ -175,7 +175,7 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
     ? studioTabUrl("planlegger-samlinger")
     : "/leder?tab=samlinger";
 
-  const backLabel = fromRunSheet ? "Kjøreplanen" : isExplicitAdminView ? "Arrangementer" : "Samlinger";
+  const backLabel = fromRunSheet ? "Kjøreplanen" : isExplicitAdminView ? "Kalender" : "Samlinger";
 
   const actions: GatheringAction[] = [
     ...(canAdminister

@@ -1520,7 +1520,7 @@ Bestilt av produkteier: i «Lyst innhold» var bakgrunnen grå, og merker og nav
 | **Unntak** | Forhåndsvisningen av nettsiden og arrangementet (Program og Bemanning), som alt er tegnet for lys bakgrunn, beholder fargene sine |
 | **Natt** | Uendret |
 
-Fargene ligger i `src/admin-light.css`, skrevet av `scripts/admin-light-css.py`. En test (`tests/admin-light-css.test.ts`) feiler hvis en klasse i en mørk farge legges til i admin uten å få en lys utgave; da kjøres skriptet på nytt.
+Fargene ligger i `src/admin-light.css`, skrevet av `scripts/admin-light-css.py`. En test (`tests/admin-light-css.test.ts`) feiler hvis en klasse i en mørk farge legges til i admin uten å få en lys utgave; da kjøres skriptet på nytt. **Rettet 20. oktober 2026** (meldt av produkteier: «Lagre endringer» så avslått ut): fargene for når musen holdes over, sto på hele tiden, så en lilla knapp ble lys med hvit tekst. Skriptet leste navnet på varianten feil. Reglene gjelder nå bare under musen, og en farget knapp blir mørkere, ikke lys. Testen feiler om en slik regel mangler `:hover`.
 
 
 ### Ryddigere Sider-fane (20. oktober 2026)
@@ -1626,6 +1626,20 @@ Bestilt av produkteier etter en gjennomgang av hvordan andre nettsideverktøy re
 | **Vis på kortet** | Ingressen, klokkeslettet og stedet kan tas bort hver for seg |
 
 Valgene lagres i modulen på siden, som tittel og bakgrunn, og vises i forhåndsvisningen etter «Bruk endringer». En side lagret før ser ut som før. Ikke med ennå: å trykke på et kort i forhåndsvisningen, bildeform (hele plakaten), bevegelse og standardbilde.
+
+### Kalender i planleggingen (20. oktober 2026)
+
+Bestilt av produkteier etter en sammenligning med EventMaster: en kalender for admin, med filterknapper, der arrangementer åpnes, men ikke flyttes.
+
+| Del | Hva som er levert |
+|---|---|
+| **Navnet** | «Arrangementer» i menyen under Planlegging heter nå **Kalender**, og det gjør overskriften også (før «Gudstjenester & Møter»). Hver hendelse heter fortsatt et arrangement. «Arrangementer på nettsiden» heter som før |
+| **Visninger** | Måned, Uke, Kort og Tabell. På mobil står Uke og Kort. Valget huskes i nettleseren |
+| **Måned** | Mandag til søndag, piler, «I dag». Tre arrangementer per dag, så «+N til», som åpner uken. Liten skrift (10–11 px) |
+| **Uke** | Hele uken på skjermen: sju kolonner på PC, sju rader under hverandre på mobil, uten å rulle sidelengs. Ukenummer som i norske kalendre |
+| **Trykk** | Et arrangement åpnes (Bemanning). En ledig plass på en dag åpner skjemaet for nytt arrangement med datoen fylt inn. Arrangementer kan ikke dras til en annen dag |
+| **Filterknapper** | Alle, Gudstjenester, Husgrupper, Tjenestegrupper og Andre, felles for alle visningene. Flere kan være på samtidig. Hvert arrangement står under nøyaktig én: en gudstjeneste er en gudstjeneste uansett gruppe; husgruppenes samlinger er Husgrupper; et teams egne samlinger (gruppesamling eller kun intern) er Tjenestegrupper; alt annet, som bønnemøter, ungdomsmøter og lederskapets møter, er Andre (`calendarKindOf` i `src/utils/adminCalendar.ts`). Ingen egne tagger |
+| **Merker** | Fargen følger knappen. Kun interne er svakere med kant, avlyste er streket over, og en rød prikk viser at frivillige mangler |
 
 **Ikke sluppet til menighetene ennå** (ligger i `main`, ikke i `stabil`): menylinjen i Sider, trinn 1 og trinn 2. Produkteier sjekker dem i demoen før de slippes.
 

@@ -22,6 +22,8 @@ import {
   Trash2,
   MoreHorizontal,
   ChevronRight,
+  CalendarDays,
+  CalendarRange,
 } from "lucide-react";
 import { StudioData, ShowFeedback } from "../studio";
 import { visibilityOf } from "../../../utils/visibility";
@@ -33,6 +35,8 @@ import { movedRestOfSeries } from "../../../utils/series";
 import { DeleteGatheringDialog, type StaffedTask } from "../DeleteGatheringDialog";
 import { MoveSeriesDialog } from "../MoveSeriesDialog";
 import { GatheringsTable } from "./gatherings/GatheringsTable";
+import { GatheringsCalendar, KIND_COLORS } from "./gatherings/GatheringsCalendar";
+import { CALENDAR_KINDS, filterByKinds, type CalendarKind } from "../../../utils/adminCalendar";
 import { gatheringsInPeriod, nextGatheringSort, type GatheringPeriod, type GatheringSortDirection, type GatheringSortKey } from "../../../utils/gatheringList";
 import { defaultGroupId, newGatheringForm, type GatheringFormValues } from "../../../utils/gatheringForm";
 
@@ -42,6 +46,32 @@ interface GatheringsTabProps {
   /** The overview asked for a new event: the form opens at once. */
   createRequested?: boolean;
   onCreateHandled?: () => void;
+}
+
+type GatheringsView = "month" | "week" | "cards" | "table";
+const VIEW_KEY = "menighetsplan_kalender_visning";
+const KINDS_KEY = "menighetsplan_kalender_filter";
+const isView = (value: unknown): value is GatheringsView => value === "month" || value === "week" || value === "cards" || value === "table";
+const isKinds = (value: unknown): value is CalendarKind[] =>
+  Array.isArray(value) && value.every((kind) => CALENDAR_KINDS.some((option) => option.value === kind));
+
+/** A choice remembered in this browser. Without one, or where the browser keeps nothing, the start value. */
+function readStored<T>(key: string, start: T, valid: (value: unknown) => value is T): T {
+  try {
+    const raw = localStorage.getItem(key);
+    const value: unknown = raw === null ? null : JSON.parse(raw);
+    return valid(value) ? value : start;
+  } catch {
+    return start;
+  }
+}
+
+function store(key: string, value: unknown) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // A browser that keeps nothing forgets the choice; the calendar works the same
+  }
 }
 
 export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedback, createRequested, onCreateHandled }) => {
@@ -101,7 +131,7 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
   const groups = adminGroups.map(({ group }) => group);
   const responsibleGroupId = defaultGroupId(groups, adminGatherings.map((item) => item.gathering));
   const [fullForm, setFullForm] = useState<GatheringFormValues | null>(null);
-  const openFullForm = () => setFullForm(newGatheringForm({ groupId: responsibleGroupId }));
+  const openFullForm = (date?: string) => setFullForm(newGatheringForm({ groupId: responsibleGroupId, ...(date ? { date } : {}) }));
   // Opened from «Opprett ny gudstjeneste eller samling» on the overview
   useEffect(() => {
     if (!createRequested) return;
@@ -111,18 +141,39 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
 
   const { assignments, deleteGatheringWithStaffing, getPersonById } = useFirebase();
 
-  // The events as a table or as cards, by date until the admin presses another column
-  const [chosenView, setView] = useState<"cards" | "table">("table");
-  // A phone always gets the cards: a table does not fit it, and its last column is out of sight
+  // The events as a month, a week, cards or a table. The choice is remembered in this browser.
+  const [chosenView, setChosenView] = useState<GatheringsView>(() => readStored(VIEW_KEY, "table", isView));
+  const setView = (next: GatheringsView) => {
+    setChosenView(next);
+    store(VIEW_KEY, next);
+  };
+  // A phone gets the cards or the week: a month and a table do not fit it
   const wide = useMediaQuery("(min-width: 768px)");
-  const view = wide ? chosenView : "cards";
+  const view: GatheringsView = wide ? chosenView : chosenView === "week" ? "week" : "cards";
+  const calendarView = view === "month" || view === "week";
+  // The day the month or the week is drawn around
+  const [anchor, setAnchor] = useState(() => new Date());
+  // The filter buttons; none on is «Alle». Remembered in this browser, and the same for every view.
+  const [kinds, setKindsState] = useState<CalendarKind[]>(() => readStored(KINDS_KEY, [] as CalendarKind[], isKinds));
+  const setKinds = (next: CalendarKind[]) => {
+    setKindsState(next);
+    store(KINDS_KEY, next);
+  };
+  // From the latest choice, so two quick presses both count
+  const toggleKind = (kind: CalendarKind) =>
+    setKindsState((current) => {
+      const next = current.includes(kind) ? current.filter((k) => k !== kind) : [...current, kind];
+      store(KINDS_KEY, next);
+      return next;
+    });
+  const filteredGatherings = useMemo(() => filterByKinds(adminGatherings, kinds), [adminGatherings, kinds]);
   const [sortKey, setSortKey] = useState<GatheringSortKey>("date");
   const [sortDirection, setSortDirection] = useState<GatheringSortDirection>("asc");
   // Coming events first; the held ones are a press away
   const [period, setPeriod] = useState<GatheringPeriod>("kommende");
   const sortedGatherings = useMemo(
-    () => gatheringsInPeriod(adminGatherings, period, Date.now(), sortKey, sortDirection),
-    [adminGatherings, period, sortKey, sortDirection]
+    () => gatheringsInPeriod(filteredGatherings, period, Date.now(), sortKey, sortDirection),
+    [filteredGatherings, period, sortKey, sortDirection]
   );
   // On a phone the secondary actions of a card are behind «…»
   const [openActionsId, setOpenActionsId] = useState<string | null>(null);
@@ -193,12 +244,12 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
       <div className="max-w-5xl mx-auto space-y-6">
         <div className="flex items-center justify-between gap-4 border-b border-[var(--studio-border)] pb-4">
           <div>
-            <h2 className="text-xl sm:text-2xl font-black text-[var(--studio-text)]">Gudstjenester & Møter</h2>
-            <p className="text-xs text-[var(--studio-muted)] hidden sm:block">Full oversikt over menighetens samlinger.</p>
+            <h2 className="text-xl sm:text-2xl font-black text-[var(--studio-text)]">Kalender</h2>
+            <p className="text-xs text-[var(--studio-muted)] hidden sm:block">Gudstjenester, møter og samlinger.</p>
           </div>
           <button
             type="button"
-            onClick={openFullForm}
+            onClick={() => openFullForm()}
             aria-label="Nytt arrangement"
             className="shrink-0 w-11 h-11 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center shadow-sm cursor-pointer"
           >
@@ -206,7 +257,39 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
           </button>
         </div>
 
+        {/* The filter buttons, as in many church calendars: none on shows all */}
+        <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Vis">
+          <button
+            type="button"
+            onClick={() => setKinds([])}
+            aria-pressed={kinds.length === 0}
+            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border cursor-pointer ${
+              kinds.length === 0 ? "bg-indigo-600 border-indigo-600 text-white" : "border-[var(--studio-border)] text-[var(--studio-muted)] hover:text-[var(--studio-text)]"
+            }`}
+          >
+            Alle
+          </button>
+          {CALENDAR_KINDS.map(({ value, label }) => {
+            const on = kinds.includes(value);
+            return (
+              <button
+                key={value}
+                type="button"
+                onClick={() => toggleKind(value)}
+                aria-pressed={on}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold border cursor-pointer ${
+                  on ? `${KIND_COLORS[value]} border-transparent text-white` : "border-[var(--studio-border)] text-[var(--studio-muted)] hover:text-[var(--studio-text)]"
+                }`}
+              >
+                <span className={`w-2 h-2 rounded-full ${on ? "bg-white" : KIND_COLORS[value]}`} aria-hidden="true" />
+                {label}
+              </button>
+            );
+          })}
+        </div>
+
         <div className="flex items-center justify-between gap-3">
+          {!calendarView && (
           <div className="inline-flex rounded-xl border border-[var(--studio-border)] bg-[var(--studio-surface)] p-0.5" role="group" aria-label="Periode">
             {(["kommende", "tidligere"] as const).map((p) => (
               <button
@@ -222,11 +305,37 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
               </button>
             ))}
           </div>
+          )}
+          {!calendarView && (
           <p className="text-xs text-[var(--studio-muted)] ml-auto">
             {sortedGatherings.length} {sortedGatherings.length === 1 ? "arrangement" : "arrangementer"}
           </p>
-          {wide && (
-          <div className="inline-flex rounded-xl border border-[var(--studio-border)] bg-[var(--studio-surface)] p-0.5">
+          )}
+          <div className="inline-flex rounded-xl border border-[var(--studio-border)] bg-[var(--studio-surface)] p-0.5 ml-auto" role="group" aria-label="Visning">
+            {wide && (
+            <button
+              type="button"
+              onClick={() => setView("month")}
+              className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold cursor-pointer ${
+                view === "month" ? "bg-[var(--studio-hover)] text-[var(--studio-text)]" : "text-[var(--studio-muted)] hover:text-[var(--studio-text)]"
+              }`}
+              aria-pressed={view === "month"}
+            >
+              <CalendarDays className="w-3.5 h-3.5" aria-hidden="true" />
+              Måned
+            </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setView("week")}
+              className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold cursor-pointer ${
+                view === "week" ? "bg-[var(--studio-hover)] text-[var(--studio-text)]" : "text-[var(--studio-muted)] hover:text-[var(--studio-text)]"
+              }`}
+              aria-pressed={view === "week"}
+            >
+              <CalendarRange className="w-3.5 h-3.5" aria-hidden="true" />
+              Uke
+            </button>
             <button
               type="button"
               onClick={() => setView("cards")}
@@ -238,6 +347,7 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
               <LayoutGrid className="w-3.5 h-3.5" aria-hidden="true" />
               Kort
             </button>
+            {wide && (
             <button
               type="button"
               onClick={() => setView("table")}
@@ -249,9 +359,24 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
               <Table2 className="w-3.5 h-3.5" aria-hidden="true" />
               Tabell
             </button>
+            )}
           </div>
-          )}
         </div>
+
+        {calendarView && (
+          <GatheringsCalendar
+            items={filteredGatherings}
+            mode={view === "month" ? "month" : "week"}
+            anchor={anchor}
+            onAnchorChange={setAnchor}
+            onShowWeek={(day) => {
+              setAnchor(day);
+              setView("week");
+            }}
+            onNewOnDay={(day) => openFullForm(day)}
+            narrow={!wide}
+          />
+        )}
 
         {view === "table" && (
           <GatheringsTable

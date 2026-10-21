@@ -384,7 +384,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({ studio, activeTab,
             >
               <div className="flex items-center gap-2.5">
                 <Calendar className="w-4 h-4 text-[var(--studio-icon)]" />
-                <span>Arrangementer</span>
+                <span>Kalender</span>
               </div>
               <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--studio-surface)] text-[var(--studio-muted)]">
                 {adminGatherings.length}

@@ -227,11 +227,13 @@ const forside: HelpArticle = {
 
 const arrangementer: HelpArticle = {
   id: "arrangementer",
-  title: "Arrangementer",
+  title: "Kalender og arrangementer",
   layout: "wide",
-  formal: "Legge inn en samling og åpne kjøreplanen for oppgaver den dagen.",
-  hvor: "Velg Planlegging øverst i menyen, så Arrangementer. Overskrift: Gudstjenester & Møter. Listen viser Kommende først; Tidligere viser dem som er holdt. Trykk på et arrangement for å åpne det. Tilbake-lenke: Arrangementer.",
+  formal: "Se arrangementene som måned, uke, kort eller tabell, legge inn en samling og åpne kjøreplanen for oppgaver den dagen.",
+  hvor: "Velg Planlegging øverst i menyen, så Kalender. Overskrift: Kalender. Kort og Tabell viser Kommende først; Tidligere viser dem som er holdt. Trykk på et arrangement for å åpne det. Tilbake-lenke: Kalender.",
   steg: [
+    "Velg visning øverst: Måned, Uke, Kort eller Tabell. På mobil står Uke og Kort. I Måned og Uke blar du med pilene, og I dag går tilbake til i dag. Et trykk på en ledig plass på en dag åpner skjemaet for et nytt arrangement den dagen. Arrangementer flyttes ikke i kalenderen: de åpnes.",
+    "Knappene Alle, Gudstjenester, Husgrupper, Tjenestegrupper og Andre velger hva som vises, i alle visningene. Flere kan være på samtidig. Tjenestegrupper er teamenes egne samlinger; bønnemøter, ungdomsmøter og andre åpne arrangementer står under Andre. Visningen og knappene huskes i nettleseren.",
     "Trykk + øverst til høyre. Skjemaet for et nytt arrangement åpnes: tittel, dato og klokkeslett, og om du vil sluttid, sted, tema, bibeltekst, ansvarlig gruppe og hvem som ser arrangementet. Står stedet tomt, brukes menighetens faste sted. Et arrangement ligger i kalenderen uten ansvarlig gruppe til du velger en.",
     "Trykk Opprett arrangement.",
     "Trykk på et arrangement for å åpne Bemanning. Kjøreplan åpner Program.",
@@ -241,7 +243,7 @@ const arrangementer: HelpArticle = {
     "I arrangementet: Rediger åpner det samme store skjemaet, der arrangementet også kan avlyses. Under Program kan admin dra i håndtaket på en programpost for å flytte den. Bemanningen gjøres under Bemanning (se den artikkelen). På mobil står Rediger, Ny oppgave, Hent fra mal, Lag mal og Skriv ut bak «…».",
   ],
   knapper:
-    "+ (Nytt arrangement), Kommende, Tidligere, Kort, Tabell, Kjøreplan, Opprett arrangement.",
+    "+ (Nytt arrangement), Alle, Gudstjenester, Husgrupper, Tjenestegrupper, Andre, Måned, Uke, Kort, Tabell, I dag, Kommende, Tidligere, Kjøreplan, Opprett arrangement.",
   etterLagring:
     "«Nytt arrangement opprettet og lagt i kalenderen!» Ved kopi: «Nytt arrangement opprettet for [dato] med [antall] oppgaver klonet!» «Tittel og dato må fylles ut». «Opprett en gruppe først. Arrangementene må ha en gruppe å ligge i.»",
 };
