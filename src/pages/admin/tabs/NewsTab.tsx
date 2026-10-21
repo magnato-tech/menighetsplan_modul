@@ -13,6 +13,9 @@ import {
   CalendarClock,
 } from "lucide-react";
 import { StudioData, ShowFeedback } from "../studio";
+import { History } from "lucide-react";
+import { VersionHistoryDialog } from "../../../components/admin/VersionHistoryDialog";
+import { restoredFields } from "../../../utils/contentVersions";
 import { formatNorwegianDateTime } from "../../../utils/dates";
 import { isGroupGathering } from "../../../utils/gatherings";
 import { isNewsExpired, lastDayOf, type LastDay } from "../../../utils/news";
@@ -50,6 +53,7 @@ export const NewsTab: React.FC<NewsTabProps> = ({ studio, showFeedback, createRe
 
   const [editingNews, setEditingNews] = useState<Partial<CmsNewsArticle> | null>(null);
   const [isNewNews, setIsNewNews] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
 
   const handleOpenEditNews = (article: CmsNewsArticle) => {
     setEditingNews({ ...article });
@@ -115,6 +119,17 @@ export const NewsTab: React.FC<NewsTabProps> = ({ studio, showFeedback, createRe
               <Newspaper className="w-4 h-4 text-[var(--studio-icon)]" />
               <span>{isNewNews ? "Skriv ny artikkel" : `Rediger artikkel: ${editingNews.title}`}</span>
             </h3>
+            <div className="flex items-center gap-2">
+            {!isNewNews && editingNews.id && (
+              <button
+                type="button"
+                onClick={() => setShowHistory(true)}
+                className="px-3 py-1.5 rounded-xl border border-[var(--studio-border)] text-[var(--studio-accent-text)] hover:bg-[var(--studio-hover)] text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+              >
+                <History className="w-3.5 h-3.5 text-[var(--studio-icon)]" />
+                <span>Historikk</span>
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setEditingNews(null)}
@@ -122,7 +137,20 @@ export const NewsTab: React.FC<NewsTabProps> = ({ studio, showFeedback, createRe
             >
               <X className="w-5 h-5" />
             </button>
+            </div>
           </div>
+
+          {showHistory && editingNews.id && (
+            <VersionHistoryDialog
+              kind="news"
+              targetId={editingNews.id}
+              onRestore={(version) => {
+                setEditingNews({ ...editingNews, ...(restoredFields(version) as Partial<CmsNewsArticle>) });
+                setShowHistory(false);
+              }}
+              onClose={() => setShowHistory(false)}
+            />
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
             <div className="space-y-1">

@@ -2,6 +2,7 @@ import React from "react";
 import { Images } from "lucide-react";
 import { MediaLibraryPanel } from "../../../components/admin/MediaLibraryPanel";
 import { StockImageGrid } from "../../../components/admin/StockImageGrid";
+import { StoredImagesCard } from "../../../components/admin/StoredImagesCard";
 import type { ShowFeedback } from "../studio";
 
 interface MediaTabProps {
@@ -22,6 +23,8 @@ export const MediaTab: React.FC<MediaTabProps> = () => {
           </p>
         </div>
       </div>
+
+      <StoredImagesCard />
 
       <StockImageGrid />
 

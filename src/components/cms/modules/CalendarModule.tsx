@@ -4,7 +4,7 @@ import { useFirebase } from "../../../context/FirebaseDataContext";
 import { useCms } from "../../../context/CmsContext";
 import { locationOf } from "../../../utils/gatherings";
 import { eventPath, teaserOf } from "../../../utils/gatheringPresentation";
-import { whatsOnGatherings, whatsOnOptionsOf, type WhatsOnOptions } from "../../../utils/whatsOn";
+import { revealClassOf, whatsOnGatherings, whatsOnOptionsOf, type WhatsOnOptions } from "../../../utils/whatsOn";
 import { useMediaMap } from "../../../hooks/useMediaMap";
 import { resolveMediaUrl } from "../../../utils/media";
 import {
@@ -82,6 +82,7 @@ const EventCard: React.FC<EventCardProps> = ({ item, image, show, shape, classNa
     <Link
       to={eventPath(item.id)}
       data-whats-on-card={shape}
+      data-gathering-id={item.id}
       className={`bg-white rounded-xl border hover:border-primary-300 hover:shadow-md transition-all overflow-hidden ${
         item.cancelled ? "border-red-200 bg-red-50/20 opacity-75" : "border-stone-200/80"
       } ${row ? "flex gap-4 p-3 items-center" : "p-5 flex flex-col justify-between min-h-[180px]"} ${className}`}
@@ -128,7 +129,9 @@ export const CalendarModule: React.FC<CalendarModuleProps> = ({ presentation }) 
   const upcomingEvents = useMemo(() => whatsOnGatherings(gatherings, Date.now(), options), [gatherings, options.count, options.selection, options.groupId]);
   const cards = useRevealChildren<HTMLDivElement>(upcomingEvents.length);
   const title = presentationText(config, "title", `Hva skjer i ${settings.churchName}`);
-  const imageOf = (item: Gathering) => resolveMediaUrl(item.imageUrl, mediaById, "web");
+  // An event without a picture of its own gets the module's standard picture, when one is chosen
+  const imageOf = (item: Gathering) => resolveMediaUrl(item.imageUrl?.trim() || options.fallbackImage, mediaById, "web");
+  const reveal = revealClassOf(options.motion);
   // The carousel moves most of its width at a time, so the next cards come in and the last one stays as a guide
   const browse = (direction: 1 | -1) => cards.current?.scrollBy({ left: direction * cards.current.clientWidth * 0.8, behavior: "smooth" });
 
@@ -136,7 +139,7 @@ export const CalendarModule: React.FC<CalendarModuleProps> = ({ presentation }) 
     switch (options.layout) {
       case "list":
         return (
-          <div ref={cards} data-whats-on-layout="list" className="reveal-children grid grid-cols-1 gap-3">
+          <div ref={cards} data-whats-on-layout="list" className={`${reveal} grid grid-cols-1 gap-3`}>
             {upcomingEvents.map((item) => (
               <EventCard key={item.id} item={item} image={imageOf(item)} show={options} shape="row" />
             ))}
@@ -148,7 +151,7 @@ export const CalendarModule: React.FC<CalendarModuleProps> = ({ presentation }) 
             <div
               ref={cards}
               data-whats-on-layout="carousel"
-              className="reveal-children flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 -mx-1 px-1 [scrollbar-width:thin]"
+              className={`${reveal} flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 -mx-1 px-1 [scrollbar-width:thin]`}
             >
               {upcomingEvents.map((item) => (
                 <EventCard
@@ -186,7 +189,7 @@ export const CalendarModule: React.FC<CalendarModuleProps> = ({ presentation }) 
       case "feature": {
         const [first, ...rest] = upcomingEvents;
         return (
-          <div ref={cards} data-whats-on-layout="feature" className="reveal-children grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div ref={cards} data-whats-on-layout="feature" className={`${reveal} grid grid-cols-1 md:grid-cols-2 gap-4`}>
             <EventCard item={first} image={imageOf(first)} show={options} shape="large" />
             {rest.length > 0 && (
               <div className="grid grid-cols-1 gap-3 content-start">
@@ -200,7 +203,7 @@ export const CalendarModule: React.FC<CalendarModuleProps> = ({ presentation }) 
       }
       default:
         return (
-          <div ref={cards} data-whats-on-layout="grid" className={`reveal-children grid grid-cols-1 md:grid-cols-2 ${gridColumns(options.count)} gap-4`}>
+          <div ref={cards} data-whats-on-layout="grid" className={`${reveal} grid grid-cols-1 md:grid-cols-2 ${gridColumns(options.count)} gap-4`}>
             {upcomingEvents.map((item) => (
               <EventCard key={item.id} item={item} image={imageOf(item)} show={options} shape="card" />
             ))}

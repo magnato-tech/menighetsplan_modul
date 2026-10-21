@@ -2,6 +2,7 @@ import React, { useRef, useState } from "react";
 import { ImagePlus, Trash2 } from "lucide-react";
 import { removeNewsletterBanner, saveNewsletterBanner } from "../../../../services/newsletter";
 import { compressImageFile } from "../../../../utils/imageUpload";
+import { uploadStoredImage } from "../../../../services/mediaStorage";
 import type { ShowFeedback } from "../../studio";
 import { studioCardPadded, studioSecondaryButton } from "../../studioTheme";
 
@@ -21,7 +22,9 @@ export const NewsletterBannerCard: React.FC<NewsletterBannerCardProps> = ({ bann
     if (!file) return;
     setBusy(true);
     try {
-      await saveNewsletterBanner(await compressImageFile(file, { maxDimension: 1200, quality: 0.85 }));
+      // Made smaller first, then put in the picture store; the newsletter fetches it from there
+      const smaller = await compressImageFile(file, { maxDimension: 1200, quality: 0.85 });
+      await saveNewsletterBanner(await uploadStoredImage(smaller, "nyhetsbrev"));
       showFeedback("Toppbildet er lagret.");
     } catch (error) {
       showFeedback(error instanceof Error && error.message ? error.message : "Toppbildet kunne ikke lagres. Prøv igjen.", "error");

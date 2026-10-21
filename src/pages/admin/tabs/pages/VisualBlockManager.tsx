@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   VisualBlock,
   DYNAMIC_MODULES_META,
@@ -49,6 +49,8 @@ interface VisualBlockManagerProps {
   selectedBlockId?: string | null;
   onSelectBlock?: (blockId: string) => void;
   currentPageId?: string;
+  /** A section pressed in the preview: its fields are opened, and on an event's card, also the event. */
+  openRequest?: { blockId: string; gatheringId?: string; nonce: number } | null;
 }
 
 function isInteractiveTarget(target: EventTarget | null): boolean {
@@ -58,6 +60,9 @@ function isInteractiveTarget(target: EventTarget | null): boolean {
   );
 }
 
+/** How long after the last change in a module's fields the preview follows. */
+export const LIVE_APPLY_MS = 500;
+
 export const VisualBlockManager: React.FC<VisualBlockManagerProps> = ({
   blocks,
   onChange,
@@ -65,11 +70,42 @@ export const VisualBlockManager: React.FC<VisualBlockManagerProps> = ({
   selectedBlockId,
   onSelectBlock,
   currentPageId,
+  openRequest,
 }) => {
   const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
   const [editFields, setEditFields] = useState<StaticBlockFields | null>(null);
   const [moduleEditConfig, setModuleEditConfig] = useState<ModulePresentationConfig | null>(null);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  // The event to open in «Hva skjer», when its card was pressed in the preview
+  const [openEvent, setOpenEvent] = useState<{ id: string; nonce: number } | null>(null);
+  useEffect(() => {
+    if (!openRequest) return;
+    const block = blocks.find((candidate) => candidate.id === openRequest.blockId);
+    if (!block || !canEditBlockContent(block)) return;
+    if (editingBlockId !== block.id) handleStartEditContent(block);
+    setOpenEvent(openRequest.gatheringId ? { id: openRequest.gatheringId, nonce: openRequest.nonce } : null);
+  }, [openRequest?.nonce]);
+
+  // The blocks as they stand when a change below is applied, not as they stood when it was typed
+  const blocksRef = useRef(blocks);
+  blocksRef.current = blocks;
+
+  // A change in a module's fields shows in the preview half a second after the last keystroke,
+  // without «Bruk endringer». The fields stay open; «Ferdig» or «Bruk endringer» closes them.
+  useEffect(() => {
+    if (!editingBlockId || !moduleEditConfig) return;
+    const timer = window.setTimeout(() => {
+      const current = blocksRef.current;
+      const index = current.findIndex((block) => block.id === editingBlockId);
+      if (index < 0) return;
+      const applied = applyModulePresentation(current[index], moduleEditConfig);
+      if (applied.rawContent === current[index].rawContent) return;
+      const next = [...current];
+      next[index] = applied;
+      onChange(next);
+    }, LIVE_APPLY_MS);
+    return () => window.clearTimeout(timer);
+  }, [moduleEditConfig, editingBlockId]);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   const handleMoveUp = (index: number) => {
@@ -438,6 +474,7 @@ export const VisualBlockManager: React.FC<VisualBlockManagerProps> = ({
                 <ModulePresentationEditor
                   moduleType={block.type as DynamicModuleType}
                   config={moduleEditConfig}
+                  openEvent={openEvent}
                   currentPageId={currentPageId}
                   onChange={(next) => {
                     setModuleEditConfig(next);

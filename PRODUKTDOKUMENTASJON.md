@@ -573,7 +573,7 @@ Innholdet skrives som tekst med ferdige blokker. Blokkvelgeren setter dem inn, o
 ### 8.4 Bilder
 Et hovedbilde lastes opp fra maskinen, limes inn som adresse eller velges blant ferdige bilder. Et opplastet bilde skaleres ned til maks 1400 piksler og komprimeres i nettleseren.
 
-**Delvis:** bildet lagres inne i selve sidedokumentet, ikke i en bildelagring. Se 8.7.
+Et bilde som lastes opp i bildevelgeren, går via Mediebiblioteket til bildelageret (Firebase Storage), og siden får bare en henvisning til det. Fra 21. oktober 2026 går også logoen og toppbildet i nyhetsbrevet dit. Bilder som er lagret som tekst fra før, flyttes med «Flytt til bildelageret» under Mediebibliotek.
 
 ### 8.5 Design
 Fanen «Tema & designsystem» har fem ferdige temaer (Klassisk menighetsblå, Nordisk salvie, Varm terracotta, Dyp vinrød, Moderne indigo) og egne valg. Det som lagres, gjelder hele nettsiden med en gang:
@@ -612,7 +612,7 @@ Nettstedets adresse leses av forespørselen. Den kan settes fast med miljøvaria
 
 | Område | I dag | Konsekvens |
 |:---|:---|:---|
-| Bilder | Lagres som tekst inne i sidedokumentet | Alle besøkende laster ned alle sidenes bilder ved første besøk. Et dokument kan ikke være større enn 1 MB. Et opplastet bilde kan ikke brukes som delebilde |
+| Bilder | Personbilder og bilder i gruppechatten lagres fortsatt som tekst i dokumentet | Personbildene ligger i personregisteret, som er lukket; i bildelageret ville de kunne leses av alle som har lenken. Gruppechatten hører til webappen |
 | Design | Skriftvalget står mellom skriftene maskinen alt har | Menigheten kan ikke velge en egen skrift eller laste opp logo |
 | Kladder | Skjules i visningen, men leveres til nettleseren | En kladd er ikke hemmelig. Løses sammen med innlogging |
 | Forside | Tre infobokser, fellesskaps- og gaveteksten står i koden | Kan ikke endres uten en utvikler |
@@ -1641,6 +1641,19 @@ Bestilt av produkteier etter en sammenligning med EventMaster: en kalender for a
 | **Filterknapper** | Alle, Gudstjenester, Husgrupper, Tjenestegrupper og Andre, felles for alle visningene. Flere kan være på samtidig. Hvert arrangement står under nøyaktig én: en gudstjeneste er en gudstjeneste uansett gruppe; husgruppenes samlinger er Husgrupper; et teams egne samlinger (gruppesamling eller kun intern) er Tjenestegrupper; alt annet, som bønnemøter, ungdomsmøter og lederskapets møter, er Andre (`calendarKindOf` i `src/utils/adminCalendar.ts`). Ingen egne tagger |
 | **Merker** | Fargen følger knappen. Kun interne er svakere med kant, avlyste er streket over, og en rød prikk viser at frivillige mangler |
 
+### Backlog 21. oktober: historikk, bildelager, modulvalg med en gang, trykk i forhåndsvisningen, bilde fra malen og bevegelse
+
+Bestilt av produkteier fra backloggen i «Menighetsplan CMS – vurdering og backlog» (punkt 1, 2, 6, 7, 11 og 16).
+
+| Del | Hva som er levert |
+|---|---|
+| **Historikk** | Når en side eller en nyhet lagres med en endring, tas versjonen før vare på. De 30 siste per side står under **Historikk** i redigeringen, med dato og tittel. **Gjenopprett** legger versjonen inn i redigeringen; den lagres først ved Lagre (`src/utils/contentVersions.ts`, `services/contentVersions.ts`, `VersionHistoryDialog.tsx`). Versjonene ligger i `cms_settings`, merket `contentVersion`: reglene som er publisert, tillater det, så ingenting må limes inn. Bare administratorer skriver dem, og bare de i registeret kan lese dem |
+| **Bildelager** | Logoen (også den lyse) lastes opp til bildelageret som den er, så en PNG beholder gjennomsiktig bakgrunn. Toppbildet i nyhetsbrevet gjøres mindre og lastes opp dit. **Bilder lagret inne i sidene** under Mediebibliotek finner bilder som er lagret som tekst i sider, nyheter, taler, stab og innstillingene, og **Flytt til bildelageret** laster hvert opp én gang og setter adressen inn (`src/utils/storedImages.ts`, `StoredImagesCard.tsx`). Personbilder flyttes ikke, se kjente mangler |
+| **Modulvalg med en gang** | En endring i feltene til en modul vises i forhåndsvisningen et halvt sekund etter siste tastetrykk, uten «Bruk endringer». Feltene blir stående åpne |
+| **Trykk i forhåndsvisningen** | I forhåndsvisningen ved siden av redigeringen har hver seksjon en stiplet ramme under musen. Et trykk åpner seksjonen i redigeringen og ruller feltene dens øverst i kolonnen; toppbildet åpner feltene for toppbildet. Et trykk på et arrangementskort i «Hva skjer» åpner også arrangementets Bilde og tekst. Lenkene i seksjonene følges ikke i forhåndsvisningen; menyen øverst leder fortsatt mellom sidene (`PreviewSelectBridge.tsx`, meldingen `preview:select`) |
+| **Bilde fra malen** | Under «Arrangementer på nettsiden» kan et arrangement uten bilde, laget fra en mal med bilde, få malens bilde: **Bruk malens bilde** på raden, eller **Gi dem bildet fra malen** for alle. «Hva skjer» har et **Standardbilde** for arrangementer uten eget bilde (`templateImageFor`). Malens bilde skrives på arrangementet, fordi en besøkende ikke kan lese malene |
+| **Bevegelse** | «Hva skjer» har valget **Bevegelse når kortene kommer til syne**: Ton inn (som før), Gli inn fra siden, Zoom inn eller Ingen bevegelse (`revealClassOf`). Den som har bedt om mindre bevegelse, ser kortene stille |
+
 **Sluppet til menighetene 21. oktober 2026** (`stabil` flyttet fram til `6f9bc98` etter beskjed fra produkteier): menylinjen i Sider, forsiden trinn 1 og 2, Lagre som holder siden åpen, menyene som står fast, advarselen om endringer som ikke er lagret, forhåndsvisningen som viser toppen av seksjonen, «Hva skjer» med valg, kalenderen i planleggingen, fargene i lys admin og navnet på tekstblokker. Databasereglene var ikke endret, så ingenting måtte limes inn hos Lillesand.
 
 ---
@@ -1656,7 +1669,7 @@ Sortert etter hvor mye de betyr for en menighet som skal ta løsningen i bruk.
 | 2 | Kladder til nyheter, taler og stab leveres til alle nettlesere. Kladder til sider leveres bare til dem som står i registeret. I demoen leveres hele registeret til alle, som før | Fase 1 |
 | 3 | To personer som deler e-postadresse, kan ikke logge inn før adressen står på bare én av dem. Første administrator må legges inn med et skript | Trinn 7 for skriptet |
 | 4 | Forsidens tekster og menighetens navn står delvis i koden | Fase 2 |
-| 5 | Bilder lagres inne i sidedokumentene, og kan da ikke brukes som delebilde | Fase 2 |
+| 5 | Personbilder og bilder i gruppechatten lagres som tekst i dokumentet. Sidenes bilder, logoen og nyhetsbrevets toppbilde ligger i bildelageret (21. oktober 2026) | Fase 2 |
 | 6 | To kilder for stab og lederskap, den ene uten samtykke | Fase 2 |
 | 7 | Programmet i kjøreplanen kan ikke redigeres | Fase 3 |
 | 8 | Ingen varsling: forespørsler og forfall når ingen uten at de åpner appen | Fase 3 |

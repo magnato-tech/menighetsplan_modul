@@ -161,7 +161,26 @@
 .reveal-children > [data-revealed] {
   animation: reveal-rise 0.6s ease-out backwards;
 }
+/* Two other ways in, chosen in «Hva skjer»: sliding in from the side, or growing a little */
+@keyframes reveal-slide {
+  from { opacity: 0; transform: translateX(-32px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes reveal-zoom {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: none; }
+}
+.reveal-children.reveal-slide > [data-revealed] {
+  animation-name: reveal-slide;
+}
+.reveal-children.reveal-zoom > [data-revealed] {
+  animation-name: reveal-zoom;
+}
 @media (prefers-reduced-motion: reduce) {
+  .reveal-children.reveal-slide > [data-revealed],
+  .reveal-children.reveal-zoom > [data-revealed] {
+    animation: none;
+  }
   .reveal-children[data-reveal-ready] > :not([data-revealed]) {
     opacity: 1;
   }

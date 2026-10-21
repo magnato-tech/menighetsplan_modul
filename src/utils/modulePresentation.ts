@@ -1,5 +1,5 @@
 import type { DynamicModuleType, GroupsModuleFields, VisualBlock } from "./cmsBlocks";
-import { WHATS_ON_COUNTS, WHATS_ON_LAYOUTS, WHATS_ON_SELECTIONS } from "./whatsOn";
+import { WHATS_ON_COUNTS, WHATS_ON_LAYOUTS, WHATS_ON_MOTIONS, WHATS_ON_SELECTIONS } from "./whatsOn";
 
 /** Key-value presentation config stored in VisualBlock.rawContent for dynamic modules. */
 export type ModulePresentationConfig = Record<string, string>;
@@ -57,6 +57,8 @@ export const MODULE_PRESENTATION_DEFAULTS: Record<DynamicModuleType, ModulePrese
     showSummary: "on",
     showTime: "on",
     showLocation: "on",
+    motion: "fade",
+    fallbackImage: "",
     backgroundImage: "",
     backgroundColor: "",
   },
@@ -141,6 +143,13 @@ export const MODULE_PRESENTATION_FIELDS: Record<DynamicModuleType, ModulePresent
     { key: "showSummary", label: "Vis ingressen", type: "toggle" },
     { key: "showTime", label: "Vis klokkeslett", type: "toggle" },
     { key: "showLocation", label: "Vis sted", type: "toggle" },
+    { key: "motion", label: "Bevegelse når kortene kommer til syne", type: "select", options: WHATS_ON_MOTIONS },
+    {
+      key: "fallbackImage",
+      label: "Standardbilde",
+      type: "image",
+      help: "Vises på arrangementer som ikke har eget bilde. Tomt: de vises uten bilde.",
+    },
     { key: "backgroundImage", label: "Bakgrunnsbilde", type: "image" },
     { key: "backgroundColor", label: "Bakgrunnsfarge", type: "color" },
   ],

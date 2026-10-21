@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { AlertCircle, CheckCircle2, Image as ImageIcon } from "lucide-react";
 import { useFirebase } from "../../context/FirebaseDataContext";
@@ -21,11 +21,20 @@ const MISSING_WORDS = { bilde: "bilde", tekst: "tekst" } as const;
  * is without on the website, and «Bilde og tekst» to fill it in without leaving the page. The picture
  * and the text belong to the event, so they are saved there, as in «Arrangementer på nettsiden».
  */
-export const WhatsOnEventsEditor: React.FC<{ config: ModulePresentationConfig }> = ({ config }) => {
+export const WhatsOnEventsEditor: React.FC<{ config: ModulePresentationConfig; openEvent?: { id: string; nonce: number } | null }> = ({
+  config,
+  openEvent,
+}) => {
   const { gatherings, groups, updateGathering } = useFirebase();
   const mediaById = useMediaMap();
   const withPlanner = hasPlanner(useLevel());
   const [editing, setEditing] = useState<Gathering | null>(null);
+  // An event's card pressed in the preview opens its picture and text at once
+  useEffect(() => {
+    if (!openEvent) return;
+    const gathering = gatherings.find((candidate) => candidate.id === openEvent.id);
+    if (gathering) setEditing(gathering);
+  }, [openEvent?.nonce]);
   const options = whatsOnOptionsOf(config);
   const shown = useMemo(
     () => whatsOnGatherings(gatherings, Date.now(), options),

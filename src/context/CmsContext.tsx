@@ -15,6 +15,8 @@ import { saveAddonChoice, subscribeAddons } from "../services/addons";
 import type { AddonChoices, AddonId } from "../utils/addons";
 import { newId } from "../utils/id";
 import { buildPageRecord } from "../utils/pageRecord";
+import { contentChanged, versionOf } from "../utils/contentVersions";
+import { keepVersion } from "../services/contentVersions";
 import {
   CmsPage,
   CmsNewsArticle,
@@ -318,6 +320,26 @@ export const CmsProvider: React.FC<{ children: React.ReactNode; publicPagesOnly?
       addons,
       addonsState,
       ...writes,
+      // A save that changes a page or an article keeps the version it replaces (see utils/contentVersions.ts)
+      savePage: async (pageData) => {
+        const previous = pageData.id ? pages.find((page) => page.id === pageData.id) : undefined;
+        const saved = await writes.savePage(pageData);
+        if (saved && previous) {
+          const stored = buildPageRecord(pageData, new Date(), () => pageData.id || "");
+          if (contentChanged(previous as unknown as Record<string, unknown>, stored as unknown as Record<string, unknown>)) {
+            void keepVersion(versionOf("page", previous as CmsPage & Record<string, unknown>, new Date(), () => newId("versjon")));
+          }
+        }
+        return saved;
+      },
+      saveNews: async (newsData) => {
+        const previous = newsData.id ? news.find((article) => article.id === newsData.id) : undefined;
+        const saved = await writes.saveNews(newsData);
+        if (saved && previous && contentChanged(previous as unknown as Record<string, unknown>, { ...previous, ...newsData } as Record<string, unknown>)) {
+          void keepVersion(versionOf("news", previous as CmsNewsArticle & Record<string, unknown>, new Date(), () => newId("versjon")));
+        }
+        return saved;
+      },
       uploadMedia: async (file, meta) => {
         try {
           const draft = buildCmsMedia({

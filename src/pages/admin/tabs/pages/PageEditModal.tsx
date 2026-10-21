@@ -18,7 +18,9 @@ import {
   ExternalLink,
   Monitor,
   Tablet,
-  Smartphone, Save } from "lucide-react";
+  Smartphone, Save, History } from "lucide-react";
+import { VersionHistoryDialog } from "../../../../components/admin/VersionHistoryDialog";
+import { restoredFields } from "../../../../utils/contentVersions";
 import { CmsMediaPicker } from "../../../../components/admin/CmsMediaPicker";
 import { useMediaMap } from "../../../../hooks/useMediaMap";
 import { resolveShareableMediaUrl } from "../../../../utils/media";
@@ -61,6 +63,20 @@ function toDatetimeLocal(iso?: string): string {
   } catch {
     return "";
   }
+}
+
+/**
+ * Brings a field into view in the scrolling column it stands in (the fields beside the preview), near
+ * the top, without moving the page around it.
+ */
+export function scrollIntoColumn(element: HTMLElement, offset = 16): void {
+  let column = element.parentElement;
+  while (column && !(column.scrollHeight > column.clientHeight + 2 && /(auto|scroll)/.test(getComputedStyle(column).overflowY))) {
+    column = column.parentElement;
+  }
+  if (!column) return;
+  const top = element.getBoundingClientRect().top - column.getBoundingClientRect().top + column.scrollTop - offset;
+  column.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
 }
 
 /** Scrolls the preview pane so the target block is visible. Returns false if already fully in view. */
@@ -148,6 +164,10 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
   const [snapshotFit, setSnapshotFit] = useState<SnapshotFit>("full");
 
   // View mode state: edit (full-width form), split (side-by-side with real frontend), preview (full-width real frontend)
+  // «Historikk»: the earlier versions of the page, one of which can be put back into the editor
+  const [showHistory, setShowHistory] = useState(false);
+  // A section pressed in the preview, to be opened in the block list (nonce: the same section pressed again opens it again)
+  const [openRequest, setOpenRequest] = useState<{ blockId: string; gatheringId?: string; nonce: number } | null>(null);
   const [viewMode, setViewMode] = useState<"edit" | "split" | "preview">(() => {
     if (typeof window !== "undefined" && window.innerWidth >= 1024) {
       return "split";
@@ -278,6 +298,17 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
       window.setTimeout(() => setPreviewBlockedNotice(false), 4000);
     },
     onSnapshotFit: setSnapshotFit,
+    // A press on a section in the preview opens it here: the hero's fields, or the block in the list
+    onPreviewSelect: (blockId, gatheringId) => {
+      setFocusedPreviewTarget(blockId);
+      if (viewMode === "preview") setViewMode("split");
+      if (blockId !== CMS_PREVIEW_TARGET_HERO) setOpenRequest({ blockId, gatheringId, nonce: Date.now() });
+      // After the block has opened, its fields are brought into view in the column beside the preview
+      window.setTimeout(() => {
+        const field = document.querySelector(`[data-page-editor] [data-cms-editor-target="${CSS.escape(blockId)}"]`);
+        if (field) scrollIntoColumn(field as HTMLElement);
+      }, 120);
+    },
   });
 
   const handleSaveActiveDraftToStorage = () => {
@@ -906,6 +937,7 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
           selectedBlockId={focusedPreviewTarget === CMS_PREVIEW_TARGET_HERO ? null : focusedPreviewTarget}
           onSelectBlock={setFocusedPreviewTarget}
           currentPageId={editingPage.id}
+          openRequest={openRequest}
         />
       </div>
 
@@ -1224,6 +1256,18 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
             <span className="sm:hidden">Ny fane</span>
           </a>
 
+          {editingPage.id && !isNewPage && (
+            <button
+              type="button"
+              onClick={() => setShowHistory(true)}
+              className="px-3 py-1.5 rounded-xl bg-[var(--studio-bg)] hover:bg-[var(--studio-panel-bg)] text-[var(--studio-accent-text)] hover:text-[var(--studio-text)] border border-indigo-700/60 text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
+              title="Tidligere versjoner av siden"
+            >
+              <History className="w-3.5 h-3.5 text-[var(--studio-icon)]" />
+              <span className="hidden sm:inline">Historikk</span>
+            </button>
+          )}
+
           <button
             type="submit"
             className="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-sm flex items-center gap-1.5 cursor-pointer transition-colors"
@@ -1303,6 +1347,17 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
         </div>
       </div>
 
+      {showHistory && editingPage.id && (
+        <VersionHistoryDialog
+          kind="page"
+          targetId={editingPage.id}
+          onRestore={(version) => {
+            onUpdate(restoredFields(version) as Partial<CmsPage>);
+            setShowHistory(false);
+          }}
+          onClose={() => setShowHistory(false)}
+        />
+      )}
       <ContentBlockPickerModal
         isOpen={isBlockPickerOpen}
         onClose={() => setIsBlockPickerOpen(false)}

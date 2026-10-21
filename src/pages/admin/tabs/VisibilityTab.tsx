@@ -19,7 +19,8 @@ import { GatheringFormDialog } from "../../../components/gathering/GatheringForm
 import { useLevel } from "../../../hooks/useLevel";
 import { useMediaMap } from "../../../hooks/useMediaMap";
 import { formOfGathering, gatheringUpdatesOf } from "../../../utils/gatheringForm";
-import { missingOnWebsite } from "../../../utils/gatheringPresentation";
+import { missingOnWebsite, templateImageFor } from "../../../utils/gatheringPresentation";
+import { useGatheringTemplates } from "../../../hooks/useGatheringTemplates";
 import { hasPlanner } from "../../../utils/level";
 import { resolveMediaUrl } from "../../../utils/media";
 
@@ -40,6 +41,20 @@ export const VisibilityTab: React.FC<VisibilityTabProps> = ({ studio, showFeedba
   const mediaById = useMediaMap();
   const withPlanner = hasPlanner(useLevel());
   const [editing, setEditing] = useState<Gathering | null>(null);
+  // Events without a picture whose template has one: they can take the template's, one by one or all at once
+  const { templates } = useGatheringTemplates();
+  const fromTemplate = adminGatherings
+    .map((item) => ({ gathering: item.gathering, image: templateImageFor(item.gathering, templates) }))
+    .filter((entry) => entry.image !== null);
+  const applyTemplateImage = (gathering: Gathering) => {
+    const image = templateImageFor(gathering, templates);
+    if (!image) return false;
+    return updateGathering(gathering.id, { imageUrl: image.imageUrl, ...(image.imageAlt ? { imageAlt: image.imageAlt } : {}) }).success;
+  };
+  const applyTemplateImageToAll = () => {
+    const done = fromTemplate.filter((entry) => applyTemplateImage(entry.gathering)).length;
+    showFeedback(`${done} ${done === 1 ? "arrangement" : "arrangementer"} fikk bildet fra malen sin`);
+  };
 
   const handleSetGatheringVisibility = (gatheringId: string, visibility: GatheringVisibility) => {
     updateGathering(gatheringId, visibilityFields(visibility));
@@ -54,6 +69,24 @@ export const VisibilityTab: React.FC<VisibilityTabProps> = ({ studio, showFeedba
           Legg bilde og tekst på et arrangement, fremhev det på forsiden, eller hold det utenfor den offentlige kalenderen.
         </p>
       </div>
+
+      {fromTemplate.length > 0 && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-[var(--studio-accent-bg)] border border-[var(--studio-accent-border)]">
+          <p className="text-xs text-[var(--studio-text)]">
+            {fromTemplate.length === 1
+              ? "Ett arrangement uten bilde er laget fra en mal som har bilde."
+              : `${fromTemplate.length} arrangementer uten bilde er laget fra en mal som har bilde.`}
+          </p>
+          <button
+            type="button"
+            onClick={applyTemplateImageToAll}
+            className="shrink-0 px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white cursor-pointer"
+          >
+            <ImageIcon className="w-3.5 h-3.5" />
+            <span>Gi dem bildet fra malen</span>
+          </button>
+        </div>
+      )}
 
       <div className="space-y-3">
         {adminGatherings.map((item) => {
@@ -115,6 +148,17 @@ export const VisibilityTab: React.FC<VisibilityTabProps> = ({ studio, showFeedba
               </div>
 
               <div className="flex flex-wrap items-center gap-2 text-xs">
+                {templateImageFor(g, templates) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (applyTemplateImage(g)) showFeedback(`«${g.title}» fikk bildet fra malen`);
+                    }}
+                    className="px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 bg-[var(--studio-bg)] hover:bg-[var(--studio-hover)] text-[var(--studio-text)] border border-[var(--studio-border)] cursor-pointer"
+                  >
+                    <span>Bruk malens bilde</span>
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setEditing(g)}

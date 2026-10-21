@@ -26,6 +26,9 @@ const { cms, app, auth } = vi.hoisted(() => ({
 vi.mock("../src/context/CmsContext", () => ({ useCms: () => cms }));
 vi.mock("../src/context/FirebaseDataContext", () => ({ useFirebase: () => app }));
 vi.mock("../src/services/auth", () => auth);
+// The logo goes to the picture store as it is; here the store answers with an address
+const UPLOADED_LOGO = "https://lager.example/media/fil-1/logo.png";
+vi.mock("../src/services/mediaStorage", () => ({ uploadImageFile: vi.fn(async () => UPLOADED_LOGO) }));
 
 import { PublicNavbar } from "../src/components/public/PublicNavbar";
 import { SignInPage } from "../src/pages/SignInPage";
@@ -132,19 +135,19 @@ describe("Veien til admin øverst på nettsiden", () => {
 describe("Logoen i innstillingene", () => {
   const choose = (file: File) => fireEvent.change(screen.getByLabelText("Logofil"), { target: { files: [file] } });
 
-  test("en valgt logo vises, og lagres sammen med resten av innstillingene", async () => {
+  test("en valgt logo lastes opp til bildelageret, vises, og lagres sammen med resten av innstillingene", async () => {
     inRouter(<SiteSettingsTab />);
     expect(screen.getByRole("button", { name: "Velg logo" })).toBeTruthy();
 
     choose(new File(["bilde"], "logo.png", { type: "image/png" }));
     const preview = await screen.findByRole("img", { name: "Logoen til Sentrumskirken" });
-    expect(preview.getAttribute("src")).toMatch(/^data:image\/png;base64,/);
+    expect(preview.getAttribute("src")).toBe(UPLOADED_LOGO);
     expect(screen.getByText(/Trykk «Lagre alle innstillinger»/)).toBeTruthy();
     expect(cms.saveSettings).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole("button", { name: "Lagre alle innstillinger" }));
     await waitFor(() => expect(cms.saveSettings).toHaveBeenCalledTimes(1));
-    expect(cms.saveSettings.mock.calls[0][0].logoUrl).toMatch(/^data:image\/png;base64,/);
+    expect(cms.saveSettings.mock.calls[0][0].logoUrl).toBe(UPLOADED_LOGO);
     expect(cms.saveSettings.mock.calls[0][0].churchName).toBe("Sentrumskirken");
   });
 

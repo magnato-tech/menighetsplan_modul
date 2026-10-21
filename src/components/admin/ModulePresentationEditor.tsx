@@ -20,6 +20,8 @@ interface ModulePresentationEditorProps {
   onSave: () => void;
   dataSourceNote?: string;
   currentPageId?: string;
+  /** In «Hva skjer»: an event whose picture and text are opened at once (its card was pressed in the preview). */
+  openEvent?: { id: string; nonce: number } | null;
 }
 
 /** The groups with coming public events, to pick the one whose events «Hva skjer» shows. */
@@ -46,6 +48,7 @@ export const ModulePresentationEditor: React.FC<ModulePresentationEditorProps> =
   onSave,
   dataSourceNote,
   currentPageId,
+  openEvent,
 }) => {
   const fields = MODULE_PRESENTATION_FIELDS[moduleType];
   const set = (key: string, value: string) => onChange({ ...config, [key]: value });
@@ -195,7 +198,7 @@ export const ModulePresentationEditor: React.FC<ModulePresentationEditorProps> =
         );
       })}
 
-      {moduleType === "module-calendar" && <WhatsOnEventsEditor config={config} />}
+      {moduleType === "module-calendar" && <WhatsOnEventsEditor config={config} openEvent={openEvent} />}
     </div>
   );
 };

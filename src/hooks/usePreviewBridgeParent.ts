@@ -20,6 +20,8 @@ interface UsePreviewBridgeParentOptions {
   iframeRef: React.RefObject<HTMLIFrameElement | null>;
   onPreviewLocation?: (path: string, hash: string) => void;
   onPreviewBlocked?: () => void;
+  /** A section, or an event's card in one, was pressed in the preview. */
+  onPreviewSelect?: (blockId: string, gatheringId?: string) => void;
   onIframeReady?: (msg: Extract<PreviewToCmsMessage, { type: "preview:ready" }>) => void;
   /** How much of the page the preview got the last time it was stored (see writeDraftSnapshot). */
   onSnapshotFit?: (fit: SnapshotFit) => void;
@@ -33,6 +35,7 @@ export function usePreviewBridgeParent({
   iframeRef,
   onPreviewLocation,
   onPreviewBlocked,
+  onPreviewSelect,
   onIframeReady,
   onSnapshotFit,
 }: UsePreviewBridgeParentOptions) {
@@ -123,12 +126,15 @@ export function usePreviewBridgeParent({
         case "preview:blocked":
           onPreviewBlocked?.();
           break;
+        case "preview:select":
+          onPreviewSelect?.(msg.blockId, msg.gatheringId);
+          break;
       }
     };
 
     window.addEventListener("message", handler);
     return () => window.removeEventListener("message", handler);
-  }, [iframeRef, respondToReady, onPreviewLocation, onPreviewBlocked]);
+  }, [iframeRef, respondToReady, onPreviewLocation, onPreviewBlocked, onPreviewSelect]);
 
   return { flushSnapshot, sendWarmDraft, sendFocus };
 }

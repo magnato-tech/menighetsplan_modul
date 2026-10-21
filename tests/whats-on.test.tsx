@@ -24,7 +24,7 @@ vi.mock("../src/demo", () => ({ DEMO: null }));
 import { CalendarModule } from "../src/components/cms/modules/CalendarModule";
 import { ModulePresentationEditor } from "../src/components/admin/ModulePresentationEditor";
 import { MODULE_PRESENTATION_DEFAULTS } from "../src/utils/modulePresentation";
-import { whatsOnGatherings, whatsOnGroupIds, whatsOnOptionsOf } from "../src/utils/whatsOn";
+import { revealClassOf, whatsOnGatherings, whatsOnGroupIds, whatsOnOptionsOf } from "../src/utils/whatsOn";
 
 const SLOW = { timeout: 8000 };
 const DAY = 24 * 60 * 60 * 1000;
@@ -55,7 +55,7 @@ afterEach(() => {
 describe("Hvilke arrangementer «Hva skjer» viser", () => {
   test("uten valg er det som før: de fire neste offentlige", () => {
     const options = whatsOnOptionsOf({});
-    expect(options).toEqual({ count: 4, selection: "all", groupId: "", layout: "grid", showSummary: true, showLocation: true, showTime: true });
+    expect(options).toEqual({ count: 4, selection: "all", groupId: "", layout: "grid", showSummary: true, showLocation: true, showTime: true, motion: "fade", fallbackImage: "" });
     expect(ids(whatsOnGatherings(nine, now, options))).toEqual(["e1", "e2", "e3", "e4"]);
   });
 
@@ -203,4 +203,25 @@ describe("«Hva skjer» i redigeringen av en side", () => {
     },
     SLOW.timeout
   );
+});
+
+describe("Bevegelse og standardbilde i «Hva skjer»", () => {
+  test("kortene kan tone inn, gli inn, zoome inn eller stå stille", () => {
+    expect(revealClassOf("fade")).toBe("reveal-children");
+    expect(revealClassOf("slide")).toBe("reveal-children reveal-slide");
+    expect(revealClassOf("zoom")).toBe("reveal-children reveal-zoom");
+    expect(revealClassOf("none")).toBe("");
+    expect(whatsOnOptionsOf({ motion: "spinn" }).motion).toBe("fade");
+  });
+
+  test("et arrangement uten bilde får standardbildet, et med bilde beholder sitt", () => {
+    planner.gatherings = [event("a", 1), event("b", 2, { imageUrl: "https://example.org/eget.jpg" })];
+    const { container } = render(
+      <MemoryRouter>
+        <CalendarModule presentation={{ ...MODULE_PRESENTATION_DEFAULTS["module-calendar"], fallbackImage: "https://example.org/standard.jpg", motion: "none" }} />
+      </MemoryRouter>
+    );
+    expect([...container.querySelectorAll("img")].map((img) => img.getAttribute("src"))).toEqual(["https://example.org/standard.jpg", "https://example.org/eget.jpg"]);
+    expect(container.querySelector("[data-whats-on-layout]")!.className).not.toContain("reveal-children");
+  });
 });
