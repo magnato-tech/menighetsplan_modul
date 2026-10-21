@@ -512,6 +512,10 @@ export function applyStaticFields(block: VisualBlock, fields: StaticBlockFields)
     title = heading || (body ? body.split("\n")[0].slice(0, 40) : "Tekstavsnitt");
   }
 
+  // The block keeps the anchor it had, so links to this section go on working when its words change
+  const anchor = (block.rawContent || "").trim().match(/^<!--\s*cms-anchor:[a-z0-9-]+\s*-->/i)?.[0];
+  if (anchor && !rawContent.trim().startsWith(anchor)) rawContent = `${anchor}\n${rawContent}`;
+
   return { ...block, title, rawContent };
 }
 

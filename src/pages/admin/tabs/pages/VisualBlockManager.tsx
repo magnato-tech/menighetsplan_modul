@@ -170,14 +170,18 @@ export const VisualBlockManager: React.FC<VisualBlockManagerProps> = ({
   const handleSaveEditContent = (index: number) => {
     const block = blocks[index];
     const next = [...blocks];
+    // Closing the fields without a change leaves the block as it is, so the page is not marked as changed
+    let unchanged: boolean;
     if (isEditableDynamicModule(block.type) && moduleEditConfig) {
       next[index] = applyModulePresentation(block, moduleEditConfig);
+      unchanged = JSON.stringify(readModulePresentation(block)) === JSON.stringify(moduleEditConfig);
     } else if (editFields) {
       next[index] = applyStaticFields(block, editFields);
+      unchanged = JSON.stringify(readStaticFields(block)) === JSON.stringify(editFields);
     } else {
       return;
     }
-    onChange(next);
+    if (!unchanged) onChange(next);
     setEditingBlockId(null);
     setEditFields(null);
     setModuleEditConfig(null);
