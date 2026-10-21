@@ -1,4 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
+import { seoLengthHint, seoLengthOf } from "../../../../utils/seoLength";
+import { FocusPointPicker } from "../../../../components/admin/FocusPointPicker";
 import { CmsPage } from "../../../../data/cmsData";
 import {
   Edit3,
@@ -323,7 +325,7 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
 
   useEffect(() => {
     setPreviewRevision((r) => r + 1);
-  }, [editingPage.title, editingPage.summary, editingPage.heroTitle, editingPage.heroCtaText, editingPage.heroCtaLink, editingPage.heroCtaSecondaryText, editingPage.heroCtaSecondaryLink, editingPage.showHeroPrimaryCta, editingPage.showHeroSecondaryCta, editingPage.showHeroSubtext, editingPage.heroHeight, editingPage.heroTitleStyle, editingPage.heroTitleSize, editingPage.heroTitleFont, editingPage.heroImageTitles, editingPage.heroArrows, editingPage.heroZoom, editingPage.heroMenuOverlay, editingPage.heroMenuStyle, editingPage.heroVeil, editingPage.heroImage, editingPage.heroImages, editingPage.content, editingPage.isPublished, editingPage.linkUrl, cleanSlug]);
+  }, [editingPage.title, editingPage.summary, editingPage.heroTitle, editingPage.heroCtaText, editingPage.heroCtaLink, editingPage.heroCtaSecondaryText, editingPage.heroCtaSecondaryLink, editingPage.showHeroPrimaryCta, editingPage.showHeroSecondaryCta, editingPage.showHeroSubtext, editingPage.heroHeight, editingPage.heroTitleStyle, editingPage.heroTitleSize, editingPage.heroTitleFont, editingPage.heroImageTitles, editingPage.heroArrows, editingPage.heroZoom, editingPage.heroFocus, editingPage.heroMenuOverlay, editingPage.heroMenuStyle, editingPage.heroVeil, editingPage.heroImage, editingPage.heroImages, editingPage.content, editingPage.isPublished, editingPage.linkUrl, cleanSlug]);
 
   useEffect(() => {
     if (viewMode === "edit") return;
@@ -731,6 +733,11 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
             helpText="Dekorativt bakgrunnsbilde. Beskrivelse for skjermleser er valgfritt."
             compact={false}
           />
+          {editingPage.heroImage && (
+            <div className="pt-2 max-w-sm">
+              <FocusPointPicker image={editingPage.heroImage} value={editingPage.heroFocus || ""} onChange={(heroFocus) => onUpdate({ heroFocus })} />
+            </div>
+          )}
         </div>
 
         {isFrontPage && (
@@ -980,6 +987,14 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
                   placeholder="Kort beskrivelse (ca. 150-160 tegn) som Google viser under sidetittelen..."
                   className="w-full px-3 py-2 rounded-xl bg-[var(--studio-bg)] border border-[var(--studio-border)] text-[var(--studio-input-text)] text-xs focus:outline-hidden focus:border-indigo-500 resize-y"
                 />
+                <p
+                  data-seo-length={seoLengthOf(editingPage.metaDescription || "")}
+                  className={`text-[10px] ${
+                    seoLengthOf(editingPage.metaDescription || "") === "long" ? "text-amber-600 font-semibold" : "text-[var(--studio-muted)]"
+                  }`}
+                >
+                  {seoLengthHint(editingPage.metaDescription || "")}
+                </p>
               </div>
 
               <div className="space-y-1">
@@ -1351,6 +1366,7 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
         <VersionHistoryDialog
           kind="page"
           targetId={editingPage.id}
+          current={editingPage as Record<string, unknown>}
           onRestore={(version) => {
             onUpdate(restoredFields(version) as Partial<CmsPage>);
             setShowHistory(false);

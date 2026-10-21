@@ -77,3 +77,43 @@ export function restoredFields(version: ContentVersion): Record<string, unknown>
   const { updatedAt: _updated, status: _status, ...fields } = version.snapshot;
   return { ...fields, id: version.targetId, blocks: undefined };
 }
+
+// What differs between a version and what the editor holds now, said in a few words, so the right
+// version can be found without opening each one (as WordPress compares two revisions).
+
+/** The fields that have a name of their own; any other change is «andre innstillinger». */
+const NAMED: Record<string, string> = {
+  title: "tittel",
+  summary: "ingress",
+  heroTitle: "tittel i toppbildet",
+  heroImage: "toppbilde",
+  imageUrl: "bilde",
+  isPublished: "publisering",
+  metaDescription: "beskrivelse for Google",
+  category: "kategori",
+  expiresAt: "siste dag",
+};
+const IGNORED = new Set([...NOT_CONTENT, "id", "blocks", "slug"]);
+
+const wordsIn = (value: unknown): number => (typeof value === "string" ? value.split(/\s+/).filter(Boolean).length : 0);
+const same = (a: unknown, b: unknown): boolean => JSON.stringify(a ?? "") === JSON.stringify(b ?? "");
+
+/** The differences between a version and the editor's content now, as words: «tittel», «teksten (12 ord flere)». */
+export function versionChanges(version: Record<string, unknown>, now: Record<string, unknown>): string[] {
+  const changes: string[] = [];
+  const keys = new Set([...Object.keys(version), ...Object.keys(now)].filter((key) => !IGNORED.has(key)));
+  let other = false;
+  for (const key of keys) {
+    if (same(version[key], now[key])) continue;
+    if (key === "content") {
+      const difference = wordsIn(version.content) - wordsIn(now.content);
+      changes.push(difference > 0 ? `teksten (${difference} ord flere)` : difference < 0 ? `teksten (${-difference} ord færre)` : "teksten");
+    } else if (NAMED[key]) {
+      changes.push(NAMED[key]);
+    } else {
+      other = true;
+    }
+  }
+  if (other) changes.push("andre innstillinger");
+  return changes;
+}

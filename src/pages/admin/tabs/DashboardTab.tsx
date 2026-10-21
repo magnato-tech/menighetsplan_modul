@@ -24,6 +24,7 @@ import {
   withinWeeks,
 } from "../studio";
 import { UpcomingGatheringsPanel } from "./dashboard/UpcomingGatheringsPanel";
+import { SiteCheckCard } from "../../../components/admin/SiteCheckCard";
 import type { StudioArea } from "../studioAreas";
 import { useLevel } from "../../../hooks/useLevel";
 import { hasPlanner } from "../../../utils/level";
@@ -40,7 +41,10 @@ interface DashboardTabProps {
 
 export const DashboardTab: React.FC<DashboardTabProps> = ({ studio, area, onTabChange, onCreateIn }) => {
   const { adminGatherings, adminTasks } = studio;
-  const { pages, news, sermons, staff, settings } = useCms();
+  const { pages, news, sermons, staff, settings, media } = useCms();
+  // The moment the overview was opened, for what «Sjekk nettsiden» counts as ahead and as old
+  const [now] = React.useState(() => Date.now());
+  const gatherings = React.useMemo(() => adminGatherings.map((item) => item.gathering), [adminGatherings]);
   const publicGatheringsCount = countPublicGatherings(adminGatherings);
   const withPlanner = hasPlanner(useLevel());
   const planning = area === "planlegging";
@@ -187,6 +191,8 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ studio, area, onTabC
           </>
         )}
       </div>
+
+      {!planning && <SiteCheckCard pages={pages} news={news} gatherings={gatherings} media={media} now={now} onTabChange={onTabChange} />}
 
       {/* Quick Actions Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

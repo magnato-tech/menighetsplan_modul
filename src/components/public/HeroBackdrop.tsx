@@ -12,6 +12,8 @@ interface HeroBackdropProps {
   veil?: "none" | "light" | "dark";
   /** Which image is on show, when the page keeps track of it (see useHeroSlides). Otherwise the backdrop turns by itself. */
   shown?: HeroShown;
+  /** The place in the first image that stays in view, as CSS object-position (see utils/focusPoint.ts). */
+  focus?: string;
 }
 
 /** The image on show, and the one fading out (-1 for none). */
@@ -65,7 +67,7 @@ export function useHeroSlides(count: number, secondsPerImage = 8) {
  * The picture behind the hero: calm rather than busy. One image at a time, a slow zoom out,
  * and a long fade to the next. The dark veil on top keeps the headline readable on any photo.
  */
-export const HeroBackdrop: React.FC<HeroBackdropProps> = ({ images, alt = "", zoom = true, secondsPerImage = 8, veil = "dark", shown: shownByPage }) => {
+export const HeroBackdrop: React.FC<HeroBackdropProps> = ({ images, alt = "", zoom = true, secondsPerImage = 8, veil = "dark", shown: shownByPage, focus }) => {
   const count = images.length;
   // Kept by the page when it is given, so the backdrop does not keep a clock of its own as well
   const own = useHeroSlides(shownByPage ? 0 : count, secondsPerImage);
@@ -84,6 +86,7 @@ export const HeroBackdrop: React.FC<HeroBackdropProps> = ({ images, alt = "", zo
             src={src}
             alt={index === 0 ? alt : ""}
             aria-hidden={isActive ? undefined : true}
+            style={index === 0 && focus ? { objectPosition: focus, transformOrigin: focus } : undefined}
             className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-[1500ms] ease-in-out ${
               isActive ? "opacity-100" : "opacity-0"
             } ${zooms ? "hero-zoom" : ""}`}

@@ -130,3 +130,18 @@ export function suggestedLastDay(article: Partial<Pick<CmsNewsArticle, "title" |
 export function needsLastDay(article: Published, gatherings: readonly Event[]): boolean {
   return article.isPublished !== false && lastDayOf(article, gatherings) === null;
 }
+
+/** After how many days an article without a last day is marked in the admin as having stood long. */
+export const STANDING_LONG_DAYS = 14;
+
+/**
+ * How many days a published article with nothing that ends it has stood, when it is
+ * STANDING_LONG_DAYS or more: such an article may be about something that is over. Null otherwise.
+ */
+export function daysStandingLong(article: Published & { publishedAt?: string }, gatherings: readonly Event[], now: number): number | null {
+  if (!needsLastDay(article, gatherings)) return null;
+  const published = Date.parse(article.publishedAt ?? "");
+  if (Number.isNaN(published)) return null;
+  const days = Math.floor((now - published) / 86_400_000);
+  return days >= STANDING_LONG_DAYS ? days : null;
+}

@@ -98,7 +98,7 @@ const siderSidetre: HelpArticle = {
   hvor: "Nettside → Sider & Innhold",
   intro: "Listen er nettsidens meny: hovedfaner med underfaner, i den rekkefølgen de står i menyen.",
   steg: [
-    "Den runde **+** øverst lager en ny hovedfane. **+ Underfane** på en fane lager en side under den.",
+    "Den runde **+** øverst lager en ny hovedfane. **+ Underfane** på en fane lager en side under den. Kopier-knappen ved siden av Rediger lager en kopi som kladd.",
     "Gi siden **Sidetittel**, og la **Adresse** stå tom, så lages den fra tittelen. **Hovedfane / Forelder** flytter siden under en annen fane.",
     "Dra en side for å flytte den, eller bruk pilene opp og ned.",
     "Trykk på statusen for å publisere en side eller sette den til kladd.",
@@ -130,13 +130,13 @@ const siderInnhold: HelpArticle = {
   hvor: "Nettside → Sider & Innhold → Rediger → Rediger innhold",
   intro: "En side er bygget av blokker. Teksten i en blokk skrives slik den skal se ut, med knapper over feltet.",
   steg: [
-    "Trykk **Rediger innhold** på en blokk.",
+    "Trykk på tittelen eller teksten i en blokk, eller **Rediger innhold**.",
     "Skriv i feltet **Tekst**. Merk ord og trykk **Fet**, **Kursiv** eller **Lenke**.",
     "I en tekstblokk lager **Overskrift** og **Underoverskrift** overskrifter, og **Punktliste** og **Nummerert liste** lister.",
     "**Lenke**: merk ordene, skriv adressen eller velg en side, og trykk **Bruk**.",
-    "Trykk **Bruk endringer**, og lagre siden til slutt.",
+    "Forhåndsvisningen viser teksten med en gang. Trykk **Ferdig**, og lagre siden til slutt.",
   ],
-  godt: "I bilde med tekst, infoboks og kort er det bare Fet, Kursiv og Lenke, fordi nettsiden bare viser det der. **Vis som tekst** viser tegnene (## og -) for den som vil skrive dem selv.",
+  godt: "Skriv / på en tom linje i en tekstblokk for å gjøre den til overskrift eller liste. I bilde med tekst, infoboks og kort er det bare Fet, Kursiv og Lenke, fordi nettsiden bare viser det der. **Vis som tekst** viser tegnene (## og -) for den som vil skrive dem selv.",
   passPa: "Har teksten tegn feltet ikke har knapper for, for eksempel et sitat, vises den som vanlig tekst med en melding. Ingenting blir borte.",
   seOgsa: ["sider-redigere", "sider-moduler"],
 };
@@ -147,12 +147,12 @@ const siderLagre: HelpArticle = {
   hvor: "Nettside → Sider & Innhold → Rediger",
   intro: "Siden blir stående åpen når du lagrer, og en tidligere versjon kan hentes tilbake.",
   steg: [
-    "Trykk **Lagre** øverst, eller **Lagre side** nederst. Lukk med X eller **Avbryt**.",
+    "Trykk **Lagre** øverst, eller **Lagre side** nederst, eller Ctrl+S. Lukk med X eller **Avbryt**.",
     "Har du endret noe, spør admin før siden lukkes: **Lagre**, **Forkast endringene** eller **Bli her**.",
     "Lagret noe feil? **Historikk** øverst viser de 30 siste versjonene. **Gjenopprett** legger en versjon inn i redigeringen.",
     "Trykk **Lagre** for å beholde versjonen du hentet tilbake.",
   ],
-  godt: "Går du til en annen fane, blir det du skrev liggende, og menyen viser **Ikke lagret** ved fanen. **Gå til Min Side**, **Logg ut** og nettleseren spør før noe går tapt.",
+  godt: "Går du til en annen fane, blir det du skrev liggende, og menyen viser **Ikke lagret** ved fanen. **Gå til Min Side**, **Logg ut** og nettleseren spør før noe går tapt. Ble nettleseren lukket likevel, tilbys det ulagrede utkastet neste gang siden åpnes: **Hent tilbake utkastet**. Historikk viser hva hver versjon har annerledes enn nå.",
   seOgsa: ["sider-redigere", "nyheter"],
 };
 

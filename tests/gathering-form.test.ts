@@ -101,6 +101,7 @@ describe("Et arrangement som finnes, i skjemaet", () => {
       cancelled: false,
       imageUrl: "",
       imageAlt: "",
+      imageFocus: "",
       summary: "",
       content: "",
       linkUrl: "",

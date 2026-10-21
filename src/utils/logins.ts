@@ -17,8 +17,14 @@ export interface Login {
   /** The e-mail address, in lower case with nothing around it. Also the place of the document. */
   id: string;
   personId: string;
-  role: "admin" | "member";
+  role: LoginRole;
 }
+
+/** What the database rules know of a person: administrator, web editor, or member. */
+export type LoginRole = "admin" | "nettredaktor" | "member";
+
+/** The role a login gets from the person, or from what is stored; anything unknown is a member. */
+export const loginRoleOf = (role: unknown): LoginRole => (role === "admin" || role === "nettredaktor" ? role : "member");
 
 /** An address as it is compared and stored: lower case, with nothing around it. Empty when there is none. */
 export const loginIdOf = (email: string | null | undefined): string => (email ?? "").trim().toLowerCase();
@@ -38,7 +44,7 @@ export function loginsOf(persons: readonly Pick<Person, "id" | "email" | "global
   }
   return [...byAddress.entries()]
     .filter(([, owners]) => owners.length === 1)
-    .map(([id, [person]]): Login => ({ id, personId: person.id, role: person.globalRole === "admin" ? "admin" : "member" }))
+    .map(([id, [person]]): Login => ({ id, personId: person.id, role: loginRoleOf(person.globalRole) }))
     .sort((a, b) => a.id.localeCompare(b.id));
 }
 

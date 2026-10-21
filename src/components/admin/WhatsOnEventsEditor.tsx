@@ -3,6 +3,8 @@ import { createPortal } from "react-dom";
 import { AlertCircle, CheckCircle2, Image as ImageIcon } from "lucide-react";
 import { useFirebase } from "../../context/FirebaseDataContext";
 import { GatheringFormDialog } from "../gathering/GatheringFormDialog";
+import { GatheringWebsiteDialog } from "../gathering/GatheringWebsiteDialog";
+import { isWebEditor } from "../../utils/session";
 import { useLevel } from "../../hooks/useLevel";
 import { useMediaMap } from "../../hooks/useMediaMap";
 import { formatNorwegianDateTime } from "../../utils/dates";
@@ -25,7 +27,9 @@ export const WhatsOnEventsEditor: React.FC<{ config: ModulePresentationConfig; o
   config,
   openEvent,
 }) => {
-  const { gatherings, groups, updateGathering } = useFirebase();
+  const { gatherings, groups, updateGathering, currentUser } = useFirebase();
+  // A web editor gives the events picture and text only; the planning is not theirs
+  const webEditor = isWebEditor(currentUser);
   const mediaById = useMediaMap();
   const withPlanner = hasPlanner(useLevel());
   const [editing, setEditing] = useState<Gathering | null>(null);
@@ -97,6 +101,9 @@ export const WhatsOnEventsEditor: React.FC<{ config: ModulePresentationConfig; o
       {editing &&
         createPortal(
           <div onSubmit={(event) => event.stopPropagation()} onClick={(event) => event.stopPropagation()} onKeyDown={(event) => event.stopPropagation()}>
+            {webEditor ? (
+              <GatheringWebsiteDialog gathering={editing} onSave={(updates) => updateGathering(editing.id, updates)} onClose={() => setEditing(null)} />
+            ) : (
             <GatheringFormDialog
               isNew={false}
               initial={formOfGathering(editing)}
@@ -106,6 +113,7 @@ export const WhatsOnEventsEditor: React.FC<{ config: ModulePresentationConfig; o
               onSave={(values) => updateGathering(editing.id, gatheringUpdatesOf(values, withPlanner))}
               onClose={() => setEditing(null)}
             />
+            )}
           </div>,
           document.body
         )}

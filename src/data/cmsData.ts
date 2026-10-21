@@ -45,6 +45,8 @@ export interface CmsPage {
   heroImage?: string;
   /** Optional screen-reader description for decorative hero; empty means alt="". */
   heroImageAlt?: string;
+  /** The place in the main hero image that stays in view when it is cut to fit, "x% y%" (see utils/focusPoint.ts). The middle when not chosen. */
+  heroFocus?: string;
   /** Up to two more hero images for the front page. With them the hero fades from one image to the next. */
   heroImages?: string[];
   /** Slow zoom out on the front page hero image. On unless switched off. */
@@ -578,7 +580,7 @@ Et åpent hjem for alle generasjoner. Vi samles til gudstjeneste, bønn og nære
     inNavMenu: true,
     linkUrl: "/",
     metaDescription: "Velkommen til Fjordvik menighet. Et åpent hjem for alle generasjoner med gudstjeneste søndager kl. 11:00, søndagsskole og fellesskap.",
-    ogImage: "https://images.unsplash.com/photo-1548625361-195fe5795df5?auto=format&fit=crop&w=1200&h=630&q=80",
+    ogImage: "https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1200&h=630&q=80",
     updatedAt: "2026-08-24T10:00:00.000Z",
   },
   // 2. Kalender (Toppfane)

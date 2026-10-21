@@ -4,6 +4,7 @@ import { CmsResolvedLink } from "../CmsResolvedLink";
 import { useCms } from "../../../context/CmsContext";
 import { useFirebase } from "../../../context/FirebaseDataContext";
 import { shownNews } from "../../../utils/news";
+import { cardImageClass, cardImageFitOf } from "../../../utils/whatsOn";
 import {
   MODULE_PRESENTATION_DEFAULTS,
   ModulePresentationConfig,
@@ -129,7 +130,7 @@ export const NewsModule: React.FC<NewsModuleProps> = ({
                   {image && (
                     // The title right below says what the article is; the picture is not described twice
                     <div className="-mx-5 -mt-5 mb-4 h-40 bg-stone-200">
-                      <img src={image} alt="" loading="lazy" className="w-full h-full object-cover" />
+                      <img src={image} alt="" loading="lazy" className={cardImageClass(cardImageFitOf(config.imageFit))} />
                     </div>
                   )}
                   <div className="text-[10px] font-bold uppercase tracking-wider text-primary-700">

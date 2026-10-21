@@ -82,6 +82,28 @@ export function useLeaveGuard(unsaved: boolean, save: () => Promise<boolean>) {
   return { leave, dialog };
 }
 
+/**
+ * Ctrl+S (Cmd+S on a Mac) saves what is open in the editor, as in other publishing tools, instead of the
+ * browser saving the web page. Only an editor that is shown answers: the tabs stay open in the
+ * background, and one of them must not be saved by a key pressed in another.
+ */
+export function useSaveShortcut(editor: React.RefObject<HTMLElement | null>, enabled: boolean, save: () => unknown) {
+  const saveRef = useRef(save);
+  saveRef.current = save;
+  useEffect(() => {
+    if (!enabled) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!(event.ctrlKey || event.metaKey) || event.altKey || event.key.toLowerCase() !== "s") return;
+      const element = editor.current;
+      if (!element || element.offsetParent === null) return;
+      event.preventDefault();
+      void saveRef.current();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [enabled, editor]);
+}
+
 /** The editor's content as it stands, to compare with how it was opened or last saved. */
 export function draftFingerprint(draft: unknown): string {
   return draft == null ? "" : JSON.stringify(draft);

@@ -3,11 +3,13 @@ import { useCms } from "../../context/CmsContext";
 import { CmsPage } from "../../data/cmsData";
 import { buildMenuBar, buildPageTree, findOrphanPages, getParentId } from "../../utils/menu";
 import { pageFingerprint } from "../../utils/pageRecord";
-import { useReportUnsaved } from "../../hooks/useUnsavedChanges";
+import { pageCopyOf } from "../../utils/pageCopy";
+import { useReportUnsaved, useSaveShortcut } from "../../hooks/useUnsavedChanges";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { QUIET_HERO } from "../../utils/heroLayout";
 import { newId } from "../../utils/id";
-import { Plus } from "lucide-react";
+import { History, Plus } from "lucide-react";
+import { clearDraftBackup, draftTimeLabel, readDraftBackup, useDraftBackup, type DraftBackup } from "../../hooks/useDraftBackup";
 import { ShowFeedback } from "../../pages/admin/studio";
 import { PageTreeList } from "../../pages/admin/tabs/pages/PageTreeList";
 import { PageEditModal } from "../../pages/admin/tabs/pages/PageEditModal";
@@ -49,11 +51,28 @@ export const AdminCmsPanel: React.FC<AdminCmsPanelProps> = ({
     if (unsaved) setPendingLeave(() => action);
     else action();
   };
+  // What is typed is kept in this browser until it is saved (see useDraftBackup). A draft left from
+  // before, that differs from the page, is offered when the page is opened again.
+  const backupKey = editingPage ? `side:${editingPage.id ?? "ny"}` : null;
+  const [offeredBackup, setOfferedBackup] = useState<DraftBackup<Partial<CmsPage>> | null>(null);
+  useDraftBackup(backupKey, editingPage, unsaved, offeredBackup !== null);
+
   const openEditor = (page: Partial<CmsPage>, isNew: boolean) => {
     setEditingPage(page);
     setIsNewPage(isNew);
     setSavedFingerprint(pageFingerprint(page));
     setOpenCount((n) => n + 1);
+    const backup = readDraftBackup<Partial<CmsPage>>(`side:${page.id ?? "ny"}`);
+    setOfferedBackup(backup && pageFingerprint(backup.draft) !== pageFingerprint(page) ? backup : null);
+  };
+  const restoreBackup = () => {
+    if (!offeredBackup) return;
+    setEditingPage((current) => (current ? { ...current, ...offeredBackup.draft, id: current.id } : current));
+    setOfferedBackup(null);
+  };
+  const discardBackup = () => {
+    if (backupKey) clearDraftBackup(backupKey);
+    setOfferedBackup(null);
   };
 
   // The editor opens above the list. Opened from a page far down, it would come in above the screen
@@ -96,6 +115,13 @@ export const AdminCmsPanel: React.FC<AdminCmsPanelProps> = ({
       ...QUIET_HERO,
     }, true));
   };
+
+  // A copy opens in the editor as a new page; it is stored, as a draft, only when it is saved
+  const handleDuplicatePage = (page: CmsPage) =>
+    leaveEditor(() => {
+      openEditor(pageCopyOf(page, pages), true);
+      showFeedback(`En kopi av «${page.title}» er åpnet. Den lagres som kladd når du trykker Lagre.`);
+    });
 
   const handleSavePage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -146,12 +172,17 @@ export const AdminCmsPanel: React.FC<AdminCmsPanelProps> = ({
     setEditingPage((current) => (current ? { ...current, id, slug: cleanSlug } : current));
     setSavedFingerprint(pageFingerprint(toSave));
     setIsNewPage(false);
+    // Saved: the draft kept in the browser is not needed any more
+    clearDraftBackup(`side:${editingPage.id ?? "ny"}`);
+    clearDraftBackup(`side:${id}`);
+    setOfferedBackup(null);
     showFeedback("Siden ble lagret og menystrukturen ble oppdatert!");
     return true;
   };
 
   // The studio is told, for the mark in the side menu and the question before leaving the studio
   useReportUnsaved("cms-sider", unsaved, editingPage?.title, saveEditingPage);
+  useSaveShortcut(editorRef, editingPage !== null, saveEditingPage);
 
   const handleSaveAndLeave = async () => {
     const action = pendingLeave;
@@ -162,6 +193,8 @@ export const AdminCmsPanel: React.FC<AdminCmsPanelProps> = ({
   const handleDiscardAndLeave = () => {
     const action = pendingLeave;
     setPendingLeave(null);
+    // Thrown away on purpose: it is not offered again
+    if (backupKey) clearDraftBackup(backupKey);
     action?.();
   };
 
@@ -257,6 +290,24 @@ export const AdminCmsPanel: React.FC<AdminCmsPanelProps> = ({
         {wide && menuBar.length > 0 && (
           <PageMenuBar items={menuBar} activeId={editingMainId} onJump={handleMenuOpen} sticky={false} />
         )}
+        {offeredBackup && (
+          <div role="status" className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-amber-50 border border-amber-300 text-amber-950">
+            <p className="text-xs leading-relaxed flex items-start gap-2">
+              <History className="w-4 h-4 shrink-0 mt-px text-amber-600" aria-hidden="true" />
+              <span>
+                <strong>Et utkast ble ikke lagret.</strong> Denne nettleseren tok vare på endringer i siden fra {draftTimeLabel(offeredBackup.savedAt)}.
+              </span>
+            </p>
+            <div className="flex items-center gap-2 shrink-0">
+              <button type="button" onClick={discardBackup} className="px-3 py-1.5 rounded-lg text-xs font-semibold text-amber-900 hover:bg-amber-100 cursor-pointer">
+                Forkast utkastet
+              </button>
+              <button type="button" onClick={restoreBackup} className="px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white cursor-pointer">
+                Hent tilbake utkastet
+              </button>
+            </div>
+          </div>
+        )}
         <PageEditModal
           editingPage={editingPage}
           isNewPage={isNewPage}
@@ -275,6 +326,7 @@ export const AdminCmsPanel: React.FC<AdminCmsPanelProps> = ({
         onOpenNewPage={handleOpenNewPage}
         onOpenEditPage={handleOpenEditPage}
         onRequestDelete={setDeleteConfirmPageId}
+        onDuplicate={handleDuplicatePage}
         onReorder={handleReorder}
         onTogglePublish={handleTogglePublish}
       />

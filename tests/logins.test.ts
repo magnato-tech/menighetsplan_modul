@@ -215,10 +215,10 @@ describe("Reglene i databasen", () => {
     }
   });
 
-  test("lagringen av filer kan bare skrives i av en administrator", () => {
+  test("lagringen av filer kan bare skrives i av en administrator eller en nettredaktør", () => {
     const storage = readFileSync(new URL("../storage.rules", import.meta.url), "utf8");
     expect(storage).not.toContain("allow write: if true");
-    expect(storage).toContain(".data.role == 'admin'");
+    expect(storage).toContain(".data.role in ['admin', 'nettredaktor']");
   });
 
   test("demoens regler er åpne, og er en annen fil", () => {

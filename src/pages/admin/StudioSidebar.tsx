@@ -33,6 +33,7 @@ import { countAddonsOn } from "../../utils/addons";
 import { hasPlanner } from "../../utils/level";
 import { useLevel } from "../../hooks/useLevel";
 import { DEMO } from "../../demo";
+import { webEditorMayOpen } from "./webEditor";
 import { SlidersHorizontal } from "lucide-react";
 import { useDemoOwner } from "../../hooks/useDemoOwner";
 import { STUDIO_ADDONS, addonMenuSections } from "./addons";
@@ -64,6 +65,8 @@ interface StudioSidebarProps {
   unsavedTabs?: string[];
   /** Leaving the studio (Min Side, Logg ut) goes through here, so changes not saved are asked about first. */
   onLeaveStudio?: (action: () => void) => void;
+  /** A web editor: the website part only, without the choice of part, Lederskap & Stab or the system tabs. */
+  webEditor?: boolean;
 }
 
 /** The count beside a tab, or «Ikke lagret» in its place while the tab's editor holds changes not saved. */
@@ -87,6 +90,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
   onToggleSidebar,
   unsavedTabs = [],
   onLeaveStudio = (action) => action(),
+  webEditor = false,
 }) => {
   const navigate = useNavigate();
   const { currentUser, adminPersons, adminGroups, adminGatherings, adminTasks } = studio;
@@ -108,7 +112,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
   // The add-ons that are on, each in the part its tab belongs to
   const addonEntries = (inDemo ? [] : addonMenuSections(addons))
     .flatMap((section) => section.entries)
-    .filter((entry) => areaOfTab(entry.tab) === area);
+    .filter((entry) => areaOfTab(entry.tab) === area && (!webEditor || webEditorMayOpen(entry.tab)));
   const waitingProposals = [...usePendingProposalCounts(hasPlanner(level)).values()].reduce((sum, count) => sum + count, 0);
 
   // The add-ons that are on (see addons.ts), at the end of the part they belong to
@@ -185,6 +189,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
           </div>
 
           {/* The two parts of the admin. Only this menu and the overview follow the choice. */}
+          {!webEditor && (
           <div role="tablist" aria-label="Del av admin" className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-[var(--studio-surface)]">
             {STUDIO_AREAS.map((choice) => (
               <button
@@ -203,6 +208,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
               </button>
             ))}
           </div>
+          )}
 
           {/* Nav Section: Dashboard */}
           <div className="space-y-1">
@@ -307,6 +313,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
               <CountOrUnsaved count={sermons.length} unsaved={unsavedTabs.includes("cms-taler")} />
             </button>
 
+            {!webEditor && (
             <button
               type="button"
               {...tabPrefetchHandlers("cms-stab")}
@@ -325,6 +332,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
                 {staff.length}
               </span>
             </button>
+            )}
 
             <button
               type="button"
@@ -573,8 +581,8 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
             </button>
           </div>
 
-          {/* Nav Section: System & Database */}
-          {!inDemo && (
+          {/* Nav Section: System & Database. Not for a web editor */}
+          {!inDemo && !webEditor && (
           <div className="space-y-1">
             <div className="text-[10px] font-black uppercase tracking-wider text-[var(--studio-muted)] px-3 py-1">
               System & Database

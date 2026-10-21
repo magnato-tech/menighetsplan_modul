@@ -12,6 +12,7 @@ import {
   ExternalLink,
   Edit2,
   Trash2,
+  Copy,
   Plus,
   AlertTriangle,
   GripVertical,
@@ -35,6 +36,8 @@ interface PageTreeListProps {
   onOpenNewPage: (parentId?: string | null) => void;
   onOpenEditPage: (page: CmsPage) => void;
   onRequestDelete: (pageId: string) => void;
+  /** Opens a copy of the page in the editor. */
+  onDuplicate?: (page: CmsPage) => void;
   onReorder?: (orderedPageIds: string[]) => void;
   onPreviewPage?: (page: CmsPage) => void;
   onTogglePublish?: (page: CmsPage) => void;
@@ -46,6 +49,7 @@ export const PageTreeList: React.FC<PageTreeListProps> = ({
   onOpenNewPage,
   onOpenEditPage,
   onRequestDelete,
+  onDuplicate,
   onReorder,
   onPreviewPage,
   onTogglePublish,
@@ -642,6 +646,17 @@ export const PageTreeList: React.FC<PageTreeListProps> = ({
                   <Edit2 className="w-3.5 h-3.5" />
                   <span>Rediger</span>
                 </button>
+                {onDuplicate && (
+                  <button
+                    type="button"
+                    onClick={() => onDuplicate(parent)}
+                    className="p-1.5 rounded-lg bg-[var(--studio-bg)] hover:bg-[var(--studio-hover)] text-[var(--studio-muted)] hover:text-[var(--studio-text)] cursor-pointer transition-colors"
+                    title="Kopier siden"
+                    aria-label={`Kopier siden «${parent.title}»`}
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => onRequestDelete(parent.id)}
@@ -811,6 +826,17 @@ export const PageTreeList: React.FC<PageTreeListProps> = ({
                           <Edit2 className="w-3 h-3" />
                           <span>Rediger</span>
                         </button>
+                        {onDuplicate && (
+                          <button
+                            type="button"
+                            onClick={() => onDuplicate(child)}
+                            className="p-1.5 rounded-lg bg-[var(--studio-surface)] hover:bg-[var(--studio-hover)] text-[var(--studio-muted)] hover:text-[var(--studio-text)] cursor-pointer transition-colors"
+                            title="Kopier siden"
+                            aria-label={`Kopier siden «${child.title}»`}
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={() => onRequestDelete(child.id)}

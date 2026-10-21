@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { History, RotateCcw, X } from "lucide-react";
 import { fetchVersions } from "../../services/contentVersions";
 import { formatNorwegianDateTime } from "../../utils/dates";
-import { MAX_VERSIONS, type ContentKind, type ContentVersion } from "../../utils/contentVersions";
+import { MAX_VERSIONS, versionChanges, type ContentKind, type ContentVersion } from "../../utils/contentVersions";
 
 interface VersionHistoryDialogProps {
   kind: ContentKind;
@@ -10,10 +10,12 @@ interface VersionHistoryDialogProps {
   /** Puts the version into the editor. It is stored only when the editor's Lagre is pressed. */
   onRestore: (version: ContentVersion) => void;
   onClose: () => void;
+  /** What the editor holds now, to say how each version differs from it. */
+  current?: Record<string, unknown>;
 }
 
 /** «Historikk»: the earlier versions of a page or an article, newest first, each of which can be put back. */
-export const VersionHistoryDialog: React.FC<VersionHistoryDialogProps> = ({ kind, targetId, onRestore, onClose }) => {
+export const VersionHistoryDialog: React.FC<VersionHistoryDialogProps> = ({ kind, targetId, onRestore, onClose, current }) => {
   const [versions, setVersions] = useState<ContentVersion[] | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -52,6 +54,14 @@ export const VersionHistoryDialog: React.FC<VersionHistoryDialogProps> = ({ kind
               <div className="min-w-0">
                 <div className="text-xs font-bold text-[var(--studio-text)]">{formatNorwegianDateTime(version.savedAt)}</div>
                 <div className="text-[11px] text-[var(--studio-muted)] truncate">{version.title || "Uten tittel"}</div>
+                {current && (
+                  <div className="text-[11px] text-[var(--studio-text)] mt-0.5" data-version-changes>
+                    {(() => {
+                      const changes = versionChanges(version.snapshot, current);
+                      return changes.length === 0 ? "Lik det du har nå" : `Annerledes enn nå: ${changes.join(", ")}`;
+                    })()}
+                  </div>
+                )}
               </div>
               <button
                 type="button"

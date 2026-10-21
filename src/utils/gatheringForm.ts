@@ -28,6 +28,7 @@ export interface GatheringFormValues {
   // How the event is presented on the website (see utils/gatheringPresentation.ts)
   imageUrl: string;
   imageAlt: string;
+  imageFocus: string;
   summary: string;
   content: string;
   linkUrl: string;
@@ -51,6 +52,7 @@ export function newGatheringForm(start: Partial<GatheringFormValues> = {}): Gath
     cancelled: false,
     imageUrl: "",
     imageAlt: "",
+    imageFocus: "",
     summary: "",
     content: "",
     linkUrl: "",
@@ -78,6 +80,7 @@ export function formOfGathering(gathering: Gathering): GatheringFormValues {
     cancelled: gathering.cancelled === true,
     imageUrl: gathering.imageUrl ?? "",
     imageAlt: gathering.imageAlt ?? "",
+    imageFocus: gathering.imageFocus ?? "",
     summary: gathering.summary ?? "",
     content: gathering.content ?? "",
     linkUrl: gathering.linkUrl ?? "",
@@ -107,9 +110,10 @@ export function gatheringFormError(values: GatheringFormValues): string | null {
 const filled = (text: string): string | undefined => text.trim() || undefined;
 
 /** The presentation on the website, as it is stored. A text on the button without a link is nothing, and neither is a description of a picture that is not there. */
-const presentationOf = (values: GatheringFormValues) => ({
+const presentationOf = (values: GatheringFormValues): Partial<Gathering> => ({
   imageUrl: filled(values.imageUrl),
   imageAlt: filled(values.imageUrl) ? filled(values.imageAlt) : undefined,
+  imageFocus: filled(values.imageUrl) ? filled(values.imageFocus) : undefined,
   summary: filled(values.summary),
   content: filled(values.content),
   linkUrl: filled(values.linkUrl),
@@ -141,6 +145,12 @@ export function newGatheringOf(values: GatheringFormValues): NewGatheringInput {
  * What is stored on an event that exists. A field that has been emptied is undefined, which
  * takes it away in the database. The group is only among them when the form asks for it.
  */
+/**
+ * What a web editor stores of an event: its presentation on the website only, never the time, the
+ * place, the group or the staffing (the database rules let them write nothing else on an event).
+ */
+export const websiteUpdatesOf = (values: GatheringFormValues): Partial<Gathering> => presentationOf(values);
+
 export function gatheringUpdatesOf(values: GatheringFormValues, withGroup: boolean): Partial<Gathering> {
   return {
     title: values.title.trim(),

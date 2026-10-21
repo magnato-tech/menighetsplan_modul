@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import { StudioData, ShowFeedback } from "../studio";
 import { GatheringFormDialog } from "../../../components/gathering/GatheringFormDialog";
+import { GatheringWebsiteDialog } from "../../../components/gathering/GatheringWebsiteDialog";
+import { isWebEditor } from "../../../utils/session";
 import { useLevel } from "../../../hooks/useLevel";
 import { useMediaMap } from "../../../hooks/useMediaMap";
 import { formOfGathering, gatheringUpdatesOf } from "../../../utils/gatheringForm";
@@ -37,7 +39,9 @@ const MISSING_WORDS = { bilde: "bilde", tekst: "tekst" } as const;
  * here on the part about the website (see utils/gatheringForm.ts).
  */
 export const VisibilityTab: React.FC<VisibilityTabProps> = ({ studio, showFeedback }) => {
-  const { adminGatherings, adminGroups, updateGathering } = studio;
+  const { adminGatherings, adminGroups, updateGathering, currentUser } = studio;
+  // A web editor gives the events picture and text only; the planning is not theirs
+  const webEditor = isWebEditor(currentUser);
   const mediaById = useMediaMap();
   const withPlanner = hasPlanner(useLevel());
   const [editing, setEditing] = useState<Gathering | null>(null);
@@ -169,12 +173,14 @@ export const VisibilityTab: React.FC<VisibilityTabProps> = ({ studio, showFeedba
                 </button>
 
                 {/* The event itself is planned in the other part of the admin */}
+                {!webEditor && (
                 <Link
                   to={`/admin/samling/${g.id}`}
                   className="px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 bg-[var(--studio-bg)] hover:bg-[var(--studio-hover)] text-[var(--studio-text)]"
                 >
                   <span>Åpne i planleggingen</span>
                 </Link>
+                )}
 
                 <button
                   type="button"
@@ -223,7 +229,18 @@ export const VisibilityTab: React.FC<VisibilityTabProps> = ({ studio, showFeedba
         })}
       </div>
 
-      {editing && (
+      {editing && webEditor && (
+        <GatheringWebsiteDialog
+          gathering={editing}
+          onSave={(updates) => {
+            const result = updateGathering(editing.id, updates);
+            if (result.success) showFeedback("Arrangementet ble oppdatert!");
+            return result;
+          }}
+          onClose={() => setEditing(null)}
+        />
+      )}
+      {editing && !webEditor && (
         <GatheringFormDialog
           isNew={false}
           initial={formOfGathering(editing)}

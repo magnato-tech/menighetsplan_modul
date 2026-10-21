@@ -21,6 +21,22 @@ export interface RichTextFieldProps {
 // A link in a text is followed on the website as it stands: a page's address or a full web address
 const LINK_ALLOWED = /^(https?:\/\/|\/|mailto:|tel:)/i;
 
+// «/» first on an empty line opens a short list of what the line can be, as in Notion and Ghost
+type Chain = ReturnType<Editor["chain"]>;
+const SLASH_CHOICES: { label: string; run: (chain: Chain) => Chain }[] = [
+  { label: "Overskrift", run: (chain) => chain.setHeading({ level: 2 }) },
+  { label: "Underoverskrift", run: (chain) => chain.setHeading({ level: 3 }) },
+  { label: "Punktliste", run: (chain) => chain.toggleBulletList() },
+  { label: "Nummerert liste", run: (chain) => chain.toggleOrderedList() },
+  { label: "Vanlig tekst", run: (chain) => chain.setParagraph() },
+];
+
+/** Whether the line the cursor is on holds nothing but «/», in a plain paragraph. */
+const onSlashLine = (editor: Editor): boolean => {
+  const { $from } = editor.state.selection;
+  return $from.parent.type.name === "paragraph" && $from.parent.textContent === "/";
+};
+
 const toolbarButton = (active: boolean) =>
   `p-1.5 rounded-md cursor-pointer transition-colors ${
     active ? "bg-indigo-600 text-white" : "text-[var(--studio-muted)] hover:text-[var(--studio-text)] hover:bg-[var(--studio-hover)]"
@@ -42,6 +58,11 @@ export default function RichTextField({ value, onChange, mode, label, rows = 4, 
   // The editor keeps the handler it was made with, so it calls the newest one through here
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
+  // The «/» list: null when closed, else the choice that is marked
+  const [slash, setSlash] = useState<number | null>(null);
+  const slashRef = useRef<number | null>(null);
+  slashRef.current = slash;
+  const chooseRef = useRef<(index: number) => void>(() => {});
 
   const editor = useEditor({
     extensions: [
@@ -68,13 +89,42 @@ export default function RichTextField({ value, onChange, mode, label, rows = 4, 
         role: "textbox",
         class: "outline-hidden",
       },
+      handleKeyDown: (_view, event) => {
+        const marked = slashRef.current;
+        if (marked === null) return false;
+        if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+          const step = event.key === "ArrowDown" ? 1 : -1;
+          setSlash((marked + step + SLASH_CHOICES.length) % SLASH_CHOICES.length);
+          return true;
+        }
+        if (event.key === "Enter") {
+          chooseRef.current(marked);
+          return true;
+        }
+        if (event.key === "Escape") {
+          setSlash(null);
+          return true;
+        }
+        return false;
+      },
     },
     onUpdate: ({ editor: current }) => {
       const text = textOfRichDoc(current.getJSON() as RichNode, mode);
       emitted.current = text;
       onChangeRef.current(text);
+      if (mode === "full") setSlash(onSlashLine(current) ? 0 : null);
+    },
+    onSelectionUpdate: ({ editor: current }) => {
+      if (!onSlashLine(current)) setSlash(null);
     },
   });
+
+  chooseRef.current = (index: number) => {
+    if (!editor) return;
+    const { $from } = editor.state.selection;
+    SLASH_CHOICES[index].run(editor.chain().focus().deleteRange({ from: $from.start(), to: $from.end() })).run();
+    setSlash(null);
+  };
 
   // A text put in from outside: shown anew, formatted when it fits, else as plain text
   useEffect(() => {
@@ -205,6 +255,23 @@ export default function RichTextField({ value, onChange, mode, label, rows = 4, 
           </button>
         </div>
         {linkOpen && <LinkRow draft={linkDraft} hint={linkHint} onDraft={setLinkDraft} onApply={applyLink} onRemove={active?.link ? removeLink : undefined} onClose={() => setLinkOpen(false)} />}
+        {slash !== null && (
+          <div role="listbox" aria-label="Gjør linjen til" className="mx-2 mt-1 mb-2 p-1 rounded-lg border border-[var(--studio-border)] bg-[var(--studio-surface)] shadow-lg max-w-[14rem]" data-slash-menu>
+            {SLASH_CHOICES.map((choice, index) => (
+              <button
+                key={choice.label}
+                type="button"
+                role="option"
+                aria-selected={index === slash}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => chooseRef.current(index)}
+                className={`w-full text-left px-2.5 py-1.5 rounded-md text-xs cursor-pointer ${index === slash ? "bg-indigo-600 text-white" : "text-[var(--studio-text)] hover:bg-[var(--studio-hover)]"}`}
+              >
+                {choice.label}
+              </button>
+            ))}
+          </div>
+        )}
         <EditorContent
           editor={editor}
           style={{ minHeight: `${rows * 1.5 + 1}em` }}

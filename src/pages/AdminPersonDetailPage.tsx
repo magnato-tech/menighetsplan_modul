@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { isServiceGroup } from "../utils/personDirectory";
+import type { Person } from "../types";
 import { useFirebase } from "../context/FirebaseDataContext";
 import { groupsToJoin } from "../utils/groupChoice";
 import { personTaskOverview, type PersonTaskRow } from "../utils/personTasks";
@@ -70,7 +71,7 @@ export const AdminPersonDetailPage: React.FC = () => {
   const [birthDate, setBirthDate] = useState<string>("");
   const [congregationMember, setCongregationMember] = useState(false);
   const [denominationMember, setDenominationMember] = useState(false);
-  const [globalRole, setGlobalRole] = useState<"member" | "admin">("member");
+  const [globalRole, setGlobalRole] = useState<Person["globalRole"]>("member");
   const [policeCert, setPoliceCert] = useState<string>("");
   const [unavailablePeriods, setUnavailablePeriods] = useState<{ from: string; to: string; reason?: string }[]>([]);
   const [newUnavailFrom, setNewUnavailFrom] = useState<string>("");
@@ -326,15 +327,15 @@ export const AdminPersonDetailPage: React.FC = () => {
                   </div>
                 </div>
               </div>
-              {(person.globalRole === "admin" || servesInGroup) && (
+              {(person.globalRole === "admin" || person.globalRole === "nettredaktor" || servesInGroup) && (
               <span
                 className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
-                  person.globalRole === "admin"
+                  person.globalRole === "admin" || person.globalRole === "nettredaktor"
                     ? "bg-indigo-100 text-indigo-800 border border-indigo-200"
                     : "bg-slate-100 text-[var(--studio-text)] border border-[var(--studio-border)]"
                 }`}
               >
-                {person.globalRole === "admin" ? "Global Admin" : "Frivillig"}
+                {person.globalRole === "admin" ? "Global Admin" : person.globalRole === "nettredaktor" ? "Nettredaktør" : "Frivillig"}
               </span>
               )}
             </div>
@@ -444,10 +445,11 @@ export const AdminPersonDetailPage: React.FC = () => {
               <select
                 id="select-edit-person-role"
                 value={globalRole}
-                onChange={(e) => setGlobalRole(e.target.value as "member" | "admin")}
+                onChange={(e) => setGlobalRole(e.target.value as Person["globalRole"])}
                 className={studioDetailInput}
               >
                 <option value="member">Vanlig tilgang (standard)</option>
+                <option value="nettredaktor">Nettredaktør (bare nettsiden, ikke personregisteret eller planleggingen)</option>
                 <option value="admin">Administrator (full tilgang til Admin Studio & CMS)</option>
               </select>
             </div>

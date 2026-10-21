@@ -14,6 +14,7 @@ import {
 } from "../help/articles";
 import { studioTabUrl } from "../studio";
 import type { StudioArea } from "../studioAreas";
+import { webEditorMayOpen } from "../webEditor";
 
 function articleIdFromHash(hash: string, area: StudioArea): string {
   const id = hash.replace(/^#/, "");
@@ -30,7 +31,7 @@ const navButton = (selected: boolean) =>
     selected ? "bg-indigo-600 text-white shadow-sm" : "text-[var(--studio-muted)] hover:text-[var(--studio-text)] hover:bg-[var(--studio-hover)]"
   }`;
 
-export const HelpTab: React.FC<{ area: StudioArea }> = ({ area }) => {
+export const HelpTab: React.FC<{ area: StudioArea; webEditor?: boolean }> = ({ area, webEditor = false }) => {
   const { hash } = useLocation();
   const navigate = useNavigate();
   const { addons } = useCms();
@@ -41,19 +42,22 @@ export const HelpTab: React.FC<{ area: StudioArea }> = ({ area }) => {
   const [query, setQuery] = useState("");
 
   // An article about an add-on module is in the help only while the module is on, as its tab is
-  const shown = (candidate: HelpArticle) => !candidate.addon || addons?.[candidate.addon] === true;
+  // A web editor gets the help for the website part, which is all of the admin they have
+  const shown = (candidate: HelpArticle) =>
+    (!candidate.addon || addons?.[candidate.addon] === true) && (!webEditor || !candidate.tabs || candidate.tabs.every((tab) => webEditorMayOpen(tab)));
+  const sectionShown = (section: HelpSection) => !webEditor || (section.title !== "Planlegging" && section.title !== "Innsikt og moduler");
   // The part of the admin one is in comes first, after Kom i gang
   const rank = (title: string) => (title === "Kom i gang" ? 0 : title === "Planlegging" ? 1 : 2);
   const ordered = area === "planlegging" ? [...helpSections].sort((a, b) => rank(a.title) - rank(b.title)) : helpSections;
   const sections: HelpSection[] = useMemo(
     () =>
-      ordered.map((section) => ({
+      ordered.filter(sectionShown).map((section) => ({
         ...section,
         items: section.items
           .map((item) => (item.kind === "menu" ? { ...item, articles: item.articles.filter(shown) } : item))
           .filter((item) => (item.kind === "article" ? shown(item.article) : item.articles.length > 0)),
       })),
-    [addons, area]
+    [addons, area, webEditor]
   );
   const hits = useMemo(() => searchHelp(query, sections.flatMap((section) => section.items.flatMap((item) => (item.kind === "article" ? [item.article] : item.articles)))), [query, sections]);
 

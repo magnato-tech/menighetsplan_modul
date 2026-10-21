@@ -44,6 +44,7 @@ export type WarmDraftFields = Partial<
     | "heroImageTitles"
     | "heroArrows"
     | "heroZoom"
+    | "heroFocus"
     | "heroMenuOverlay"
     | "heroMenuStyle"
     | "heroVeil"
@@ -82,6 +83,7 @@ const WARM_DRAFT_KEYS: (keyof WarmDraftFields)[] = [
   "heroImageTitles",
   "heroArrows",
   "heroZoom",
+  "heroFocus",
   "heroMenuOverlay",
   "heroMenuStyle",
   "heroVeil",

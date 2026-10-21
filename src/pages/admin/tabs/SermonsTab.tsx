@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useCms } from "../../../context/CmsContext";
-import { draftFingerprint, useLeaveGuard, useReportUnsaved } from "../../../hooks/useUnsavedChanges";
+import { draftFingerprint, useLeaveGuard, useReportUnsaved, useSaveShortcut } from "../../../hooks/useUnsavedChanges";
 import { UnsavedChangesDialog } from "./pages/UnsavedChangesDialog";
 import { CmsSermon, formatYoutubeNoCookieUrl } from "../../../data/cmsData";
 import {
@@ -51,6 +51,8 @@ export const SermonsTab: React.FC<SermonsTabProps> = ({ studio, showFeedback }) 
   };
   const { leave, dialog } = useLeaveGuard(unsaved, saveDraft);
   useReportUnsaved("cms-taler", unsaved, editingSermon?.title, saveDraft);
+  const formRef = useRef<HTMLFormElement>(null);
+  useSaveShortcut(formRef, editingSermon !== null, saveDraft);
 
   const openDraft = (sermon: Partial<CmsSermon>, isNew: boolean) => {
     setEditingSermon(sermon);
@@ -102,7 +104,7 @@ export const SermonsTab: React.FC<SermonsTabProps> = ({ studio, showFeedback }) 
 
       {/* Sermon Editor Form */}
       {editingSermon && (
-        <form onSubmit={handleSaveSermon} className="p-6 rounded-2xl bg-[var(--studio-surface)] border border-amber-500/80 shadow-2xl space-y-4">
+        <form ref={formRef} onSubmit={handleSaveSermon} className="p-6 rounded-2xl bg-[var(--studio-surface)] border border-amber-500/80 shadow-2xl space-y-4">
           <div className="flex items-center justify-between border-b border-[var(--studio-border)] pb-3">
             <h3 className="text-sm font-bold text-[var(--studio-text)] flex items-center gap-2">
               <Headphones className="w-4 h-4 text-amber-400" />

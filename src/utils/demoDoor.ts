@@ -8,6 +8,7 @@ import { roleOf } from "./session";
 
 export type DemoWayIn =
   | "administrator"
+  | "nettredaktor"
   | "tjenestegruppeleder"
   | "husgruppeleder"
   | "tjenestegruppemedlem"
@@ -33,6 +34,12 @@ const WAYS_IN: { way: DemoWayIn; name: string; does: string; start: string }[] =
     way: "administrator",
     name: "Administrator",
     does: "Redigerer nettsiden (CMS), planlegger arrangementer og holder personregisteret",
+    start: "/admin",
+  },
+  {
+    way: "nettredaktor",
+    name: "Nettredaktør",
+    does: "Redigerer nettsiden: sider, nyheter, taler og bilder. Ser ikke personregisteret eller planleggingen",
     start: "/admin",
   },
   {
@@ -108,6 +115,11 @@ function personForWay(way: DemoWayIn, persons: Person[], groups: DemoGroup[], us
     case "administrator":
       return pickFirst(
         persons.filter((person) => roleOf(person, groups) === "administrator").sort(byNameThenId),
+        used
+      );
+    case "nettredaktor":
+      return pickFirst(
+        persons.filter((person) => roleOf(person, groups) === "nettredaktør").sort(byNameThenId),
         used
       );
     case "tjenestegruppeleder":

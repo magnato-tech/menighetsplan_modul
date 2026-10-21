@@ -1,9 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React, { Suspense, lazy, useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useCms } from "../../../context/CmsContext";
-import { draftFingerprint, useLeaveGuard, useReportUnsaved } from "../../../hooks/useUnsavedChanges";
+import { draftFingerprint, useLeaveGuard, useReportUnsaved, useSaveShortcut } from "../../../hooks/useUnsavedChanges";
 import { UnsavedChangesDialog } from "./pages/UnsavedChangesDialog";
 import { NewsEndDateDialog } from "./NewsEndDateDialog";
+import { NewsPreviewDialog } from "./NewsPreviewDialog";
+
+// The text field with buttons, loaded the first time an article is opened
+const RichTextField = lazy(() => import("../../../components/admin/RichTextField"));
 import { CmsNewsArticle } from "../../../data/cmsData";
 import {
   Plus,
@@ -16,12 +20,12 @@ import {
   CalendarClock,
 } from "lucide-react";
 import { StudioData, ShowFeedback } from "../studio";
-import { History } from "lucide-react";
+import { AlertTriangle, Eye, History } from "lucide-react";
 import { VersionHistoryDialog } from "../../../components/admin/VersionHistoryDialog";
 import { restoredFields } from "../../../utils/contentVersions";
 import { formatNorwegianDateTime } from "../../../utils/dates";
 import { isGroupGathering } from "../../../utils/gatherings";
-import { isNewsExpired, lastDayOf, needsLastDay, suggestedLastDay, type LastDay } from "../../../utils/news";
+import { daysStandingLong, isNewsExpired, lastDayOf, needsLastDay, suggestedLastDay, type LastDay } from "../../../utils/news";
 
 /** A day ("2026-10-11") as it is written out: «11. oktober 2026». */
 const writtenDay = (day: string): string =>
@@ -45,7 +49,8 @@ interface NewsTabProps {
 
 export const NewsTab: React.FC<NewsTabProps> = ({ studio, showFeedback, createRequested, onCreateHandled }) => {
   const { currentUser, adminGatherings } = studio;
-  const { news, saveNews, deleteNews } = useCms();
+  const { news, saveNews, deleteNews, settings } = useCms();
+  const [previewing, setPreviewing] = useState(false);
 
   // The events an article can belong to: those open to the congregation that lie ahead, the nearest first
   const now = Date.now();
@@ -80,6 +85,8 @@ export const NewsTab: React.FC<NewsTabProps> = ({ studio, showFeedback, createRe
   const saveCurrent = () => saveDraft();
   const { leave, dialog } = useLeaveGuard(unsaved, saveCurrent);
   useReportUnsaved("cms-nyheter", unsaved, editingNews?.title, saveCurrent);
+  const formRef = useRef<HTMLFormElement>(null);
+  useSaveShortcut(formRef, editingNews !== null, saveCurrent);
   const lastDaySuggestion = editingNews ? suggestedLastDay(editingNews, now) : null;
 
   const openDraft = (article: Partial<CmsNewsArticle>, isNew: boolean) => {
@@ -138,7 +145,7 @@ export const NewsTab: React.FC<NewsTabProps> = ({ studio, showFeedback, createRe
 
       {/* News Editor Modal / Panel */}
       {editingNews && (
-        <form onSubmit={handleSaveNews} className="p-6 rounded-2xl bg-[var(--studio-surface)] border border-indigo-500/80 shadow-2xl space-y-4">
+        <form ref={formRef} onSubmit={handleSaveNews} className="p-6 rounded-2xl bg-[var(--studio-surface)] border border-indigo-500/80 shadow-2xl space-y-4">
           <div className="flex items-center justify-between border-b border-[var(--studio-border)] pb-3">
             <h3 className="text-sm font-bold text-[var(--studio-text)] flex items-center gap-2">
               <Newspaper className="w-4 h-4 text-[var(--studio-icon)]" />
@@ -169,6 +176,7 @@ export const NewsTab: React.FC<NewsTabProps> = ({ studio, showFeedback, createRe
             <VersionHistoryDialog
               kind="news"
               targetId={editingNews.id}
+              current={editingNews as Record<string, unknown>}
               onRestore={(version) => {
                 setEditingNews({ ...editingNews, ...(restoredFields(version) as Partial<CmsNewsArticle>) });
                 setShowHistory(false);
@@ -230,13 +238,27 @@ export const NewsTab: React.FC<NewsTabProps> = ({ studio, showFeedback, createRe
           </div>
 
           <div className="space-y-1 text-xs">
-            <label className="font-semibold text-[var(--studio-muted)]">Artikkeltekst</label>
-            <textarea
-              rows={7}
-              value={editingNews.content || ""}
-              onChange={(e) => setEditingNews({ ...editingNews, content: e.target.value })}
-              className="w-full px-3 py-2.5 rounded-xl bg-[var(--studio-bg)] border border-[var(--studio-border)] text-[var(--studio-input-text)] font-mono text-xs focus:outline-hidden leading-relaxed"
-            />
+            <span className="font-semibold text-[var(--studio-muted)] block">Artikkeltekst</span>
+            <Suspense
+              fallback={
+                <textarea
+                  rows={7}
+                  aria-label="Artikkeltekst"
+                  value={editingNews.content || ""}
+                  onChange={(e) => setEditingNews({ ...editingNews, content: e.target.value })}
+                  className="w-full px-3 py-2.5 rounded-xl bg-[var(--studio-bg)] border border-[var(--studio-border)] text-[var(--studio-input-text)] text-xs focus:outline-hidden leading-relaxed"
+                />
+              }
+            >
+              <RichTextField
+                key={editingNews.id ?? "ny"}
+                mode="full"
+                label="Artikkeltekst"
+                rows={7}
+                value={editingNews.content || ""}
+                onChange={(content) => setEditingNews((current) => (current ? { ...current, content } : current))}
+              />
+            </Suspense>
           </div>
 
           {/* How long the article is shown on the website */}
@@ -305,6 +327,14 @@ export const NewsTab: React.FC<NewsTabProps> = ({ studio, showFeedback, createRe
                 Avbryt
               </button>
               <button
+                type="button"
+                onClick={() => setPreviewing(true)}
+                className="px-4 py-2 rounded-xl bg-[var(--studio-row)] hover:bg-[var(--studio-hover)] text-[var(--studio-text)] text-xs font-semibold border border-[var(--studio-border)] flex items-center gap-1.5"
+              >
+                <Eye className="w-3.5 h-3.5" aria-hidden="true" />
+                Forhåndsvis
+              </button>
+              <button
                 type="submit"
                 className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-sm"
               >
@@ -320,6 +350,7 @@ export const NewsTab: React.FC<NewsTabProps> = ({ studio, showFeedback, createRe
         {news.map((item) => {
           const last = lastDayOf(item, allEvents);
           const expired = isNewsExpired(item, allEvents, now);
+          const standing = daysStandingLong(item, allEvents, now);
           return (
           <div
             key={item.id}
@@ -349,6 +380,13 @@ export const NewsTab: React.FC<NewsTabProps> = ({ studio, showFeedback, createRe
                     {shownUntil(last)}
                   </span>
                 )
+              )}
+              {/* An article without a last day that has stood long may be about something that is over */}
+              {standing !== null && (
+                <span data-news-standing className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-800 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-600" aria-hidden="true" />
+                  Ingen siste dag, og har stått i {standing} dager. Er den fortsatt aktuell?
+                </span>
               )}
             </div>
 
@@ -388,6 +426,7 @@ export const NewsTab: React.FC<NewsTabProps> = ({ studio, showFeedback, createRe
       </div>
 
       <UnsavedChangesDialog {...dialog} pageTitle={editingNews?.title} what="artikkelen" />
+      {previewing && editingNews && <NewsPreviewDialog article={editingNews} churchName={settings.churchName} onClose={() => setPreviewing(false)} />}
       <NewsEndDateDialog
         open={askLastDay}
         suggestion={lastDaySuggestion}

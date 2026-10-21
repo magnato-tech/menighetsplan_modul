@@ -35,6 +35,21 @@ export const WHATS_ON_MOTIONS: { value: WhatsOnMotion; label: string }[] = [
   { value: "none", label: "Ingen bevegelse" },
 ];
 
+export type CardImageFit = "cover" | "contain";
+
+// How the picture on a card is fitted: filling the card, cut at the edges, or the whole picture, so the
+// text on a poster is not cut away
+export const CARD_IMAGE_FITS: { value: CardImageFit; label: string }[] = [
+  { value: "cover", label: "Fyll kortet (kantene kan kuttes)" },
+  { value: "contain", label: "Hele bildet (for plakater med tekst)" },
+];
+
+export const cardImageFitOf = (value: string | undefined): CardImageFit => (value === "contain" ? "contain" : "cover");
+
+/** The picture's own class: the whole picture on a plain ground, or filling the card. */
+export const cardImageClass = (fit: CardImageFit): string =>
+  fit === "contain" ? "w-full h-full object-contain bg-stone-100" : "w-full h-full object-cover";
+
 export interface WhatsOnOptions {
   count: number;
   selection: WhatsOnSelection;
@@ -47,6 +62,7 @@ export interface WhatsOnOptions {
   motion: WhatsOnMotion;
   /** The picture an event without one of its own is shown with. Empty: none. */
   fallbackImage: string;
+  imageFit: CardImageFit;
 }
 
 /**
@@ -67,6 +83,7 @@ export function whatsOnOptionsOf(config: Record<string, string | undefined> = {}
     showTime: config.showTime !== "off",
     motion: WHATS_ON_MOTIONS.some((option) => option.value === config.motion) ? (config.motion as WhatsOnMotion) : "fade",
     fallbackImage: config.fallbackImage?.trim() || "",
+    imageFit: cardImageFitOf(config.imageFit),
   };
 }
 

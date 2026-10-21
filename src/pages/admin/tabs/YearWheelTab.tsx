@@ -81,7 +81,7 @@ export const YearWheelTab: React.FC<YearWheelTabProps> = ({ showFeedback, curren
           <h2 className="text-xl sm:text-2xl font-black text-[var(--studio-text)]">Menighetens årshjul</h2>
           <p className="text-xs text-[var(--studio-muted)] mt-1">Administrative frister og det som kommer igjen hvert år.</p>
         </div>
-        <button type="button" onClick={() => open({ id: newId("frist"), month: currentMonth, day: daysIn(currentMonth) === 29 ? 28 : daysIn(currentMonth), title: "" })} className={`${studioPrimaryButton} flex items-center gap-1.5`}>
+        <button type="button" onClick={() => open({ id: newId("frist"), month: currentMonth, day: daysIn(currentMonth) === 29 ? 28 : daysIn(currentMonth), title: "" })} className={`${studioPrimaryButton} px-4 py-2 text-xs flex items-center gap-1.5 shrink-0 self-start sm:self-auto`}>
           <Plus className="w-4 h-4" aria-hidden="true" />
           <span>Ny frist</span>
         </button>
@@ -221,7 +221,7 @@ export const YearWheelTab: React.FC<YearWheelTabProps> = ({ showFeedback, curren
               <button type="button" onClick={() => setEditing(null)} className={studioSecondaryButton}>
                 Avbryt
               </button>
-              <button type="submit" className={studioPrimaryButton}>
+              <button type="submit" className={`${studioPrimaryButton} px-4 py-2 text-xs`}>
                 Lagre
               </button>
             </div>

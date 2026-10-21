@@ -17,7 +17,8 @@ export interface Person {
   congregationMember?: boolean;
   /** Whether the person belongs to its denomination. Absent means they do not. Only on the register. */
   denominationMember?: boolean;
-  globalRole: "member" | "admin";
+  /** «nettredaktor»: the website part of the admin only, never the register or the planning (see utils/session.ts). */
+  globalRole: "member" | "admin" | "nettredaktor";
   policeCertificateValidUntil?: string; // ISO date YYYY-MM-DD
   unavailablePeriods?: UnavailablePeriod[];
   // GDPR & Public Stabs-profil
@@ -115,6 +116,8 @@ export interface Gathering {
   imageUrl?: string;
   /** What the picture shows, for the one who does not see it. */
   imageAlt?: string;
+  /** The place in the picture that stays in view when it is cut to fit a card, "x% y%" (see utils/focusPoint.ts). */
+  imageFocus?: string;
   /** The lead: a sentence or two, shown on the event's card. */
   summary?: string;
   /** The longer text about the event, written as the text of a page is. */

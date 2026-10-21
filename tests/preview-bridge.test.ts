@@ -123,7 +123,8 @@ describe("previewBridge", () => {
     const cmsPagesBlock = rules.match(/match \/cms_pages\/\{pageId\} \{[\s\S]*?\}/)?.[0] || "";
     expect(cmsPagesBlock).not.toContain("allow read: if true");
     expect(cmsPagesBlock).toContain("isPublished == true");
-    expect(cmsPagesBlock).toContain("isAdmin()");
+    // Written by an administrator or a web editor (writesWebsite in the rules)
+    expect(cmsPagesBlock).toContain("writesWebsite()");
   });
 
   describe("siden som forhåndsvisningen får", () => {

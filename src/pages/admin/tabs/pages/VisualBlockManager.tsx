@@ -16,6 +16,7 @@ import {
   ModulePresentationConfig,
   readModulePresentation,
 } from "../../../../utils/modulePresentation";
+import { stripSectionAnchorComment } from "../../../../utils/cmsLinks";
 import { ModulePresentationEditor } from "../../../../components/admin/ModulePresentationEditor";
 import { CmsMediaPicker } from "../../../../components/admin/CmsMediaPicker";
 import { CmsLinkPicker } from "../../../../components/admin/CmsLinkPicker";
@@ -24,6 +25,7 @@ import {
   ChevronUp,
   ChevronDown,
   Trash2,
+  Copy,
   Plus,
   Edit3,
   Check,
@@ -107,6 +109,26 @@ export const VisualBlockManager: React.FC<VisualBlockManagerProps> = ({
     }, LIVE_APPLY_MS);
     return () => window.clearTimeout(timer);
   }, [moduleEditConfig, editingBlockId]);
+
+  // The same for the text of a block: what is typed shows in the preview half a second later. The
+  // block is written anew only when its fields differ from what it holds, so opening a block and looking
+  // does not mark the page as changed.
+  useEffect(() => {
+    if (!editingBlockId || !editFields) return;
+    const timer = window.setTimeout(() => {
+      const current = blocksRef.current;
+      const index = current.findIndex((block) => block.id === editingBlockId);
+      if (index < 0) return;
+      const block = current[index];
+      if (JSON.stringify(readStaticFields(block)) === JSON.stringify(editFields)) return;
+      const applied = applyStaticFields(block, editFields);
+      if (applied.rawContent === block.rawContent && applied.title === block.title) return;
+      const next = [...current];
+      next[index] = applied;
+      onChange(next);
+    }, LIVE_APPLY_MS);
+    return () => window.clearTimeout(timer);
+  }, [editFields, editingBlockId]);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   const handleMoveUp = (index: number) => {
@@ -133,6 +155,22 @@ export const VisualBlockManager: React.FC<VisualBlockManagerProps> = ({
       ...next[index],
       hidden: !next[index].hidden,
     };
+    onChange(next);
+  };
+
+  // A copy is put right under the block. It does not take the block's anchor, so the links to the block
+  // still lead to the block; the copy gets its own when the page is saved.
+  const handleDuplicate = (index: number) => {
+    const block = blocks[index];
+    const withoutAnchor = () => {
+      const { anchor: _anchor, ...config } = readModulePresentation(block);
+      return applyModulePresentation(block, config);
+    };
+    const copy: VisualBlock = isEditableDynamicModule(block.type)
+      ? withoutAnchor()
+      : { ...block, rawContent: block.rawContent ? stripSectionAnchorComment(block.rawContent) : block.rawContent };
+    const next = [...blocks];
+    next.splice(index + 1, 0, { ...copy, id: `${block.id}-kopi-${Date.now()}` });
     onChange(next);
   };
 
@@ -334,10 +372,28 @@ export const VisualBlockManager: React.FC<VisualBlockManagerProps> = ({
                     {getModuleIcon(block.type)}
                   </div>
 
-                  <div className="min-w-0 flex-1 space-y-1">
+                  {/* A press on the title or the text opens the block's fields, as «Rediger innhold» does */}
+                  <div
+                    className={`min-w-0 flex-1 space-y-1 ${canEditBlockContent(block) && !isEditing ? "cursor-pointer group/excerpt" : ""}`}
+                    data-block-excerpt={block.id}
+                    {...(canEditBlockContent(block) && !isEditing
+                      ? {
+                          role: "button",
+                          tabIndex: 0,
+                          title: "Trykk for å redigere",
+                          onClick: () => handleStartEditContent(block),
+                          onKeyDown: (event: React.KeyboardEvent) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              handleStartEditContent(block);
+                            }
+                          },
+                        }
+                      : {})}
+                  >
                     <div className="flex flex-wrap items-center gap-2">
                       <span
-                        className={`font-bold text-xs ${isHidden ? "line-through text-[var(--studio-muted)]" : "text-[var(--studio-text)]"}`}
+                        className={`font-bold text-xs group-hover/excerpt:text-[var(--studio-accent-text)] ${isHidden ? "line-through text-[var(--studio-muted)]" : "text-[var(--studio-text)]"}`}
                         title={block.title}
                       >
                         {displayTitle}
@@ -461,6 +517,17 @@ export const VisualBlockManager: React.FC<VisualBlockManagerProps> = ({
                     <ChevronDown className="w-4 h-4" />
                   </button>
 
+                  {/* Copy button */}
+                  <button
+                    type="button"
+                    onClick={() => handleDuplicate(index)}
+                    className="p-1.5 rounded-lg bg-[var(--studio-surface)] hover:bg-[var(--studio-hover)] text-[var(--studio-muted)] hover:text-[var(--studio-text)] transition-colors cursor-pointer"
+                    title="Kopier blokken"
+                    aria-label="Kopier blokken"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
+
                   {/* Delete button */}
                   <button
                     type="button"
@@ -502,7 +569,6 @@ export const VisualBlockManager: React.FC<VisualBlockManagerProps> = ({
                     setEditFields(next);
                     onSelectBlock?.(block.id);
                   }}
-                  onSave={() => handleSaveEditContent(index)}
                 />
               )}
             </div>
@@ -552,13 +618,11 @@ function StaticBlockEditor({
   fields,
   currentPageId,
   onChange,
-  onSave,
 }: {
   block: VisualBlock;
   fields: StaticBlockFields;
   currentPageId?: string;
   onChange: (fields: StaticBlockFields) => void;
-  onSave: () => void;
 }) {
   const set = (patch: Partial<StaticBlockFields>) => onChange({ ...fields, ...patch });
 
@@ -566,13 +630,8 @@ function StaticBlockEditor({
     <div className="mt-3 pt-3 border-t border-[var(--studio-border)] space-y-3">
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-semibold text-[var(--studio-muted)]">Rediger innhold</span>
-        <button
-          type="button"
-          onClick={onSave}
-          className="text-[11px] text-[var(--studio-icon)] hover:text-[var(--studio-accent-text)] font-medium cursor-pointer"
-        >
-          Bruk endringer
-        </button>
+        {/* No «Bruk endringer»: what is typed shows in the preview by itself, and Ferdig closes the fields */}
+        <span className="text-[10px] text-[var(--studio-muted)]">Vises i forhåndsvisningen med en gang</span>
       </div>
 
       {block.type === "cta" ? (

@@ -18,6 +18,8 @@ import { StudioSidebar } from "./StudioSidebar";
 import { UnsavedChangesContext, useUnsavedRegistry } from "../../hooks/useUnsavedChanges";
 import { UnsavedChangesDialog } from "./tabs/pages/UnsavedChangesDialog";
 import { helpArticleIdForTab } from "./help/articles";
+import { isWebEditor } from "../../utils/session";
+import { webEditorMayOpen } from "./webEditor";
 
 import { AddonGate } from "./AddonGate";
 
@@ -222,6 +224,9 @@ function AdminStudioContent() {
 
   const studio = useAdminDashboard();
 
+  // A web editor has the website part of the admin only (see webEditor.ts)
+  const webEditor = isWebEditor(studio.currentUser);
+
 
 
   const tabParam = toStudioTab(searchParams.get("tab"));
@@ -233,6 +238,7 @@ function AdminStudioContent() {
   const [visitedTabs, setVisitedTabs] = useState<StudioTab[]>([tabParam]);
 
   const [createRequest, setCreateRequest] = useState<StudioTab | null>(null);
+  const mayShow = (tab: StudioTab) => visitedTabs.includes(tab) && (!webEditor || webEditorMayOpen(tab));
 
 
 
@@ -297,7 +303,14 @@ function AdminStudioContent() {
 
   const shownTab = detailRoute?.backTab ?? activeTab;
 
-  const area = areaToShow(shownTab, chosenArea, level);
+  const area: StudioArea = webEditor ? "nettside" : areaToShow(shownTab, chosenArea, level);
+
+  // Any other tab, or a page of the register or the planning, sends a web editor to the overview
+  const outsideWebEditor = webEditor && (Boolean(detailRoute) || !webEditorMayOpen(activeTab));
+  useEffect(() => {
+    if (outsideWebEditor) navigate(studioTabUrl("dashboard"), { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [outsideWebEditor]);
 
   useEffect(() => {
 
@@ -401,6 +414,8 @@ function AdminStudioContent() {
 
         onLeaveStudio={leaveStudio}
 
+        webEditor={webEditor}
+
         onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
 
       />
@@ -419,7 +434,7 @@ function AdminStudioContent() {
 
 
 
-        {detailRoute ? (
+        {detailRoute && !webEditor ? (
 
           <LevelGate tab={detailRoute.backTab}>
 
@@ -431,7 +446,7 @@ function AdminStudioContent() {
 
           <>
 
-        <StudioTabPanel tab="dashboard" activeTab={activeTab} visited={visitedTabs.includes("dashboard")}>
+        <StudioTabPanel tab="dashboard" activeTab={activeTab} visited={mayShow("dashboard")}>
 
           <LazyDashboardTab studio={studio} area={area} onTabChange={handleTabChange} onCreateIn={handleCreateIn} />
 
@@ -439,7 +454,7 @@ function AdminStudioContent() {
 
 
 
-        <StudioTabPanel tab="cms-sider" activeTab={activeTab} visited={visitedTabs.includes("cms-sider")}>
+        <StudioTabPanel tab="cms-sider" activeTab={activeTab} visited={mayShow("cms-sider")}>
 
           <LazyAdminCmsPanel
 
@@ -455,7 +470,7 @@ function AdminStudioContent() {
 
 
 
-        <StudioTabPanel tab="cms-medier" activeTab={activeTab} visited={visitedTabs.includes("cms-medier")}>
+        <StudioTabPanel tab="cms-medier" activeTab={activeTab} visited={mayShow("cms-medier")}>
 
           <LazyMediaTab showFeedback={showFeedback} />
 
@@ -463,7 +478,7 @@ function AdminStudioContent() {
 
 
 
-        <StudioTabPanel tab="cms-nyheter" activeTab={activeTab} visited={visitedTabs.includes("cms-nyheter")}>
+        <StudioTabPanel tab="cms-nyheter" activeTab={activeTab} visited={mayShow("cms-nyheter")}>
 
           <LazyNewsTab
 
@@ -481,7 +496,7 @@ function AdminStudioContent() {
 
 
 
-        <StudioTabPanel tab="cms-taler" activeTab={activeTab} visited={visitedTabs.includes("cms-taler")}>
+        <StudioTabPanel tab="cms-taler" activeTab={activeTab} visited={mayShow("cms-taler")}>
 
           <LazySermonsTab studio={studio} showFeedback={showFeedback} />
 
@@ -489,7 +504,7 @@ function AdminStudioContent() {
 
 
 
-        <StudioTabPanel tab="cms-stab" activeTab={activeTab} visited={visitedTabs.includes("cms-stab")}>
+        <StudioTabPanel tab="cms-stab" activeTab={activeTab} visited={mayShow("cms-stab")}>
 
           <LazyStaffTab showFeedback={showFeedback} />
 
@@ -497,7 +512,7 @@ function AdminStudioContent() {
 
 
 
-        <StudioTabPanel tab="cms-design" activeTab={activeTab} visited={visitedTabs.includes("cms-design")}>
+        <StudioTabPanel tab="cms-design" activeTab={activeTab} visited={mayShow("cms-design")}>
 
           <LazyThemeTab showFeedback={showFeedback} />
 
@@ -505,7 +520,7 @@ function AdminStudioContent() {
 
 
 
-        <StudioTabPanel tab="cms-innstillinger" activeTab={activeTab} visited={visitedTabs.includes("cms-innstillinger")}>
+        <StudioTabPanel tab="cms-innstillinger" activeTab={activeTab} visited={mayShow("cms-innstillinger")}>
 
           <LazySiteSettingsTab />
 
@@ -513,7 +528,7 @@ function AdminStudioContent() {
 
 
 
-        <StudioTabPanel tab="cms-overstyringer" activeTab={activeTab} visited={visitedTabs.includes("cms-overstyringer")}>
+        <StudioTabPanel tab="cms-overstyringer" activeTab={activeTab} visited={mayShow("cms-overstyringer")}>
 
           <LazyVisibilityTab studio={studio} showFeedback={showFeedback} />
 
@@ -521,15 +536,15 @@ function AdminStudioContent() {
 
 
 
-        <StudioTabPanel tab="cms-hjelp" activeTab={activeTab} visited={visitedTabs.includes("cms-hjelp")}>
+        <StudioTabPanel tab="cms-hjelp" activeTab={activeTab} visited={mayShow("cms-hjelp")}>
 
-          <LazyHelpTab area={area} />
+          <LazyHelpTab area={area} webEditor={webEditor} />
 
         </StudioTabPanel>
 
 
 
-        <StudioTabPanel tab="planlegger-samlinger" activeTab={activeTab} visited={visitedTabs.includes("planlegger-samlinger")}>
+        <StudioTabPanel tab="planlegger-samlinger" activeTab={activeTab} visited={mayShow("planlegger-samlinger")}>
 
           <LazyGatheringsTab
             studio={studio}
@@ -542,7 +557,7 @@ function AdminStudioContent() {
 
 
 
-        <StudioTabPanel tab="planlegger-oppgaver" activeTab={activeTab} visited={visitedTabs.includes("planlegger-oppgaver")}>
+        <StudioTabPanel tab="planlegger-oppgaver" activeTab={activeTab} visited={mayShow("planlegger-oppgaver")}>
 
           <LazyTasksTab studio={studio} showFeedback={showFeedback} />
 
@@ -550,7 +565,7 @@ function AdminStudioContent() {
 
 
 
-        <StudioTabPanel tab="planlegger-grupper" activeTab={activeTab} visited={visitedTabs.includes("planlegger-grupper")}>
+        <StudioTabPanel tab="planlegger-grupper" activeTab={activeTab} visited={mayShow("planlegger-grupper")}>
 
           <LazyGroupsTab studio={studio} showFeedback={showFeedback} />
 
@@ -558,7 +573,7 @@ function AdminStudioContent() {
 
 
 
-        <StudioTabPanel tab="planlegger-personer" activeTab={activeTab} visited={visitedTabs.includes("planlegger-personer")}>
+        <StudioTabPanel tab="planlegger-personer" activeTab={activeTab} visited={mayShow("planlegger-personer")}>
 
           <LazyPersonsTab studio={studio} showFeedback={showFeedback} />
 
@@ -566,7 +581,7 @@ function AdminStudioContent() {
 
 
 
-        <StudioTabPanel tab="planlegger-roller" activeTab={activeTab} visited={visitedTabs.includes("planlegger-roller")}>
+        <StudioTabPanel tab="planlegger-roller" activeTab={activeTab} visited={mayShow("planlegger-roller")}>
 
           <LazyRolesTab studio={studio} showFeedback={showFeedback} />
 
@@ -574,23 +589,23 @@ function AdminStudioContent() {
 
 
 
-        <StudioTabPanel tab="planlegger-maler" activeTab={activeTab} visited={visitedTabs.includes("planlegger-maler")}>
+        <StudioTabPanel tab="planlegger-maler" activeTab={activeTab} visited={mayShow("planlegger-maler")}>
 
           <LazyTemplatesTab studio={studio} showFeedback={showFeedback} />
 
         </StudioTabPanel>
 
-        <StudioTabPanel tab="arshjul" activeTab={activeTab} visited={visitedTabs.includes("arshjul")}>
+        <StudioTabPanel tab="arshjul" activeTab={activeTab} visited={mayShow("arshjul")}>
           <LazyYearWheelTab showFeedback={showFeedback} />
         </StudioTabPanel>
 
-        <StudioTabPanel tab="epost" activeTab={activeTab} visited={visitedTabs.includes("epost")}>
+        <StudioTabPanel tab="epost" activeTab={activeTab} visited={mayShow("epost")}>
           <LazyEmailTab studio={studio} showFeedback={showFeedback} />
         </StudioTabPanel>
 
 
 
-        <StudioTabPanel tab="database-admin" activeTab={activeTab} visited={visitedTabs.includes("database-admin")}>
+        <StudioTabPanel tab="database-admin" activeTab={activeTab} visited={mayShow("database-admin")}>
 
           <LazyDatabaseTab studio={studio} showFeedback={showFeedback} />
 
@@ -598,19 +613,19 @@ function AdminStudioContent() {
 
 
 
-        <StudioTabPanel tab="moduler" activeTab={activeTab} visited={visitedTabs.includes("moduler")}>
+        <StudioTabPanel tab="moduler" activeTab={activeTab} visited={mayShow("moduler")}>
 
           <LazyAddonsTab showFeedback={showFeedback} onTabChange={handleTabChange} />
 
         </StudioTabPanel>
 
-        <StudioTabPanel tab="analyse" activeTab={activeTab} visited={visitedTabs.includes("analyse")}>
+        <StudioTabPanel tab="analyse" activeTab={activeTab} visited={mayShow("analyse")}>
 
           <LazyAnalyticsTab showFeedback={showFeedback} onTabChange={handleTabChange} />
 
         </StudioTabPanel>
 
-        <StudioTabPanel tab="nettsidebesok" activeTab={activeTab} visited={visitedTabs.includes("nettsidebesok")}>
+        <StudioTabPanel tab="nettsidebesok" activeTab={activeTab} visited={mayShow("nettsidebesok")}>
 
           <LazySiteTrafficTab showFeedback={showFeedback} />
 
@@ -618,7 +633,7 @@ function AdminStudioContent() {
 
         {/* Only for the owner of the demo (see utils/demoOwner.ts). The tab itself asks who is looking. */}
 
-        <StudioTabPanel tab="demo-oppsett" activeTab={activeTab} visited={visitedTabs.includes("demo-oppsett")}>
+        <StudioTabPanel tab="demo-oppsett" activeTab={activeTab} visited={mayShow("demo-oppsett")}>
 
           <LazyDemoSetupTab showFeedback={showFeedback} />
 

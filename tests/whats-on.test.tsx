@@ -55,7 +55,7 @@ afterEach(() => {
 describe("Hvilke arrangementer «Hva skjer» viser", () => {
   test("uten valg er det som før: de fire neste offentlige", () => {
     const options = whatsOnOptionsOf({});
-    expect(options).toEqual({ count: 4, selection: "all", groupId: "", layout: "grid", showSummary: true, showLocation: true, showTime: true, motion: "fade", fallbackImage: "" });
+    expect(options).toEqual({ count: 4, selection: "all", groupId: "", layout: "grid", showSummary: true, showLocation: true, showTime: true, motion: "fade", fallbackImage: "", imageFit: "cover" });
     expect(ids(whatsOnGatherings(nine, now, options))).toEqual(["e1", "e2", "e3", "e4"]);
   });
 

@@ -300,7 +300,8 @@ export const initialPersons: Person[] = [
     name: "Kristine Vik",
     phone: "990 12 666",
     email: "kristine.vik@eksempel.no",
-    globalRole: "member",
+    // The demo's web editor: the website part of the admin only (see utils/demoDoor.ts)
+    globalRole: "nettredaktor",
     policeCertificateValidUntil: "2028-02-10",
   },
   {

@@ -1,5 +1,5 @@
 import type { DynamicModuleType, GroupsModuleFields, VisualBlock } from "./cmsBlocks";
-import { WHATS_ON_COUNTS, WHATS_ON_LAYOUTS, WHATS_ON_MOTIONS, WHATS_ON_SELECTIONS } from "./whatsOn";
+import { CARD_IMAGE_FITS, WHATS_ON_COUNTS, WHATS_ON_LAYOUTS, WHATS_ON_MOTIONS, WHATS_ON_SELECTIONS } from "./whatsOn";
 
 /** Key-value presentation config stored in VisualBlock.rawContent for dynamic modules. */
 export type ModulePresentationConfig = Record<string, string>;
@@ -144,6 +144,7 @@ export const MODULE_PRESENTATION_FIELDS: Record<DynamicModuleType, ModulePresent
     { key: "showTime", label: "Vis klokkeslett", type: "toggle" },
     { key: "showLocation", label: "Vis sted", type: "toggle" },
     { key: "motion", label: "Bevegelse når kortene kommer til syne", type: "select", options: WHATS_ON_MOTIONS },
+    { key: "imageFit", label: "Bildeform", type: "select", options: CARD_IMAGE_FITS },
     {
       key: "fallbackImage",
       label: "Standardbilde",
@@ -169,6 +170,7 @@ export const MODULE_PRESENTATION_FIELDS: Record<DynamicModuleType, ModulePresent
     { key: "title", label: "Seksjonstittel", type: "text" },
     { key: "linkLabel", label: "Lenketekst", type: "text" },
     { key: "linkUrl", label: "Lenkemål", type: "link" },
+    { key: "imageFit", label: "Bildeform", type: "select", options: CARD_IMAGE_FITS },
     { key: "backgroundImage", label: "Bakgrunnsbilde", type: "image" },
     { key: "backgroundColor", label: "Bakgrunnsfarge", type: "color" },
   ],

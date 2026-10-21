@@ -7,6 +7,8 @@ import {
   ROLE_LABELS,
   destinationAfterSignIn,
   isAdministrator,
+  isWebEditor,
+  mayOpenStudio,
   personsWithEmail,
   roleOf,
   sessionOf,
@@ -81,7 +83,14 @@ describe("Rollen følger av personen, ikke av kontoen", () => {
 
     expect(isAdministrator(kari)).toBe(true);
     expect(isAdministrator(ola)).toBe(false);
-    expect(Object.values(ROLE_LABELS)).toEqual(["Administrator", "Gruppeleder", "Frivillig"]);
+    expect(Object.values(ROLE_LABELS)).toEqual(["Administrator", "Nettredaktør", "Gruppeleder", "Frivillig"]);
+    // A web editor is that, also when leading a group, and gets into the admin, but is no administrator
+    const kristine = { id: "kristine", globalRole: "nettredaktor" as const };
+    expect(roleOf(kristine, groups)).toBe("nettredaktør");
+    expect(isAdministrator(kristine)).toBe(false);
+    expect(isWebEditor(kristine)).toBe(true);
+    expect(mayOpenStudio(kristine)).toBe(true);
+    expect(mayOpenStudio(anne)).toBe(false);
   });
 });
 
