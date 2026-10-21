@@ -623,6 +623,146 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
           </span>
         </div>
 
+        {/* The menu over the picture: the first thing a visitor sees, and first here */}
+        {isFrontPage && (
+          <div className="space-y-1">
+          <label className="block space-y-1 text-xs font-semibold text-[var(--studio-muted)]">
+            <span className="block">Menyen øverst</span>
+            <select
+              disabled={!editingPage.heroImage}
+              aria-describedby={editingPage.heroImage ? undefined : "hero-menu-hint"}
+              value={heroMenuStyleOf(editingPage)}
+              onChange={(e) => {
+                const heroMenuStyle = e.target.value as HeroMenuStyle;
+                onUpdate({ heroMenuStyle, heroMenuOverlay: heroMenuStyle !== "white" });
+              }}
+              className="w-full px-3 py-2 rounded-xl bg-[var(--studio-panel-bg)] border border-[var(--studio-border)] text-[var(--studio-input-text)] text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {HERO_MENU_STYLES.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          </label>
+          {!editingPage.heroImage && (
+            <p id="hero-menu-hint" className="text-[11px] text-[var(--studio-muted)]">
+              Velg et bakgrunnsbilde først. Uten toppbilde står menyen alltid som en hvit linje.
+            </p>
+          )}
+          </div>
+        )}
+
+        <div className="space-y-1">
+          <label className="text-xs font-semibold text-[var(--studio-muted)] block">
+            Bakgrunnsbilde
+          </label>
+          <CmsMediaPicker
+            label="Hovedbilde"
+            value={editingPage.heroImage || ""}
+            onChange={(url) => onUpdate({ heroImage: url })}
+            decorative
+            altValue={editingPage.heroImageAlt || ""}
+            onAltChange={(heroImageAlt) => onUpdate({ heroImageAlt })}
+            helpText="Dekorativt bakgrunnsbilde. Beskrivelse for skjermleser er valgfritt."
+            compact={false}
+          />
+          {editingPage.heroImage && (
+            <div className="pt-2 max-w-sm">
+              <FocusPointPicker image={editingPage.heroImage} value={editingPage.heroFocus || ""} onChange={(heroFocus) => onUpdate({ heroFocus })} />
+            </div>
+          )}
+        </div>
+
+        {isFrontPage && (
+          <div className="space-y-2.5 p-3 rounded-xl bg-[var(--studio-row)] border border-[var(--studio-border)]">
+            <div>
+              <span className="text-xs font-semibold text-[var(--studio-text)] block">Toppbildet: høyde, slør og flere bilder</span>
+              <p className="text-[11px] text-[var(--studio-muted)] leading-relaxed">
+                Med flere bilder toner toppen rolig fra det ene til det neste, og prikker under bildet lar den besøkende bla selv. Opptil tre bilder i alt.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label className="space-y-1 text-xs font-semibold text-[var(--studio-muted)]">
+                <span className="block">Høyde på toppbildet</span>
+                <select
+                  value={heroHeightOf(editingPage)}
+                  onChange={(e) => onUpdate({ heroHeight: e.target.value as HeroHeight })}
+                  className="w-full px-3 py-2 rounded-xl bg-[var(--studio-panel-bg)] border border-[var(--studio-border)] text-[var(--studio-input-text)] text-xs"
+                >
+                  {HERO_HEIGHTS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="space-y-1 text-xs font-semibold text-[var(--studio-muted)]">
+                <span className="block">Slør over bildet</span>
+                <select
+                  value={heroVeilOf(editingPage)}
+                  onChange={(e) => onUpdate({ heroVeil: e.target.value as HeroVeil })}
+                  className="w-full px-3 py-2 rounded-xl bg-[var(--studio-panel-bg)] border border-[var(--studio-border)] text-[var(--studio-input-text)] text-xs"
+                >
+                  {HERO_VEILS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            {[0, 1].map((index) => (
+              <div key={index} className="space-y-1.5">
+                <CmsMediaPicker
+                  label={`Toppbilde ${index + 2}`}
+                  value={editingPage.heroImages?.[index] || ""}
+                  onChange={(url) => {
+                    const images = [...(editingPage.heroImages || [])];
+                    images[index] = url;
+                    // The titles follow their pictures when one is taken out
+                    onUpdate(heroExtrasOf(images, editingPage.heroImageTitles));
+                  }}
+                  decorative
+                />
+                <label className="space-y-1 text-xs font-semibold text-[var(--studio-muted)] block">
+                    <span className="block">{`Tittel på toppbilde ${index + 2}`}</span>
+                    <input
+                      type="text"
+                      disabled={!editingPage.heroImages?.[index]}
+                      value={editingPage.heroImageTitles?.[index] || ""}
+                      onChange={(e) => {
+                        const titles = editingPage.heroImages!.map((_, i) => editingPage.heroImageTitles?.[i] || "");
+                        titles[index] = e.target.value;
+                        onUpdate({ heroImageTitles: titles });
+                      }}
+                      placeholder={
+                        editingPage.heroImages?.[index]
+                          ? `Tomt gir hovedtittelen: ${editingPage.heroTitle?.trim() || "tittelen i toppen"}`
+                          : "Velg et bilde først"
+                      }
+                      className="w-full px-3 py-2 rounded-xl bg-[var(--studio-panel-bg)] border border-[var(--studio-border)] text-[var(--studio-input-text)] text-xs font-normal focus:outline-hidden focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    />
+                  </label>
+              </div>
+            ))}
+            {(editingPage.heroImages?.length ?? 0) > 0 && (
+              <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-[var(--studio-text)]">
+                <input
+                  type="checkbox"
+                  checked={editingPage.heroArrows === true}
+                  onChange={(e) => onUpdate({ heroArrows: e.target.checked })}
+                  className="w-4 h-4 rounded text-indigo-600 bg-[var(--studio-panel-bg)] border-[var(--studio-border)] cursor-pointer"
+                />
+                <span>Piler på sidene av bildet</span>
+              </label>
+            )}
+            <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-[var(--studio-text)]">
+              <input
+                type="checkbox"
+                checked={editingPage.heroZoom !== false}
+                onChange={(e) => onUpdate({ heroZoom: e.target.checked })}
+                className="w-4 h-4 rounded text-indigo-600 bg-[var(--studio-panel-bg)] border-[var(--studio-border)] cursor-pointer"
+              />
+              <span>Rolig zoom på toppbildet</span>
+            </label>
+          </div>
+        )}
+
         <div className="space-y-1">
           <label className="text-xs font-semibold text-[var(--studio-muted)] block">Tittel i Hero</label>
           <input
@@ -657,6 +797,18 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
                   className="w-full px-3 py-2 rounded-xl bg-[var(--studio-panel-bg)] border border-[var(--studio-border)] text-[var(--studio-input-text)] text-xs"
                 >
                   {HERO_TITLE_FONTS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="space-y-1 text-xs font-semibold text-[var(--studio-muted)]">
+                <span className="block">Tittelen på bildet</span>
+                <select
+                  value={heroTitleStyleOf(editingPage)}
+                  onChange={(e) => onUpdate({ heroTitleStyle: e.target.value as HeroTitleStyle })}
+                  className="w-full px-3 py-2 rounded-xl bg-[var(--studio-panel-bg)] border border-[var(--studio-border)] text-[var(--studio-input-text)] text-xs"
+                >
+                  {HERO_TITLE_STYLES.map((option) => (
                     <option key={option.value} value={option.value}>{option.label}</option>
                   ))}
                 </select>
@@ -718,147 +870,6 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
             className="w-full px-3 py-2 rounded-xl bg-[var(--studio-panel-bg)] border border-[var(--studio-border)] text-[var(--studio-input-text)] text-xs focus:outline-hidden focus:border-indigo-500 resize-y"
           />
         </div>
-
-        <div className="space-y-1">
-          <label className="text-xs font-semibold text-[var(--studio-muted)] block">
-            Bakgrunnsbilde
-          </label>
-          <CmsMediaPicker
-            label="Hovedbilde"
-            value={editingPage.heroImage || ""}
-            onChange={(url) => onUpdate({ heroImage: url })}
-            decorative
-            altValue={editingPage.heroImageAlt || ""}
-            onAltChange={(heroImageAlt) => onUpdate({ heroImageAlt })}
-            helpText="Dekorativt bakgrunnsbilde. Beskrivelse for skjermleser er valgfritt."
-            compact={false}
-          />
-          {editingPage.heroImage && (
-            <div className="pt-2 max-w-sm">
-              <FocusPointPicker image={editingPage.heroImage} value={editingPage.heroFocus || ""} onChange={(heroFocus) => onUpdate({ heroFocus })} />
-            </div>
-          )}
-        </div>
-
-        {isFrontPage && (
-          <div className="space-y-2.5 p-3 rounded-xl bg-[var(--studio-row)] border border-[var(--studio-border)]">
-            <div>
-              <span className="text-xs font-semibold text-[var(--studio-text)] block">Toppbildet: størrelse, tittel og flere bilder</span>
-              <p className="text-[11px] text-[var(--studio-muted)] leading-relaxed">
-                Med flere bilder toner toppen rolig fra det ene til det neste, og prikker under bildet lar den besøkende bla selv. Opptil tre bilder i alt.
-              </p>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <label className="space-y-1 text-xs font-semibold text-[var(--studio-muted)]">
-                <span className="block">Høyde på toppbildet</span>
-                <select
-                  value={heroHeightOf(editingPage)}
-                  onChange={(e) => onUpdate({ heroHeight: e.target.value as HeroHeight })}
-                  className="w-full px-3 py-2 rounded-xl bg-[var(--studio-panel-bg)] border border-[var(--studio-border)] text-[var(--studio-input-text)] text-xs"
-                >
-                  {HERO_HEIGHTS.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                  ))}
-                </select>
-              </label>
-              <label className="space-y-1 text-xs font-semibold text-[var(--studio-muted)]">
-                <span className="block">Tittelen på bildet</span>
-                <select
-                  value={heroTitleStyleOf(editingPage)}
-                  onChange={(e) => onUpdate({ heroTitleStyle: e.target.value as HeroTitleStyle })}
-                  className="w-full px-3 py-2 rounded-xl bg-[var(--studio-panel-bg)] border border-[var(--studio-border)] text-[var(--studio-input-text)] text-xs"
-                >
-                  {HERO_TITLE_STYLES.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            {[0, 1].map((index) => (
-              <div key={index} className="space-y-1.5">
-                <CmsMediaPicker
-                  label={`Toppbilde ${index + 2}`}
-                  value={editingPage.heroImages?.[index] || ""}
-                  onChange={(url) => {
-                    const images = [...(editingPage.heroImages || [])];
-                    images[index] = url;
-                    // The titles follow their pictures when one is taken out
-                    onUpdate(heroExtrasOf(images, editingPage.heroImageTitles));
-                  }}
-                  decorative
-                />
-                <label className="space-y-1 text-xs font-semibold text-[var(--studio-muted)] block">
-                    <span className="block">{`Tittel på toppbilde ${index + 2}`}</span>
-                    <input
-                      type="text"
-                      disabled={!editingPage.heroImages?.[index]}
-                      value={editingPage.heroImageTitles?.[index] || ""}
-                      onChange={(e) => {
-                        const titles = editingPage.heroImages!.map((_, i) => editingPage.heroImageTitles?.[i] || "");
-                        titles[index] = e.target.value;
-                        onUpdate({ heroImageTitles: titles });
-                      }}
-                      placeholder={
-                        editingPage.heroImages?.[index]
-                          ? `Tomt gir hovedtittelen: ${editingPage.heroTitle?.trim() || "tittelen i toppen"}`
-                          : "Velg et bilde først"
-                      }
-                      className="w-full px-3 py-2 rounded-xl bg-[var(--studio-panel-bg)] border border-[var(--studio-border)] text-[var(--studio-input-text)] text-xs font-normal focus:outline-hidden focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                    />
-                  </label>
-              </div>
-            ))}
-            {(editingPage.heroImages?.length ?? 0) > 0 && (
-              <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-[var(--studio-text)]">
-                <input
-                  type="checkbox"
-                  checked={editingPage.heroArrows === true}
-                  onChange={(e) => onUpdate({ heroArrows: e.target.checked })}
-                  className="w-4 h-4 rounded text-indigo-600 bg-[var(--studio-panel-bg)] border-[var(--studio-border)] cursor-pointer"
-                />
-                <span>Piler på sidene av bildet</span>
-              </label>
-            )}
-            <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-[var(--studio-text)]">
-              <input
-                type="checkbox"
-                checked={editingPage.heroZoom !== false}
-                onChange={(e) => onUpdate({ heroZoom: e.target.checked })}
-                className="w-4 h-4 rounded text-indigo-600 bg-[var(--studio-panel-bg)] border-[var(--studio-border)] cursor-pointer"
-              />
-              <span>Rolig zoom på toppbildet</span>
-            </label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <label className="space-y-1 text-xs font-semibold text-[var(--studio-muted)]">
-                <span className="block">Menyen øverst</span>
-                <select
-                  value={heroMenuStyleOf(editingPage)}
-                  onChange={(e) => {
-                    const heroMenuStyle = e.target.value as HeroMenuStyle;
-                    onUpdate({ heroMenuStyle, heroMenuOverlay: heroMenuStyle !== "white" });
-                  }}
-                  className="w-full px-3 py-2 rounded-xl bg-[var(--studio-panel-bg)] border border-[var(--studio-border)] text-[var(--studio-input-text)] text-xs"
-                >
-                  {HERO_MENU_STYLES.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                  ))}
-                </select>
-              </label>
-              <label className="space-y-1 text-xs font-semibold text-[var(--studio-muted)]">
-                <span className="block">Slør over bildet</span>
-                <select
-                  value={heroVeilOf(editingPage)}
-                  onChange={(e) => onUpdate({ heroVeil: e.target.value as HeroVeil })}
-                  className="w-full px-3 py-2 rounded-xl bg-[var(--studio-panel-bg)] border border-[var(--studio-border)] text-[var(--studio-input-text)] text-xs"
-                >
-                  {HERO_VEILS.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                  ))}
-                </select>
-              </label>
-            </div>
-          </div>
-        )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="space-y-1.5">

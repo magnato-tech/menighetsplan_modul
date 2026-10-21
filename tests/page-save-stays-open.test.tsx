@@ -139,13 +139,30 @@ describe("Toppbildet på forsiden i redigeringen", () => {
       </MemoryRouter>
     );
 
-  test("størrelse og skrift står rett under Tittel i Hero", () => {
+  test("feltene står i samme rekkefølge som på forsiden: menyen, bildet, tittelen, undertittelen", () => {
     const { getByLabelText } = rediger(forside);
-    const size = getByLabelText("Tekststørrelse på tittelen");
-    const box = [...document.querySelectorAll("span")].find((span) => span.textContent === "Toppbildet: størrelse, tittel og flere bilder")!;
-    // Before the hero box in the form, not inside it
-    expect(size.compareDocumentPosition(box) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(getByLabelText("Skrift på tittelen")).toBeTruthy();
+    const span = (text: string) => [...document.querySelectorAll("span, label")].find((element) => element.textContent?.trim() === text)!;
+    const order = [
+      getByLabelText("Menyen øverst"),
+      span("Bakgrunnsbilde"),
+      span("Toppbildet: høyde, slør og flere bilder"),
+      getByLabelText("Høyde på toppbildet"),
+      getByLabelText("Slør over bildet"),
+      span("Tittel i Hero"),
+      getByLabelText("Tekststørrelse på tittelen"),
+      getByLabelText("Skrift på tittelen"),
+      getByLabelText("Tittelen på bildet"),
+      span("Ingress / Undertittel"),
+    ];
+    for (let i = 1; i < order.length; i++) {
+      expect(order[i - 1].compareDocumentPosition(order[i]) & Node.DOCUMENT_POSITION_FOLLOWING, String(i)).toBeTruthy();
+    }
+  });
+
+  test("uten toppbilde er valget for menyen stengt, og det står hvorfor", () => {
+    const { getByLabelText, getByText } = rediger({ ...forside, heroImage: "" });
+    expect((getByLabelText("Menyen øverst") as HTMLSelectElement).disabled).toBe(true);
+    expect(getByText(/Velg et bakgrunnsbilde først/)).toBeTruthy();
   });
 
   test("tittelfeltet for toppbilde 2 og 3 står der alltid, og kan brukes når bildet er valgt", () => {
