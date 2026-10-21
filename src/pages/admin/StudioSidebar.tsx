@@ -1,5 +1,5 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useCms } from "../../context/CmsContext";
 import { useStockImageCount } from "../../hooks/useStockImageCount";
 import {
@@ -60,9 +60,35 @@ interface StudioSidebarProps {
   onAreaChange: (area: StudioArea) => void;
   sidebarOpen: boolean;
   onToggleSidebar: () => void;
+  /** The tabs whose editor holds changes not saved; each is marked «Ikke lagret». */
+  unsavedTabs?: string[];
+  /** Leaving the studio (Min Side, Logg ut) goes through here, so changes not saved are asked about first. */
+  onLeaveStudio?: (action: () => void) => void;
 }
 
-export const StudioSidebar: React.FC<StudioSidebarProps> = ({ studio, activeTab, onTabChange, area, onAreaChange, sidebarOpen, onToggleSidebar }) => {
+/** The count beside a tab, or «Ikke lagret» in its place while the tab's editor holds changes not saved. */
+const CountOrUnsaved: React.FC<{ count: number; unsaved: boolean }> = ({ count, unsaved }) =>
+  unsaved ? (
+    <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800" title="Endringene er ikke lagret">
+      <span className="w-1.5 h-1.5 rounded-full bg-amber-500" aria-hidden="true" />
+      Ikke lagret
+    </span>
+  ) : (
+    <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--studio-surface)] text-[var(--studio-muted)]">{count}</span>
+  );
+
+export const StudioSidebar: React.FC<StudioSidebarProps> = ({
+  studio,
+  activeTab,
+  onTabChange,
+  area,
+  onAreaChange,
+  sidebarOpen,
+  onToggleSidebar,
+  unsavedTabs = [],
+  onLeaveStudio = (action) => action(),
+}) => {
+  const navigate = useNavigate();
   const { currentUser, adminPersons, adminGroups, adminGatherings, adminTasks } = studio;
   const { pages, media, news, sermons, staff, settings, addons } = useCms();
   // What must be ordered in the nearest weeks; further out, an empty slot is planning, not an emergency
@@ -198,6 +224,10 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({ studio, activeTab,
             <div className="pt-2 pb-1 space-y-1.5 border-t border-[var(--studio-border)]">
               <Link
                 to="/minside"
+                onClick={(event) => {
+                  event.preventDefault();
+                  onLeaveStudio(() => navigate("/minside"));
+                }}
                 className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-[var(--studio-muted)] hover:text-[var(--studio-text)] hover:bg-[var(--studio-bg)] transition-all cursor-pointer"
               >
                 <div className="flex items-center gap-2">
@@ -240,9 +270,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({ studio, activeTab,
                 <FileText className="w-4 h-4" />
                 <span>Sider & Innhold</span>
               </div>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--studio-surface)] text-[var(--studio-muted)]">
-                {pages.length}
-              </span>
+              <CountOrUnsaved count={pages.length} unsaved={unsavedTabs.includes("cms-sider")} />
             </button>
 
             <button
@@ -259,9 +287,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({ studio, activeTab,
                 <Newspaper className="w-4 h-4" />
                 <span>Aktuelt & Nyheter</span>
               </div>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--studio-surface)] text-[var(--studio-muted)]">
-                {news.length}
-              </span>
+              <CountOrUnsaved count={news.length} unsaved={unsavedTabs.includes("cms-nyheter")} />
             </button>
 
             <button
@@ -278,9 +304,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({ studio, activeTab,
                 <Headphones className="w-4 h-4 text-amber-300" />
                 <span>Taler & Prekener</span>
               </div>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--studio-surface)] text-[var(--studio-muted)]">
-                {sermons.length}
-              </span>
+              <CountOrUnsaved count={sermons.length} unsaved={unsavedTabs.includes("cms-taler")} />
             </button>
 
             <button
@@ -637,7 +661,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({ studio, activeTab,
 
           <button
             type="button"
-            onClick={() => void studio.signOut()}
+            onClick={() => onLeaveStudio(() => void studio.signOut())}
             className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--studio-border)] text-[11px] font-bold text-[var(--studio-muted)] hover:text-[var(--studio-text)] hover:bg-[var(--studio-bg)] cursor-pointer"
           >
             <LogOut className="w-3.5 h-3.5" aria-hidden="true" />

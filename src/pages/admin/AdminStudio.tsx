@@ -15,6 +15,8 @@ import { useLevel } from "../../hooks/useLevel";
 import { useTimedMessage } from "../../hooks/useTimedMessage";
 
 import { StudioSidebar } from "./StudioSidebar";
+import { UnsavedChangesContext, useUnsavedRegistry } from "../../hooks/useUnsavedChanges";
+import { UnsavedChangesDialog } from "./tabs/pages/UnsavedChangesDialog";
 
 import { AddonGate } from "./AddonGate";
 
@@ -327,9 +329,29 @@ function AdminStudioContent() {
 
   const showFeedback: ShowFeedback = (text, type = "success") => setFeedback({ text, type });
 
+  // Editors with changes not saved: marked in the side menu, and asked about before one leaves the studio
+  const { entries: unsavedEntries, registry: unsavedRegistry } = useUnsavedRegistry();
+  const [pendingExit, setPendingExit] = useState<(() => void) | null>(null);
+  const leaveStudio = (action: () => void) => {
+    if (Object.keys(unsavedEntries).length > 0) setPendingExit(() => action);
+    else action();
+  };
+  const unsavedList = Object.entries(unsavedEntries);
+  const exitWhat = unsavedList.length > 1 ? "flere ting" : ({ "cms-nyheter": "artikkelen", "cms-taler": "talen" } as Record<string, string>)[unsavedList[0]?.[0] ?? ""] ?? "siden";
+  const saveAllAndExit = async () => {
+    const action = pendingExit;
+    setPendingExit(null);
+    for (const [, entry] of unsavedList) {
+      if (!(await entry.save())) return;
+    }
+    action?.();
+  };
+
 
 
   return (
+
+    <UnsavedChangesContext.Provider value={unsavedRegistry}>
 
     <div className="min-h-[calc(100vh-var(--demo-strip,0px))] flex flex-col md:flex-row font-sans">
 
@@ -372,6 +394,10 @@ function AdminStudioContent() {
         onTabChange={handleTabChange}
 
         sidebarOpen={sidebarOpen}
+
+        unsavedTabs={Object.keys(unsavedEntries)}
+
+        onLeaveStudio={leaveStudio}
 
         onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
 
@@ -602,7 +628,22 @@ function AdminStudioContent() {
 
       </main>
 
+      <UnsavedChangesDialog
+        open={pendingExit !== null}
+        pageTitle={unsavedList.length === 1 ? unsavedList[0][1].title : undefined}
+        what={exitWhat}
+        onSave={saveAllAndExit}
+        onDiscard={() => {
+          const action = pendingExit;
+          setPendingExit(null);
+          action?.();
+        }}
+        onStay={() => setPendingExit(null)}
+      />
+
     </div>
+
+    </UnsavedChangesContext.Provider>
 
   );
 

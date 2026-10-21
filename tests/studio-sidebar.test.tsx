@@ -231,3 +231,31 @@ describe("Menyen i admin", () => {
     expect(menu.getByRole("button", { name: /Mediebibliotek/ }).textContent).toBe("Mediebibliotek2");
   });
 });
+
+describe("Endringer som ikke er lagret", () => {
+  test("fanen med endringer merkes, og Min Side spør før studioet forlates", () => {
+    const onLeaveStudio = vi.fn();
+    const { container } = render(
+      <MemoryRouter>
+        <StudioAppearanceProvider>
+          <StudioSidebar
+            studio={studio}
+            activeTab="cms-sider"
+            onTabChange={onTabChange}
+            area="nettside"
+            onAreaChange={onAreaChange}
+            sidebarOpen
+            onToggleSidebar={() => {}}
+            unsavedTabs={["cms-nyheter"]}
+            onLeaveStudio={onLeaveStudio}
+          />
+        </StudioAppearanceProvider>
+      </MemoryRouter>
+    );
+    const menu = within(container.querySelector("aside") as HTMLElement);
+    expect(menu.getAllByText("Ikke lagret")).toHaveLength(1);
+    expect(menu.getByText("Aktuelt & Nyheter").closest("button")?.textContent).toContain("Ikke lagret");
+    fireEvent.click(menu.getByText("Gå til Min Side"));
+    expect(onLeaveStudio).toHaveBeenCalledOnce();
+  });
+});

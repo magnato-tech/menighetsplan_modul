@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { Suspense, lazy, useEffect, useRef, useState } from "react";
 import {
   VisualBlock,
   DYNAMIC_MODULES_META,
@@ -19,6 +19,7 @@ import {
 import { ModulePresentationEditor } from "../../../../components/admin/ModulePresentationEditor";
 import { CmsMediaPicker } from "../../../../components/admin/CmsMediaPicker";
 import { CmsLinkPicker } from "../../../../components/admin/CmsLinkPicker";
+import type { RichTextFieldProps } from "../../../../components/admin/RichTextField";
 import {
   ChevronUp,
   ChevronDown,
@@ -525,6 +526,20 @@ function personVariants(current?: string) {
   return PERSON_GRID_VARIANTS;
 }
 
+// The text field with buttons is loaded the first time a block's text is edited
+const LazyRichTextField = lazy(() => import("../../../../components/admin/RichTextField"));
+
+/** A block's text, formatted with buttons over it; a plain text field until the editor has loaded. */
+function BlockTextField(props: RichTextFieldProps) {
+  return (
+    <Suspense
+      fallback={<textarea rows={props.rows} aria-label={props.label} className={fieldClass} value={props.value} onChange={(e) => props.onChange(e.target.value)} />}
+    >
+      <LazyRichTextField {...props} />
+    </Suspense>
+  );
+}
+
 const fieldClass =
   "w-full px-3 py-2 rounded-lg bg-[var(--studio-panel-bg)] border border-[var(--studio-border)] text-[var(--studio-input-text)] text-xs focus:outline-hidden focus:border-indigo-500";
 
@@ -599,18 +614,20 @@ function StaticBlockEditor({
                   }}
                 />
               </label>
-              <label className="space-y-1 block">
+              {/* Not a label: a press in the field would press its first button */}
+              <div className="space-y-1 block">
                 <span className="text-[10px] font-semibold text-[var(--studio-muted)]">Tekst</span>
-                <textarea
+                <BlockTextField
+                  mode="inline"
+                  label={`Kort ${cardIndex + 1}: tekst`}
                   rows={2}
-                  className={fieldClass}
                   value={card.body}
-                  onChange={(e) => {
-                    const cards = fields.cards.map((item, i) => (i === cardIndex ? { ...item, body: e.target.value } : item));
+                  onChange={(body) => {
+                    const cards = fields.cards.map((item, i) => (i === cardIndex ? { ...item, body } : item));
                     set({ cards });
                   }}
                 />
-              </label>
+              </div>
             </div>
           ))}
           <button
@@ -658,10 +675,16 @@ function StaticBlockEditor({
             <span className="text-[10px] font-semibold text-[var(--studio-muted)]">Tittel</span>
             <input className={fieldClass} value={fields.title} onChange={(e) => set({ title: e.target.value })} />
           </label>
-          <label className="space-y-1 block">
+          <div className="space-y-1 block">
             <span className="text-[10px] font-semibold text-[var(--studio-muted)]">Tekst</span>
-            <textarea rows={4} className={fieldClass} value={fields.body} onChange={(e) => set({ body: e.target.value })} />
-          </label>
+            <BlockTextField
+              mode={block.type === "text" ? "full" : "inline"}
+              label="Tekst"
+              rows={block.type === "text" ? 6 : 4}
+              value={fields.body}
+              onChange={(body) => set({ body })}
+            />
+          </div>
         </div>
       )}
     </div>

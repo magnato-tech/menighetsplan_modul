@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useCms } from "../../../context/CmsContext";
+import { draftFingerprint, useLeaveGuard, useReportUnsaved } from "../../../hooks/useUnsavedChanges";
+import { UnsavedChangesDialog } from "./pages/UnsavedChangesDialog";
 import { CmsNewsArticle } from "../../../data/cmsData";
 import {
   Plus,
@@ -54,14 +56,35 @@ export const NewsTab: React.FC<NewsTabProps> = ({ studio, showFeedback, createRe
   const [editingNews, setEditingNews] = useState<Partial<CmsNewsArticle> | null>(null);
   const [isNewNews, setIsNewNews] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  // The article as it was opened, to tell whether the editor holds changes that are not saved
+  const [savedFingerprint, setSavedFingerprint] = useState("");
+  const unsaved = editingNews !== null && draftFingerprint(editingNews) !== savedFingerprint;
 
-  const handleOpenEditNews = (article: CmsNewsArticle) => {
-    setEditingNews({ ...article });
-    setIsNewNews(false);
+  const saveDraft = async (): Promise<boolean> => {
+    if (!editingNews || !editingNews.title) {
+      showFeedback("Artikkelen må ha en tittel", "error");
+      return false;
+    }
+    if (!(await saveNews(editingNews))) return false;
+    setEditingNews(null);
+    showFeedback("Nyhetsartikkelen ble lagret og publisert!");
+    return true;
+  };
+  const { leave, dialog } = useLeaveGuard(unsaved, saveDraft);
+  useReportUnsaved("cms-nyheter", unsaved, editingNews?.title, saveDraft);
+
+  const openDraft = (article: Partial<CmsNewsArticle>, isNew: boolean) => {
+    setEditingNews(article);
+    setIsNewNews(isNew);
+    setSavedFingerprint(draftFingerprint(article));
   };
 
-  const handleOpenNewNews = () => {
-    setEditingNews({
+  const handleOpenEditNews = (article: CmsNewsArticle) => {
+    if (editingNews?.id === article.id) return;
+    leave(() => openDraft({ ...article }, false));
+  };
+
+  const handleOpenNewNews = () => leave(() => openDraft({
       title: "",
       slug: "",
       summary: "",
@@ -70,19 +93,12 @@ export const NewsTab: React.FC<NewsTabProps> = ({ studio, showFeedback, createRe
       author: currentUser.name || "Menigheten",
       isPublished: true,
       publishedAt: new Date().toISOString(),
-    });
-    setIsNewNews(true);
-  };
+    }, true));
+  const handleCloseNews = () => leave(() => setEditingNews(null));
 
   const handleSaveNews = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingNews || !editingNews.title) {
-      showFeedback("Artikkelen må ha en tittel", "error");
-      return;
-    }
-    if (!(await saveNews(editingNews))) return;
-    setEditingNews(null);
-    showFeedback("Nyhetsartikkelen ble lagret og publisert!");
+    await saveDraft();
   };
 
   useEffect(() => {
@@ -132,7 +148,7 @@ export const NewsTab: React.FC<NewsTabProps> = ({ studio, showFeedback, createRe
             )}
             <button
               type="button"
-              onClick={() => setEditingNews(null)}
+              onClick={handleCloseNews}
               className="text-[var(--studio-muted)] hover:text-[var(--studio-text)]"
             >
               <X className="w-5 h-5" />
@@ -274,7 +290,7 @@ export const NewsTab: React.FC<NewsTabProps> = ({ studio, showFeedback, createRe
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => setEditingNews(null)}
+                onClick={handleCloseNews}
                 className="px-4 py-2 rounded-xl bg-[var(--studio-row)] hover:bg-[var(--studio-hover)] text-[var(--studio-text)] text-xs font-semibold border border-[var(--studio-border)]"
               >
                 Avbryt
@@ -361,6 +377,8 @@ export const NewsTab: React.FC<NewsTabProps> = ({ studio, showFeedback, createRe
           );
         })}
       </div>
+
+      <UnsavedChangesDialog {...dialog} pageTitle={editingNews?.title} what="artikkelen" />
     </div>
   );
 };

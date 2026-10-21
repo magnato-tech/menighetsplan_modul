@@ -1654,6 +1654,17 @@ Bestilt av produkteier fra backloggen i «Menighetsplan CMS – vurdering og bac
 | **Bilde fra malen** | Under «Arrangementer på nettsiden» kan et arrangement uten bilde, laget fra en mal med bilde, få malens bilde: **Bruk malens bilde** på raden, eller **Gi dem bildet fra malen** for alle. «Hva skjer» har et **Standardbilde** for arrangementer uten eget bilde (`templateImageFor`). Malens bilde skrives på arrangementet, fordi en besøkende ikke kan lese malene |
 | **Bevegelse** | «Hva skjer» har valget **Bevegelse når kortene kommer til syne**: Ton inn (som før), Gli inn fra siden, Zoom inn eller Ingen bevegelse (`revealClassOf`). Den som har bedt om mindre bevegelse, ser kortene stille |
 
+### Backlog 21. oktober, del 2: advarsel om ulagrede endringer og tekstfelt med knapper
+
+Bestilt av produkteier fra samme backlog (punkt 4 og 5).
+
+| Del | Hva som er levert |
+|---|---|
+| **Advarsel om ulagrede endringer** | Nyheter og Taler har nå samme spørsmål som Sider (**Lagre**, **Forkast endringene**, **Bli her**) før redigeringen lukkes eller en annen artikkel eller tale åpnes. Et redigeringsvindu med endringer som ikke er lagret, meldes til studioet (`useReportUnsaved` i `src/hooks/useUnsavedChanges.ts`): sidemenyen viser **Ikke lagret** i stedet for tallet ved fanen, **Gå til Min Side** og **Logg ut** spør først, og nettleseren spør selv før fanen lukkes eller lastes på nytt. Bytte av fane i admin mister ingenting, for fanene blir liggende i bakgrunnen |
+| **Tekstfelt med knapper** | Teksten i en tekstblokk vises formatert, med knappene Overskrift, Underoverskrift, Fet, Kursiv, Punktliste, Nummerert liste og Lenke. I bilde med tekst, infoboks og kort er det bare Fet, Kursiv og Lenke, fordi nettsiden bare leser det der (`RichTextField.tsx`, Tiptap 3.31.4, lastet først når en tekst redigeres). Det som lagres, er de samme tegnene som før (`src/utils/richText.ts`), så nettsiden, eldre sider og historikken er uendret. En tekst med tegn feltet ikke har knapper for (sitat, :::-blokker), vises som vanlig tekst med en melding; **Vis som tekst** viser tegnene for den som vil skrive dem selv. En test sender alle tekstene i demosidene gjennom feltet og sjekker at nettsiden ser lik ut |
+
+**Rettet og sluppet til Lillesand 21. oktober 2026** (`stabil` = `6c42820`, bare denne rettingen oppå `6f9bc98`): knappen «Populer testdata (32 personer)» og boksen «Fyll inn testdata nå» er fjernet fra Lederskap & Stab, der de sto også i en menighets app i drift. Henvisningen til et simulert halvår i analysebordet vises bare i demo. `tests/no-testdata-in-production.test.tsx` passer på at de ikke kommer tilbake.
+
 **Sluppet til menighetene 21. oktober 2026** (`stabil` flyttet fram til `6f9bc98` etter beskjed fra produkteier): menylinjen i Sider, forsiden trinn 1 og 2, Lagre som holder siden åpen, menyene som står fast, advarselen om endringer som ikke er lagret, forhåndsvisningen som viser toppen av seksjonen, «Hva skjer» med valg, kalenderen i planleggingen, fargene i lys admin og navnet på tekstblokker. Databasereglene var ikke endret, så ingenting måtte limes inn hos Lillesand.
 
 ---

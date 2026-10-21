@@ -3,6 +3,7 @@ import { useCms } from "../../context/CmsContext";
 import { CmsPage } from "../../data/cmsData";
 import { buildMenuBar, buildPageTree, findOrphanPages, getParentId } from "../../utils/menu";
 import { pageFingerprint } from "../../utils/pageRecord";
+import { useReportUnsaved } from "../../hooks/useUnsavedChanges";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { QUIET_HERO } from "../../utils/heroLayout";
 import { newId } from "../../utils/id";
@@ -148,6 +149,9 @@ export const AdminCmsPanel: React.FC<AdminCmsPanelProps> = ({
     showFeedback("Siden ble lagret og menystrukturen ble oppdatert!");
     return true;
   };
+
+  // The studio is told, for the mark in the side menu and the question before leaving the studio
+  useReportUnsaved("cms-sider", unsaved, editingPage?.title, saveEditingPage);
 
   const handleSaveAndLeave = async () => {
     const action = pendingLeave;
