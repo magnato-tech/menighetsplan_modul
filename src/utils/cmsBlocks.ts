@@ -173,7 +173,8 @@ export function parseContentToVisualBlocks(content: string): VisualBlock[] {
   const flushTextBuffer = () => {
     const raw = textBuffer.join("\n").trim();
     if (raw) {
-      const firstLine = raw.split("\n")[0].trim().replace(/^#+\s*/, "");
+      // Named by its first line of text, not by the hidden mark a section link points to (see utils/cmsLinks.ts)
+      const firstLine = stripSectionAnchorComment(raw).trim().split("\n")[0].trim().replace(/^#+\s*/, "");
       const title = firstLine.length > 0 ? (firstLine.length > 40 ? firstLine.slice(0, 37) + "..." : firstLine) : "Tekstavsnitt";
       blocks.push({
         id: blockId("text", blocks.length),

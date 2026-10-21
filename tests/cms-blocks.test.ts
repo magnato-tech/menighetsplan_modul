@@ -153,3 +153,18 @@ describe("Visuell blokkmodell", () => {
     expect(saved).toContain("badge: Program");
   });
 });
+
+describe("Navnet på en tekstblokk", () => {
+  test("er første linje i teksten, ikke merket en lenke til seksjonen peker på", () => {
+    const content = "<!-- cms-anchor:velkommen-til-fjordvik-menighet -->\n## Velkommen til Fjordvik menighet\nEt åpent hjem for alle generasjoner.";
+    const [block] = parseContentToVisualBlocks(content);
+    expect(block.title).toBe("Velkommen til Fjordvik menighet");
+    // The mark stays in the text, so the link to the section still finds it
+    expect(block.rawContent).toContain("cms-anchor:velkommen-til-fjordvik-menighet");
+  });
+
+  test("en blokk med bare merket og tekst uten overskrift heter etter teksten", () => {
+    const [block] = parseContentToVisualBlocks("<!-- cms-anchor:om -->\nKort om oss.");
+    expect(block.title).toBe("Kort om oss.");
+  });
+});
