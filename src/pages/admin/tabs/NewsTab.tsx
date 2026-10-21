@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useCms } from "../../../context/CmsContext";
 import { draftFingerprint, useLeaveGuard, useReportUnsaved } from "../../../hooks/useUnsavedChanges";
 import { UnsavedChangesDialog } from "./pages/UnsavedChangesDialog";
+import { NewsEndDateDialog } from "./NewsEndDateDialog";
 import { CmsNewsArticle } from "../../../data/cmsData";
 import {
   Plus,
@@ -20,7 +21,7 @@ import { VersionHistoryDialog } from "../../../components/admin/VersionHistoryDi
 import { restoredFields } from "../../../utils/contentVersions";
 import { formatNorwegianDateTime } from "../../../utils/dates";
 import { isGroupGathering } from "../../../utils/gatherings";
-import { isNewsExpired, lastDayOf, type LastDay } from "../../../utils/news";
+import { isNewsExpired, lastDayOf, needsLastDay, suggestedLastDay, type LastDay } from "../../../utils/news";
 
 /** A day ("2026-10-11") as it is written out: «11. oktober 2026». */
 const writtenDay = (day: string): string =>
@@ -60,18 +61,26 @@ export const NewsTab: React.FC<NewsTabProps> = ({ studio, showFeedback, createRe
   const [savedFingerprint, setSavedFingerprint] = useState("");
   const unsaved = editingNews !== null && draftFingerprint(editingNews) !== savedFingerprint;
 
-  const saveDraft = async (): Promise<boolean> => {
-    if (!editingNews || !editingNews.title) {
+  // Asked before an article is saved with nothing that ends it (see NewsEndDateDialog)
+  const [askLastDay, setAskLastDay] = useState(false);
+  const saveDraft = async (draft = editingNews, askAboutLastDay = true): Promise<boolean> => {
+    if (!draft || !draft.title) {
       showFeedback("Artikkelen må ha en tittel", "error");
       return false;
     }
-    if (!(await saveNews(editingNews))) return false;
+    if (askAboutLastDay && needsLastDay(draft, allEvents)) {
+      setAskLastDay(true);
+      return false;
+    }
+    if (!(await saveNews(draft))) return false;
     setEditingNews(null);
     showFeedback("Nyhetsartikkelen ble lagret og publisert!");
     return true;
   };
-  const { leave, dialog } = useLeaveGuard(unsaved, saveDraft);
-  useReportUnsaved("cms-nyheter", unsaved, editingNews?.title, saveDraft);
+  const saveCurrent = () => saveDraft();
+  const { leave, dialog } = useLeaveGuard(unsaved, saveCurrent);
+  useReportUnsaved("cms-nyheter", unsaved, editingNews?.title, saveCurrent);
+  const lastDaySuggestion = editingNews ? suggestedLastDay(editingNews, now) : null;
 
   const openDraft = (article: Partial<CmsNewsArticle>, isNew: boolean) => {
     setEditingNews(article);
@@ -379,6 +388,26 @@ export const NewsTab: React.FC<NewsTabProps> = ({ studio, showFeedback, createRe
       </div>
 
       <UnsavedChangesDialog {...dialog} pageTitle={editingNews?.title} what="artikkelen" />
+      <NewsEndDateDialog
+        open={askLastDay}
+        suggestion={lastDaySuggestion}
+        onUseSuggestion={() => {
+          setAskLastDay(false);
+          if (editingNews && lastDaySuggestion) void saveDraft({ ...editingNews, expiresAt: lastDaySuggestion }, false);
+        }}
+        onChooseDate={() => {
+          setAskLastDay(false);
+          window.requestAnimationFrame(() => {
+            const field = document.getElementById("news-last-day") as HTMLInputElement | null;
+            field?.scrollIntoView({ block: "center" });
+            field?.focus();
+          });
+        }}
+        onSaveWithout={() => {
+          setAskLastDay(false);
+          void saveDraft(editingNews, false);
+        }}
+      />
     </div>
   );
 };
