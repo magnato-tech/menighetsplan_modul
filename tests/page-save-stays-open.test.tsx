@@ -116,7 +116,7 @@ describe("Endringer som ikke er lagret", () => {
 });
 
 describe("Når redigeringen åpnes", () => {
-  test("kommer den øverst på skjermen, ikke bare nederste del av den", () => {
+  test("kommer panelet øverst på skjermen, med bryteren og redigeringen i synet", () => {
     const scrolled: Element[] = [];
     Element.prototype.scrollIntoView = function (this: Element) {
       scrolled.push(this);
@@ -126,7 +126,7 @@ describe("Når redigeringen åpnes", () => {
         <AdminCmsPanel showFeedback={vi.fn()} createRequested />
       </MemoryRouter>
     );
-    expect(scrolled.some((element) => element.hasAttribute("data-page-editor"))).toBe(true);
+    expect(scrolled.some((element) => element.querySelector('[role="group"][aria-label="Velg visning"]') && element.querySelector("[data-page-editor]"))).toBe(true);
   });
 });
 

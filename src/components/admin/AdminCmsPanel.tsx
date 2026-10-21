@@ -16,6 +16,39 @@ import { PageEditModal } from "../../pages/admin/tabs/pages/PageEditModal";
 import { PageDeleteDialog } from "../../pages/admin/tabs/pages/PageDeleteDialog";
 import { PageMenuBar } from "../../pages/admin/tabs/pages/PageMenuBar";
 import { UnsavedChangesDialog } from "../../pages/admin/tabs/pages/UnsavedChangesDialog";
+import { PageUnpublishDialog } from "../../pages/admin/tabs/pages/PageUnpublishDialog";
+
+// The two views of the panel, chosen with the switch at the top
+type PagesView = "rediger" | "struktur";
+const VIEW_KEY = "menighetsplan:sider-visning";
+const LAST_OPENED_KEY = "menighetsplan:sider-sist-apnet";
+
+// Storage can be blocked (private mode, settings), so every access is guarded
+function readStoredText(key: string): string | null {
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredText(key: string, value: string | null): void {
+  try {
+    if (value === null) window.localStorage.removeItem(key);
+    else window.localStorage.setItem(key, value);
+  } catch {
+    // Storage is blocked: the choice lasts until the page is reloaded
+  }
+}
+
+// The front page: slug "", "/" or "forside". Falls back to the first main tab.
+function findFrontPage(pages: CmsPage[], tree: ReturnType<typeof buildPageTree>): CmsPage | undefined {
+  const front = pages.find((p) => {
+    const slug = (p.slug ?? "").trim().toLowerCase();
+    return slug === "" || slug === "/" || slug === "forside";
+  });
+  return front ?? tree[0]?.page;
+}
 
 export interface AdminCmsPanelProps {
   showFeedback: ShowFeedback;
@@ -39,6 +72,11 @@ export const AdminCmsPanel: React.FC<AdminCmsPanelProps> = ({
   const { pages, savePage, deletePage, reorderPages } = useCms();
 
   const [editingPage, setEditingPage] = useState<Partial<CmsPage> | null>(null);
+  // Editor or tree: one at a time, so the page is not split in two parts. Remembered between visits.
+  const [view, setView] = useState<PagesView>(() => (readStoredText(VIEW_KEY) === "struktur" ? "struktur" : "rediger"));
+  useEffect(() => writeStoredText(VIEW_KEY, view), [view]);
+  // A page that is taken off the website is only asked about here, before it is saved as a draft
+  const [unpublishPage, setUnpublishPage] = useState<CmsPage | null>(null);
 
   // Report the editor state up, and reset it when this panel goes away
   useEffect(() => {
@@ -66,7 +104,11 @@ export const AdminCmsPanel: React.FC<AdminCmsPanelProps> = ({
   const [offeredBackup, setOfferedBackup] = useState<DraftBackup<Partial<CmsPage>> | null>(null);
   useDraftBackup(backupKey, editingPage, unsaved, offeredBackup !== null);
 
+  // Opening a page always shows the editor, also when it is opened from the tree
   const openEditor = (page: Partial<CmsPage>, isNew: boolean) => {
+    setView("rediger");
+    // Remembered, so the same page is open the next time the panel is shown
+    if (page.id) writeStoredText(LAST_OPENED_KEY, page.id);
     setEditingPage(page);
     setIsNewPage(isNew);
     setSavedFingerprint(pageFingerprint(page));
@@ -84,20 +126,39 @@ export const AdminCmsPanel: React.FC<AdminCmsPanelProps> = ({
     setOfferedBackup(null);
   };
 
-  // The editor opens above the list. Opened from a page far down, it would come in above the screen
-  // with only its bottom showing, so it is brought to the top of the screen, below the demo strip. At once:
-  // a smooth scroll over a long list takes seconds.
+  // A page opened from far down the tree would come in scrolled away, so the panel is brought to the top of
+  // the screen, with the view switch in sight above the editor. At once: a smooth scroll takes seconds.
+  const panelRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (openCount > 0) editorRef.current?.scrollIntoView?.({ block: "start" });
+    if (openCount > 0) panelRef.current?.scrollIntoView?.({ block: "start" });
   }, [openCount]);
 
-  // Closed, the list is where one was: the page that was edited is brought back to the middle of the screen
+  // Closed, the tree shows the page that was edited, brought back to the middle of the screen
   const closeEditor = () => {
     const id = editingPage?.id;
     setEditingPage(null);
     if (id) window.requestAnimationFrame(() => document.getElementById(`side-${id}`)?.scrollIntoView?.({ block: "center" }));
   };
-  const handleCloseEditor = () => leaveEditor(closeEditor);
+  // Closing the editor goes to the tree, where the page is listed
+  const handleCloseEditor = () =>
+    leaveEditor(() => {
+      closeEditor();
+      setView("struktur");
+    });
+
+  // The switch at the top. Going to the tree closes the editor (after asking about unsaved changes).
+  // Going to the editor opens the page the effect picks.
+  const handleSwitchView = (next: PagesView) => {
+    if (next === view) return;
+    if (next === "rediger") {
+      setView("rediger");
+      return;
+    }
+    leaveEditor(() => {
+      closeEditor();
+      setView("struktur");
+    });
+  };
 
   const handleOpenEditPage = (page: CmsPage) => {
     if (editingPage?.id === page.id) return;
@@ -214,6 +275,11 @@ export const AdminCmsPanel: React.FC<AdminCmsPanelProps> = ({
     const success = await deletePage(pageId);
     if (success) {
       showFeedback("Siden ble slettet");
+      // The open page is gone, so the editor closes without asking. The effect then opens another page.
+      if (editingPage?.id === pageId) {
+        setEditingPage(null);
+        writeStoredText(LAST_OPENED_KEY, null);
+      }
     }
   };
 
@@ -226,9 +292,7 @@ export const AdminCmsPanel: React.FC<AdminCmsPanelProps> = ({
     }
   };
 
-  const handleTogglePublish = async (page: CmsPage) => {
-    const isCurrentlyPublished = page.isPublished !== false;
-    const willBePublished = !isCurrentlyPublished;
+  const setPublished = async (page: CmsPage, willBePublished: boolean) => {
     const success = await savePage({
       ...page,
       isPublished: willBePublished,
@@ -241,6 +305,32 @@ export const AdminCmsPanel: React.FC<AdminCmsPanelProps> = ({
       );
     } else {
       showFeedback("Kunne ikke oppdatere publiseringsstatus", "error");
+    }
+  };
+
+  // Publishing saves at once. Taking a page off the website is asked about first (see PageUnpublishDialog).
+  const handleTogglePublish = (page: CmsPage) => {
+    if (page.isPublished !== false) {
+      setUnpublishPage(page);
+      return;
+    }
+    void setPublished(page, true);
+  };
+
+  const confirmUnpublish = async () => {
+    const page = unpublishPage;
+    setUnpublishPage(null);
+    if (page) await setPublished(page, false);
+  };
+
+  // Shows or hides a page in the website's menu. Only the menu flag changes.
+  const handleToggleNavMenu = async (page: CmsPage) => {
+    const willShow = page.inNavMenu === false;
+    const success = await savePage({ ...page, inNavMenu: willShow });
+    if (success) {
+      showFeedback(willShow ? `«${page.title}» vises nå i menyen` : `«${page.title}» er tatt ut av menyen`);
+    } else {
+      showFeedback("Kunne ikke oppdatere menyen", "error");
     }
   };
 
@@ -272,32 +362,94 @@ export const AdminCmsPanel: React.FC<AdminCmsPanelProps> = ({
     }
   }, [createRequested, onCreateHandled]);
 
+  // In the editor view with no page open, the page last opened is shown, else the front page.
+  // Not while a new page is being asked for. Once a page is open this does nothing, so it cannot loop.
+  useEffect(() => {
+    if (view !== "rediger" || editingPage || createRequested || pages.length === 0) return;
+    const remembered = readStoredText(LAST_OPENED_KEY);
+    const page = pages.find((p) => p.id === remembered) ?? findFrontPage(pages, hierarchicalPages);
+    if (page) openEditor({ ...page }, false);
+  }, [view, editingPage, createRequested, pages, hierarchicalPages]);
+
   return (
-    <div className="w-full space-y-6 transition-all">
+    <div ref={panelRef} className="w-full space-y-6 transition-all scroll-mt-[calc(var(--demo-strip,0px)+1rem)]">
       {/* Header: the title, and «+» for a new main tab. Sub-tabs are added from the tab they go under. */}
       <div className="flex items-start justify-between gap-4 border-b border-[var(--studio-border)] pb-4">
         <div>
           <h2 className="text-xl sm:text-2xl font-black text-[var(--studio-text)]">Sider & Innhold på nettsiden</h2>
           <p className="text-xs text-[var(--studio-muted)]">
-            Bygg menyen på nettsiden med hovedfaner og underfaner. Klikk på statusen for å publisere en side eller sette den til kladd.
+            Rediger sidene, eller bytt til Sidestruktur for å ordne menyen, publisere, kopiere og slette sider.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => handleOpenNewPage(null)}
-          aria-label="Ny hovedfane"
-          title="Ny hovedfane i menyen. En underfane legges til med + på fanen den skal ligge under."
-          className="shrink-0 w-11 h-11 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center shadow-sm cursor-pointer"
-        >
-          <Plus className="w-6 h-6" aria-hidden />
-        </button>
+        <div className="shrink-0 flex items-center gap-3">
+          {/* Switch: the editor or the tree, styled like the mode switch in the editor */}
+          <div role="group" aria-label="Velg visning" className="flex items-center gap-1 bg-[var(--studio-input)] p-1 rounded-xl border border-[var(--studio-border)]">
+            {(
+              [
+                { id: "rediger", label: "Rediger" },
+                { id: "struktur", label: "Sidestruktur" },
+              ] as const
+            ).map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                aria-pressed={view === option.id}
+                onClick={() => handleSwitchView(option.id)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  view === option.id
+                    ? "bg-indigo-600 text-white shadow-xs"
+                    : "text-[var(--studio-muted)] hover:text-[var(--studio-text)] hover:bg-[var(--studio-surface)]"
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => handleOpenNewPage(null)}
+            aria-label="Ny hovedfane"
+            title="Ny hovedfane i menyen. En underfane legges til med + på fanen den skal ligge under."
+            className="w-11 h-11 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center shadow-sm cursor-pointer"
+          >
+            <Plus className="w-6 h-6" aria-hidden />
+          </button>
+        </div>
       </div>
 
-      {/* Side Editor Modal / Form */}
-      {editingPage && (
+      {/* Side Editor Modal / Form. Only in the editor view. */}
+      {view === "rediger" && editingPage && (
         <div ref={editorRef} data-page-editor className="scroll-mt-[calc(var(--demo-strip,0px)+1rem)] space-y-3">
         {wide && menuBar.length > 0 && (
           <PageMenuBar items={menuBar} activeId={editingMainId} onJump={handleMenuOpen} sticky={false} />
+        )}
+        {/* Narrow screens: the website's menu as a list, since the menu bar above does not fit */}
+        {!wide && menuBar.length > 0 && (
+          <label className="flex items-center gap-2 text-xs font-semibold text-[var(--studio-muted)]">
+            <span>Side</span>
+            <select
+              aria-label="Side"
+              value={editingPage.id ?? ""}
+              onChange={(e) => handleMenuOpen(e.target.value)}
+              className="flex-1 min-w-0 rounded-xl border border-[var(--studio-border)] bg-[var(--studio-bg)] text-[var(--studio-text)] text-xs px-3 py-2"
+            >
+              {!editingPage.id && (
+                <option value="" disabled>
+                  Ny side
+                </option>
+              )}
+              {menuBar.map((item) => (
+                <React.Fragment key={item.id}>
+                  <option value={item.id}>{item.title || "Uten tittel"}</option>
+                  {item.children.map((child) => (
+                    <option key={child.id} value={child.id}>
+                      {`– ${child.title || "Uten tittel"}`}
+                    </option>
+                  ))}
+                </React.Fragment>
+              ))}
+            </select>
+          </label>
         )}
         {offeredBackup && (
           <div role="status" className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-amber-50 border border-amber-300 text-amber-950">
@@ -324,21 +476,35 @@ export const AdminCmsPanel: React.FC<AdminCmsPanelProps> = ({
           onUpdate={(patch) => setEditingPage((prev) => (prev ? { ...prev, ...patch } : patch))}
           onSave={handleSavePage}
           onClose={handleCloseEditor}
+          onDuplicate={
+            editingPage.id
+              ? () => {
+                  const page = pages.find((x) => x.id === editingPage.id);
+                  if (page) handleDuplicatePage(page);
+                }
+              : undefined
+          }
+          onDelete={editingPage.id ? () => setDeleteConfirmPageId(editingPage.id!) : undefined}
         />
         </div>
       )}
 
-      {/* Hierarchical Tree of Pages with Drag & Drop */}
-      <PageTreeList
-        hierarchicalPages={hierarchicalPages}
-        orphanPages={orphanPages}
-        onOpenNewPage={handleOpenNewPage}
-        onOpenEditPage={handleOpenEditPage}
-        onRequestDelete={setDeleteConfirmPageId}
-        onDuplicate={handleDuplicatePage}
-        onReorder={handleReorder}
-        onTogglePublish={handleTogglePublish}
-      />
+      {/* Hierarchical Tree of Pages with Drag & Drop. Only in the tree view. */}
+      {view === "struktur" && (
+        <PageTreeList
+          hierarchicalPages={hierarchicalPages}
+          orphanPages={orphanPages}
+          onOpenNewPage={handleOpenNewPage}
+          onOpenEditPage={handleOpenEditPage}
+          onRequestDelete={setDeleteConfirmPageId}
+          onDuplicate={handleDuplicatePage}
+          onReorder={handleReorder}
+          onTogglePublish={handleTogglePublish}
+          onToggleNavMenu={handleToggleNavMenu}
+        />
+      )}
+
+      <PageUnpublishDialog page={unpublishPage} onConfirm={confirmUnpublish} onCancel={() => setUnpublishPage(null)} />
 
       <UnsavedChangesDialog
         open={pendingLeave !== null}

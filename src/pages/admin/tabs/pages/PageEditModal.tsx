@@ -8,7 +8,7 @@ import {
   ExternalLink,
   Monitor,
   Tablet,
-  Smartphone, Save, History } from "lucide-react";
+  Smartphone, Save, History, MoreHorizontal, Copy, Trash2 } from "lucide-react";
 import { VersionHistoryDialog } from "../../../../components/admin/VersionHistoryDialog";
 import { restoredFields } from "../../../../utils/contentVersions";
 import { useMediaMap } from "../../../../hooks/useMediaMap";
@@ -99,6 +99,10 @@ export interface PageEditModalProps {
   onSave: (e: React.FormEvent) => void;
   onPreview?: (draft: Partial<CmsPage>) => void;
   onClose: () => void;
+  // Copies the page. The parent does the copying.
+  onDuplicate?: () => void;
+  // Asks to delete the page. The parent asks the user before it deletes anything.
+  onDelete?: () => void;
 }
 
 export const PageEditModal: React.FC<PageEditModalProps> = ({
@@ -109,6 +113,8 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
   onSave,
   onPreview,
   onClose,
+  onDuplicate,
+  onDelete,
 }) => {
   const { settings } = useCms();
   const mediaById = useMediaMap();
@@ -128,6 +134,25 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
   // View mode state: edit (full-width form), split (side-by-side with real frontend), preview (full-width real frontend)
   // «Historikk»: the earlier versions of the page, one of which can be put back into the editor
   const [showHistory, setShowHistory] = useState(false);
+  // The «⋯» menu in the top bar: copy or delete the page
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!menuOpen) return;
+    // Escape and a click outside close the menu. The listeners only exist while it is open.
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenuOpen(false);
+    };
+    const onMouseDown = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("mousedown", onMouseDown);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("mousedown", onMouseDown);
+    };
+  }, [menuOpen]);
   // A section pressed in the preview, to be opened in the block list (nonce: the same section pressed again opens it again)
   const [openRequest, setOpenRequest] = useState<{ blockId: string; gatheringId?: string; nonce: number } | null>(null);
   const [viewMode, setViewMode] = useState<"edit" | "split" | "preview">(() => {
@@ -718,6 +743,58 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
             <span className="hidden sm:inline">Forhåndsvis i ny fane</span>
             <span className="sm:hidden">Ny fane</span>
           </a>
+
+          {!isNewPage && (onDuplicate || onDelete) && (
+            // The wrapper is the anchor for the menu, and the reference for closing it on an outside click
+            <div ref={menuRef} className="relative">
+              <button
+                type="button"
+                aria-label="Mer"
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
+                onClick={() => setMenuOpen((open) => !open)}
+                className="p-1.5 rounded-xl bg-[var(--studio-bg)] hover:bg-[var(--studio-panel-bg)] text-[var(--studio-accent-text)] hover:text-[var(--studio-text)] border border-indigo-700/60 text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
+                title="Flere valg for siden"
+              >
+                <MoreHorizontal className="w-3.5 h-3.5 text-[var(--studio-icon)]" aria-hidden />
+              </button>
+              {menuOpen && (
+                <div
+                  role="menu"
+                  className="absolute right-0 top-full mt-2 z-40 min-w-[11rem] rounded-xl border border-[var(--studio-border)] bg-[var(--studio-surface)] shadow-lg py-1"
+                >
+                  {onDuplicate && (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        onDuplicate();
+                      }}
+                      className="w-full px-3 py-2 text-left text-xs font-semibold flex items-center gap-2 text-[var(--studio-text)] hover:bg-[var(--studio-hover)] cursor-pointer"
+                    >
+                      <Copy className="w-3.5 h-3.5 text-[var(--studio-icon)]" aria-hidden />
+                      <span>Kopier siden</span>
+                    </button>
+                  )}
+                  {onDelete && (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        onDelete();
+                      }}
+                      className="w-full px-3 py-2 text-left text-xs font-semibold flex items-center gap-2 text-rose-600 hover:bg-[var(--studio-hover)] cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" aria-hidden />
+                      <span>Slett siden</span>
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {editingPage.id && !isNewPage && (
             <button
