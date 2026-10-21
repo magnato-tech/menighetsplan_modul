@@ -318,7 +318,7 @@ describe("PageEditModal & PublicStaticPage: Ekte forhåndsvisning i ny fane", ()
 
     expect(screen.getByText(/Låst øverst · Kan ikke flyttes eller slettes/i)).toBeDefined();
     expect(screen.getByDisplayValue("Velkommen hit")).toBeDefined();
-    expect(screen.getByText("Neste gudstjeneste")).toBeDefined();
+    expect(screen.getByText("Neste gudstjeneste", { selector: "span" })).toBeDefined();
     expect(screen.queryByRole("button", { name: /Rå Markdown/i })).toBeNull();
     expect(screen.queryByText(/:::module-worship/)).toBeNull();
 

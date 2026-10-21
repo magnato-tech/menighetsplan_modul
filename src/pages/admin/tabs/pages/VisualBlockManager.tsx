@@ -54,6 +54,10 @@ interface VisualBlockManagerProps {
   currentPageId?: string;
   /** A section pressed in the preview: its fields are opened, and on an event's card, also the event. */
   openRequest?: { blockId: string; gatheringId?: string; nonce: number } | null;
+  /** Only this block is listed (the section editor); its index in the full list is kept. */
+  onlyBlockId?: string | null;
+  /** The order is changed in the section list instead, so the rows here are not moved. */
+  orderInNav?: boolean;
 }
 
 function isInteractiveTarget(target: EventTarget | null): boolean {
@@ -74,6 +78,8 @@ export const VisualBlockManager: React.FC<VisualBlockManagerProps> = ({
   onSelectBlock,
   currentPageId,
   openRequest,
+  onlyBlockId,
+  orderInNav,
 }) => {
   const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
   const [editFields, setEditFields] = useState<StaticBlockFields | null>(null);
@@ -88,6 +94,14 @@ export const VisualBlockManager: React.FC<VisualBlockManagerProps> = ({
     if (editingBlockId !== block.id) handleStartEditContent(block);
     setOpenEvent(openRequest.gatheringId ? { id: openRequest.gatheringId, nonce: openRequest.nonce } : null);
   }, [openRequest?.nonce]);
+
+  // When only one block is shown, its fields are opened at once, so the section has its content ready.
+  useEffect(() => {
+    if (!onlyBlockId) return;
+    const block = blocks.find((candidate) => candidate.id === onlyBlockId);
+    if (!block || !canEditBlockContent(block)) return;
+    if (editingBlockId !== block.id) handleStartEditContent(block);
+  }, [onlyBlockId]);
 
   // The blocks as they stand when a change below is applied, not as they stood when it was typed
   const blocksRef = useRef(blocks);
@@ -295,6 +309,8 @@ export const VisualBlockManager: React.FC<VisualBlockManagerProps> = ({
 
   return (
     <div className="space-y-3" data-cms-surface="editor">
+      {/* With one block shown, the section list carries the overview, so the heading is left out */}
+      {!onlyBlockId && (
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Layers className="w-4 h-4 text-[var(--studio-icon)]" />
@@ -310,9 +326,12 @@ export const VisualBlockManager: React.FC<VisualBlockManagerProps> = ({
           </span>
         </div>
       </div>
+      )}
 
       <div className="space-y-2.5">
         {blocks.map((block, index) => {
+          // Keep the full-list index, so handlers such as handleDelete(index) still hit the right block
+          if (onlyBlockId && block.id !== onlyBlockId) return null;
           const isDynamic = block.isDynamic;
           const isHidden = block.hidden === true;
           const dynamicMeta = isDynamic
@@ -327,15 +346,15 @@ export const VisualBlockManager: React.FC<VisualBlockManagerProps> = ({
           return (
             <div
               key={block.id || index}
-              draggable={!isEditing}
+              draggable={!isEditing && !orderInNav}
               onClick={(e) => {
                 if (isInteractiveTarget(e.target)) return;
                 onSelectBlock?.(block.id);
               }}
-              onDragStart={(e) => handleDragStart(e, index)}
-              onDragOver={(e) => handleDragOver(e, index)}
-              onDrop={(e) => handleDrop(e, index)}
-              onDragEnd={handleDragEnd}
+              onDragStart={orderInNav ? undefined : (e) => handleDragStart(e, index)}
+              onDragOver={orderInNav ? undefined : (e) => handleDragOver(e, index)}
+              onDrop={orderInNav ? undefined : (e) => handleDrop(e, index)}
+              onDragEnd={orderInNav ? undefined : handleDragEnd}
               data-cms-block={block.type}
               data-cms-variant={block.variant || ""}
               data-cms-hidden={isHidden ? "true" : "false"}
@@ -354,13 +373,15 @@ export const VisualBlockManager: React.FC<VisualBlockManagerProps> = ({
             >
               <div className="space-y-3">
                 <div className="flex items-start gap-2.5 min-w-0">
-                  <div
-                    className="p-1 cursor-grab active:cursor-grabbing text-[var(--studio-muted)] hover:text-[var(--studio-muted)] mt-1 shrink-0"
-                    title="Klikk og dra for å flytte blokk"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <GripVertical className="w-4 h-4" />
-                  </div>
+                  {!orderInNav && (
+                    <div
+                      className="p-1 cursor-grab active:cursor-grabbing text-[var(--studio-muted)] hover:text-[var(--studio-muted)] mt-1 shrink-0"
+                      title="Klikk og dra for å flytte blokk"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <GripVertical className="w-4 h-4" />
+                    </div>
+                  )}
 
                   <div
                     className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
@@ -493,29 +514,32 @@ export const VisualBlockManager: React.FC<VisualBlockManagerProps> = ({
                     {isHidden ? <EyeOff className="w-4 h-4 text-amber-400" /> : <Eye className="w-4 h-4" />}
                   </button>
 
-                  {/* Up button */}
-                  <button
-                    type="button"
-                    disabled={index === 0}
-                    onClick={() => handleMoveUp(index)}
-                    className="p-1.5 rounded-lg bg-[var(--studio-surface)] hover:bg-[var(--studio-hover)] disabled:opacity-30 disabled:hover:bg-[var(--studio-surface)] text-[var(--studio-muted)] hover:text-[var(--studio-text)] transition-colors cursor-pointer"
-                    title="Flytt opp"
-                    aria-label="Flytt opp"
-                  >
-                    <ChevronUp className="w-4 h-4" />
-                  </button>
+                  {/* Up and down buttons: left out when the order is changed in the section list */}
+                  {!orderInNav && (
+                    <>
+                      <button
+                        type="button"
+                        disabled={index === 0}
+                        onClick={() => handleMoveUp(index)}
+                        className="p-1.5 rounded-lg bg-[var(--studio-surface)] hover:bg-[var(--studio-hover)] disabled:opacity-30 disabled:hover:bg-[var(--studio-surface)] text-[var(--studio-muted)] hover:text-[var(--studio-text)] transition-colors cursor-pointer"
+                        title="Flytt opp"
+                        aria-label="Flytt opp"
+                      >
+                        <ChevronUp className="w-4 h-4" />
+                      </button>
 
-                  {/* Down button */}
-                  <button
-                    type="button"
-                    disabled={index === blocks.length - 1}
-                    onClick={() => handleMoveDown(index)}
-                    className="p-1.5 rounded-lg bg-[var(--studio-surface)] hover:bg-[var(--studio-hover)] disabled:opacity-30 disabled:hover:bg-[var(--studio-surface)] text-[var(--studio-muted)] hover:text-[var(--studio-text)] transition-colors cursor-pointer"
-                    title="Flytt ned"
-                    aria-label="Flytt ned"
-                  >
-                    <ChevronDown className="w-4 h-4" />
-                  </button>
+                      <button
+                        type="button"
+                        disabled={index === blocks.length - 1}
+                        onClick={() => handleMoveDown(index)}
+                        className="p-1.5 rounded-lg bg-[var(--studio-surface)] hover:bg-[var(--studio-hover)] disabled:opacity-30 disabled:hover:bg-[var(--studio-surface)] text-[var(--studio-muted)] hover:text-[var(--studio-text)] transition-colors cursor-pointer"
+                        title="Flytt ned"
+                        aria-label="Flytt ned"
+                      >
+                        <ChevronDown className="w-4 h-4" />
+                      </button>
+                    </>
+                  )}
 
                   {/* Copy button */}
                   <button
@@ -576,15 +600,17 @@ export const VisualBlockManager: React.FC<VisualBlockManagerProps> = ({
         })}
       </div>
 
-      {/* Button to add new block */}
-      <button
-        type="button"
-        onClick={onOpenBlockPicker}
-        className="w-full py-3 px-4 rounded-xl border border-dashed border-indigo-700/80 hover:border-indigo-500 bg-[var(--studio-accent-bg)] hover:bg-[var(--studio-accent-bg)] text-[var(--studio-accent-text)] hover:text-[var(--studio-text)] text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs"
-      >
-        <Plus className="w-4 h-4 text-[var(--studio-icon)]" />
-        <span>Legg til blokk eller modul</span>
-      </button>
+      {/* Button to add new block: the section list has its own one */}
+      {!orderInNav && (
+        <button
+          type="button"
+          onClick={onOpenBlockPicker}
+          className="w-full py-3 px-4 rounded-xl border border-dashed border-indigo-700/80 hover:border-indigo-500 bg-[var(--studio-accent-bg)] hover:bg-[var(--studio-accent-bg)] text-[var(--studio-accent-text)] hover:text-[var(--studio-text)] text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs"
+        >
+          <Plus className="w-4 h-4 text-[var(--studio-icon)]" />
+          <span>Legg til blokk eller modul</span>
+        </button>
+      )}
     </div>
   );
 };

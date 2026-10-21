@@ -67,6 +67,10 @@ interface StudioSidebarProps {
   onLeaveStudio?: (action: () => void) => void;
   /** A web editor: the website part only, without the choice of part, Lederskap & Stab or the system tabs. */
   webEditor?: boolean;
+  /** The menu folds to icons on a larger screen (while a page is edited). The names stay for screen readers. */
+  compact?: boolean;
+  /** Shows the button that folds the menu and opens it again. Only on a larger screen. */
+  onToggleCompact?: () => void;
 }
 
 /** The count beside a tab, or «Ikke lagret» in its place while the tab's editor holds changes not saved. */
@@ -74,10 +78,10 @@ const CountOrUnsaved: React.FC<{ count: number; unsaved: boolean }> = ({ count, 
   unsaved ? (
     <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800" title="Endringene er ikke lagret">
       <span className="w-1.5 h-1.5 rounded-full bg-amber-500" aria-hidden="true" />
-      Ikke lagret
+      <span className="sidebar-text">Ikke lagret</span>
     </span>
   ) : (
-    <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--studio-surface)] text-[var(--studio-muted)]">{count}</span>
+    <span className="sidebar-hide text-[10px] px-1.5 py-0.5 rounded bg-[var(--studio-surface)] text-[var(--studio-muted)]">{count}</span>
   );
 
 export const StudioSidebar: React.FC<StudioSidebarProps> = ({
@@ -91,6 +95,8 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
   unsavedTabs = [],
   onLeaveStudio = (action) => action(),
   webEditor = false,
+  compact = false,
+  onToggleCompact,
 }) => {
   const navigate = useNavigate();
   const { currentUser, adminPersons, adminGroups, adminGatherings, adminTasks } = studio;
@@ -122,6 +128,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
         <button
           key={entry.tab}
           type="button"
+          title={entry.label}
           {...tabPrefetchHandlers(entry.tab)}
           onClick={() => onTabChange(entry.tab)}
           className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
@@ -131,7 +138,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
           }`}
         >
           <entry.icon className="w-4 h-4 text-[var(--studio-icon)]" />
-          <span>{entry.label}</span>
+          <span className="sidebar-text">{entry.label}</span>
         </button>
       ))}
     </>
@@ -163,11 +170,26 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
       {/* On a phone it slides in over the page. On a larger screen it stands fixed beside the content while the window scrolls, and scrolls on its own if it is taller than the screen */}
       <aside
         data-studio-theme={sidebarTheme}
-        className={`fixed md:sticky md:self-start md:h-[calc(100vh-var(--demo-strip,0px))] md:shrink-0 top-[var(--demo-strip,0px)] bottom-0 left-0 z-40 w-64 bg-[var(--studio-panel-bg)] border-r border-[var(--studio-border)] text-[var(--studio-text)] flex flex-col justify-between transition-transform duration-200 ${
+        data-compact={compact ? "true" : undefined}
+        className={`fixed md:sticky md:self-start md:h-[calc(100vh-var(--demo-strip,0px))] md:shrink-0 top-[var(--demo-strip,0px)] bottom-0 left-0 z-40 w-64 ${compact ? "md:w-14" : ""} bg-[var(--studio-panel-bg)] border-r border-[var(--studio-border)] text-[var(--studio-text)] flex flex-col justify-between transition-transform duration-200 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         }`}
       >
-        <div className="p-5 space-y-6 overflow-y-auto">
+        <div className="sidebar-scroll p-5 space-y-6 overflow-y-auto">
+          {/* Folds the menu to icons, or opens it again. Only on a larger screen. */}
+          {onToggleCompact && (
+            <div className="hidden md:flex justify-end">
+              <button
+                type="button"
+                onClick={() => onToggleCompact()}
+                aria-label={compact ? "Vis hele menyen" : "Brett sammen menyen"}
+                title={compact ? "Vis hele menyen" : "Brett sammen menyen"}
+                className="w-7 h-7 flex items-center justify-center rounded-lg bg-[var(--studio-surface)] text-[var(--studio-muted)] hover:text-[var(--studio-text)] text-xs font-black cursor-pointer"
+              >
+                {compact ? "››" : "‹‹"}
+              </button>
+            </div>
+          )}
           {/* Header Brand */}
           <div className="space-y-1">
             <div className="flex items-center gap-2.5">
@@ -175,22 +197,22 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
                 <Shield className="w-4 h-4 text-amber-300" />
               </div>
               <div>
-                <h2 className="text-sm font-black text-[var(--studio-text)] tracking-tight">Admin</h2>
-                <div className="flex items-center gap-1.5 text-[10px] text-emerald-400 font-semibold">
+                <h2 className="sidebar-text text-sm font-black text-[var(--studio-text)] tracking-tight">Admin</h2>
+                <div className="sidebar-hide flex items-center gap-1.5 text-[10px] text-emerald-400 font-semibold">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                   <span>Oppdateres i sanntid</span>
                 </div>
               </div>
-              <div className="ml-auto">{contentThemeButton}</div>
+              <div className="sidebar-hide ml-auto">{contentThemeButton}</div>
             </div>
-            <p className="text-[11px] text-[var(--studio-muted)] pt-1">
+            <p className="sidebar-hide text-[11px] text-[var(--studio-muted)] pt-1">
               Fullskjerms administrasjon for {settings.churchName}
             </p>
           </div>
 
           {/* The two parts of the admin. Only this menu and the overview follow the choice. */}
           {!webEditor && (
-          <div role="tablist" aria-label="Del av admin" className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-[var(--studio-surface)]">
+          <div role="tablist" aria-label="Del av admin" className="sidebar-hide grid grid-cols-2 gap-1 p-1 rounded-xl bg-[var(--studio-surface)]">
             {STUDIO_AREAS.map((choice) => (
               <button
                 key={choice}
@@ -214,6 +236,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
           <div className="space-y-1">
             <button
               type="button"
+              title="Oversikt"
               {...tabPrefetchHandlers("dashboard")}
               onClick={() => onTabChange("dashboard")}
               className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
@@ -223,7 +246,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
               }`}
             >
               <LayoutDashboard className="w-4 h-4" />
-              <span>Oversikt</span>
+              <span className="sidebar-text">Oversikt</span>
             </button>
 
             {/* The two ways out of the studio. Each is listed here only. */}
@@ -238,9 +261,9 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
               >
                 <div className="flex items-center gap-2">
                   <User className="w-3.5 h-3.5 text-[var(--studio-icon)]" />
-                  <span>Gå til Min Side</span>
+                  <span className="sidebar-text">Gå til Min Side</span>
                 </div>
-                <span className="text-[10px] text-[var(--studio-muted)]">Min profil</span>
+                <span className="sidebar-hide text-[10px] text-[var(--studio-muted)]">Min profil</span>
               </Link>
 
               <Link
@@ -251,9 +274,9 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
               >
                 <div className="flex items-center gap-2">
                   <ExternalLink className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Åpne offentlig nettside</span>
+                  <span className="sidebar-text">Åpne offentlig nettside</span>
                 </div>
-                <span className="text-[10px] text-[var(--studio-muted)]">Forside ↗</span>
+                <span className="sidebar-hide text-[10px] text-[var(--studio-muted)]">Forside ↗</span>
               </Link>
             </div>
           </div>
@@ -264,6 +287,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
 
             <button
               type="button"
+              title="Sider & Innhold"
               {...tabPrefetchHandlers("cms-sider")}
               onClick={() => onTabChange("cms-sider")}
               className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
@@ -274,13 +298,14 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
             >
               <div className="flex items-center gap-2.5">
                 <FileText className="w-4 h-4" />
-                <span>Sider & Innhold</span>
+                <span className="sidebar-text">Sider & Innhold</span>
               </div>
               <CountOrUnsaved count={pages.length} unsaved={unsavedTabs.includes("cms-sider")} />
             </button>
 
             <button
               type="button"
+              title="Aktuelt & Nyheter"
               {...tabPrefetchHandlers("cms-nyheter")}
               onClick={() => onTabChange("cms-nyheter")}
               className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
@@ -291,13 +316,14 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
             >
               <div className="flex items-center gap-2.5">
                 <Newspaper className="w-4 h-4" />
-                <span>Aktuelt & Nyheter</span>
+                <span className="sidebar-text">Aktuelt & Nyheter</span>
               </div>
               <CountOrUnsaved count={news.length} unsaved={unsavedTabs.includes("cms-nyheter")} />
             </button>
 
             <button
               type="button"
+              title="Taler & Prekener"
               {...tabPrefetchHandlers("cms-taler")}
               onClick={() => onTabChange("cms-taler")}
               className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
@@ -308,7 +334,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
             >
               <div className="flex items-center gap-2.5">
                 <Headphones className="w-4 h-4 text-amber-300" />
-                <span>Taler & Prekener</span>
+                <span className="sidebar-text">Taler & Prekener</span>
               </div>
               <CountOrUnsaved count={sermons.length} unsaved={unsavedTabs.includes("cms-taler")} />
             </button>
@@ -316,6 +342,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
             {!webEditor && (
             <button
               type="button"
+              title="Lederskap & Stab"
               {...tabPrefetchHandlers("cms-stab")}
               onClick={() => onTabChange("cms-stab")}
               className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
@@ -326,9 +353,9 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
             >
               <div className="flex items-center gap-2.5">
                 <Users className="w-4 h-4 text-emerald-400" />
-                <span>Lederskap & Stab</span>
+                <span className="sidebar-text">Lederskap & Stab</span>
               </div>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--studio-surface)] text-[var(--studio-muted)]">
+              <span className="sidebar-hide text-[10px] px-1.5 py-0.5 rounded bg-[var(--studio-surface)] text-[var(--studio-muted)]">
                 {staff.length}
               </span>
             </button>
@@ -336,6 +363,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
 
             <button
               type="button"
+              title="Mediebibliotek"
               {...tabPrefetchHandlers("cms-medier")}
               onClick={() => onTabChange("cms-medier")}
               className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
@@ -346,15 +374,16 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
             >
               <div className="flex items-center gap-2.5">
                 <Images className="w-4 h-4" />
-                <span>Mediebibliotek</span>
+                <span className="sidebar-text">Mediebibliotek</span>
               </div>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--studio-surface)] text-[var(--studio-muted)]">
+              <span className="sidebar-hide text-[10px] px-1.5 py-0.5 rounded bg-[var(--studio-surface)] text-[var(--studio-muted)]">
                 {mediaCount}
               </span>
             </button>
 
             <button
               type="button"
+              title="Tema & Designsystem"
               {...tabPrefetchHandlers("cms-design")}
               onClick={() => onTabChange("cms-design")}
               className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
@@ -365,12 +394,13 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
             >
               <div className="flex items-center gap-2.5">
                 <Palette className="w-4 h-4 text-pink-400" />
-                <span>Tema & Designsystem</span>
+                <span className="sidebar-text">Tema & Designsystem</span>
               </div>
             </button>
 
             <button
               type="button"
+              title="Nettside-innstillinger"
               {...tabPrefetchHandlers("cms-innstillinger")}
               onClick={() => onTabChange("cms-innstillinger")}
               className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
@@ -380,11 +410,12 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
               }`}
             >
               <Sliders className="w-4 h-4" />
-              <span>Nettside-innstillinger</span>
+              <span className="sidebar-text">Nettside-innstillinger</span>
             </button>
 
             <button
               type="button"
+              title="Arrangementer på nettsiden"
               {...tabPrefetchHandlers("cms-overstyringer")}
               onClick={() => onTabChange("cms-overstyringer")}
               className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
@@ -394,7 +425,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
               }`}
             >
               <Star className="w-4 h-4 text-amber-400" />
-              <span>Arrangementer på nettsiden</span>
+              <span className="sidebar-text">Arrangementer på nettsiden</span>
             </button>
             {addonButtons}
           </div>
@@ -406,6 +437,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
 
             <button
               type="button"
+              title="Kalender"
               {...tabPrefetchHandlers("planlegger-samlinger")}
               onClick={() => onTabChange("planlegger-samlinger")}
               className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
@@ -416,9 +448,9 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
             >
               <div className="flex items-center gap-2.5">
                 <Calendar className="w-4 h-4 text-[var(--studio-icon)]" />
-                <span>Kalender</span>
+                <span className="sidebar-text">Kalender</span>
               </div>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--studio-surface)] text-[var(--studio-muted)]">
+              <span className="sidebar-hide text-[10px] px-1.5 py-0.5 rounded bg-[var(--studio-surface)] text-[var(--studio-muted)]">
                 {adminGatherings.length}
               </span>
             </button>
@@ -426,6 +458,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
             {hasPlanner(level) && (
             <button
               type="button"
+              title="Trenger oppfølging"
               {...tabPrefetchHandlers("planlegger-oppgaver")}
               onClick={() => onTabChange("planlegger-oppgaver")}
               className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
@@ -436,10 +469,10 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
             >
               <div className="flex items-center gap-2.5">
                 <ListTodo className="w-4 h-4 text-amber-400" />
-                <span>Trenger oppfølging</span>
+                <span className="sidebar-text">Trenger oppfølging</span>
               </div>
               {urgentTasksCount > 0 ? (
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-900/60 border border-red-700 text-red-300 font-bold">
+                <span className="sidebar-hide text-[10px] px-1.5 py-0.5 rounded bg-red-900/60 border border-red-700 text-red-300 font-bold">
                   {urgentTasksCount} må ordnes
                 </span>
               ) : null}
@@ -449,6 +482,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
             {hasPlanner(level) && (
             <button
               type="button"
+              title="Grupper & Husfellesskap"
               {...tabPrefetchHandlers("planlegger-grupper")}
               onClick={() => onTabChange("planlegger-grupper")}
               className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
@@ -459,9 +493,9 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
             >
               <div className="flex items-center gap-2.5">
                 <FolderKanban className="w-4 h-4" />
-                <span>Grupper & Husfellesskap</span>
+                <span className="sidebar-text">Grupper & Husfellesskap</span>
               </div>
-              <span className="flex items-center gap-1">
+              <span className="sidebar-hide flex items-center gap-1">
                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--studio-surface)] text-[var(--studio-muted)]">
                   {adminGroups.length}
                 </span>
@@ -476,6 +510,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
 
             <button
               type="button"
+              title="Personer"
               {...tabPrefetchHandlers("planlegger-personer")}
               onClick={() => onTabChange("planlegger-personer")}
               className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
@@ -486,9 +521,9 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
             >
               <div className="flex items-center gap-2.5">
                 <Users className="w-4 h-4" />
-                <span>Personer</span>
+                <span className="sidebar-text">Personer</span>
               </div>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--studio-surface)] text-[var(--studio-muted)]">
+              <span className="sidebar-hide text-[10px] px-1.5 py-0.5 rounded bg-[var(--studio-surface)] text-[var(--studio-muted)]">
                 {adminPersons.length}
               </span>
             </button>
@@ -496,6 +531,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
             {/* Templates are for both levels: an event is repeated with or without the planner */}
             <button
               type="button"
+              title="Maler"
               {...tabPrefetchHandlers("planlegger-maler")}
               onClick={() => onTabChange("planlegger-maler")}
               className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
@@ -505,12 +541,13 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
               }`}
             >
               <LayoutTemplate className="w-4 h-4" />
-              <span>Maler</span>
+              <span className="sidebar-text">Maler</span>
             </button>
 
             {/* The annual wheel is a page of information for the administration, on both levels */}
             <button
               type="button"
+              title="Årshjul"
               {...tabPrefetchHandlers("arshjul")}
               onClick={() => onTabChange("arshjul")}
               className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
@@ -520,13 +557,14 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
               }`}
             >
               <CalendarRange className="w-4 h-4" />
-              <span>Årshjul</span>
+              <span className="sidebar-text">Årshjul</span>
             </button>
 
             {/* E-mail goes to the people in the groups, so it is part of the planner */}
             {hasPlanner(level) && (
             <button
               type="button"
+              title="Send e-post"
               {...tabPrefetchHandlers("epost")}
               onClick={() => onTabChange("epost")}
               className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
@@ -536,13 +574,14 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
               }`}
             >
               <Mail className="w-4 h-4" />
-              <span>Send e-post</span>
+              <span className="sidebar-text">Send e-post</span>
             </button>
             )}
 
             {hasPlanner(level) && (
             <button
               type="button"
+              title="Roller"
               {...tabPrefetchHandlers("planlegger-roller")}
               onClick={() => onTabChange("planlegger-roller")}
               className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
@@ -553,9 +592,9 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
             >
               <div className="flex items-center gap-2.5">
                 <Badge className="w-4 h-4" />
-                <span>Roller</span>
+                <span className="sidebar-text">Roller</span>
               </div>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--studio-surface)] text-[var(--studio-muted)]">
+              <span className="sidebar-hide text-[10px] px-1.5 py-0.5 rounded bg-[var(--studio-surface)] text-[var(--studio-muted)]">
                 {studio.adminVolunteerRoles.length}
               </span>
             </button>
@@ -568,6 +607,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
           <div className="space-y-1 pt-2 border-t border-[var(--studio-border)]">
             <button
               type="button"
+              title="Hjelp"
               {...tabPrefetchHandlers("cms-hjelp")}
               onClick={() => onTabChange("cms-hjelp")}
               className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
@@ -577,19 +617,20 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
               }`}
             >
               <CircleHelp className="w-4 h-4" />
-              <span>Hjelp</span>
+              <span className="sidebar-text">Hjelp</span>
             </button>
           </div>
 
           {/* Nav Section: System & Database. Not for a web editor */}
           {!inDemo && !webEditor && (
           <div className="space-y-1">
-            <div className="text-[10px] font-black uppercase tracking-wider text-[var(--studio-muted)] px-3 py-1">
+            <div className="sidebar-hide text-[10px] font-black uppercase tracking-wider text-[var(--studio-muted)] px-3 py-1">
               System & Database
             </div>
 
             <button
               type="button"
+              title="Database og Testdata"
               {...tabPrefetchHandlers("database-admin")}
               onClick={() => onTabChange("database-admin")}
               className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
@@ -600,15 +641,16 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
             >
               <div className="flex items-center gap-2.5">
                 <Database className="w-4 h-4 text-[var(--studio-icon)]" />
-                <span>Database og Testdata</span>
+                <span className="sidebar-text">Database og Testdata</span>
               </div>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--studio-surface)] text-[var(--studio-muted)]">
+              <span className="sidebar-hide text-[10px] px-1.5 py-0.5 rounded bg-[var(--studio-surface)] text-[var(--studio-muted)]">
                 Firestore
               </span>
             </button>
 
             <button
               type="button"
+              title="Moduler"
               {...tabPrefetchHandlers("moduler")}
               onClick={() => onTabChange("moduler")}
               className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
@@ -619,9 +661,9 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
             >
               <div className="flex items-center gap-2.5">
                 <Puzzle className="w-4 h-4 text-[var(--studio-icon)]" />
-                <span>Moduler</span>
+                <span className="sidebar-text">Moduler</span>
               </div>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--studio-surface)] text-[var(--studio-muted)]">
+              <span className="sidebar-hide text-[10px] px-1.5 py-0.5 rounded bg-[var(--studio-surface)] text-[var(--studio-muted)]">
                 {countAddonsOn(addons)} av {STUDIO_ADDONS.length} på
               </span>
             </button>
@@ -631,12 +673,13 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
           {/* Nav Section: the demo's own setup, for its owner */}
           {inDemo && demoOwner === "owner" && (
           <div className="space-y-1">
-            <div className="text-[10px] font-black uppercase tracking-wider text-[var(--studio-muted)] px-3 py-1">
+            <div className="sidebar-hide text-[10px] font-black uppercase tracking-wider text-[var(--studio-muted)] px-3 py-1">
               Demoen
             </div>
 
             <button
               type="button"
+              title="Demo-oppsett"
               {...tabPrefetchHandlers("demo-oppsett")}
               onClick={() => onTabChange("demo-oppsett")}
               className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
@@ -646,7 +689,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
               }`}
             >
               <SlidersHorizontal className="w-4 h-4 text-[var(--studio-icon)]" />
-              <span>Demo-oppsett</span>
+              <span className="sidebar-text">Demo-oppsett</span>
             </button>
           </div>
           )}
@@ -654,15 +697,16 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
         </div>
 
         {/* Sidebar Footer: the look of the menu, and who is signed in */}
-        <div className="p-4 border-t border-[var(--studio-border)] bg-[var(--studio-panel-bg)] space-y-2 text-xs">
+        <div className="sidebar-foot p-4 border-t border-[var(--studio-border)] bg-[var(--studio-panel-bg)] space-y-2 text-xs">
           <StudioThemeToggle
             theme={sidebarTheme}
             onToggle={toggleSidebarTheme}
             darkLabel="Mørk meny"
             lightLabel="Lys meny"
+            className="sidebar-hide"
           />
 
-          <div className="pt-2 border-t border-[var(--studio-border)] text-[11px] text-[var(--studio-muted)] flex items-center justify-between">
+          <div className="sidebar-hide pt-2 border-t border-[var(--studio-border)] text-[11px] text-[var(--studio-muted)] flex items-center justify-between">
             <span>Innlogget som:</span>
             <strong className="text-[var(--studio-text)] truncate max-w-[120px]">{currentUser.name}</strong>
           </div>
@@ -673,7 +717,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
             className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--studio-border)] text-[11px] font-bold text-[var(--studio-muted)] hover:text-[var(--studio-text)] hover:bg-[var(--studio-bg)] cursor-pointer"
           >
             <LogOut className="w-3.5 h-3.5" aria-hidden="true" />
-            Logg ut
+            <span className="sidebar-text">Logg ut</span>
           </button>
         </div>
       </aside>

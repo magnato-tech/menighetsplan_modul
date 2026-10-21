@@ -22,6 +22,8 @@ export interface AdminCmsPanelProps {
   /** Set when another tab/shortcut asks for this panel to open with a new, empty editor. */
   createRequested?: boolean;
   onCreateHandled?: () => void;
+  /** Tells the admin whether a page is open in the editor, so the side menu can fold to icons. */
+  onEditorOpenChange?: (open: boolean) => void;
 }
 
 /**
@@ -32,10 +34,17 @@ export const AdminCmsPanel: React.FC<AdminCmsPanelProps> = ({
   showFeedback,
   createRequested = false,
   onCreateHandled,
+  onEditorOpenChange,
 }) => {
   const { pages, savePage, deletePage, reorderPages } = useCms();
 
   const [editingPage, setEditingPage] = useState<Partial<CmsPage> | null>(null);
+
+  // Report the editor state up, and reset it when this panel goes away
+  useEffect(() => {
+    onEditorOpenChange?.(editingPage !== null);
+  }, [editingPage, onEditorOpenChange]);
+  useEffect(() => () => onEditorOpenChange?.(false), [onEditorOpenChange]);
   const [isNewPage, setIsNewPage] = useState(false);
   const [deleteConfirmPageId, setDeleteConfirmPageId] = useState<string | null>(null);
   // Counts each time the editor is opened, so it is brought into view then, and not on every Lagre

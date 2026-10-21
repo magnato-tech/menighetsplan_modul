@@ -50,6 +50,9 @@ import {
 } from "../../../../utils/cmsBlocks";
 import { ensureSectionAnchors } from "../../../../utils/cmsLinks";
 import { CmsLinkPicker } from "../../../../components/admin/CmsLinkPicker";
+import { PageSectionNav, type PageSection } from "../../../../components/admin/PageSectionNav";
+import { readStoredFlag, writeStoredFlag } from "../../../../utils/storedFlag";
+import { useMediaQuery } from "../../../../hooks/useMediaQuery";
 
 function toDatetimeLocal(iso?: string): string {
   if (!iso) return "";
@@ -71,14 +74,16 @@ function toDatetimeLocal(iso?: string): string {
  * Brings a field into view in the scrolling column it stands in (the fields beside the preview), near
  * the top, without moving the page around it.
  */
-export function scrollIntoColumn(element: HTMLElement, offset = 16): void {
+// Returns false when no scrolling column holds the element, so the caller can scroll the page instead.
+export function scrollIntoColumn(element: HTMLElement, offset = 16): boolean {
   let column = element.parentElement;
   while (column && !(column.scrollHeight > column.clientHeight + 2 && /(auto|scroll)/.test(getComputedStyle(column).overflowY))) {
     column = column.parentElement;
   }
-  if (!column) return;
+  if (!column) return false;
   const top = element.getBoundingClientRect().top - column.getBoundingClientRect().top + column.scrollTop - offset;
   column.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+  return true;
 }
 
 /** Scrolls the preview pane so the target block is visible. Returns false if already fully in view. */
@@ -176,6 +181,20 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
     }
     return "edit";
   });
+
+  // The section list: one section's fields at a time, when the screen is wide enough for three panes.
+  // The list can be folded away, and the choice is remembered in the browser.
+  const [activeSection, setActiveSection] = useState<string>("hero");
+  const [navCollapsed, setNavCollapsed] = useState(() => readStoredFlag("menighetsplan:seksjoner-skjult", false));
+  const setCollapsed = (next: boolean) => {
+    setNavCollapsed(next);
+    writeStoredFlag("menighetsplan:seksjoner-skjult", next);
+  };
+  // Without matchMedia (tests, server) the fallback keeps today's layout with all sections under each other.
+  const wideSplit = useMediaQuery("(min-width: 1600px)", false);
+  const wideEdit = useMediaQuery("(min-width: 1024px)", false);
+  const navFits = viewMode === "split" ? wideSplit : viewMode === "edit" ? wideEdit : false;
+  const showNav = navFits && !navCollapsed;
 
   // Responsive device simulation in preview area: desktop (full width), tablet (768px), mobile (390px)
   const [previewDevice, setPreviewDevice] = useState<"desktop" | "tablet" | "mobile">("desktop");
@@ -278,6 +297,35 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
     [editingPage, isHomePage]
   );
 
+  const sections = useMemo<PageSection[]>(
+    () => [
+      { id: "settings", kind: "settings", label: "Sideinnstillinger", detail: "Tittel, adresse og menyen" },
+      { id: "hero", kind: "hero", label: "Toppbilde" },
+      ...visualBlocks.map((block) => ({
+        id: block.id,
+        kind: "block" as const,
+        label: block.title?.trim() || "Uten tittel",
+        detail: block.isDynamic ? "Modul" : "Innhold",
+        hidden: block.hidden === true,
+      })),
+      { id: "seo", kind: "seo", label: "Søk og deling" },
+      { id: "publish", kind: "publish", label: "Publisering" },
+    ],
+    [visualBlocks]
+  );
+  // A block that was deleted leaves its id behind; the hero is shown then.
+  const activeId = sections.some((section) => section.id === activeSection) ? activeSection : "hero";
+
+  // Brings a section's first field into view in the page; used by the select on narrow screens.
+  const goToSection = (id: string) => {
+    const target = id === "hero" ? CMS_PREVIEW_TARGET_HERO : id;
+    const element =
+      (document.querySelector(`[data-page-editor] [data-cms-editor-target="${CSS.escape(target)}"]`) as HTMLElement | null) ??
+      (document.querySelector(`[data-page-editor] [data-page-section="${CSS.escape(id)}"]`) as HTMLElement | null);
+    if (!element) return;
+    if (!scrollIntoColumn(element)) element.scrollIntoView({ block: "start" });
+  };
+
   const handleBlocksChange = (newBlocks: VisualBlock[]) => {
     const anchored = ensureSectionAnchors(newBlocks);
     const serialized = serializeVisualBlocksToContent(anchored);
@@ -303,6 +351,7 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
     // A press on a section in the preview opens it here: the hero's fields, or the block in the list
     onPreviewSelect: (blockId, gatheringId) => {
       setFocusedPreviewTarget(blockId);
+      setActiveSection(blockId === CMS_PREVIEW_TARGET_HERO ? "hero" : blockId);
       if (viewMode === "preview") setViewMode("split");
       if (blockId !== CMS_PREVIEW_TARGET_HERO) setOpenRequest({ blockId, gatheringId, nonce: Date.now() });
       // After the block has opened, its fields are brought into view in the column beside the preview
@@ -504,8 +553,9 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
     );
   };
 
-  const renderFormFields = () => (
-    <>
+  // Each part of the form is its own function, so the section list can show one at a time.
+  const renderSettingsSection = () => (
+    <div data-page-section="settings" className="space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Tittel */}
         <div className="space-y-1">
@@ -593,6 +643,11 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
         </div>
       </div>
 
+    </div>
+  );
+
+  const renderHeroSection = () => (
+    <div data-page-section="hero" className="space-y-4">
       {/* 📌 Fast Toppramme (Hero) */}
       <div
         role="button"
@@ -935,18 +990,26 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
         </div>
       </div>
 
+    </div>
+  );
+
+  // With onlyBlockId, the section list shows this one block: its heading is left out, and the order is changed in the list.
+  const renderBlocksSection = (onlyBlockId?: string) => (
+    <div data-page-section="blocks" className="space-y-4">
       {/* Visuell Blokkbygger & Modulstyring */}
       <div className="space-y-3 bg-[var(--studio-row)] p-4 sm:p-5 rounded-2xl border border-[var(--studio-border)]">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[var(--studio-border)] pb-3">
-          <div>
-            <label className="text-xs font-bold text-[var(--studio-text)] uppercase tracking-wider block">
-              Innholdsblokker & Moduler
-            </label>
-            <p className="text-[11px] text-[var(--studio-muted)]">
-              Flytt kort opp eller ned, skjul dem, eller velg en layout. Innholdet i dynamiske moduler hentes av systemet.
-            </p>
+        {!onlyBlockId && (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[var(--studio-border)] pb-3">
+            <div>
+              <label className="text-xs font-bold text-[var(--studio-text)] uppercase tracking-wider block">
+                Innholdsblokker & Moduler
+              </label>
+              <p className="text-[11px] text-[var(--studio-muted)]">
+                Flytt kort opp eller ned, skjul dem, eller velg en layout. Innholdet i dynamiske moduler hentes av systemet.
+              </p>
+            </div>
           </div>
-        </div>
+        )}
 
         <VisualBlockManager
           blocks={visualBlocks}
@@ -956,9 +1019,15 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
           onSelectBlock={setFocusedPreviewTarget}
           currentPageId={editingPage.id}
           openRequest={openRequest}
+          onlyBlockId={onlyBlockId}
+          orderInNav={Boolean(onlyBlockId)}
         />
       </div>
+    </div>
+  );
 
+  const renderSeoSection = () => (
+    <div data-page-section="seo" className="space-y-4">
       {/* SEO & Deling i sosiale medier */}
       <div className="rounded-xl border border-[var(--studio-border)] bg-[var(--studio-bg)]/40 overflow-hidden">
         <button
@@ -1065,6 +1134,11 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
         )}
       </div>
 
+    </div>
+  );
+
+  const renderPublishSection = () => (
+    <div data-page-section="publish" className="space-y-4">
       {/* Publisering & Synlighet */}
       <div className="p-4 rounded-xl bg-[var(--studio-row)] border border-[var(--studio-border)] space-y-4">
         <h4 className="text-xs font-bold text-[var(--studio-text)] uppercase tracking-wider">
@@ -1201,8 +1275,58 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
           )}
         </div>
       </div>
+    </div>
+  );
+
+  const renderFormFields = () => (
+    <>
+      {renderSettingsSection()}
+      {renderHeroSection()}
+      {renderBlocksSection()}
+      {renderSeoSection()}
+      {renderPublishSection()}
     </>
   );
+
+  const renderSectionNav = () => (
+    <div className="w-[220px] shrink-0 sticky top-[calc(var(--demo-strip,0px)+6rem)] max-h-[82vh]">
+      <PageSectionNav
+        sections={sections}
+        activeId={activeId}
+        onSelect={(id) => {
+          setActiveSection(id);
+          if (id === "seo") setShowSeoDetails(true);
+          if (id !== "settings" && id !== "seo" && id !== "publish") {
+            setFocusedPreviewTarget(id === "hero" ? CMS_PREVIEW_TARGET_HERO : id);
+          }
+        }}
+        onReorderBlocks={(ids) =>
+          handleBlocksChange(
+            ids
+              .map((id) => visualBlocks.find((block) => block.id === id))
+              .filter((block): block is VisualBlock => Boolean(block))
+          )
+        }
+        onToggleHidden={(id) =>
+          handleBlocksChange(visualBlocks.map((block) => (block.id === id ? { ...block, hidden: !block.hidden } : block)))
+        }
+        onCollapse={() => setCollapsed(true)}
+        onAddBlock={() => setIsBlockPickerOpen(true)}
+      />
+    </div>
+  );
+
+  // Beside the list only the chosen section's fields are shown.
+  const renderActiveSection = () =>
+    activeId === "settings"
+      ? renderSettingsSection()
+      : activeId === "hero"
+      ? renderHeroSection()
+      : activeId === "seo"
+      ? renderSeoSection()
+      : activeId === "publish"
+      ? renderPublishSection()
+      : renderBlocksSection(activeId);
 
   return (
     <form
@@ -1212,11 +1336,13 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
           ? "w-full max-w-none"
           : viewMode === "preview"
           ? "w-full max-w-none"
+          : showNav
+          ? "max-w-6xl mx-auto w-full"
           : "max-w-4xl mx-auto w-full"
       }`}
     >
       {/* The top bar stays in view while the page scrolls, so Lagre is always within reach */}
-      <div className="sticky top-[var(--demo-strip,0px)] z-30 -mx-4 sm:-mx-6 -mt-4 sm:-mt-6 px-4 sm:px-6 pt-4 sm:pt-6 rounded-t-2xl bg-[var(--studio-surface)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--studio-border)] pb-3">
+      <div className="sticky top-[var(--demo-strip,0px)] z-30 -mx-4 sm:-mx-6 -mt-4 sm:-mt-6 px-4 sm:px-6 pt-4 sm:pt-6 rounded-t-2xl bg-[var(--studio-surface)] flex flex-col sm:flex-row sm:flex-wrap sm:items-center justify-between gap-3 border-b border-[var(--studio-border)] pb-3">
         <h3 className="text-sm font-bold text-[var(--studio-text)] flex items-center gap-2">
           <Edit3 className="w-4 h-4 text-[var(--studio-icon)]" />
           <span>
@@ -1268,6 +1394,34 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
           </button>
         </div>
 
+        {navFits && navCollapsed && (
+          <button
+            type="button"
+            onClick={() => setCollapsed(false)}
+            aria-label="Vis seksjoner"
+            className="px-3 py-1.5 rounded-xl bg-[var(--studio-bg)] hover:bg-[var(--studio-panel-bg)] text-[var(--studio-accent-text)] border border-indigo-700/60 text-xs font-semibold cursor-pointer"
+          >
+            Seksjoner
+          </button>
+        )}
+
+        {/* On narrow screens there is no list beside the fields, so a select jumps to a section instead */}
+        {!navFits && viewMode !== "preview" && (
+          <select
+            aria-label="Gå til seksjon"
+            value=""
+            onChange={(e) => goToSection(e.target.value)}
+            className="px-3 py-1.5 rounded-xl bg-[var(--studio-bg)] border border-[var(--studio-border)] text-[var(--studio-input-text)] text-xs cursor-pointer"
+          >
+            <option value="">Gå til seksjon …</option>
+            {sections.map((section) => (
+              <option key={section.id} value={section.id}>
+                {section.label}
+              </option>
+            ))}
+          </select>
+        )}
+
         <div className="flex items-center gap-2">
           <a
             href={previewUrl}
@@ -1318,6 +1472,16 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
         <div className="space-y-4">
           {renderLiveFrontendPreview()}
         </div>
+      ) : viewMode === "split" && showNav ? (
+        <div className="flex flex-col lg:flex-row gap-6 items-start w-full">
+          {renderSectionNav()}
+          <div className="w-[480px] shrink-0 space-y-4 overflow-y-auto max-h-[82vh] pr-2">
+            {renderActiveSection()}
+          </div>
+          <div className="flex-1 min-w-0 w-full sticky top-[calc(var(--demo-strip,0px)+6rem)]">
+            {renderLiveFrontendPreview()}
+          </div>
+        </div>
       ) : viewMode === "split" ? (
         <div className="flex flex-col lg:flex-row gap-6 items-start w-full">
           <div className="w-full lg:w-[460px] xl:w-[500px] 2xl:w-[540px] shrink-0 space-y-4 overflow-y-auto max-h-[82vh] pr-2">
@@ -1325,6 +1489,13 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
           </div>
           <div className="flex-1 min-w-0 w-full sticky top-[calc(var(--demo-strip,0px)+6rem)]">
             {renderLiveFrontendPreview()}
+          </div>
+        </div>
+      ) : viewMode === "edit" && showNav ? (
+        <div className="flex flex-col lg:flex-row gap-6 items-start w-full">
+          {renderSectionNav()}
+          <div className="flex-1 min-w-0 space-y-4">
+            {renderActiveSection()}
           </div>
         </div>
       ) : (
