@@ -230,14 +230,14 @@ describe("Analysebord", () => {
     expect(document.activeElement).toBe(screen.getByRole("button", { name: "Tilpass bordet" }));
   });
 
-  test("datagrunnlaget sier hva som ikke er målt, og lenker til testdata", () => {
+  test("datagrunnlaget sier hva som ikke er målt, og lenker ikke til testdata utenfor demo", () => {
     const { onTabChange } = renderTab();
     // Visits are counted, on a board of their own, and the board says so in both places
     expect(screen.getAllByText(/Besøk på nettsiden telles anonymt/).length).toBe(2);
     fireEvent.click(screen.getByRole("button", { name: "Se besøk på nettsiden" }));
     expect(onTabChange).toHaveBeenCalledWith("nettsidebesok");
-    fireEvent.click(screen.getByRole("button", { name: "Database og Testdata" }));
-    expect(onTabChange).toHaveBeenCalledWith("database-admin");
+    // Simulated history is offered in a demo only (tests/no-testdata-in-production.test.tsx)
+    expect(screen.queryByRole("button", { name: "Database og Testdata" })).toBeNull();
   });
 
   test("er modulen for besøk ikke slått på, sier bordet det og viser veien til Moduler", () => {

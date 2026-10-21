@@ -2,6 +2,7 @@ import React from "react";
 import { AlertTriangle, CheckCircle2, CircleDashed, Info } from "lucide-react";
 import type { CoverageNote } from "../../../../utils/churchAnalytics";
 import { AnalyticsSection } from "./AnalyticsSection";
+import { useOperatingMode } from "../../../../hooks/useOperatingMode";
 
 interface CoverageSectionProps {
   coverage: CoverageNote[];
@@ -17,7 +18,10 @@ const STATUS = {
 } as const;
 
 /** What the numbers on the board rest on, and what is not measured at all. */
-export const CoverageSection: React.FC<CoverageSectionProps> = ({ coverage, onOpenDatabase, onHide }) => (
+export const CoverageSection: React.FC<CoverageSectionProps> = ({ coverage, onOpenDatabase, onHide }) => {
+  // The hint to simulate a history is for a demo only; in production it would invite made-up data
+  const inDemo = useOperatingMode() === "demo";
+  return (
   <AnalyticsSection
     id="analyse-datagrunnlag"
     title="Datagrunnlag"
@@ -40,6 +44,7 @@ export const CoverageSection: React.FC<CoverageSectionProps> = ({ coverage, onOp
         );
       })}
     </ul>
+    {inDemo && (
     <p className="text-[11px] text-[var(--studio-muted)]">
       Vil du se hvordan bordet ser ut med mer historikk? Under{" "}
       <button type="button" onClick={onOpenDatabase} className="font-bold text-[var(--studio-link)] hover:text-[var(--studio-link-hover)] cursor-pointer">
@@ -47,5 +52,7 @@ export const CoverageSection: React.FC<CoverageSectionProps> = ({ coverage, onOp
       </button>{" "}
       kan du fylle databasen med et simulert halvår med menighetsliv.
     </p>
+    )}
   </AnalyticsSection>
-);
+  );
+};
