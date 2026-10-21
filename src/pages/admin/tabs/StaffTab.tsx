@@ -15,12 +15,8 @@ import {
   Phone,
   Mail,
   UserCheck,
-  Database,
-  Sparkles,
-  Loader2,
 } from "lucide-react";
 import { ShowFeedback } from "../studio";
-import { populateDemoPersons } from "../../../services/databaseAdmin";
 
 interface StaffTabProps {
   showFeedback: ShowFeedback;
@@ -28,28 +24,12 @@ interface StaffTabProps {
 
 export const StaffTab: React.FC<StaffTabProps> = ({ showFeedback }) => {
   const { allPersons, groups, updatePerson } = useFirebase();
+  // No button here fills the register with made-up persons: in a congregation's own app one press would put
+  // invented persons among the real ones. The demo is filled from Database og Testdata, in demo mode only.
 
   const [copiedSnippet, setCopiedSnippet] = useState<string | null>(null);
   const [showAddStaffModal, setShowAddStaffModal] = useState<boolean>(false);
   const [selectedPersonIdToAdd, setSelectedPersonIdToAdd] = useState<string>("");
-  const [isPopulating, setIsPopulating] = useState<boolean>(false);
-
-  const handlePopulateTestData = async () => {
-    if (isPopulating) return;
-    setIsPopulating(true);
-    try {
-      const result = await populateDemoPersons();
-      if (result.failures.length > 0) {
-        showFeedback(`Fylling fullført med noen feil: ${result.failures[0].message}`, "error");
-      } else {
-        showFeedback("Databasen er nå fylt med 32 personer for stab, lederskap, pastorer og grupper!");
-      }
-    } catch (err) {
-      showFeedback(err instanceof Error ? err.message : "Kunne ikke fylle testdata", "error");
-    } finally {
-      setIsPopulating(false);
-    }
-  };
 
   // 1. Staff members (isStaff === true, or fallback to persons with staffRole)
   const staffPersons = allPersons.filter((p) => p.isStaff || (p.staffRole && p.isPublicProfile));
@@ -118,21 +98,6 @@ export const StaffTab: React.FC<StaffTabProps> = ({ showFeedback }) => {
         <div className="flex flex-wrap items-center gap-2.5 shrink-0">
           <button
             type="button"
-            onClick={handlePopulateTestData}
-            disabled={isPopulating}
-            className="px-3.5 py-2 rounded-xl bg-indigo-600/90 hover:bg-indigo-600 disabled:opacity-50 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
-            title="Fyller databasen i Firebase med 32 personer (pastorer, lederskap, stab og frivillige)"
-          >
-            {isPopulating ? (
-              <Loader2 className="w-4 h-4 animate-spin text-white" />
-            ) : (
-              <Database className="w-4 h-4 text-[var(--studio-accent-text)]" />
-            )}
-            <span>{isPopulating ? "Fyller testdata..." : "Populer testdata (32 personer)"}</span>
-          </button>
-
-          <button
-            type="button"
             onClick={() => setShowAddStaffModal(true)}
             className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
           >
@@ -141,28 +106,6 @@ export const StaffTab: React.FC<StaffTabProps> = ({ showFeedback }) => {
           </button>
         </div>
       </div>
-
-      {staffPersons.length < 3 && (
-        <div className="p-4 rounded-2xl bg-[var(--studio-accent-bg)] border border-[var(--studio-accent-border)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-          <div className="flex items-start gap-2.5">
-            <Sparkles className="w-5 h-5 text-[var(--studio-icon)] shrink-0 mt-0.5" />
-            <div>
-              <p className="font-bold text-[var(--studio-text)]">Trenger du flere personer i stab, lederskap og grupper?</p>
-              <p className="text-[var(--studio-muted)]">
-                Klikk på «Populer testdata» for å fylle databasen med 32 personer: pastorer, menighetsråd, diakoni, lovsangsteam og aktive frivillige.
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={handlePopulateTestData}
-            disabled={isPopulating}
-            className="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold shrink-0 shadow-sm cursor-pointer"
-          >
-            {isPopulating ? "Fyller data..." : "Fyll inn testdata nå"}
-          </button>
-        </div>
-      )}
 
       {/* Seksjon 1: Ansatte i staben */}
       <section className="space-y-4">

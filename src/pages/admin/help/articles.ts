@@ -350,7 +350,7 @@ const analysebord: HelpArticle = {
   knapper:
     "Siste 4 uker, Siste 3 måneder, Siste 12 måneder, Tilpass bordet, Gudstjenester, Alle arrangementer, Vis som tabell, Vis som diagram, Last ned CSV, Registrer, Endre, Oppgaver, Aktiviteter, Sorter etter, Bare de som har vært med, Vis alle. I vinduet for oppmøte: Registrer oppmøtetall eller Endre oppmøtetall, Lagre oppmøtetall, Avbryt, Fjern tellingen. I Tilpass bordet: en avkrysning per modul, Vis alle og Ferdig. En samling uten tall vises som en lav grå strek merket Ikke registrert.",
   etterLagring:
-    "«Oppmøtetallet for «[samling]» er lagret.» Søylen og snittet oppdateres med en gang. Ved fjerning: «Oppmøtetallet for «[samling]» er fjernet.» Uten tall: «Skriv inn hvor mange som var til stede.» Når en modul skjules: ««[modul]» er skjult. Du får den tilbake under Tilpass bordet.» Valget lagres på den aktive brukeren. Under Database og Testdata kan du simulere et halvår med menighetsliv for å prøve bordet.",
+    "«Oppmøtetallet for «[samling]» er lagret.» Søylen og snittet oppdateres med en gang. Ved fjerning: «Oppmøtetallet for «[samling]» er fjernet.» Uten tall: «Skriv inn hvor mange som var til stede.» Når en modul skjules: ««[modul]» er skjult. Du får den tilbake under Tilpass bordet.» Valget lagres på den aktive brukeren. I demoen kan du under Database og Testdata simulere et halvår med menighetsliv for å prøve bordet; i menighetens egen app finnes ikke det valget.",
 };
 
 export const helpSections: HelpSection[] = [
