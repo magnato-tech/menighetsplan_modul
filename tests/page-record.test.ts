@@ -24,6 +24,7 @@ const full: Required<CmsPage> = {
   updatedBy: "p1",
   heroImage: "https://example.org/ett.jpg",
   heroImageAlt: "Kirken",
+  heroFocus: "30% 20%",
   heroImages: ["https://example.org/to.jpg"],
   heroZoom: false,
   heroMenuOverlay: false,

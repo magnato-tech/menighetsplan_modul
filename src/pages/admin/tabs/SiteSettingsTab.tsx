@@ -14,6 +14,10 @@ import {
   Trash2,
 } from "lucide-react";
 import { logoFileError, logoOf } from "../../../utils/logo";
+import { uploadImageFile } from "../../../services/mediaStorage";
+
+/** The ending of a file's name, ".png", so the uploaded logo keeps its type. */
+const extensionOf = (name: string) => /\.[a-z0-9]+$/i.exec(name)?.[0].toLowerCase() ?? "";
 import { SOCIAL_FIELDS, socialUrlOf } from "../../../utils/socialLinks";
 import { SocialIcon } from "../../../components/public/SocialIcon";
 
@@ -26,22 +30,27 @@ export const SiteSettingsTab: React.FC = () => {
     setSettingsForm({ ...settings });
   }, [settings]);
 
-  // The logo is read from the file and kept in the form as text. It is stored with the rest when the form is saved.
+  // The logo is uploaded to the picture store as it is (a PNG keeps its transparent background), and
+  // its address is kept in the form. It is stored with the rest when the form is saved.
   const logoInput = useRef<HTMLInputElement>(null);
   const [logoError, setLogoError] = useState<string | null>(null);
-  const readLogoInto = (key: "logoUrl" | "logoOnDarkUrl") => (event: React.ChangeEvent<HTMLInputElement>) => {
+  const [logoUploading, setLogoUploading] = useState(false);
+  const readLogoInto = (key: "logoUrl" | "logoOnDarkUrl") => async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
     const error = logoFileError(file);
     setLogoError(error);
     if (error) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === "string") setSettingsForm((form) => ({ ...form, [key]: reader.result as string }));
-    };
-    reader.onerror = () => setLogoError("Filen kunne ikke leses. Prøv igjen.");
-    reader.readAsDataURL(file);
+    setLogoUploading(true);
+    try {
+      const url = await uploadImageFile(file, key === "logoUrl" ? `logo${extensionOf(file.name)}` : `logo-lys${extensionOf(file.name)}`);
+      setSettingsForm((form) => ({ ...form, [key]: url }));
+    } catch {
+      setLogoError("Logoen kunne ikke lastes opp. Prøv igjen.");
+    } finally {
+      setLogoUploading(false);
+    }
   };
   const chooseLogo = readLogoInto("logoUrl");
   const lightLogoInput = useRef<HTMLInputElement>(null);
@@ -202,6 +211,7 @@ export const SiteSettingsTab: React.FC = () => {
             {logo && settingsForm.hideLogoInMenu === true && (
               <p className="text-[var(--studio-muted)]">Navnet står skrevet ut øverst på nettsiden. Logoen vises på innloggingssiden.</p>
             )}
+            {logoUploading && <p className="text-[var(--studio-muted)]">Laster opp logoen …</p>}
             {logoError && (
               <p role="alert" className="flex items-center gap-1.5 font-semibold text-rose-500">
                 <AlertCircle className="w-4 h-4 shrink-0" aria-hidden="true" />

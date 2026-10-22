@@ -13,7 +13,7 @@ import type { MemberProposal, Person } from "../types";
 import type { AssignmentAccess, GatheringReader, GroupDirectoryCard, GroupLeaderEmail, PublicGroupCard } from "../utils/groupAccess";
 import { chunk } from "../utils/chunk";
 import { sanitizeForFirestore } from "../utils/firestoreData";
-import { loginIdOf, type Login } from "../utils/logins";
+import { loginIdOf, loginRoleOf, type Login } from "../utils/logins";
 import type { MirrorChanges } from "../utils/mirror";
 
 // What is kept beside the register in a database that is closed to those who are not in it
@@ -29,7 +29,7 @@ const BATCH_SIZE = 400;
 export type Settled = boolean;
 
 const asLogin = (id: string, data: Record<string, unknown> | undefined): Login | null =>
-  data && typeof data.personId === "string" && data.personId !== "" ? { id, personId: data.personId, role: data.role === "admin" ? "admin" : "member" } : null;
+  data && typeof data.personId === "string" && data.personId !== "" ? { id, personId: data.personId, role: loginRoleOf(data.role) } : null;
 
 /** The login of the address, or null when the address is nobody's in the register. Throws when it cannot be read. */
 export async function readOwnLogin(email: string): Promise<Login | null> {

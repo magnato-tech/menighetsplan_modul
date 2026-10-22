@@ -9,6 +9,8 @@ import { visibilityOf } from "./visibility";
 export type WhatsOnSelection = "all" | "worship" | "featured" | "group";
 /** How the cards are laid out. */
 export type WhatsOnLayout = "grid" | "list" | "carousel" | "feature";
+/** How the cards come into view as the visitor scrolls to them. */
+export type WhatsOnMotion = "none" | "fade" | "slide" | "zoom";
 
 export const WHATS_ON_COUNTS = [3, 4, 6, 8] as const;
 
@@ -26,6 +28,28 @@ export const WHATS_ON_LAYOUTS: { value: WhatsOnLayout; label: string }[] = [
   { value: "feature", label: "Ett stort og resten små" },
 ];
 
+export const WHATS_ON_MOTIONS: { value: WhatsOnMotion; label: string }[] = [
+  { value: "fade", label: "Ton inn" },
+  { value: "slide", label: "Gli inn fra siden" },
+  { value: "zoom", label: "Zoom inn" },
+  { value: "none", label: "Ingen bevegelse" },
+];
+
+export type CardImageFit = "cover" | "contain";
+
+// How the picture on a card is fitted: filling the card, cut at the edges, or the whole picture, so the
+// text on a poster is not cut away
+export const CARD_IMAGE_FITS: { value: CardImageFit; label: string }[] = [
+  { value: "cover", label: "Fyll kortet (kantene kan kuttes)" },
+  { value: "contain", label: "Hele bildet (for plakater med tekst)" },
+];
+
+export const cardImageFitOf = (value: string | undefined): CardImageFit => (value === "contain" ? "contain" : "cover");
+
+/** The picture's own class: the whole picture on a plain ground, or filling the card. */
+export const cardImageClass = (fit: CardImageFit): string =>
+  fit === "contain" ? "w-full h-full object-contain bg-stone-100" : "w-full h-full object-cover";
+
 export interface WhatsOnOptions {
   count: number;
   selection: WhatsOnSelection;
@@ -35,6 +59,10 @@ export interface WhatsOnOptions {
   showSummary: boolean;
   showLocation: boolean;
   showTime: boolean;
+  motion: WhatsOnMotion;
+  /** The picture an event without one of its own is shown with. Empty: none. */
+  fallbackImage: string;
+  imageFit: CardImageFit;
 }
 
 /**
@@ -53,6 +81,9 @@ export function whatsOnOptionsOf(config: Record<string, string | undefined> = {}
     showSummary: config.showSummary !== "off",
     showLocation: config.showLocation !== "off",
     showTime: config.showTime !== "off",
+    motion: WHATS_ON_MOTIONS.some((option) => option.value === config.motion) ? (config.motion as WhatsOnMotion) : "fade",
+    fallbackImage: config.fallbackImage?.trim() || "",
+    imageFit: cardImageFitOf(config.imageFit),
   };
 }
 
@@ -75,6 +106,14 @@ export function whatsOnGatherings<T extends Gathering>(gatherings: T[], now: num
   return upcomingPublicGatherings(gatherings, now)
     .filter((gathering) => chosen(gathering, options))
     .slice(0, options.count);
+}
+
+/** The classes that make the cards come into view as chosen (see src/index.css). None: they are simply there. */
+export function revealClassOf(motion: WhatsOnMotion): string {
+  if (motion === "none") return "";
+  if (motion === "slide") return "reveal-children reveal-slide";
+  if (motion === "zoom") return "reveal-children reveal-zoom";
+  return "reveal-children";
 }
 
 /** The groups that have coming public events, the ones it makes sense to pick for «Én gruppe». */

@@ -14,6 +14,8 @@ import {
   FileText,
   Headphones,
   Heart,
+  MapPin,
+  Images,
 } from "lucide-react";
 
 export interface ContentBlockDefinition {
@@ -149,14 +151,50 @@ export const CONTENT_BLOCKS: ContentBlockDefinition[] = [
       </div>
     ),
   },
+  {
+    id: "module-map",
+    title: "Kart",
+    category: "Dynamisk",
+    isDynamic: true,
+    description: "Kart med adressen, uten informasjonskapsler.",
+    dataSource: "OpenStreetMap",
+    icon: <MapPin className="w-5 h-5 text-sky-400" />,
+    template: `:::module-map[medium]\n:::`,
+    previewNode: (
+      <div className="w-full p-2 rounded-lg bg-stone-100 border border-stone-200 text-stone-900 space-y-1 text-[10px]">
+        <div className="font-bold">Finn fram</div>
+        <div className="h-8 rounded bg-sky-100 flex items-center justify-center text-[9px] text-sky-700">Kart</div>
+      </div>
+    ),
+  },
+  {
+    id: "module-gallery",
+    title: "Bildegalleri",
+    category: "Dynamisk",
+    isDynamic: true,
+    description: "Bilder fra bildebiblioteket i et rutenett. Trykk på et bilde for stort bilde.",
+    dataSource: "Bildebiblioteket",
+    icon: <Images className="w-5 h-5 text-amber-400" />,
+    template: `:::module-gallery[grid]\n:::`,
+    previewNode: (
+      <div className="w-full p-2 rounded-lg bg-stone-100 border border-stone-200 text-stone-900 space-y-1 text-[10px]">
+        <div className="font-bold">Bilder</div>
+        <div className="grid grid-cols-3 gap-0.5">
+          <div className="aspect-square rounded bg-amber-200" />
+          <div className="aspect-square rounded bg-amber-300" />
+          <div className="aspect-square rounded bg-amber-100" />
+        </div>
+      </div>
+    ),
+  },
 
   // 📝 STATISKE BLOKKER
   {
     id: "grid-2",
-    title: "To-kolonne innholdsgrid",
+    title: "Spalter",
     category: "Struktur",
     isDynamic: false,
-    description: "To likeverdige kort side ved side med overskrift og ramme. Ideelt for aktiviteter, grupper og tilbud.",
+    description: "Kort i 2, 3 eller 4 spalter side om side.",
     icon: <LayoutGrid className="w-5 h-5 text-emerald-400" />,
     template: `:::grid\n:::card Fellesskap & Husgrupper\nBli med i et livsnært fellesskap som møtes i hjemmene annenhver uke for samtale, bibel og kaffe.\n:::\n:::card Bønn & Omsorg\nVi ber sammen for hverandre og menigheten. Ta kontakt om du ønsker en samtale eller forbønn.\n:::\n:::`,
     previewNode: (

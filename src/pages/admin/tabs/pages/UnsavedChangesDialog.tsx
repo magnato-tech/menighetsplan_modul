@@ -5,13 +5,15 @@ interface UnsavedChangesDialogProps {
   open: boolean;
   /** The title of the page with the changes, as it stands in the editor. */
   pageTitle?: string;
+  /** What was changed, when it has no title yet: «siden», «artikkelen», «talen». */
+  what?: string;
   onSave: () => void;
   onDiscard: () => void;
   onStay: () => void;
 }
 
-/** Asked before the editor closes or moves to another page while it holds changes that are not saved. */
-export const UnsavedChangesDialog: React.FC<UnsavedChangesDialogProps> = ({ open, pageTitle, onSave, onDiscard, onStay }) => {
+/** Asked before an editor closes, or moves to another page or article, while it holds changes that are not saved. */
+export const UnsavedChangesDialog: React.FC<UnsavedChangesDialogProps> = ({ open, pageTitle, what = "siden", onSave, onDiscard, onStay }) => {
   if (!open) return null;
 
   return (
@@ -27,7 +29,7 @@ export const UnsavedChangesDialog: React.FC<UnsavedChangesDialogProps> = ({ open
           <span>Endringene er ikke lagret</span>
         </h3>
         <p className="text-xs text-[var(--studio-muted)] leading-relaxed">
-          {pageTitle?.trim() ? `Du har endret «${pageTitle.trim()}» uten å lagre.` : "Du har endret siden uten å lagre."} Vil du lagre før du går videre?
+          {pageTitle?.trim() ? `Du har endret «${pageTitle.trim()}» uten å lagre.` : `Du har endret ${what} uten å lagre.`} Vil du lagre før du går videre?
         </p>
         <div className="flex flex-wrap justify-end gap-2 pt-2">
           <button

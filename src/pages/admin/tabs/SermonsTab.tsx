@@ -1,6 +1,8 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useCms } from "../../../context/CmsContext";
+import { draftFingerprint, useLeaveGuard, useReportUnsaved, useSaveShortcut } from "../../../hooks/useUnsavedChanges";
+import { UnsavedChangesDialog } from "./pages/UnsavedChangesDialog";
 import { CmsSermon, formatYoutubeNoCookieUrl } from "../../../data/cmsData";
 import {
   Plus,
@@ -28,14 +30,42 @@ export const SermonsTab: React.FC<SermonsTabProps> = ({ studio, showFeedback }) 
 
   const [editingSermon, setEditingSermon] = useState<Partial<CmsSermon> | null>(null);
   const [isNewSermon, setIsNewSermon] = useState(false);
+  // The talk as it was opened, to tell whether the editor holds changes that are not saved
+  const [savedFingerprint, setSavedFingerprint] = useState("");
+  const unsaved = editingSermon !== null && draftFingerprint(editingSermon) !== savedFingerprint;
 
-  const handleOpenEditSermon = (sermon: CmsSermon) => {
-    setEditingSermon({ ...sermon });
-    setIsNewSermon(false);
+  const saveDraft = async (): Promise<boolean> => {
+    if (!editingSermon || !editingSermon.title) {
+      showFeedback("Talen må ha en tittel", "error");
+      return false;
+    }
+    const cleanVideoUrl = formatYoutubeNoCookieUrl(editingSermon.videoUrl || "");
+    const saved = await saveSermon({
+      ...editingSermon,
+      videoUrl: cleanVideoUrl,
+    });
+    if (!saved) return false;
+    setEditingSermon(null);
+    showFeedback("Talen ble lagret og publisert til prekenarkivet!");
+    return true;
+  };
+  const { leave, dialog } = useLeaveGuard(unsaved, saveDraft);
+  useReportUnsaved("cms-taler", unsaved, editingSermon?.title, saveDraft);
+  const formRef = useRef<HTMLFormElement>(null);
+  useSaveShortcut(formRef, editingSermon !== null, saveDraft);
+
+  const openDraft = (sermon: Partial<CmsSermon>, isNew: boolean) => {
+    setEditingSermon(sermon);
+    setIsNewSermon(isNew);
+    setSavedFingerprint(draftFingerprint(sermon));
   };
 
-  const handleOpenNewSermon = () => {
-    setEditingSermon({
+  const handleOpenEditSermon = (sermon: CmsSermon) => {
+    if (editingSermon?.id === sermon.id) return;
+    leave(() => openDraft({ ...sermon }, false));
+  };
+
+  const handleOpenNewSermon = () => leave(() => openDraft({
       title: "",
       speaker: currentUser.name || "Pastor Kari Nordmann",
       date: new Date().toISOString(),
@@ -45,24 +75,12 @@ export const SermonsTab: React.FC<SermonsTabProps> = ({ studio, showFeedback }) 
       videoUrl: "",
       imageUrl: "",
       summary: "",
-    });
-    setIsNewSermon(true);
-  };
+    }, true));
+  const handleCloseSermon = () => leave(() => setEditingSermon(null));
 
   const handleSaveSermon = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingSermon || !editingSermon.title) {
-      showFeedback("Talen må ha en tittel", "error");
-      return;
-    }
-    const cleanVideoUrl = formatYoutubeNoCookieUrl(editingSermon.videoUrl || "");
-    const saved = await saveSermon({
-      ...editingSermon,
-      videoUrl: cleanVideoUrl,
-    });
-    if (!saved) return;
-    setEditingSermon(null);
-    showFeedback("Talen ble lagret og publisert til prekenarkivet!");
+    await saveDraft();
   };
 
   return (
@@ -86,13 +104,13 @@ export const SermonsTab: React.FC<SermonsTabProps> = ({ studio, showFeedback }) 
 
       {/* Sermon Editor Form */}
       {editingSermon && (
-        <form onSubmit={handleSaveSermon} className="p-6 rounded-2xl bg-[var(--studio-surface)] border border-amber-500/80 shadow-2xl space-y-4">
+        <form ref={formRef} onSubmit={handleSaveSermon} className="p-6 rounded-2xl bg-[var(--studio-surface)] border border-amber-500/80 shadow-2xl space-y-4">
           <div className="flex items-center justify-between border-b border-[var(--studio-border)] pb-3">
             <h3 className="text-sm font-bold text-[var(--studio-text)] flex items-center gap-2">
               <Headphones className="w-4 h-4 text-amber-400" />
               <span>{isNewSermon ? "Legg til ny tale" : `Rediger tale: ${editingSermon.title}`}</span>
             </h3>
-            <button type="button" onClick={() => setEditingSermon(null)} className="text-[var(--studio-muted)] hover:text-[var(--studio-text)]">
+            <button type="button" onClick={handleCloseSermon} className="text-[var(--studio-muted)] hover:text-[var(--studio-text)]">
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -201,7 +219,7 @@ export const SermonsTab: React.FC<SermonsTabProps> = ({ studio, showFeedback }) 
           <div className="flex items-center justify-end gap-2 pt-2">
             <button
               type="button"
-              onClick={() => setEditingSermon(null)}
+              onClick={handleCloseSermon}
               className="px-4 py-2 rounded-xl bg-[var(--studio-hover)] hover:bg-[var(--studio-border)] text-[var(--studio-text)] text-xs font-semibold"
             >
               Avbryt
@@ -297,6 +315,8 @@ export const SermonsTab: React.FC<SermonsTabProps> = ({ studio, showFeedback }) 
           </div>
         ))}
       </div>
+
+      <UnsavedChangesDialog {...dialog} pageTitle={editingSermon?.title} what="talen" />
     </div>
   );
 };

@@ -15,6 +15,7 @@ import {
 import { VisualBlockFlow } from "../../components/cms/VisualBlockFlow";
 import { resolveVisualBlocks } from "../../utils/cmsBlocks";
 import { buildLinkContext, ensureSectionAnchors, resolveCmsLinkForDisplay } from "../../utils/cmsLinks";
+import { objectStyleOf } from "../../utils/focusPoint";
 import { HeroButtons } from "../../components/cms/HeroButtons";
 import { isPagePublished } from "../../utils/menu";
 import { formatNorwegianDateTime } from "../../utils/dates";
@@ -171,13 +172,14 @@ export const PublicStaticPage: React.FC<PublicStaticPageProps> = ({
             src={heroImageSrc}
             alt={heroImageAlt}
             className="w-full h-full object-cover"
+            style={objectStyleOf(page?.heroFocus)}
           />
         </div>
       )}
 
       {/* Main Content Area */}
       <div className="bg-white rounded-2xl border border-stone-200/80 p-6 sm:p-10 shadow-xs space-y-4">
-        <VisualBlockFlow blocks={blocks} embed />
+        <VisualBlockFlow blocks={blocks} embed preview={isPreviewMode} />
       </div>
 
       {/* Lederskap & Stab (vises under Om oss hvis ikke allerede inkludert i blokk) */}

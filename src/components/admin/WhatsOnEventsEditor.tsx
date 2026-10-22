@@ -1,8 +1,10 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { AlertCircle, CheckCircle2, Image as ImageIcon } from "lucide-react";
 import { useFirebase } from "../../context/FirebaseDataContext";
 import { GatheringFormDialog } from "../gathering/GatheringFormDialog";
+import { GatheringWebsiteDialog } from "../gathering/GatheringWebsiteDialog";
+import { isWebEditor } from "../../utils/session";
 import { useLevel } from "../../hooks/useLevel";
 import { useMediaMap } from "../../hooks/useMediaMap";
 import { formatNorwegianDateTime } from "../../utils/dates";
@@ -21,11 +23,22 @@ const MISSING_WORDS = { bilde: "bilde", tekst: "tekst" } as const;
  * is without on the website, and «Bilde og tekst» to fill it in without leaving the page. The picture
  * and the text belong to the event, so they are saved there, as in «Arrangementer på nettsiden».
  */
-export const WhatsOnEventsEditor: React.FC<{ config: ModulePresentationConfig }> = ({ config }) => {
-  const { gatherings, groups, updateGathering } = useFirebase();
+export const WhatsOnEventsEditor: React.FC<{ config: ModulePresentationConfig; openEvent?: { id: string; nonce: number } | null }> = ({
+  config,
+  openEvent,
+}) => {
+  const { gatherings, groups, updateGathering, currentUser } = useFirebase();
+  // A web editor gives the events picture and text only; the planning is not theirs
+  const webEditor = isWebEditor(currentUser);
   const mediaById = useMediaMap();
   const withPlanner = hasPlanner(useLevel());
   const [editing, setEditing] = useState<Gathering | null>(null);
+  // An event's card pressed in the preview opens its picture and text at once
+  useEffect(() => {
+    if (!openEvent) return;
+    const gathering = gatherings.find((candidate) => candidate.id === openEvent.id);
+    if (gathering) setEditing(gathering);
+  }, [openEvent?.nonce]);
   const options = whatsOnOptionsOf(config);
   const shown = useMemo(
     () => whatsOnGatherings(gatherings, Date.now(), options),
@@ -88,6 +101,9 @@ export const WhatsOnEventsEditor: React.FC<{ config: ModulePresentationConfig }>
       {editing &&
         createPortal(
           <div onSubmit={(event) => event.stopPropagation()} onClick={(event) => event.stopPropagation()} onKeyDown={(event) => event.stopPropagation()}>
+            {webEditor ? (
+              <GatheringWebsiteDialog gathering={editing} onSave={(updates) => updateGathering(editing.id, updates)} onClose={() => setEditing(null)} />
+            ) : (
             <GatheringFormDialog
               isNew={false}
               initial={formOfGathering(editing)}
@@ -97,6 +113,7 @@ export const WhatsOnEventsEditor: React.FC<{ config: ModulePresentationConfig }>
               onSave={(values) => updateGathering(editing.id, gatheringUpdatesOf(values, withPlanner))}
               onClose={() => setEditing(null)}
             />
+            )}
           </div>,
           document.body
         )}

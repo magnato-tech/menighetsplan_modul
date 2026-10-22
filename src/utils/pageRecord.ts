@@ -52,6 +52,7 @@ export function buildPageRecord(
     updatedAt: now.toISOString(),
     heroImage: pageData.heroImage || "",
     heroImageAlt: pageData.heroImageAlt?.trim() || undefined,
+    heroFocus: pageData.heroImage ? pageData.heroFocus?.trim() || undefined : undefined,
     heroImages: heroExtrasOf(pageData.heroImages, pageData.heroImageTitles).heroImages,
     heroImageTitles: heroExtrasOf(pageData.heroImages, pageData.heroImageTitles).heroImageTitles.map((title) => title.trim()),
     heroArrows: pageData.heroArrows === true,

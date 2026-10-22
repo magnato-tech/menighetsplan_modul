@@ -1,9 +1,11 @@
 import React, { useEffect } from "react";
 import { CmsMediaPicker } from "../admin/CmsMediaPicker";
+import { CropPicker } from "../admin/CropPicker";
 import type { GatheringFormValues } from "../../utils/gatheringForm";
 
 /** How an event is presented on the website. An event has these fields, and so has a template. */
-type PresentationValues = Pick<GatheringFormValues, "imageUrl" | "imageAlt" | "summary" | "content" | "linkUrl" | "linkLabel">;
+// The focus point is the event's own; a template's form has none, and shows no point to choose
+type PresentationValues = Pick<GatheringFormValues, "imageUrl" | "imageAlt" | "summary" | "content" | "linkUrl" | "linkLabel"> & { imageFocus?: string };
 
 interface GatheringWebsiteFieldsProps {
   values: PresentationValues;
@@ -37,6 +39,11 @@ const GatheringWebsiteFields: React.FC<GatheringWebsiteFieldsProps> = ({ values,
         altValue={values.imageAlt}
         onAltChange={(alt) => onChange({ imageAlt: alt })}
       />
+      {values.imageFocus !== undefined && values.imageUrl.trim() && (
+        <div className="mt-3 max-w-sm">
+          <CropPicker image={values.imageUrl} value={values.imageFocus} onChange={(imageFocus) => onChange({ imageFocus })} aspect={16 / 9} />
+        </div>
+      )}
     </div>
 
     <div>

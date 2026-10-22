@@ -12,7 +12,9 @@ export type CmsToPreviewMessage =
 export type PreviewToCmsMessage =
   | { type: "preview:ready"; path: string; hash: string; revision: number; pageId?: string }
   | { type: "preview:location"; path: string; hash: string }
-  | { type: "preview:blocked"; reason: "internal-route" };
+  | { type: "preview:blocked"; reason: "internal-route" }
+  /** A section was pressed in the preview: open it in the editor. On an event's card, also that event. */
+  | { type: "preview:select"; blockId: string; gatheringId?: string };
 
 export type PreviewBridgeMessage = CmsToPreviewMessage | PreviewToCmsMessage;
 
@@ -42,6 +44,7 @@ export type WarmDraftFields = Partial<
     | "heroImageTitles"
     | "heroArrows"
     | "heroZoom"
+    | "heroFocus"
     | "heroMenuOverlay"
     | "heroMenuStyle"
     | "heroVeil"
@@ -80,6 +83,7 @@ const WARM_DRAFT_KEYS: (keyof WarmDraftFields)[] = [
   "heroImageTitles",
   "heroArrows",
   "heroZoom",
+  "heroFocus",
   "heroMenuOverlay",
   "heroMenuStyle",
   "heroVeil",
@@ -312,6 +316,11 @@ export function parseBridgeMessage(data: unknown): PreviewBridgeMessage | null {
     case "preview:blocked": {
       if (msg.reason !== "internal-route") return null;
       return { type: "preview:blocked", reason: "internal-route" };
+    }
+    case "preview:select": {
+      if (typeof msg.blockId !== "string" || !/^[a-z0-9-]{1,80}$/i.test(msg.blockId)) return null;
+      const gatheringId = typeof msg.gatheringId === "string" && /^[A-Za-z0-9_-]{1,120}$/.test(msg.gatheringId) ? msg.gatheringId : undefined;
+      return { type: "preview:select", blockId: msg.blockId, ...(gatheringId ? { gatheringId } : {}) };
     }
     default:
       return null;

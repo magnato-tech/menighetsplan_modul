@@ -316,7 +316,8 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
   // An administrator, and the demo, get all of it. A member gets their own person, their own
   // groups and the public cards. A visitor gets the public copies and the public cards.
   const fullRegister = CAN_STAND_IN || (login.status === "found" && login.role === "admin");
-  const memberAccess = !CAN_STAND_IN && login.status === "found" && login.role === "member";
+  // A web editor reads what a member reads: the website is public, and the register is not theirs
+  const memberAccess = !CAN_STAND_IN && login.status === "found" && (login.role === "member" || login.role === "nettredaktor");
   const memberId = memberAccess ? login.personId : null;
   useEffect(() => {
     setRegisterReady(false);

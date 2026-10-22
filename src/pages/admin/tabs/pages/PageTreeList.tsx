@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import { CmsPage } from "../../../../data/cmsData";
 import { PageNode, pageUrl, getMenuOrder, buildMenuBar } from "../../../../utils/menu";
 import { useTimedMessage } from "../../../../hooks/useTimedMessage";
@@ -9,9 +8,9 @@ import {
   Folder,
   FileText,
   CornerDownRight,
-  ExternalLink,
   Edit2,
   Trash2,
+  Copy,
   Plus,
   AlertTriangle,
   GripVertical,
@@ -35,9 +34,13 @@ interface PageTreeListProps {
   onOpenNewPage: (parentId?: string | null) => void;
   onOpenEditPage: (page: CmsPage) => void;
   onRequestDelete: (pageId: string) => void;
+  /** Opens a copy of the page in the editor. */
+  onDuplicate?: (page: CmsPage) => void;
   onReorder?: (orderedPageIds: string[]) => void;
   onPreviewPage?: (page: CmsPage) => void;
   onTogglePublish?: (page: CmsPage) => void;
+  /** Puts the page in the website menu, or takes it out. */
+  onToggleNavMenu?: (page: CmsPage) => void;
 }
 
 export const PageTreeList: React.FC<PageTreeListProps> = ({
@@ -46,9 +49,11 @@ export const PageTreeList: React.FC<PageTreeListProps> = ({
   onOpenNewPage,
   onOpenEditPage,
   onRequestDelete,
+  onDuplicate,
   onReorder,
   onPreviewPage,
   onTogglePublish,
+  onToggleNavMenu,
 }) => {
   const { pages } = useCms();
   const linkContext = useMemo(() => buildLinkContext(pages), [pages]);
@@ -322,6 +327,41 @@ export const PageTreeList: React.FC<PageTreeListProps> = ({
     );
   };
 
+  // Shows whether the page is in the website menu, and a click on it toggles that.
+  // Top-level and sub-page rows use different wording and size.
+  const renderNavMenuToggle = (page: CmsPage, variant: "top" | "sub") => {
+    const inMenu = page.inNavMenu !== false;
+    const text =
+      variant === "top" ? (inMenu ? "I toppmeny" : "Skjult fra meny") : inMenu ? "I meny" : "Skjult";
+    const hint = inMenu
+      ? "I menyen. Klikk for å ta siden ut av menyen."
+      : "Ikke i menyen. Klikk for å vise siden i menyen.";
+    const className =
+      variant === "top"
+        ? inMenu
+          ? "text-[10px] font-bold text-[var(--studio-accent-text)] bg-[var(--studio-accent-bg)] border border-[var(--studio-accent-border)]/60 px-2 py-0.5 rounded cursor-pointer hover:bg-indigo-900 transition-colors"
+          : "text-[10px] font-bold text-stone-400 bg-[var(--studio-bg)] border border-[var(--studio-border)] px-2 py-0.5 rounded cursor-pointer hover:text-[var(--studio-text)] hover:border-[var(--studio-icon)] transition-colors"
+        : inMenu
+          ? "text-[10px] font-semibold text-[var(--studio-accent-text)] bg-[var(--studio-accent-bg)] px-1.5 py-0.5 rounded cursor-pointer hover:bg-indigo-900 transition-colors"
+          : "text-[10px] font-semibold text-stone-400 bg-[var(--studio-panel-bg)] px-1.5 py-0.5 rounded cursor-pointer hover:text-[var(--studio-text)] transition-colors";
+
+    return (
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggleNavMenu?.(page);
+        }}
+        onDoubleClick={(e) => e.stopPropagation()}
+        className={className}
+        title={hint}
+        aria-label={hint}
+      >
+        {text}
+      </button>
+    );
+  };
+
   return (
     <div className="space-y-4">
       {wide && menuBar.length > 0 && (
@@ -531,15 +571,7 @@ export const PageTreeList: React.FC<PageTreeListProps> = ({
                       {renderStatusIndicator(parent)}
                     </div>
 
-                    {parent.inNavMenu !== false ? (
-                      <span className="text-[10px] font-bold text-[var(--studio-accent-text)] bg-[var(--studio-accent-bg)] border border-[var(--studio-accent-border)]/60 px-2 py-0.5 rounded">
-                        I toppmeny
-                      </span>
-                    ) : (
-                      <span className="text-[10px] font-bold text-stone-400 bg-[var(--studio-bg)] border border-[var(--studio-border)] px-2 py-0.5 rounded">
-                        Skjult fra meny
-                      </span>
-                    )}
+                    {renderNavMenuToggle(parent, "top")}
 
                     {pageHasBrokenLinks(parent, linkContext) && (
                       <span
@@ -621,19 +653,11 @@ export const PageTreeList: React.FC<PageTreeListProps> = ({
                     if (onPreviewPage) onPreviewPage(parent);
                   }}
                   className="p-1.5 rounded-lg bg-[var(--studio-accent-bg)] hover:bg-indigo-900 text-[var(--studio-accent-text)] hover:text-[var(--studio-text)] border border-[var(--studio-accent-border)]/60 transition-colors"
-                  title="Forhåndsvis side i ny fane med ekte offentlig styling"
-                  aria-label="Forhåndsvis side"
+                  title="Åpne siden i ny fane. Virker også for kladder."
+                  aria-label="Åpne siden i ny fane"
                 >
                   <Eye className="w-4 h-4 text-[var(--studio-icon)]" />
                 </a>
-                <Link
-                  to={targetUrl}
-                  target="_blank"
-                  className="p-1.5 rounded-lg bg-[var(--studio-bg)] hover:bg-[var(--studio-hover)] text-[var(--studio-muted)] hover:text-[var(--studio-text)] transition-colors"
-                  title="Åpne i ny fane"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                </Link>
                 <button
                   type="button"
                   onClick={() => onOpenEditPage(parent)}
@@ -642,6 +666,17 @@ export const PageTreeList: React.FC<PageTreeListProps> = ({
                   <Edit2 className="w-3.5 h-3.5" />
                   <span>Rediger</span>
                 </button>
+                {onDuplicate && (
+                  <button
+                    type="button"
+                    onClick={() => onDuplicate(parent)}
+                    className="p-1.5 rounded-lg bg-[var(--studio-bg)] hover:bg-[var(--studio-hover)] text-[var(--studio-muted)] hover:text-[var(--studio-text)] cursor-pointer transition-colors"
+                    title="Kopier siden"
+                    aria-label={`Kopier siden «${parent.title}»`}
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => onRequestDelete(parent.id)}
@@ -745,15 +780,7 @@ export const PageTreeList: React.FC<PageTreeListProps> = ({
                             {/* Draft/Published Status Indicator */}
                             {renderStatusIndicator(child, true)}
 
-                            {child.inNavMenu !== false ? (
-                              <span className="text-[10px] font-semibold text-[var(--studio-accent-text)] bg-[var(--studio-accent-bg)] px-1.5 py-0.5 rounded">
-                                I meny
-                              </span>
-                            ) : (
-                              <span className="text-[10px] font-semibold text-stone-400 bg-[var(--studio-panel-bg)] px-1.5 py-0.5 rounded">
-                                Skjult
-                              </span>
-                            )}
+                            {renderNavMenuToggle(child, "sub")}
 
                             {pageHasBrokenLinks(child, linkContext) && (
                               <span
@@ -790,19 +817,11 @@ export const PageTreeList: React.FC<PageTreeListProps> = ({
                             if (onPreviewPage) onPreviewPage(child);
                           }}
                           className="p-1.5 rounded-lg bg-indigo-950/70 hover:bg-indigo-900 text-[var(--studio-accent-text)] hover:text-[var(--studio-text)] border border-[var(--studio-accent-border)]/40 transition-colors"
-                          title="Forhåndsvis underside i ny fane med ekte offentlig styling"
-                          aria-label="Forhåndsvis underside"
+                          title="Åpne siden i ny fane. Virker også for kladder."
+                          aria-label="Åpne siden i ny fane"
                         >
                           <Eye className="w-3.5 h-3.5 text-[var(--studio-icon)]" />
                         </a>
-                        <Link
-                          to={childUrl}
-                          target="_blank"
-                          className="p-1.5 rounded-lg bg-[var(--studio-surface)] hover:bg-[var(--studio-hover)] text-[var(--studio-muted)] hover:text-[var(--studio-text)] transition-colors"
-                          title="Åpne i ny fane"
-                        >
-                          <ExternalLink className="w-3.5 h-3.5" />
-                        </Link>
                         <button
                           type="button"
                           onClick={() => onOpenEditPage(child)}
@@ -811,6 +830,17 @@ export const PageTreeList: React.FC<PageTreeListProps> = ({
                           <Edit2 className="w-3 h-3" />
                           <span>Rediger</span>
                         </button>
+                        {onDuplicate && (
+                          <button
+                            type="button"
+                            onClick={() => onDuplicate(child)}
+                            className="p-1.5 rounded-lg bg-[var(--studio-surface)] hover:bg-[var(--studio-hover)] text-[var(--studio-muted)] hover:text-[var(--studio-text)] cursor-pointer transition-colors"
+                            title="Kopier siden"
+                            aria-label={`Kopier siden «${child.title}»`}
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={() => onRequestDelete(child.id)}

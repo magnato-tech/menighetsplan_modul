@@ -8,6 +8,7 @@ import { PreviewQueryPersist } from "./components/public/PreviewQueryPersist";
 import { useSiteTraffic } from "./hooks/useSiteTraffic";
 import { EmbeddedPreviewGuard } from "./components/public/EmbeddedPreviewGuard";
 import { PreviewBridgeNotifier } from "./components/public/PreviewBridgeNotifier";
+import { PreviewSelectBridge } from "./components/public/PreviewSelectBridge";
 import { IframeInternalRouteBlock } from "./components/public/IframeInternalRouteBlock";
 import { injectPageSeo } from "./utils/seoUtils";
 import { seoForPath } from "./utils/siteSeo";
@@ -170,6 +171,7 @@ function AppContent() {
       <PreviewQueryPersist />
       <EmbeddedPreviewGuard />
       <PreviewBridgeNotifier />
+      <PreviewSelectBridge />
       <PublicHashScroll />
       <PublicNavbar />
       <main className="flex-1">

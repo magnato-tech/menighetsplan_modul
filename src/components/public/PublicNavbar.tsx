@@ -25,7 +25,8 @@ export const PublicNavbar: React.FC = () => {
   const { settings, pages } = useCms();
   const { currentUser } = useFirebase();
 
-  const isAdmin = currentUser?.globalRole === "admin";
+  // The way into the admin: for administrators, and for web editors, who get its website part
+  const isAdmin = currentUser?.globalRole === "admin" || currentUser?.globalRole === "nettredaktor";
 
   // On the front page the menu lies on top of the hero image, and turns into the usual white bar
   // once the visitor scrolls or opens the menu. The page can switch this off (Page.heroMenuOverlay).

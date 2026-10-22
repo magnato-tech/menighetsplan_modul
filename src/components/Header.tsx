@@ -10,7 +10,8 @@ export const Header: React.FC = () => {
   const location = useLocation();
   const { isLeader, urgentGatherings, currentUser } = useLeaderDashboard();
 
-  const isAdmin = currentUser.globalRole === "admin";
+  // The way into the admin: for administrators, and for web editors, who get its website part
+  const isAdmin = currentUser.globalRole === "admin" || currentUser.globalRole === "nettredaktor";
 
   const isLeaderPath = location.pathname.startsWith("/leder");
   const isAdminPath = location.pathname.startsWith("/admin");

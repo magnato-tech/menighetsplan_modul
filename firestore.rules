@@ -11,6 +11,10 @@ rules_version = '2';
 //     exactly one person in the register. Reads their own person, the people in their own
 //     groups (name and phone; e-mail only when they lead the group), and the planning of
 //     the gatherings they can open. Answers for themselves, and leads the groups they lead.
+//   - a web editor (nettredaktør): a member whose person has that role. Writes the website: the
+//     pages, the news, the talks, the media library, the website's settings and the history of
+//     the pages; on an event only its picture, text, link and visibility. Nothing of the register,
+//     the groups or the planning.
 //   - an administrator: a member whose person is an administrator. Writes everything.
 //
 // Who someone is, is looked up in `logins` (see src/utils/logins.ts): one document per address,
@@ -44,6 +48,15 @@ service cloud.firestore {
 
     function isAdmin() {
       return signedIn() && get(loginPath()).data.role == 'admin';
+    }
+
+    function isWebEditor() {
+      return signedIn() && get(loginPath()).data.role == 'nettredaktor';
+    }
+
+    // Who writes the website: an administrator, and a web editor
+    function writesWebsite() {
+      return isAdmin() || isWebEditor();
     }
 
     // The person in the register the one who asks is. Only called where isMember() holds.
@@ -234,7 +247,9 @@ service cloud.firestore {
       allow create: if isAdmin() || leads(request.resource.data.groupId);
       // A leader cannot move an event to a group they do not lead
       allow update: if isAdmin()
-        || (leads(resource.data.groupId) && request.resource.data.groupId == resource.data.groupId);
+        || (leads(resource.data.groupId) && request.resource.data.groupId == resource.data.groupId)
+        // A web editor gives the event its picture and text on the website, and nothing else
+        || (isWebEditor() && changedOnly(['imageUrl', 'imageAlt', 'imageFocus', 'summary', 'content', 'linkUrl', 'linkLabel', 'visibility', 'isPublic']));
       allow delete: if isAdmin() || leads(resource.data.groupId);
     }
 
@@ -343,17 +358,17 @@ service cloud.firestore {
     // A page that is not published is read by those in the register only
     match /cms_pages/{pageId} {
       allow read: if resource.data.isPublished == true || isMember();
-      allow write: if isAdmin();
+      allow write: if writesWebsite();
     }
 
     match /cms_news/{articleId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if writesWebsite();
     }
 
     match /cms_sermons/{sermonId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if writesWebsite();
     }
 
     match /cms_staff/{staffId} {
@@ -364,7 +379,7 @@ service cloud.firestore {
     // What is known of each file in the media library (the files are in Storage, see storage.rules)
     match /cms_media/{mediaId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if writesWebsite();
     }
 
     // The settings, and the marked documents that are stored beside them: the roles, the
@@ -383,15 +398,21 @@ service cloud.firestore {
       allow list: if isMember();
 
       allow create: if isAdmin()
+        // A web editor writes the website's settings, and the versions kept of pages and news
+        || (isWebEditor() && (docId == 'global' || request.resource.data.recordType == 'contentVersion'))
         || (isMember() && request.resource.data.recordType == 'gatheringHeadcount')
         // A visit to the website adds to the sums of the day
         || isTrafficDay(request.resource.data);
       allow update: if isAdmin()
+        || (isWebEditor()
+            && (docId == 'global'
+                || (resource.data.recordType == 'contentVersion' && request.resource.data.recordType == 'contentVersion')))
         || (isMember()
             && resource.data.recordType == 'gatheringHeadcount'
             && request.resource.data.recordType == 'gatheringHeadcount')
         || (resource.data.recordType == 'siteTraffic' && isTrafficDay(request.resource.data));
-      allow delete: if isAdmin();
+      // The oldest versions beyond the thirty kept are removed by whoever saves
+      allow delete: if isAdmin() || (isWebEditor() && resource.data.recordType == 'contentVersion');
     }
   }
 }

@@ -51,6 +51,8 @@ const hakon = () => signedIn("hakon@eksempel.no");
 const ola = () => signedIn("ola@eksempel.no");
 /** Administrator */
 const kari = () => signedIn("kari@menigheten.no");
+/** Web editor (nettredaktør) */
+const kristine = () => signedIn("kristine@eksempel.no");
 
 const TODAY = "2026-10-12";
 
@@ -78,6 +80,8 @@ beforeEach(async () => {
       put("logins/kari@menigheten.no", { personId: "kari", role: "admin" }),
       put("logins/ola@eksempel.no", { personId: "ola", role: "member" }),
       put("logins/hakon@eksempel.no", { personId: "hakon", role: "member" }),
+      put("persons/kristine", { name: "Kristine Vik", email: "kristine@eksempel.no", globalRole: "nettredaktor" }),
+      put("logins/kristine@eksempel.no", { personId: "kristine", role: "nettredaktor" }),
       put("publicProfiles/liv", { name: "Liv Pastor", globalRole: "member", isPublicProfile: true, publicTitle: "Pastor" }),
       put("groups/group-lyd", { name: "Lyd og bilde", isPublic: true, leaderIds: ["ola"], memberIds: ["hakon"] }),
       put("groups/group-intern", { name: "Sjelesorg", isPublic: false, leaderIds: ["kari"], deputyLeaderIds: [], memberIds: [] }),
@@ -927,5 +931,47 @@ describe("Nyhetsbrevet", () => {
     await assertFails(setDoc(doc(hakon(), "cms_settings", "newsletter-banner"), { recordType: "newsletterBanner", imageUrl: "/x.jpg" }));
     // The page's own record, with the log, is still closed to visitors
     await assertFails(getDoc(doc(visitor(), "cms_settings", "email")));
+  });
+});
+
+describe("En nettredaktør", () => {
+  test("skriver nettsiden: sider, nyheter, taler, bilder, innstillingene og versjonene i historikken", async () => {
+    const db = kristine();
+    await assertSucceeds(setDoc(doc(db, "cms_pages/p-ny"), { title: "Ny side", isPublished: false }));
+    await assertSucceeds(updateDoc(doc(db, "cms_pages/p-pub"), { title: "Om menigheten" }));
+    await assertSucceeds(setDoc(doc(db, "cms_news/n2"), { title: "Nyhet" }));
+    await assertSucceeds(updateDoc(doc(db, "cms_sermons/s1"), { title: "Tale" }));
+    await assertSucceeds(setDoc(doc(db, "cms_media/md2"), { name: "Bilde" }));
+    await assertSucceeds(updateDoc(doc(db, "cms_settings/global"), { siteName: "Fjordvik" }));
+    await assertSucceeds(setDoc(doc(db, "cms_settings/version-1"), { recordType: "contentVersion", targetId: "p-pub" }));
+    await assertSucceeds(deleteDoc(doc(db, "cms_settings/version-1")));
+  });
+
+  test("gir et arrangement bilde, tekst og synlighet, men endrer ikke tid, tittel eller gruppe", async () => {
+    const db = kristine();
+    await assertSucceeds(updateDoc(doc(db, "gatherings/g-apen"), { imageUrl: "/bilde.jpg", summary: "Velkommen", visibility: "fremhevet", isPublic: true }));
+    await assertFails(updateDoc(doc(db, "gatherings/g-apen"), { title: "Noe annet" }));
+    await assertFails(updateDoc(doc(db, "gatherings/g-apen"), { groupId: "group-intern" }));
+    await assertFails(deleteDoc(doc(db, "gatherings/g-apen")));
+  });
+
+  test("rører ikke registeret, gruppene, planleggingen, innloggingene eller oppsettet", async () => {
+    const db = kristine();
+    await assertFails(getDoc(doc(db, "persons/kari")));
+    await assertFails(getDocs(collection(db, "persons")));
+    await assertFails(updateDoc(doc(db, "persons/kristine"), { globalRole: "admin" }));
+    await assertFails(setDoc(doc(db, "logins/kristine@eksempel.no"), { personId: "kristine", role: "admin" }));
+    await assertFails(updateDoc(doc(db, "groups/group-lyd"), { name: "Ny" }));
+    await assertFails(updateDoc(doc(db, "tasks/task-1"), { title: "Ny" }));
+    await assertFails(updateDoc(doc(db, "cms_settings/addons"), { on: { visits: false } }));
+    await assertFails(updateDoc(doc(db, "cms_settings/operating-mode"), { mode: "demo" }));
+    await assertFails(updateDoc(doc(db, "cms_settings/role-1"), { name: "Ny" }));
+    await assertFails(updateDoc(doc(db, "cms_staff/st1"), { name: "Ny" }));
+    await assertFails(updateDoc(doc(db, "publicProfiles/liv"), { publicTitle: "Ny" }));
+  });
+
+  test("et vanlig medlem skriver fortsatt ikke nettsiden", async () => {
+    await assertFails(updateDoc(doc(hakon(), "cms_pages/p-pub"), { title: "Ny" }));
+    await assertFails(updateDoc(doc(hakon(), "gatherings/g-apen"), { summary: "Ny" }));
   });
 });

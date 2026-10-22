@@ -23,6 +23,20 @@ export type MissingOnWebsite = "bilde" | "tekst";
  * What an event shown on the website is still without: a picture, and a text (a lead or a
  * longer text). An event that is not shown there is missing nothing.
  */
+/**
+ * The picture an event can take from the template it was made from: only when it has none of its own
+ * and the template has one. Events made from a template before it got a picture are the ones it helps.
+ */
+export function templateImageFor(
+  gathering: Pick<Gathering, "imageUrl" | "templateId">,
+  templates: readonly { id: string; imageUrl?: string; imageAlt?: string }[]
+): { imageUrl: string; imageAlt?: string } | null {
+  if (gathering.imageUrl?.trim() || !gathering.templateId) return null;
+  const template = templates.find((t) => t.id === gathering.templateId);
+  const imageUrl = template?.imageUrl?.trim();
+  return imageUrl ? { imageUrl, imageAlt: template?.imageAlt?.trim() || undefined } : null;
+}
+
 export function missingOnWebsite(gathering: Presented & Pick<Gathering, "type" | "visibility" | "isPublic">): MissingOnWebsite[] {
   if (!isOpenCommunityGathering(gathering)) return [];
   const missing: MissingOnWebsite[] = [];

@@ -4,6 +4,7 @@ import {
   readModulePresentation,
 } from "./modulePresentation";
 import { stripSectionAnchorComment } from "./cmsLinks";
+import { formatBlockSettingsLine, parseBlockSettingsLine, type BlockSettings } from "./blockSettings";
 import { formatMediaAltComment, parseMediaAltComment } from "./media";
 
 export type DynamicModuleType =
@@ -13,7 +14,9 @@ export type DynamicModuleType =
   | "module-news"
   | "module-sermon"
   | "module-groups"
-  | "module-giving";
+  | "module-giving"
+  | "module-map"
+  | "module-gallery";
 
 export interface VisualBlock {
   id: string;
@@ -23,6 +26,8 @@ export interface VisualBlock {
   hidden?: boolean;
   variant?: string;
   rawContent?: string;
+  /** When the block is shown and how it looks (see utils/blockSettings.ts). */
+  settings?: BlockSettings;
 }
 
 /** Wraps one serialized block so the public renderer skips it without dropping the editor card. */
@@ -38,6 +43,24 @@ export const PERSON_GRID_VARIANTS: { id: string; label: string }[] = [
   { id: "alle", label: "Alle personer" },
 ];
 
+/** Column counts a grid block can show. Two is the default and is written without a bracket. */
+export const GRID_COLUMN_COUNTS = [2, 3, 4] as const;
+export type GridColumnCount = (typeof GRID_COLUMN_COUNTS)[number];
+
+/** Reads the column count from a grid opening line: `:::grid` is 2, `:::grid[3]` is 3. */
+export function gridColumnsFrom(line: string): GridColumnCount {
+  const count = Number(line.trim().match(/^:::grid\[(\d+)\]/)?.[1]);
+  return (GRID_COLUMN_COUNTS as readonly number[]).includes(count) ? (count as GridColumnCount) : 2;
+}
+
+/** Tailwind classes for the grid: one column on phones, two from md, the chosen count from lg. */
+export function gridColumnsClass(columns: GridColumnCount): string {
+  // Full class names are written out so Tailwind finds them.
+  if (columns === 3) return "md:grid-cols-2 lg:grid-cols-3";
+  if (columns === 4) return "md:grid-cols-2 lg:grid-cols-4";
+  return "md:grid-cols-2";
+}
+
 export interface StaticBlockFields {
   title: string;
   body: string;
@@ -48,6 +71,7 @@ export interface StaticBlockFields {
   ctaLabel: string;
   ctaUrl: string;
   cards: { title: string; body: string }[];
+  columns: GridColumnCount;
 }
 
 /** Redigerbart innhold i husfellesskapsmodulen. Knappene peker fortsatt til /fellesskap og /kontakt. */
@@ -148,6 +172,25 @@ export const DYNAMIC_MODULES_META: Record<DynamicModuleType, DynamicModuleMeta> 
       { id: "vipps", label: "Kun Vipps-fokus" },
     ],
   },
+  "module-map": {
+    type: "module-map",
+    title: "Kart",
+    description: "Kart over adressen, uten informasjonskapsler. Trykk «Finn på kartet» etter at adressen er skrevet.",
+    dataSource: "OpenStreetMap",
+    // The first variant is the default height
+    supportedVariants: [
+      { id: "medium", label: "Middels (360 px)" },
+      { id: "small", label: "Liten (240 px)" },
+      { id: "large", label: "Stor (480 px)" },
+    ],
+  },
+  "module-gallery": {
+    type: "module-gallery",
+    title: "Bildegalleri",
+    description: "Bilder fra bildebiblioteket i et rutenett. Trykk på et bilde for å se det stort.",
+    dataSource: "Bildebiblioteket",
+    supportedVariants: [{ id: "grid", label: "Rutenett" }],
+  },
 };
 
 function blockId(type: string, index: number): string {
@@ -169,6 +212,16 @@ export function parseContentToVisualBlocks(content: string): VisualBlock[] {
   const lines = content.split("\n");
   const blocks: VisualBlock[] = [];
   let textBuffer: string[] = [];
+  // A settings line applies to the next block only; text needs its own slot because it is flushed later.
+  let pendingSettings: BlockSettings | undefined;
+  let textSettings: BlockSettings | undefined;
+
+  const settingsOf = (settings?: BlockSettings) => (settings ? { settings } : {});
+  const takePendingSettings = () => {
+    const settings = pendingSettings;
+    pendingSettings = undefined;
+    return settingsOf(settings);
+  };
 
   const flushTextBuffer = () => {
     const raw = textBuffer.join("\n").trim();
@@ -182,9 +235,11 @@ export function parseContentToVisualBlocks(content: string): VisualBlock[] {
         title,
         isDynamic: false,
         rawContent: raw,
+        ...settingsOf(textSettings),
       });
     }
     textBuffer = [];
+    textSettings = undefined;
   };
 
   let i = 0;
@@ -193,6 +248,15 @@ export function parseContentToVisualBlocks(content: string): VisualBlock[] {
     const trimmed = line.trim();
 
     if (trimmed === CMS_BLOCKS_AUTHORED) {
+      i++;
+      continue;
+    }
+
+    // Settings line: ends any running text block and waits for the block that follows.
+    const lineSettings = parseBlockSettingsLine(trimmed);
+    if (lineSettings) {
+      flushTextBuffer();
+      pendingSettings = lineSettings;
       i++;
       continue;
     }
@@ -222,6 +286,7 @@ export function parseContentToVisualBlocks(content: string): VisualBlock[] {
     if (moduleMatch) {
       flushTextBuffer();
       const modName = `module-${moduleMatch[1]}` as DynamicModuleType;
+      const moduleSettings = takePendingSettings();
       const variant = moduleMatch[2] || DYNAMIC_MODULES_META[modName]?.supportedVariants[0]?.id || "default";
 
       const bodyLines: string[] = [];
@@ -243,6 +308,7 @@ export function parseContentToVisualBlocks(content: string): VisualBlock[] {
         isDynamic: true,
         variant,
         rawContent: rawContent || undefined,
+        ...moduleSettings,
       });
       continue;
     }
@@ -266,6 +332,7 @@ export function parseContentToVisualBlocks(content: string): VisualBlock[] {
         title: personLabel || (filter === "stab" ? "Stab & Ansatte" : "Personoversikt"),
         isDynamic: true,
         variant: filter,
+        ...takePendingSettings(),
       });
       continue;
     }
@@ -291,7 +358,16 @@ export function parseContentToVisualBlocks(content: string): VisualBlock[] {
         : "callout";
 
       i++;
-      while (i < lines.length && !lines[i].trim().startsWith(":::")) {
+      // Grid cards are nested blocks, so their closing ::: must not end the grid early.
+      let openCards = 0;
+      while (i < lines.length) {
+        const inner = lines[i].trim();
+        if (blockType === "grid" && inner.startsWith(":::card")) {
+          openCards++;
+        } else if (inner.startsWith(":::")) {
+          if (blockType !== "grid" || openCards === 0) break;
+          openCards--;
+        }
         blockLines.push(lines[i]);
         i++;
       }
@@ -302,7 +378,7 @@ export function parseContentToVisualBlocks(content: string): VisualBlock[] {
 
       const fullBlockContent = blockLines.join("\n");
       const titleMap = {
-        grid: "Kort-grid (2 kolonner)",
+        grid: "Spalter",
         "media-left": "Bilde med tekst (Venstre)",
         "media-right": "Bilde med tekst (Høyre)",
         quote: "Sitatblokk",
@@ -315,6 +391,7 @@ export function parseContentToVisualBlocks(content: string): VisualBlock[] {
         title: titleMap[blockType] || "Innholdsblokk",
         isDynamic: false,
         rawContent: fullBlockContent,
+        ...takePendingSettings(),
       });
       continue;
     }
@@ -330,9 +407,16 @@ export function parseContentToVisualBlocks(content: string): VisualBlock[] {
         title: ctaMatch[1].trim() || "Handlingsknapp",
         isDynamic: false,
         rawContent: trimmed,
+        ...takePendingSettings(),
       });
       i++;
       continue;
+    }
+
+    // A text block that starts right after a settings line takes those settings
+    if (trimmed && pendingSettings && textBuffer.join("").trim() === "") {
+      textSettings = pendingSettings;
+      pendingSettings = undefined;
     }
 
     // Regular line, append to text buffer
@@ -353,18 +437,22 @@ export function serializeVisualBlocksToContent(blocks: VisualBlock[]): string {
   const segments: string[] = [];
 
   for (const block of blocks) {
+    // The settings line goes first in the body, so it stays inside the hidden wrapper too
+    const settingsLine = formatBlockSettingsLine(block.settings);
+    const withSettings = (body: string) => (settingsLine ? `${settingsLine}\n${body}` : body);
+
     if (block.type.startsWith("module-")) {
       const variantStr = block.variant ? `[${block.variant}]` : "";
       const inner = block.rawContent?.trim();
       const body = inner
         ? `:::${block.type}${variantStr}\n${inner}\n:::`
         : `:::${block.type}${variantStr}\n:::`;
-      pushSegment(segments, body, block.hidden);
+      pushSegment(segments, withSettings(body), block.hidden);
     } else if (block.type === "person-grid") {
       const filterStr = block.variant ? `[${block.variant}]` : "";
-      pushSegment(segments, `:::personer${filterStr}\n:::`, block.hidden);
+      pushSegment(segments, withSettings(`:::personer${filterStr}\n:::`), block.hidden);
     } else if (block.rawContent) {
-      pushSegment(segments, block.rawContent, block.hidden);
+      pushSegment(segments, withSettings(block.rawContent), block.hidden);
     }
   }
 
@@ -383,6 +471,7 @@ const emptyFields = (): StaticBlockFields => ({
   ctaLabel: "",
   ctaUrl: "",
   cards: [{ title: "", body: "" }],
+  columns: 2,
 });
 
 /** Reads editable banner text and styling for the groups module. */
@@ -460,6 +549,7 @@ export function readStaticFields(block: VisualBlock): StaticBlockFields {
       cards.push({ title: (match[1] || "").trim(), body: match[2].trim() });
     }
     fields.cards = cards.length > 0 ? cards : [{ title: "", body: "" }];
+    fields.columns = gridColumnsFrom(raw);
     return fields;
   }
 
@@ -503,14 +593,19 @@ export function applyStaticFields(block: VisualBlock, fields: StaticBlockFields)
     const body = (cards.length > 0 ? cards : [{ title: "", body: "" }])
       .map((card) => `:::card${card.title.trim() ? ` ${card.title.trim()}` : ""}\n${card.body.trim()}\n:::`)
       .join("\n");
-    rawContent = `:::grid\n${body}\n:::`;
-    title = "Kort-grid (2 kolonner)";
+    const bracket = fields.columns === 2 ? "" : `[${fields.columns}]`;
+    rawContent = `:::grid${bracket}\n${body}\n:::`;
+    title = "Spalter";
   } else {
     const heading = fields.title.trim();
     const body = fields.body.trim();
     rawContent = heading ? `## ${heading}\n\n${body}`.trim() : body;
     title = heading || (body ? body.split("\n")[0].slice(0, 40) : "Tekstavsnitt");
   }
+
+  // The block keeps the anchor it had, so links to this section go on working when its words change
+  const anchor = (block.rawContent || "").trim().match(/^<!--\s*cms-anchor:[a-z0-9-]+\s*-->/i)?.[0];
+  if (anchor && !rawContent.trim().startsWith(anchor)) rawContent = `${anchor}\n${rawContent}`;
 
   return { ...block, title, rawContent };
 }
@@ -566,7 +661,7 @@ export function staticPreviewText(block: VisualBlock): string {
   }
   if (block.type === "grid") {
     const names = fields.cards.map((card) => card.title).filter(Boolean);
-    return names.length > 0 ? names.join(" · ") : "Kort-grid";
+    return names.length > 0 ? names.join(" · ") : "Spalter";
   }
   const text = fields.body || fields.title || "Tom innholdsblokk";
   return text.length > 90 ? `${text.slice(0, 87)}...` : text;

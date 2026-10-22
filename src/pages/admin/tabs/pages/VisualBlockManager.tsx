@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { Suspense, lazy, useEffect, useRef, useState } from "react";
 import {
   VisualBlock,
   DYNAMIC_MODULES_META,
   DynamicModuleType,
   PERSON_GRID_VARIANTS,
   StaticBlockFields,
+  GRID_COLUMN_COUNTS,
   readStaticFields,
   applyStaticFields,
   staticPreviewText,
@@ -16,13 +17,18 @@ import {
   ModulePresentationConfig,
   readModulePresentation,
 } from "../../../../utils/modulePresentation";
+import { stripSectionAnchorComment } from "../../../../utils/cmsLinks";
 import { ModulePresentationEditor } from "../../../../components/admin/ModulePresentationEditor";
 import { CmsMediaPicker } from "../../../../components/admin/CmsMediaPicker";
 import { CmsLinkPicker } from "../../../../components/admin/CmsLinkPicker";
+import type { RichTextFieldProps } from "../../../../components/admin/RichTextField";
+import type { BlockSettings } from "../../../../utils/blockSettings";
+import { BlockSettingsFields } from "./BlockSettingsFields";
 import {
   ChevronUp,
   ChevronDown,
   Trash2,
+  Copy,
   Plus,
   Edit3,
   Check,
@@ -36,6 +42,8 @@ import {
   Info,
   Users,
   Heart,
+  MapPin,
+  Images,
   Headphones,
   Eye,
   EyeOff,
@@ -49,6 +57,12 @@ interface VisualBlockManagerProps {
   selectedBlockId?: string | null;
   onSelectBlock?: (blockId: string) => void;
   currentPageId?: string;
+  /** A section pressed in the preview: its fields are opened, and on an event's card, also the event. */
+  openRequest?: { blockId: string; gatheringId?: string; nonce: number } | null;
+  /** Only this block is listed (the section editor); its index in the full list is kept. */
+  onlyBlockId?: string | null;
+  /** The order is changed in the section list instead, so the rows here are not moved. */
+  orderInNav?: boolean;
 }
 
 function isInteractiveTarget(target: EventTarget | null): boolean {
@@ -58,6 +72,9 @@ function isInteractiveTarget(target: EventTarget | null): boolean {
   );
 }
 
+/** How long after the last change in a module's fields the preview follows. */
+export const LIVE_APPLY_MS = 500;
+
 export const VisualBlockManager: React.FC<VisualBlockManagerProps> = ({
   blocks,
   onChange,
@@ -65,11 +82,72 @@ export const VisualBlockManager: React.FC<VisualBlockManagerProps> = ({
   selectedBlockId,
   onSelectBlock,
   currentPageId,
+  openRequest,
+  onlyBlockId,
+  orderInNav,
 }) => {
   const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
   const [editFields, setEditFields] = useState<StaticBlockFields | null>(null);
   const [moduleEditConfig, setModuleEditConfig] = useState<ModulePresentationConfig | null>(null);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  // The event to open in «Hva skjer», when its card was pressed in the preview
+  const [openEvent, setOpenEvent] = useState<{ id: string; nonce: number } | null>(null);
+  useEffect(() => {
+    if (!openRequest) return;
+    const block = blocks.find((candidate) => candidate.id === openRequest.blockId);
+    if (!block || !canEditBlockContent(block)) return;
+    if (editingBlockId !== block.id) handleStartEditContent(block);
+    setOpenEvent(openRequest.gatheringId ? { id: openRequest.gatheringId, nonce: openRequest.nonce } : null);
+  }, [openRequest?.nonce]);
+
+  // When only one block is shown, its fields are opened at once, so the section has its content ready.
+  useEffect(() => {
+    if (!onlyBlockId) return;
+    const block = blocks.find((candidate) => candidate.id === onlyBlockId);
+    if (!block || !canEditBlockContent(block)) return;
+    if (editingBlockId !== block.id) handleStartEditContent(block);
+  }, [onlyBlockId]);
+
+  // The blocks as they stand when a change below is applied, not as they stood when it was typed
+  const blocksRef = useRef(blocks);
+  blocksRef.current = blocks;
+
+  // A change in a module's fields shows in the preview half a second after the last keystroke,
+  // without «Bruk endringer». The fields stay open; «Ferdig» or «Bruk endringer» closes them.
+  useEffect(() => {
+    if (!editingBlockId || !moduleEditConfig) return;
+    const timer = window.setTimeout(() => {
+      const current = blocksRef.current;
+      const index = current.findIndex((block) => block.id === editingBlockId);
+      if (index < 0) return;
+      const applied = applyModulePresentation(current[index], moduleEditConfig);
+      if (applied.rawContent === current[index].rawContent) return;
+      const next = [...current];
+      next[index] = applied;
+      onChange(next);
+    }, LIVE_APPLY_MS);
+    return () => window.clearTimeout(timer);
+  }, [moduleEditConfig, editingBlockId]);
+
+  // The same for the text of a block: what is typed shows in the preview half a second later. The
+  // block is written anew only when its fields differ from what it holds, so opening a block and looking
+  // does not mark the page as changed.
+  useEffect(() => {
+    if (!editingBlockId || !editFields) return;
+    const timer = window.setTimeout(() => {
+      const current = blocksRef.current;
+      const index = current.findIndex((block) => block.id === editingBlockId);
+      if (index < 0) return;
+      const block = current[index];
+      if (JSON.stringify(readStaticFields(block)) === JSON.stringify(editFields)) return;
+      const applied = applyStaticFields(block, editFields);
+      if (applied.rawContent === block.rawContent && applied.title === block.title) return;
+      const next = [...current];
+      next[index] = applied;
+      onChange(next);
+    }, LIVE_APPLY_MS);
+    return () => window.clearTimeout(timer);
+  }, [editFields, editingBlockId]);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   const handleMoveUp = (index: number) => {
@@ -96,6 +174,22 @@ export const VisualBlockManager: React.FC<VisualBlockManagerProps> = ({
       ...next[index],
       hidden: !next[index].hidden,
     };
+    onChange(next);
+  };
+
+  // A copy is put right under the block. It does not take the block's anchor, so the links to the block
+  // still lead to the block; the copy gets its own when the page is saved.
+  const handleDuplicate = (index: number) => {
+    const block = blocks[index];
+    const withoutAnchor = () => {
+      const { anchor: _anchor, ...config } = readModulePresentation(block);
+      return applyModulePresentation(block, config);
+    };
+    const copy: VisualBlock = isEditableDynamicModule(block.type)
+      ? withoutAnchor()
+      : { ...block, rawContent: block.rawContent ? stripSectionAnchorComment(block.rawContent) : block.rawContent };
+    const next = [...blocks];
+    next.splice(index + 1, 0, { ...copy, id: `${block.id}-kopi-${Date.now()}` });
     onChange(next);
   };
 
@@ -130,17 +224,28 @@ export const VisualBlockManager: React.FC<VisualBlockManagerProps> = ({
     onSelectBlock?.(block.id);
   };
 
+  // Settings are written at once, not on «Ferdig», so the page is marked as changed straight away
+  const handleSettingsChange = (index: number, settings: BlockSettings) => {
+    const next = [...blocks];
+    next[index] = { ...next[index], settings };
+    onChange(next);
+  };
+
   const handleSaveEditContent = (index: number) => {
     const block = blocks[index];
     const next = [...blocks];
+    // Closing the fields without a change leaves the block as it is, so the page is not marked as changed
+    let unchanged: boolean;
     if (isEditableDynamicModule(block.type) && moduleEditConfig) {
       next[index] = applyModulePresentation(block, moduleEditConfig);
+      unchanged = JSON.stringify(readModulePresentation(block)) === JSON.stringify(moduleEditConfig);
     } else if (editFields) {
       next[index] = applyStaticFields(block, editFields);
+      unchanged = JSON.stringify(readStaticFields(block)) === JSON.stringify(editFields);
     } else {
       return;
     }
-    onChange(next);
+    if (!unchanged) onChange(next);
     setEditingBlockId(null);
     setEditFields(null);
     setModuleEditConfig(null);
@@ -198,6 +303,10 @@ export const VisualBlockManager: React.FC<VisualBlockManagerProps> = ({
         return <Users className="w-4 h-4 text-[var(--studio-icon)]" />;
       case "module-giving":
         return <Heart className="w-4 h-4 text-rose-400" />;
+      case "module-map":
+        return <MapPin className="w-4 h-4 text-sky-400" />;
+      case "module-gallery":
+        return <Images className="w-4 h-4 text-amber-400" />;
       case "grid":
         return <LayoutGrid className="w-4 h-4 text-emerald-400" />;
       case "media-left":
@@ -216,6 +325,8 @@ export const VisualBlockManager: React.FC<VisualBlockManagerProps> = ({
 
   return (
     <div className="space-y-3" data-cms-surface="editor">
+      {/* With one block shown, the section list carries the overview, so the heading is left out */}
+      {!onlyBlockId && (
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Layers className="w-4 h-4 text-[var(--studio-icon)]" />
@@ -231,9 +342,12 @@ export const VisualBlockManager: React.FC<VisualBlockManagerProps> = ({
           </span>
         </div>
       </div>
+      )}
 
       <div className="space-y-2.5">
         {blocks.map((block, index) => {
+          // Keep the full-list index, so handlers such as handleDelete(index) still hit the right block
+          if (onlyBlockId && block.id !== onlyBlockId) return null;
           const isDynamic = block.isDynamic;
           const isHidden = block.hidden === true;
           const dynamicMeta = isDynamic
@@ -248,15 +362,15 @@ export const VisualBlockManager: React.FC<VisualBlockManagerProps> = ({
           return (
             <div
               key={block.id || index}
-              draggable={!isEditing}
+              draggable={!isEditing && !orderInNav}
               onClick={(e) => {
                 if (isInteractiveTarget(e.target)) return;
                 onSelectBlock?.(block.id);
               }}
-              onDragStart={(e) => handleDragStart(e, index)}
-              onDragOver={(e) => handleDragOver(e, index)}
-              onDrop={(e) => handleDrop(e, index)}
-              onDragEnd={handleDragEnd}
+              onDragStart={orderInNav ? undefined : (e) => handleDragStart(e, index)}
+              onDragOver={orderInNav ? undefined : (e) => handleDragOver(e, index)}
+              onDrop={orderInNav ? undefined : (e) => handleDrop(e, index)}
+              onDragEnd={orderInNav ? undefined : handleDragEnd}
               data-cms-block={block.type}
               data-cms-variant={block.variant || ""}
               data-cms-hidden={isHidden ? "true" : "false"}
@@ -275,13 +389,15 @@ export const VisualBlockManager: React.FC<VisualBlockManagerProps> = ({
             >
               <div className="space-y-3">
                 <div className="flex items-start gap-2.5 min-w-0">
-                  <div
-                    className="p-1 cursor-grab active:cursor-grabbing text-[var(--studio-muted)] hover:text-[var(--studio-muted)] mt-1 shrink-0"
-                    title="Klikk og dra for å flytte blokk"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <GripVertical className="w-4 h-4" />
-                  </div>
+                  {!orderInNav && (
+                    <div
+                      className="p-1 cursor-grab active:cursor-grabbing text-[var(--studio-muted)] hover:text-[var(--studio-muted)] mt-1 shrink-0"
+                      title="Klikk og dra for å flytte blokk"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <GripVertical className="w-4 h-4" />
+                    </div>
+                  )}
 
                   <div
                     className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
@@ -293,10 +409,28 @@ export const VisualBlockManager: React.FC<VisualBlockManagerProps> = ({
                     {getModuleIcon(block.type)}
                   </div>
 
-                  <div className="min-w-0 flex-1 space-y-1">
+                  {/* A press on the title or the text opens the block's fields, as «Rediger innhold» does */}
+                  <div
+                    className={`min-w-0 flex-1 space-y-1 ${canEditBlockContent(block) && !isEditing ? "cursor-pointer group/excerpt" : ""}`}
+                    data-block-excerpt={block.id}
+                    {...(canEditBlockContent(block) && !isEditing
+                      ? {
+                          role: "button",
+                          tabIndex: 0,
+                          title: "Trykk for å redigere",
+                          onClick: () => handleStartEditContent(block),
+                          onKeyDown: (event: React.KeyboardEvent) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              handleStartEditContent(block);
+                            }
+                          },
+                        }
+                      : {})}
+                  >
                     <div className="flex flex-wrap items-center gap-2">
                       <span
-                        className={`font-bold text-xs ${isHidden ? "line-through text-[var(--studio-muted)]" : "text-[var(--studio-text)]"}`}
+                        className={`font-bold text-xs group-hover/excerpt:text-[var(--studio-accent-text)] ${isHidden ? "line-through text-[var(--studio-muted)]" : "text-[var(--studio-text)]"}`}
                         title={block.title}
                       >
                         {displayTitle}
@@ -396,28 +530,42 @@ export const VisualBlockManager: React.FC<VisualBlockManagerProps> = ({
                     {isHidden ? <EyeOff className="w-4 h-4 text-amber-400" /> : <Eye className="w-4 h-4" />}
                   </button>
 
-                  {/* Up button */}
-                  <button
-                    type="button"
-                    disabled={index === 0}
-                    onClick={() => handleMoveUp(index)}
-                    className="p-1.5 rounded-lg bg-[var(--studio-surface)] hover:bg-[var(--studio-hover)] disabled:opacity-30 disabled:hover:bg-[var(--studio-surface)] text-[var(--studio-muted)] hover:text-[var(--studio-text)] transition-colors cursor-pointer"
-                    title="Flytt opp"
-                    aria-label="Flytt opp"
-                  >
-                    <ChevronUp className="w-4 h-4" />
-                  </button>
+                  {/* Up and down buttons: left out when the order is changed in the section list */}
+                  {!orderInNav && (
+                    <>
+                      <button
+                        type="button"
+                        disabled={index === 0}
+                        onClick={() => handleMoveUp(index)}
+                        className="p-1.5 rounded-lg bg-[var(--studio-surface)] hover:bg-[var(--studio-hover)] disabled:opacity-30 disabled:hover:bg-[var(--studio-surface)] text-[var(--studio-muted)] hover:text-[var(--studio-text)] transition-colors cursor-pointer"
+                        title="Flytt opp"
+                        aria-label="Flytt opp"
+                      >
+                        <ChevronUp className="w-4 h-4" />
+                      </button>
 
-                  {/* Down button */}
+                      <button
+                        type="button"
+                        disabled={index === blocks.length - 1}
+                        onClick={() => handleMoveDown(index)}
+                        className="p-1.5 rounded-lg bg-[var(--studio-surface)] hover:bg-[var(--studio-hover)] disabled:opacity-30 disabled:hover:bg-[var(--studio-surface)] text-[var(--studio-muted)] hover:text-[var(--studio-text)] transition-colors cursor-pointer"
+                        title="Flytt ned"
+                        aria-label="Flytt ned"
+                      >
+                        <ChevronDown className="w-4 h-4" />
+                      </button>
+                    </>
+                  )}
+
+                  {/* Copy button */}
                   <button
                     type="button"
-                    disabled={index === blocks.length - 1}
-                    onClick={() => handleMoveDown(index)}
-                    className="p-1.5 rounded-lg bg-[var(--studio-surface)] hover:bg-[var(--studio-hover)] disabled:opacity-30 disabled:hover:bg-[var(--studio-surface)] text-[var(--studio-muted)] hover:text-[var(--studio-text)] transition-colors cursor-pointer"
-                    title="Flytt ned"
-                    aria-label="Flytt ned"
+                    onClick={() => handleDuplicate(index)}
+                    className="p-1.5 rounded-lg bg-[var(--studio-surface)] hover:bg-[var(--studio-hover)] text-[var(--studio-muted)] hover:text-[var(--studio-text)] transition-colors cursor-pointer"
+                    title="Kopier blokken"
+                    aria-label="Kopier blokken"
                   >
-                    <ChevronDown className="w-4 h-4" />
+                    <Copy className="w-4 h-4" />
                   </button>
 
                   {/* Delete button */}
@@ -438,6 +586,7 @@ export const VisualBlockManager: React.FC<VisualBlockManagerProps> = ({
                 <ModulePresentationEditor
                   moduleType={block.type as DynamicModuleType}
                   config={moduleEditConfig}
+                  openEvent={openEvent}
                   currentPageId={currentPageId}
                   onChange={(next) => {
                     setModuleEditConfig(next);
@@ -445,8 +594,13 @@ export const VisualBlockManager: React.FC<VisualBlockManagerProps> = ({
                   }}
                   onSave={() => handleSaveEditContent(index)}
                   dataSourceNote={
-                    block.type.startsWith("module-")
-                      ? `Arrangement, artikler og tall hentes fra ${DYNAMIC_MODULES_META[block.type as DynamicModuleType]?.dataSource}. Feltene over styrrer bare tekst og utseende på modulen.`
+                    // The map and the gallery hold what is written here; the other modules fetch their content
+                    block.type === "module-map"
+                      ? "Kartet hentes fra OpenStreetMap, uten informasjonskapsler."
+                      : block.type === "module-gallery"
+                      ? "Bildene velges fra bildebiblioteket."
+                      : block.type.startsWith("module-")
+                      ? `Arrangement, artikler og tall hentes fra ${DYNAMIC_MODULES_META[block.type as DynamicModuleType]?.dataSource}. Feltene over styrer bare tekst og utseende på modulen.`
                       : undefined
                   }
                 />
@@ -460,23 +614,33 @@ export const VisualBlockManager: React.FC<VisualBlockManagerProps> = ({
                     setEditFields(next);
                     onSelectBlock?.(block.id);
                   }}
-                  onSave={() => handleSaveEditContent(index)}
                 />
+              )}
+              {isEditing && (
+                <div className="mt-3 pt-3 border-t border-[var(--studio-border)]">
+                  <BlockSettingsFields
+                    value={block.settings}
+                    onChange={(settings) => handleSettingsChange(index, settings)}
+                    ownBackground={block.isDynamic}
+                  />
+                </div>
               )}
             </div>
           );
         })}
       </div>
 
-      {/* Button to add new block */}
-      <button
-        type="button"
-        onClick={onOpenBlockPicker}
-        className="w-full py-3 px-4 rounded-xl border border-dashed border-indigo-700/80 hover:border-indigo-500 bg-[var(--studio-accent-bg)] hover:bg-[var(--studio-accent-bg)] text-[var(--studio-accent-text)] hover:text-[var(--studio-text)] text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs"
-      >
-        <Plus className="w-4 h-4 text-[var(--studio-icon)]" />
-        <span>Legg til blokk eller modul</span>
-      </button>
+      {/* Button to add new block: the section list has its own one */}
+      {!orderInNav && (
+        <button
+          type="button"
+          onClick={onOpenBlockPicker}
+          className="w-full py-3 px-4 rounded-xl border border-dashed border-indigo-700/80 hover:border-indigo-500 bg-[var(--studio-accent-bg)] hover:bg-[var(--studio-accent-bg)] text-[var(--studio-accent-text)] hover:text-[var(--studio-text)] text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs"
+        >
+          <Plus className="w-4 h-4 text-[var(--studio-icon)]" />
+          <span>Legg til blokk eller modul</span>
+        </button>
+      )}
     </div>
   );
 };
@@ -488,6 +652,20 @@ function personVariants(current?: string) {
   return PERSON_GRID_VARIANTS;
 }
 
+// The text field with buttons is loaded the first time a block's text is edited
+const LazyRichTextField = lazy(() => import("../../../../components/admin/RichTextField"));
+
+/** A block's text, formatted with buttons over it; a plain text field until the editor has loaded. */
+function BlockTextField(props: RichTextFieldProps) {
+  return (
+    <Suspense
+      fallback={<textarea rows={props.rows} aria-label={props.label} className={fieldClass} value={props.value} onChange={(e) => props.onChange(e.target.value)} />}
+    >
+      <LazyRichTextField {...props} />
+    </Suspense>
+  );
+}
+
 const fieldClass =
   "w-full px-3 py-2 rounded-lg bg-[var(--studio-panel-bg)] border border-[var(--studio-border)] text-[var(--studio-input-text)] text-xs focus:outline-hidden focus:border-indigo-500";
 
@@ -496,13 +674,11 @@ function StaticBlockEditor({
   fields,
   currentPageId,
   onChange,
-  onSave,
 }: {
   block: VisualBlock;
   fields: StaticBlockFields;
   currentPageId?: string;
   onChange: (fields: StaticBlockFields) => void;
-  onSave: () => void;
 }) {
   const set = (patch: Partial<StaticBlockFields>) => onChange({ ...fields, ...patch });
 
@@ -510,13 +686,8 @@ function StaticBlockEditor({
     <div className="mt-3 pt-3 border-t border-[var(--studio-border)] space-y-3">
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-semibold text-[var(--studio-muted)]">Rediger innhold</span>
-        <button
-          type="button"
-          onClick={onSave}
-          className="text-[11px] text-[var(--studio-icon)] hover:text-[var(--studio-accent-text)] font-medium cursor-pointer"
-        >
-          Bruk endringer
-        </button>
+        {/* No «Bruk endringer»: what is typed shows in the preview by itself, and Ferdig closes the fields */}
+        <span className="text-[10px] text-[var(--studio-muted)]">Vises i forhåndsvisningen med en gang</span>
       </div>
 
       {block.type === "cta" ? (
@@ -549,8 +720,23 @@ function StaticBlockEditor({
         </div>
       ) : block.type === "grid" ? (
         <div className="space-y-2">
+          <label className="space-y-1 block">
+            <span className="text-[10px] font-semibold text-[var(--studio-muted)]">Antall spalter</span>
+            <select
+              className={fieldClass}
+              value={fields.columns}
+              onChange={(e) => set({ columns: Number(e.target.value) as StaticBlockFields["columns"] })}
+            >
+              {GRID_COLUMN_COUNTS.map((count) => (
+                <option key={count} value={count}>
+                  {count}
+                </option>
+              ))}
+            </select>
+          </label>
           {fields.cards.map((card, cardIndex) => (
-            <div key={cardIndex} className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-2 rounded-lg border border-[var(--studio-border)]">
+            <div key={cardIndex} className="space-y-1 p-2 rounded-lg border border-[var(--studio-border)]">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <label className="space-y-1 block">
                 <span className="text-[10px] font-semibold text-[var(--studio-muted)]">Kort {cardIndex + 1}: tittel</span>
                 <input
@@ -562,18 +748,30 @@ function StaticBlockEditor({
                   }}
                 />
               </label>
-              <label className="space-y-1 block">
+              {/* Not a label: a press in the field would press its first button */}
+              <div className="space-y-1 block">
                 <span className="text-[10px] font-semibold text-[var(--studio-muted)]">Tekst</span>
-                <textarea
+                <BlockTextField
+                  mode="inline"
+                  label={`Kort ${cardIndex + 1}: tekst`}
                   rows={2}
-                  className={fieldClass}
                   value={card.body}
-                  onChange={(e) => {
-                    const cards = fields.cards.map((item, i) => (i === cardIndex ? { ...item, body: e.target.value } : item));
+                  onChange={(body) => {
+                    const cards = fields.cards.map((item, i) => (i === cardIndex ? { ...item, body } : item));
                     set({ cards });
                   }}
                 />
-              </label>
+              </div>
+            </div>
+            {fields.cards.length > 1 && (
+              <button
+                type="button"
+                onClick={() => set({ cards: fields.cards.filter((_, i) => i !== cardIndex) })}
+                className="text-[11px] font-semibold text-[var(--studio-muted)] hover:text-[var(--studio-text)] cursor-pointer"
+              >
+                Fjern kort {cardIndex + 1}
+              </button>
+            )}
             </div>
           ))}
           <button
@@ -621,10 +819,16 @@ function StaticBlockEditor({
             <span className="text-[10px] font-semibold text-[var(--studio-muted)]">Tittel</span>
             <input className={fieldClass} value={fields.title} onChange={(e) => set({ title: e.target.value })} />
           </label>
-          <label className="space-y-1 block">
+          <div className="space-y-1 block">
             <span className="text-[10px] font-semibold text-[var(--studio-muted)]">Tekst</span>
-            <textarea rows={4} className={fieldClass} value={fields.body} onChange={(e) => set({ body: e.target.value })} />
-          </label>
+            <BlockTextField
+              mode={block.type === "text" ? "full" : "inline"}
+              label="Tekst"
+              rows={block.type === "text" ? 6 : 4}
+              value={fields.body}
+              onChange={(body) => set({ body })}
+            />
+          </div>
         </div>
       )}
     </div>

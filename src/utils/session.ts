@@ -9,6 +9,8 @@ import { leadsGroup, type GroupRoles } from "./groups";
 // the register. What someone may do follows from the person, never from the account:
 //
 //   administrator   the person has the role in the register
+//   nettredaktør    the person has that role: the website part of the admin, and nothing of the
+//                   register, the planning or the e-mail
 //   gruppeleder     the person leads at least one group, as leader or deputy
 //   medlem          everyone else who is in the register
 //
@@ -41,7 +43,7 @@ export type Session =
   /** `account` is null only for a stand-in: on a developer's own machine, or a visitor of the demo (see mayStandIn). */
   | { status: "member"; person: Person; account: Account | null };
 
-export type SessionRole = "administrator" | "gruppeleder" | "medlem";
+export type SessionRole = "administrator" | "nettredaktør" | "gruppeleder" | "medlem";
 
 const normalized = (email: string | null | undefined): string => (email ?? "").trim().toLowerCase();
 
@@ -74,7 +76,7 @@ export type LoginState =
   | { status: "none" }
   | { status: "loading" }
   | { status: "missing" }
-  | { status: "found"; personId: string; role: "admin" | "member" };
+  | { status: "found"; personId: string; role: "admin" | "nettredaktor" | "member" };
 
 /**
  * Who the account is, in an installation where the register is closed to those who are not in
@@ -109,17 +111,25 @@ export const mayStandIn = (where: { developerMachine: boolean; demo: boolean }):
 
 export const isAdministrator = (person: Pick<Person, "globalRole">): boolean => person.globalRole === "admin";
 
+/** A web editor: the website part of the admin, and nothing else of it. */
+export const isWebEditor = (person: Pick<Person, "globalRole"> | null | undefined): boolean => person?.globalRole === "nettredaktor";
+
+/** Whether the person gets into the admin at all: an administrator wholly, a web editor the website part. */
+export const mayOpenStudio = (person: Pick<Person, "globalRole">): boolean => isAdministrator(person) || isWebEditor(person);
+
 export const leadsAGroup = (person: Pick<Person, "id">, groups: GroupRoles[]): boolean =>
   groups.some((group) => leadsGroup(group, person.id));
 
 /** The highest role the person has. An administrator who also leads a group is an administrator. */
 export function roleOf(person: Pick<Person, "id" | "globalRole">, groups: GroupRoles[]): SessionRole {
   if (isAdministrator(person)) return "administrator";
+  if (isWebEditor(person)) return "nettredaktør";
   return leadsAGroup(person, groups) ? "gruppeleder" : "medlem";
 }
 
 export const ROLE_LABELS: Record<SessionRole, string> = {
   administrator: "Administrator",
+  nettredaktør: "Nettredaktør",
   gruppeleder: "Gruppeleder",
   medlem: "Frivillig",
 };

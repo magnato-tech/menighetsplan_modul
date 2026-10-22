@@ -573,7 +573,7 @@ Innholdet skrives som tekst med ferdige blokker. Blokkvelgeren setter dem inn, o
 ### 8.4 Bilder
 Et hovedbilde lastes opp fra maskinen, limes inn som adresse eller velges blant ferdige bilder. Et opplastet bilde skaleres ned til maks 1400 piksler og komprimeres i nettleseren.
 
-**Delvis:** bildet lagres inne i selve sidedokumentet, ikke i en bildelagring. Se 8.7.
+Et bilde som lastes opp i bildevelgeren, går via Mediebiblioteket til bildelageret (Firebase Storage), og siden får bare en henvisning til det. Fra 21. oktober 2026 går også logoen og toppbildet i nyhetsbrevet dit. Bilder som er lagret som tekst fra før, flyttes med «Flytt til bildelageret» under Mediebibliotek.
 
 ### 8.5 Design
 Fanen «Tema & designsystem» har fem ferdige temaer (Klassisk menighetsblå, Nordisk salvie, Varm terracotta, Dyp vinrød, Moderne indigo) og egne valg. Det som lagres, gjelder hele nettsiden med en gang:
@@ -612,7 +612,7 @@ Nettstedets adresse leses av forespørselen. Den kan settes fast med miljøvaria
 
 | Område | I dag | Konsekvens |
 |:---|:---|:---|
-| Bilder | Lagres som tekst inne i sidedokumentet | Alle besøkende laster ned alle sidenes bilder ved første besøk. Et dokument kan ikke være større enn 1 MB. Et opplastet bilde kan ikke brukes som delebilde |
+| Bilder | Personbilder og bilder i gruppechatten lagres fortsatt som tekst i dokumentet | Personbildene ligger i personregisteret, som er lukket; i bildelageret ville de kunne leses av alle som har lenken. Gruppechatten hører til webappen |
 | Design | Skriftvalget står mellom skriftene maskinen alt har | Menigheten kan ikke velge en egen skrift eller laste opp logo |
 | Kladder | Skjules i visningen, men leveres til nettleseren | En kladd er ikke hemmelig. Løses sammen med innlogging |
 | Forside | Tre infobokser, fellesskaps- og gaveteksten står i koden | Kan ikke endres uten en utvikler |
@@ -1641,7 +1641,55 @@ Bestilt av produkteier etter en sammenligning med EventMaster: en kalender for a
 | **Filterknapper** | Alle, Gudstjenester, Husgrupper, Tjenestegrupper og Andre, felles for alle visningene. Flere kan være på samtidig. Hvert arrangement står under nøyaktig én: en gudstjeneste er en gudstjeneste uansett gruppe; husgruppenes samlinger er Husgrupper; et teams egne samlinger (gruppesamling eller kun intern) er Tjenestegrupper; alt annet, som bønnemøter, ungdomsmøter og lederskapets møter, er Andre (`calendarKindOf` i `src/utils/adminCalendar.ts`). Ingen egne tagger |
 | **Merker** | Fargen følger knappen. Kun interne er svakere med kant, avlyste er streket over, og en rød prikk viser at frivillige mangler |
 
-**Ikke sluppet til menighetene ennå** (ligger i `main`, ikke i `stabil`): menylinjen i Sider, trinn 1 og trinn 2. Produkteier sjekker dem i demoen før de slippes.
+### Backlog 21. oktober: historikk, bildelager, modulvalg med en gang, trykk i forhåndsvisningen, bilde fra malen og bevegelse
+
+Bestilt av produkteier fra backloggen i «Menighetsplan CMS – vurdering og backlog» (punkt 1, 2, 6, 7, 11 og 16).
+
+| Del | Hva som er levert |
+|---|---|
+| **Historikk** | Når en side eller en nyhet lagres med en endring, tas versjonen før vare på. De 30 siste per side står under **Historikk** i redigeringen, med dato og tittel. **Gjenopprett** legger versjonen inn i redigeringen; den lagres først ved Lagre (`src/utils/contentVersions.ts`, `services/contentVersions.ts`, `VersionHistoryDialog.tsx`). Versjonene ligger i `cms_settings`, merket `contentVersion`: reglene som er publisert, tillater det, så ingenting må limes inn. Bare administratorer skriver dem, og bare de i registeret kan lese dem |
+| **Bildelager** | Logoen (også den lyse) lastes opp til bildelageret som den er, så en PNG beholder gjennomsiktig bakgrunn. Toppbildet i nyhetsbrevet gjøres mindre og lastes opp dit. **Bilder lagret inne i sidene** under Mediebibliotek finner bilder som er lagret som tekst i sider, nyheter, taler, stab og innstillingene, og **Flytt til bildelageret** laster hvert opp én gang og setter adressen inn (`src/utils/storedImages.ts`, `StoredImagesCard.tsx`). Personbilder flyttes ikke, se kjente mangler |
+| **Modulvalg med en gang** | En endring i feltene til en modul vises i forhåndsvisningen et halvt sekund etter siste tastetrykk, uten «Bruk endringer». Feltene blir stående åpne |
+| **Trykk i forhåndsvisningen** | I forhåndsvisningen ved siden av redigeringen har hver seksjon en stiplet ramme under musen. Et trykk åpner seksjonen i redigeringen og ruller feltene dens øverst i kolonnen; toppbildet åpner feltene for toppbildet. Et trykk på et arrangementskort i «Hva skjer» åpner også arrangementets Bilde og tekst. Lenkene i seksjonene følges ikke i forhåndsvisningen; menyen øverst leder fortsatt mellom sidene (`PreviewSelectBridge.tsx`, meldingen `preview:select`) |
+| **Bilde fra malen** | Under «Arrangementer på nettsiden» kan et arrangement uten bilde, laget fra en mal med bilde, få malens bilde: **Bruk malens bilde** på raden, eller **Gi dem bildet fra malen** for alle. «Hva skjer» har et **Standardbilde** for arrangementer uten eget bilde (`templateImageFor`). Malens bilde skrives på arrangementet, fordi en besøkende ikke kan lese malene |
+| **Bevegelse** | «Hva skjer» har valget **Bevegelse når kortene kommer til syne**: Ton inn (som før), Gli inn fra siden, Zoom inn eller Ingen bevegelse (`revealClassOf`). Den som har bedt om mindre bevegelse, ser kortene stille |
+
+### Backlog 21. oktober, del 2: advarsel om ulagrede endringer og tekstfelt med knapper
+
+Bestilt av produkteier fra samme backlog (punkt 4 og 5).
+
+| Del | Hva som er levert |
+|---|---|
+| **Advarsel om ulagrede endringer** | Nyheter og Taler har nå samme spørsmål som Sider (**Lagre**, **Forkast endringene**, **Bli her**) før redigeringen lukkes eller en annen artikkel eller tale åpnes. Et redigeringsvindu med endringer som ikke er lagret, meldes til studioet (`useReportUnsaved` i `src/hooks/useUnsavedChanges.ts`): sidemenyen viser **Ikke lagret** i stedet for tallet ved fanen, **Gå til Min Side** og **Logg ut** spør først, og nettleseren spør selv før fanen lukkes eller lastes på nytt. Bytte av fane i admin mister ingenting, for fanene blir liggende i bakgrunnen |
+| **Tekstfelt med knapper** | Teksten i en tekstblokk vises formatert, med knappene Overskrift, Underoverskrift, Fet, Kursiv, Punktliste, Nummerert liste og Lenke. I bilde med tekst, infoboks og kort er det bare Fet, Kursiv og Lenke, fordi nettsiden bare leser det der (`RichTextField.tsx`, Tiptap 3.31.4, lastet først når en tekst redigeres). Det som lagres, er de samme tegnene som før (`src/utils/richText.ts`), så nettsiden, eldre sider og historikken er uendret. En tekst med tegn feltet ikke har knapper for (sitat, :::-blokker), vises som vanlig tekst med en melding; **Vis som tekst** viser tegnene for den som vil skrive dem selv. En test sender alle tekstene i demosidene gjennom feltet og sjekker at nettsiden ser lik ut |
+
+### Hjelp i admin gått gjennom, og varsel for nyheter uten siste dag (21. oktober)
+
+| Del | Hva som er levert |
+|---|---|
+| **Hjelp** | Hjelp er skrevet om etter bruksanvisningen: én artikkel per oppgave, med menysti, én setning om hva den er til, høyst seks korte steg, skjermbilde, «Godt å vite» og «Pass på», og «Se også». 31 artikler i Kom i gang, Nettside (Sider & Innhold med ni artikler), Planlegging og Innsikt og moduler (`src/pages/admin/help/articles.ts`). Knapper skrives `**slik**` og vises i fet skrift. Søkefelt øverst; **Hjelp** åpner artikkelen for fanen man kom fra (`helpArticleIdForTab`), og delen man er i, står først. Artikler om tilleggsmoduler vises bare når modulen er på. 27 nye skjermbilder fra demoen i `public/help/`, uten demo-stripen og uten knapper som bare finnes i demoen. `tests/help-articles.test.ts` sjekker at hver fane har en artikkel, at bildene finnes, og at hver knapp hjelpen nevner, finnes i appen |
+| **Varsel for nyheter uten siste dag** (backlog 17) | Lagres en publisert nyhet uten «Vises til og med» og uten arrangement, spør admin «Når skal nyheten gå ut?», og foreslår den siste datoen tittel, ingress eller tekst nevner (`suggestedLastDay` i `src/utils/news.ts`, `NewsEndDateDialog.tsx`). Valg: vis til og med datoen, Velg dato, eller Lagre uten siste dag. Merket for nyheter som allerede står uten siste dag, er ikke laget |
+| **Rettet i redigeringen** | **Ferdig** på en blokk uten endringer lar blokken være, så siden ikke merkes «Ikke lagret». En tekstblokk som endres, beholder ankeret sitt (`<!-- cms-anchor: -->`), så lenker til seksjonen virker videre |
+
+### Backlog etter kartlegging av proffe verktøy, og nettredaktør (21.–22. oktober)
+
+Bestilt av produkteier. Backloggen og kartleggingen (WordPress, Squarespace, Wix, Webflow, Ghost, Planning Center) står i «CMS-forbedringer – backlog etter kartlegging». 14 av 15 punkter er bygget; gjenbrukbare blokker (14) venter på et valg.
+
+| Del | Hva som er levert |
+|---|---|
+| **Små forbedringer** | Ctrl+S lagrer side, nyhet og tale, bare i fanen som er åpen (`useSaveShortcut`). Kopier en side (kladd utenfor menyen, `pageCopyOf`) og en blokk (uten anker). Tegnteller for SEO-beskrivelsen (`seoLength.ts`). Bildeform «Hele bildet (for plakater med tekst)» i Hva skjer og på nyhetskortene (`imageFit`). Tekstfeltet med knapper i nyhetsteksten. Merke på nyheter som har stått 14 dager uten siste dag (`daysStandingLong`). «Ny frist» i Årshjul har luft; delebildet på Forsiden i demodataene pekte på et Unsplash-bilde som er borte |
+| **Autolagring** | Det som skrives i en side, tas vare på i nettleseren til det er lagret (`useDraftBackup`, `localStorage`). Åpnes siden igjen med et ulagret utkast, tilbys **Hent tilbake utkastet** eller **Forkast utkastet** |
+| **Sjekk nettsiden** | Kort på Oversikt under Nettside: sider uten beskrivelse, bilder uten tekst for skjermleser, lenker til sider som ikke finnes, nyheter som har stått lenge, og arrangementer de neste åtte ukene uten bilde eller tekst, hver med fanen som retter det (`siteCheck.ts`) |
+| **Fokuspunkt** | Trykk på det viktigste i toppbildet eller bildet til et arrangement, så blir det stående synlig når bildet beskjæres (`heroFocus`, `imageFocus`, `focusPoint.ts`, `FocusPointPicker`) |
+| **Forhåndsvisning av nyhet** | **Forhåndsvis** i redigeringen av en nyhet viser artikkelen som på nettsiden, på PC eller mobil, før den lagres |
+| **Historikk** | Hver versjon sier hva som er annerledes enn nå, for eksempel «tittel, teksten (12 ord flere)» (`versionChanges`) |
+| **«/» i tekstfeltet** | «/» på en tom linje gir en meny for overskrift, underoverskrift og lister |
+| **Tekstblokken direkte** | Et trykk på tittelen eller teksten i en blokk åpner den. Teksten vises i forhåndsvisningen av seg selv; «Bruk endringer» er borte for tekstblokker |
+| **Nettredaktør** | Fjerde brukernivå, valgt under Tilgang på personkortet (`globalRole: "nettredaktor"`, i `logins` som `nettredaktor`). Ser bare Nettside-delen av admin (`webEditor.ts`): ikke Lederskap & Stab, Planlegging, e-post, moduler eller database, og Hjelp bare for Nettside. Får det et medlem får av data, aldri hele registeret. På arrangementer et eget skjema for bilde og tekst (`GatheringWebsiteDialog`). Reglene (`firestore.rules`, `storage.rules`): skriver sider, nyheter, taler, mediebiblioteket, innstillingene og historikken; på arrangementer bare bilde, tekst, lenke og synlighet. Prøvd med regeltester mot emulatoren. I demoen er Kristine Vik nettredaktør, med egen dør. **Reglene må publiseres av produkteier før rollen virker hos en menighet** |
+
+**Rettet og sluppet til Lillesand 21. oktober 2026** (`stabil` = `6c42820`, bare denne rettingen oppå `6f9bc98`): knappen «Populer testdata (32 personer)» og boksen «Fyll inn testdata nå» er fjernet fra Lederskap & Stab, der de sto også i en menighets app i drift. Henvisningen til et simulert halvår i analysebordet vises bare i demo. `tests/no-testdata-in-production.test.tsx` passer på at de ikke kommer tilbake.
+
+**Sluppet til menighetene 21. oktober 2026** (`stabil` flyttet fram til `6f9bc98` etter beskjed fra produkteier): menylinjen i Sider, forsiden trinn 1 og 2, Lagre som holder siden åpen, menyene som står fast, advarselen om endringer som ikke er lagret, forhåndsvisningen som viser toppen av seksjonen, «Hva skjer» med valg, kalenderen i planleggingen, fargene i lys admin og navnet på tekstblokker. Databasereglene var ikke endret, så ingenting måtte limes inn hos Lillesand.
 
 ---
 
@@ -1656,7 +1704,7 @@ Sortert etter hvor mye de betyr for en menighet som skal ta løsningen i bruk.
 | 2 | Kladder til nyheter, taler og stab leveres til alle nettlesere. Kladder til sider leveres bare til dem som står i registeret. I demoen leveres hele registeret til alle, som før | Fase 1 |
 | 3 | To personer som deler e-postadresse, kan ikke logge inn før adressen står på bare én av dem. Første administrator må legges inn med et skript | Trinn 7 for skriptet |
 | 4 | Forsidens tekster og menighetens navn står delvis i koden | Fase 2 |
-| 5 | Bilder lagres inne i sidedokumentene, og kan da ikke brukes som delebilde | Fase 2 |
+| 5 | Personbilder og bilder i gruppechatten lagres som tekst i dokumentet. Sidenes bilder, logoen og nyhetsbrevets toppbilde ligger i bildelageret (21. oktober 2026) | Fase 2 |
 | 6 | To kilder for stab og lederskap, den ene uten samtykke | Fase 2 |
 | 7 | Programmet i kjøreplanen kan ikke redigeres | Fase 3 |
 | 8 | Ingen varsling: forespørsler og forfall når ingen uten at de åpner appen | Fase 3 |

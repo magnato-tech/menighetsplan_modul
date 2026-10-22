@@ -1,32 +1,21 @@
-import React, { useState, useMemo, useRef, useEffect } from "react";
+import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { CmsPage } from "../../../../data/cmsData";
 import {
   Edit3,
   X,
-  FolderTree,
   Eye,
   LayoutGrid,
-  Globe,
-  Search,
-  Share2,
-  Copy,
-  Check,
-  ChevronDown,
-  ChevronUp,
-  Image as ImageIcon,
-  Clock,
   ExternalLink,
   Monitor,
   Tablet,
-  Smartphone, Save } from "lucide-react";
-import { CmsMediaPicker } from "../../../../components/admin/CmsMediaPicker";
+  Smartphone, Save, History, MoreHorizontal, Copy, Trash2 } from "lucide-react";
+import { VersionHistoryDialog } from "../../../../components/admin/VersionHistoryDialog";
+import { restoredFields } from "../../../../utils/contentVersions";
 import { useMediaMap } from "../../../../hooks/useMediaMap";
 import { resolveShareableMediaUrl } from "../../../../utils/media";
 import { ContentBlockPickerModal } from "./ContentBlockPickerModal";
 import { useCms } from "../../../../context/CmsContext";
 import { useTimedMessage } from "../../../../hooks/useTimedMessage";
-import { HERO_HEIGHTS, HERO_MENU_STYLES, HERO_TITLE_FONTS, HERO_TITLE_SIZES, HERO_TITLE_STYLES, HERO_VEILS, heroExtrasOf, heroHeightOf, heroMenuStyleOf, heroTitleFontOf, heroTitleSizeOf, heroTitleStyleOf, heroVeilOf, type HeroHeight, type HeroMenuStyle, type HeroTitleFont, type HeroTitleSize, type HeroTitleStyle, type HeroVeil } from "../../../../utils/heroLayout";
-import { formatNorwegianDateTime } from "../../../../utils/dates";
 import { shareableImageUrl } from "../../../../utils/seoUtils";
 import { VisualBlockManager } from "./VisualBlockManager";
 import { usePreviewBridgeParent } from "../../../../hooks/usePreviewBridgeParent";
@@ -45,37 +34,48 @@ import {
   VisualBlock,
 } from "../../../../utils/cmsBlocks";
 import { ensureSectionAnchors } from "../../../../utils/cmsLinks";
-import { CmsLinkPicker } from "../../../../components/admin/CmsLinkPicker";
+import { blockPeriodBadge } from "../../../../utils/blockSettings";
+import { PageSectionNav, type PageSection } from "../../../../components/admin/PageSectionNav";
+import { readStoredFlag, writeStoredFlag } from "../../../../utils/storedFlag";
+import { useMediaQuery } from "../../../../hooks/useMediaQuery";
+import { usePaneWidth } from "../../../../hooks/usePaneWidth";
+import { EditorTextSizeControl, useEditorTextSize, EDITOR_TEXT_ZOOM } from "../../../../components/admin/EditorTextSize";
+import { SettingsSection } from "./editor/SettingsSection";
+import { HeroSection } from "./editor/HeroSection";
+import { SeoSection } from "./editor/SeoSection";
+import { PublishSection } from "./editor/PublishSection";
 
-function toDatetimeLocal(iso?: string): string {
-  if (!iso) return "";
-  try {
-    const date = new Date(iso);
-    if (isNaN(date.getTime())) return "";
-    const yyyy = date.getFullYear();
-    const mm = String(date.getMonth() + 1).padStart(2, "0");
-    const dd = String(date.getDate()).padStart(2, "0");
-    const hh = String(date.getHours()).padStart(2, "0");
-    const min = String(date.getMinutes()).padStart(2, "0");
-    return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
-  } catch {
-    return "";
+/**
+ * Brings a field into view in the scrolling column it stands in (the fields beside the preview), near
+ * the top, without moving the page around it.
+ */
+// Returns false when no scrolling column holds the element, so the caller can scroll the page instead.
+export function scrollIntoColumn(element: HTMLElement, offset = 16): boolean {
+  let column = element.parentElement;
+  while (column && !(column.scrollHeight > column.clientHeight + 2 && /(auto|scroll)/.test(getComputedStyle(column).overflowY))) {
+    column = column.parentElement;
   }
+  if (!column) return false;
+  const top = element.getBoundingClientRect().top - column.getBoundingClientRect().top + column.scrollTop - offset;
+  column.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+  return true;
 }
 
 /** Scrolls the preview pane so the target block is visible. Returns false if already fully in view. */
 export function scrollPreviewToTarget(
   scrollRoot: HTMLElement,
   target: HTMLElement,
-  offset = 16
+  offset = 16,
+  // A scaled frame is placed at frame.top on screen, and drawn at frame.scale of its own pixels.
+  frame: { top: number; scale: number } = { top: 0, scale: 1 }
 ): boolean {
   const rootRect = scrollRoot.getBoundingClientRect();
   const targetRect = target.getBoundingClientRect();
   const visibleTop = rootRect.top + offset;
   const visibleBottom = rootRect.bottom - offset;
-  const targetTop = targetRect.top;
-  const targetBottom = targetRect.bottom;
-  const targetHeight = targetRect.height;
+  const targetTop = frame.top + targetRect.top * frame.scale;
+  const targetBottom = frame.top + targetRect.bottom * frame.scale;
+  const targetHeight = targetRect.height * frame.scale;
   const rootHeight = rootRect.height;
 
   if (targetTop >= visibleTop && targetBottom <= visibleBottom) {
@@ -96,22 +96,15 @@ export function scrollPreviewToTarget(
   return true;
 }
 
-function getPresetDate(type: "tomorrow" | "sunday" | "monday"): string {
-  const d = new Date();
-  if (type === "tomorrow") {
-    d.setDate(d.getDate() + 1);
-    d.setHours(9, 0, 0, 0);
-  } else if (type === "sunday") {
-    const daysUntilSunday = (7 - d.getDay()) % 7 || 7;
-    d.setDate(d.getDate() + daysUntilSunday);
-    d.setHours(8, 0, 0, 0);
-  } else if (type === "monday") {
-    const daysUntilMonday = (8 - d.getDay()) % 7 || 7;
-    d.setDate(d.getDate() + daysUntilMonday);
-    d.setHours(9, 0, 0, 0);
-  }
-  return d.toISOString();
-}
+// Pixel sizes of the split view. The preview never gets less than PREVIEW_MIN_PX.
+const FIELDS_MIN_PX = 380;
+const PREVIEW_MIN_PX = 480;
+const SECTION_LIST_PX = 220;
+const GAP_PX = 24; // gap-6 in the layout
+const DIVIDER_PX = 10;
+const KEY_STEP_PX = 24;
+// The desktop preview is laid out at this width, and scaled down when its column is narrower.
+const DESKTOP_PREVIEW_PX = 1280;
 
 export interface PageEditModalProps {
   editingPage: Partial<CmsPage>;
@@ -121,6 +114,10 @@ export interface PageEditModalProps {
   onSave: (e: React.FormEvent) => void;
   onPreview?: (draft: Partial<CmsPage>) => void;
   onClose: () => void;
+  // Copies the page. The parent does the copying.
+  onDuplicate?: () => void;
+  // Asks to delete the page. The parent asks the user before it deletes anything.
+  onDelete?: () => void;
 }
 
 export const PageEditModal: React.FC<PageEditModalProps> = ({
@@ -131,6 +128,8 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
   onSave,
   onPreview,
   onClose,
+  onDuplicate,
+  onDelete,
 }) => {
   const { settings } = useCms();
   const mediaById = useMediaMap();
@@ -146,8 +145,50 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
   const [previewLocationPath, setPreviewLocationPath] = useState<string | null>(null);
   const [previewBlockedNotice, setPreviewBlockedNotice] = useState(false);
   const [snapshotFit, setSnapshotFit] = useState<SnapshotFit>("full");
+  // The fields column width the user dragged to. null is the default (40 %). liveFieldsWidth is set while dragging.
+  const { width: storedFieldsWidth, setWidth: setFieldsWidth } = usePaneWidth("menighetsplan:feltbredde");
+  const [liveFieldsWidth, setLiveFieldsWidth] = useState<number | null>(null);
+  const fieldsWidth = liveFieldsWidth ?? storedFieldsWidth;
+  const fieldsRef = useRef<HTMLDivElement>(null);
+  const splitRowRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef<{ startX: number; startWidth: number; latest: number } | null>(null);
+  // The text size applies to the fields only, not to the preview or the section list
+  const [textSize, setTextSize] = useEditorTextSize();
+  const fieldsZoomStyle: React.CSSProperties = { zoom: EDITOR_TEXT_ZOOM[textSize] };
+  // Height of the desktop preview frame, which follows the window height
+  const [viewportHeight, setViewportHeight] = useState(() => (typeof window !== "undefined" ? window.innerHeight : 800));
+  useEffect(() => {
+    const onResize = () => setViewportHeight(window.innerHeight);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+  // Width of the preview's scroll box, measured while the preview is shown
+  const [previewAvailableWidth, setPreviewAvailableWidth] = useState<number | null>(null);
 
   // View mode state: edit (full-width form), split (side-by-side with real frontend), preview (full-width real frontend)
+  // «Historikk»: the earlier versions of the page, one of which can be put back into the editor
+  const [showHistory, setShowHistory] = useState(false);
+  // The «⋯» menu in the top bar: copy or delete the page
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!menuOpen) return;
+    // Escape and a click outside close the menu. The listeners only exist while it is open.
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenuOpen(false);
+    };
+    const onMouseDown = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("mousedown", onMouseDown);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("mousedown", onMouseDown);
+    };
+  }, [menuOpen]);
+  // A section pressed in the preview, to be opened in the block list (nonce: the same section pressed again opens it again)
+  const [openRequest, setOpenRequest] = useState<{ blockId: string; gatheringId?: string; nonce: number } | null>(null);
   const [viewMode, setViewMode] = useState<"edit" | "split" | "preview">(() => {
     if (typeof window !== "undefined" && window.innerWidth >= 1024) {
       return "split";
@@ -155,8 +196,39 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
     return "edit";
   });
 
+  // The section list: one section's fields at a time, when the screen is wide enough for three panes.
+  // The list can be folded away, and the choice is remembered in the browser.
+  const [activeSection, setActiveSection] = useState<string>("hero");
+  const [navCollapsed, setNavCollapsed] = useState(() => readStoredFlag("menighetsplan:seksjoner-skjult", false));
+  const setCollapsed = (next: boolean) => {
+    setNavCollapsed(next);
+    writeStoredFlag("menighetsplan:seksjoner-skjult", next);
+  };
+  // Without matchMedia (tests, server) the fallback keeps today's layout with all sections under each other.
+  const wideSplit = useMediaQuery("(min-width: 1600px)", false);
+  const wideEdit = useMediaQuery("(min-width: 1024px)", false);
+  const navFits = viewMode === "split" ? wideSplit : viewMode === "edit" ? wideEdit : false;
+  const showNav = navFits && !navCollapsed;
+
   // Responsive device simulation in preview area: desktop (full width), tablet (768px), mobile (390px)
   const [previewDevice, setPreviewDevice] = useState<"desktop" | "tablet" | "mobile">("desktop");
+  // Desktop in a column narrower than 1280 px is scaled to fit, so it keeps the desktop layout. null: no scaling.
+  const previewScale =
+    previewDevice === "desktop" && previewAvailableWidth && previewAvailableWidth < DESKTOP_PREVIEW_PX
+      ? Math.max(previewAvailableWidth / DESKTOP_PREVIEW_PX, 0.25)
+      : null;
+  // Ref callback: the observer lives as long as the preview is mounted, which happens again after a layout change.
+  const attachPreviewScroll = useCallback((node: HTMLDivElement | null) => {
+    previewScrollRef.current = node;
+    // Without ResizeObserver (tests) the frame is never scaled
+    if (!node || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver((entries) => setPreviewAvailableWidth(entries[0].contentRect.width));
+    observer.observe(node);
+    return () => {
+      observer.disconnect();
+      previewScrollRef.current = null;
+    };
+  }, []);
 
   // Search and share card preview values
   const siteHost = window.location.host;
@@ -212,33 +284,6 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
     });
   };
 
-  const publishTime = editingPage.publishAt ? new Date(editingPage.publishAt).getTime() : 0;
-  const isFutureScheduled =
-    editingPage.isPublished !== false &&
-    Boolean(publishTime && publishTime > Date.now());
-
-  const handlePublishDateChange = (val: string) => {
-    if (!val) {
-      onUpdate({
-        ...editingPage,
-        publishAt: undefined,
-        publishedAt: undefined,
-      });
-      return;
-    }
-    const d = new Date(val);
-    if (isNaN(d.getTime())) return;
-    const iso = d.toISOString();
-    const isFuture = d.getTime() > Date.now();
-    onUpdate({
-      ...editingPage,
-      publishAt: iso,
-      publishedAt: iso,
-      isPublished: true, // Auto-enable publishing when scheduling a date
-      status: isFuture ? "scheduled" : "published",
-    });
-  };
-
   const cleanSlug = (editingPage.slug || editingPage.title?.toLowerCase().replace(/\s+/g, "-") || "side")
     .toLowerCase()
     .replace(/^\//, "")
@@ -255,6 +300,36 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
     () => ensureSectionAnchors(resolveVisualBlocks(editingPage, { home: isHomePage })),
     [editingPage, isHomePage]
   );
+
+  const sections = useMemo<PageSection[]>(
+    () => [
+      { id: "settings", kind: "settings", label: "Sideinnstillinger", detail: "Tittel, adresse og menyen" },
+      { id: "hero", kind: "hero", label: "Toppbilde" },
+      ...visualBlocks.map((block) => ({
+        id: block.id,
+        kind: "block" as const,
+        label: block.title?.trim() || "Uten tittel",
+        detail: block.isDynamic ? "Modul" : "Innhold",
+        hidden: block.hidden === true,
+        badge: blockPeriodBadge(block.settings) ?? undefined,
+      })),
+      { id: "seo", kind: "seo", label: "Søk og deling" },
+      { id: "publish", kind: "publish", label: "Publisering" },
+    ],
+    [visualBlocks]
+  );
+  // A block that was deleted leaves its id behind; the hero is shown then.
+  const activeId = sections.some((section) => section.id === activeSection) ? activeSection : "hero";
+
+  // Brings a section's first field into view in the page; used by the select on narrow screens.
+  const goToSection = (id: string) => {
+    const target = id === "hero" ? CMS_PREVIEW_TARGET_HERO : id;
+    const element =
+      (document.querySelector(`[data-page-editor] [data-cms-editor-target="${CSS.escape(target)}"]`) as HTMLElement | null) ??
+      (document.querySelector(`[data-page-editor] [data-page-section="${CSS.escape(id)}"]`) as HTMLElement | null);
+    if (!element) return;
+    if (!scrollIntoColumn(element)) element.scrollIntoView({ block: "start" });
+  };
 
   const handleBlocksChange = (newBlocks: VisualBlock[]) => {
     const anchored = ensureSectionAnchors(newBlocks);
@@ -278,6 +353,18 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
       window.setTimeout(() => setPreviewBlockedNotice(false), 4000);
     },
     onSnapshotFit: setSnapshotFit,
+    // A press on a section in the preview opens it here: the hero's fields, or the block in the list
+    onPreviewSelect: (blockId, gatheringId) => {
+      setFocusedPreviewTarget(blockId);
+      setActiveSection(blockId === CMS_PREVIEW_TARGET_HERO ? "hero" : blockId);
+      if (viewMode === "preview") setViewMode("split");
+      if (blockId !== CMS_PREVIEW_TARGET_HERO) setOpenRequest({ blockId, gatheringId, nonce: Date.now() });
+      // After the block has opened, its fields are brought into view in the column beside the preview
+      window.setTimeout(() => {
+        const field = document.querySelector(`[data-page-editor] [data-cms-editor-target="${CSS.escape(blockId)}"]`);
+        if (field) scrollIntoColumn(field as HTMLElement);
+      }, 120);
+    },
   });
 
   const handleSaveActiveDraftToStorage = () => {
@@ -292,7 +379,7 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
 
   useEffect(() => {
     setPreviewRevision((r) => r + 1);
-  }, [editingPage.title, editingPage.summary, editingPage.heroTitle, editingPage.heroCtaText, editingPage.heroCtaLink, editingPage.heroCtaSecondaryText, editingPage.heroCtaSecondaryLink, editingPage.showHeroPrimaryCta, editingPage.showHeroSecondaryCta, editingPage.showHeroSubtext, editingPage.heroHeight, editingPage.heroTitleStyle, editingPage.heroTitleSize, editingPage.heroTitleFont, editingPage.heroImageTitles, editingPage.heroArrows, editingPage.heroZoom, editingPage.heroMenuOverlay, editingPage.heroMenuStyle, editingPage.heroVeil, editingPage.heroImage, editingPage.heroImages, editingPage.content, editingPage.isPublished, editingPage.linkUrl, cleanSlug]);
+  }, [editingPage.title, editingPage.summary, editingPage.heroTitle, editingPage.heroCtaText, editingPage.heroCtaLink, editingPage.heroCtaSecondaryText, editingPage.heroCtaSecondaryLink, editingPage.showHeroPrimaryCta, editingPage.showHeroSecondaryCta, editingPage.showHeroSubtext, editingPage.heroHeight, editingPage.heroTitleStyle, editingPage.heroTitleSize, editingPage.heroTitleFont, editingPage.heroImageTitles, editingPage.heroArrows, editingPage.heroZoom, editingPage.heroFocus, editingPage.heroMenuOverlay, editingPage.heroMenuStyle, editingPage.heroVeil, editingPage.heroImage, editingPage.heroImages, editingPage.content, editingPage.isPublished, editingPage.linkUrl, cleanSlug]);
 
   useEffect(() => {
     if (viewMode === "edit") return;
@@ -323,7 +410,12 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
     const scrollIfNeeded = () => {
       const target = findTarget();
       const container = previewScrollRef.current;
-      if (target && container) scrollPreviewToTarget(container, target);
+      // A scaled frame sits at its own top on screen, and is drawn smaller than its layout
+      const frame =
+        previewScale !== null && previewIframeRef.current
+          ? { top: previewIframeRef.current.getBoundingClientRect().top, scale: previewScale }
+          : undefined;
+      if (target && container) scrollPreviewToTarget(container, target, 16, frame);
       else target?.scrollIntoView({ behavior: "smooth", block: "start" });
     };
 
@@ -346,10 +438,94 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
       window.cancelAnimationFrame(frame);
       resizeObserver?.disconnect();
     };
-  }, [focusedPreviewTarget, previewDevice, viewMode, sendFocus]);
+  }, [focusedPreviewTarget, previewDevice, previewScale, viewMode, sendFocus]);
+
+  // Beside the fields the width style is set only on wide screens; below lg the columns stack.
+  const fieldsColumnClass = wideEdit ? "shrink-0" : "w-full";
+  const fieldsStyle: React.CSSProperties | undefined = wideEdit
+    ? {
+        width: fieldsWidth ?? undefined,
+        flexBasis: fieldsWidth ? undefined : "40%",
+        // A width kept from a wider screen still leaves the preview its least width
+        maxWidth: `calc(100% - ${(showNav ? SECTION_LIST_PX + 3 * GAP_PX : 2 * GAP_PX) + DIVIDER_PX + PREVIEW_MIN_PX}px)`,
+      }
+    : undefined;
+
+  // The fields column can be shown narrower or wider. The preview keeps the rest of the row.
+  const clampFieldsWidth = (px: number, withList: boolean): number => {
+    const rowWidth = splitRowRef.current?.getBoundingClientRect().width ?? 0;
+    // Without a measured row (tests, hidden) there is no upper limit
+    const upper =
+      rowWidth > 0
+        ? rowWidth - (withList ? SECTION_LIST_PX + 3 * GAP_PX : 2 * GAP_PX) - DIVIDER_PX - PREVIEW_MIN_PX
+        : Infinity;
+    return Math.round(Math.max(FIELDS_MIN_PX, Math.min(px, upper)));
+  };
+
+  const endFieldsDrag = () => {
+    const drag = dragRef.current;
+    if (!drag) return;
+    dragRef.current = null;
+    // A click without moving keeps the default width instead of fixing today's measure
+    if (drag.latest !== drag.startWidth) setFieldsWidth(drag.latest);
+    setLiveFieldsWidth(null);
+  };
+
+  // The line between the fields and the preview. It is hidden below lg, where the columns stack.
+  const renderSplitter = (withList: boolean) => {
+    const dragging = liveFieldsWidth !== null;
+    return (
+      <>
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Dra for å endre bredden på feltene"
+          aria-valuenow={fieldsWidth ?? undefined}
+          tabIndex={0}
+          title="Dra for å endre bredden. Dobbeltklikk for standard."
+          onPointerDown={(e) => {
+            // Keeps the drag going when the pointer leaves the line
+            e.currentTarget.setPointerCapture?.(e.pointerId);
+            const startWidth = fieldsRef.current?.getBoundingClientRect().width ?? 0;
+            dragRef.current = { startX: e.clientX, startWidth, latest: startWidth };
+            setLiveFieldsWidth(startWidth);
+          }}
+          onPointerMove={(e) => {
+            const drag = dragRef.current;
+            if (!drag) return;
+            drag.latest = clampFieldsWidth(drag.startWidth + e.clientX - drag.startX, withList);
+            setLiveFieldsWidth(drag.latest);
+          }}
+          onPointerUp={endFieldsDrag}
+          onPointerCancel={endFieldsDrag}
+          onDoubleClick={() => {
+            setLiveFieldsWidth(null);
+            setFieldsWidth(null);
+          }}
+          onKeyDown={(e) => {
+            if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+            e.preventDefault();
+            const current = fieldsWidth ?? fieldsRef.current?.getBoundingClientRect().width ?? 0;
+            const step = e.key === "ArrowRight" ? KEY_STEP_PX : -KEY_STEP_PX;
+            setFieldsWidth(clampFieldsWidth(current + step, withList));
+          }}
+          className="hidden lg:flex group w-2.5 shrink-0 self-stretch cursor-col-resize justify-center rounded-sm focus:outline-none"
+        >
+          <span
+            className={`w-px h-full transition-colors group-hover:bg-indigo-500 group-focus-visible:bg-indigo-500 ${
+              dragging ? "bg-indigo-500" : "bg-[var(--studio-border)]"
+            }`}
+          />
+        </div>
+        {/* While dragging, a transparent layer keeps the preview iframe from taking the pointer */}
+        {dragging && <div className="fixed inset-0 z-50 cursor-col-resize" aria-hidden="true" />}
+      </>
+    );
+  };
 
   // Real frontend preview container: exact 1:1 public website rendering
   const renderLiveFrontendPreview = () => {
+    const frameHeight = Math.round(viewportHeight * 0.7);
 
     return (
       <div className="flex flex-col h-full bg-[var(--studio-bg)] border border-[var(--studio-border)] rounded-2xl overflow-hidden shadow-2xl">
@@ -359,6 +535,9 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
             <span className="font-bold text-[var(--studio-text)]">Ekte nettside-rendering</span>
             <span className="text-[var(--studio-muted)] hidden xl:inline">· 1:1 produksjonslayout & tema</span>
+            {previewScale !== null && (
+              <span className="text-[var(--studio-muted)]">· vist i {Math.round(previewScale * 100)} %</span>
+            )}
           </div>
 
           {/* Enhetsvelger: Desktop (Full) | Nettbrett | Mobil */}
@@ -437,7 +616,7 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
         </div>
 
         <div
-          ref={previewScrollRef}
+          ref={attachPreviewScroll}
           className="cms-preview-scroll-root flex-1 overflow-y-auto bg-[var(--studio-overlay)] p-2 sm:p-4 max-h-[82vh] flex justify-center items-start"
         >
           <style>{`
@@ -453,13 +632,24 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
                 ? "w-[768px] max-w-full rounded-2xl shadow-2xl border-4 border-[var(--studio-border)]"
                 : "w-[390px] max-w-full rounded-3xl shadow-2xl border-8 border-[var(--studio-border)]"
             }`}
+            style={previewScale !== null ? { height: frameHeight } : undefined}
           >
             <iframe
               ref={previewIframeRef}
               key={`${editingPage.id || "new"}-${cleanSlug}`}
               title="Forhåndsvisning av nettsiden"
               src={embeddedPreviewUrl}
-              className="w-full min-h-[70vh] border-0 bg-white"
+              className={previewScale !== null ? "block border-0 bg-white" : "w-full min-h-[70vh] border-0 bg-white"}
+              style={
+                previewScale !== null
+                  ? {
+                      width: DESKTOP_PREVIEW_PX,
+                      height: frameHeight / previewScale,
+                      transform: `scale(${previewScale})`,
+                      transformOrigin: "top left",
+                    }
+                  : undefined
+              }
               onLoad={() => {
                 handleSaveActiveDraftToStorage();
                 sendWarmDraft(true);
@@ -471,433 +661,49 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
     );
   };
 
-  const renderFormFields = () => (
-    <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* Tittel */}
-        <div className="space-y-1">
-          <label className="text-xs font-semibold text-[var(--studio-muted)] block">Sidetittel (Vises i meny og header)</label>
-          <input
-            type="text"
-            required
-            value={editingPage.title || ""}
-            onChange={(e) => onUpdate({ ...editingPage, title: e.target.value })}
-            placeholder="f.eks. Om oss, Barn & Unge, Kontakt"
-            className="w-full px-3 py-2 rounded-xl bg-[var(--studio-bg)] border border-[var(--studio-border)] text-[var(--studio-input-text)] text-xs focus:outline-hidden focus:border-indigo-500"
-          />
-        </div>
+  // Each part of the form is its own function, so the section list can show one at a time.
+  const renderSettingsSection = () => (
+    <SettingsSection
+      editingPage={editingPage}
+      onUpdate={onUpdate}
+      availableParentPages={availableParentPages}
+      currentParentId={currentParentId}
+      handleParentChange={handleParentChange}
+      currentOrder={currentOrder}
+      handleOrderChange={handleOrderChange}
+    />
+  );
 
-        {/* URL Slug */}
-        <div className="space-y-1">
-          <label className="text-xs font-semibold text-[var(--studio-muted)] block">Adresse (f.eks. om-oss)</label>
-          <input
-            type="text"
-            value={editingPage.slug || ""}
-            onChange={(e) => onUpdate({ ...editingPage, slug: e.target.value })}
-            placeholder="om-oss (eller genereres automatisk fra tittel)"
-            className="w-full px-3 py-2 rounded-xl bg-[var(--studio-bg)] border border-[var(--studio-border)] text-[var(--studio-input-text)] text-xs font-mono focus:outline-hidden focus:border-indigo-500"
-          />
-        </div>
-      </div>
+  const renderHeroSection = () => (
+    <HeroSection
+      editingPage={editingPage}
+      onUpdate={onUpdate}
+      focusedPreviewTarget={focusedPreviewTarget}
+      setFocusedPreviewTarget={setFocusedPreviewTarget}
+      isFrontPage={isFrontPage}
+      isHomePage={isHomePage}
+      copiedIngress={copiedIngress}
+      showCopiedIngress={showCopiedIngress}
+    />
+  );
 
-      {/* Ekstern eller overstyrt intern lenke */}
-      <div className="space-y-1 bg-[var(--studio-row)] p-3 rounded-xl border border-[var(--studio-border)]">
-        <div className="flex items-center justify-between">
-          <label className="text-xs font-semibold text-[var(--studio-muted)] block">
-            Overstyr lenkeadresse (valgfritt)
-          </label>
-          <span className="text-[10px] text-[var(--studio-muted)]">
-            Peker menyvalget til en innebygd side som /hva-skjer, /fellesskap eller /taler, eller til en full nettadresse
-          </span>
-        </div>
-        <CmsLinkPicker
-          value={editingPage.linkUrl || ""}
-          onChange={(linkUrl) => onUpdate({ ...editingPage, linkUrl })}
-          currentPageId={editingPage.id}
-          allowEmpty
-          emptyLabel="Bruk sidens vanlige adresse"
-        />
-      </div>
-
-      {/* Hovedmeny-hierarki og Rekkefølge */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-[var(--studio-row)] p-4 rounded-xl border border-[var(--studio-border)]">
-        <div className="space-y-1.5">
-          <label className="text-xs font-bold text-[var(--studio-text)] flex items-center gap-1.5">
-            <FolderTree className="w-3.5 h-3.5 text-[var(--studio-icon)]" />
-            <span>Hovedfane / Forelder</span>
-          </label>
-          <select
-            value={currentParentId || ""}
-            onChange={(e) => handleParentChange(e.target.value)}
-            className="w-full px-3 py-2 rounded-xl bg-[var(--studio-bg)] border border-[var(--studio-border)] text-[var(--studio-input-text)] text-xs focus:outline-hidden focus:border-indigo-500 cursor-pointer"
-          >
-            <option value="">Ingen (Dette er en topp-nivå hovedfane)</option>
-            {availableParentPages.map((parent) => (
-              <option key={parent.id} value={parent.id}>
-                📁 Underfane under: {parent.title} (/{parent.slug})
-              </option>
-            ))}
-          </select>
-          <p className="text-[11px] text-[var(--studio-muted)]">
-            Velg hvilken hovedside denne siden hører under for å bygge nedtrekksmeny.
-          </p>
-        </div>
-
-        <div className="space-y-1.5">
-          <label className="text-xs font-bold text-[var(--studio-text)] flex items-center gap-1.5">
-            <span>Rekkefølge i meny</span>
-          </label>
-          <input
-            type="number"
-            min="1"
-            value={currentOrder}
-            onChange={(e) => handleOrderChange(parseInt(e.target.value) || 1)}
-            className="w-full px-3 py-2 rounded-xl bg-[var(--studio-bg)] border border-[var(--studio-border)] text-[var(--studio-input-text)] text-xs focus:outline-hidden focus:border-indigo-500"
-          />
-          <p className="text-[11px] text-[var(--studio-muted)]">
-            Lavere tall vises først i toppmenyen eller underfanelisten.
-          </p>
-        </div>
-      </div>
-
-      {/* 📌 Fast Toppramme (Hero) */}
-      <div
-        role="button"
-        tabIndex={0}
-        onClick={() => setFocusedPreviewTarget(CMS_PREVIEW_TARGET_HERO)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") setFocusedPreviewTarget(CMS_PREVIEW_TARGET_HERO);
-        }}
-        data-cms-editor-target={CMS_PREVIEW_TARGET_HERO}
-        className={`bg-[var(--studio-input)] border rounded-2xl p-4 sm:p-5 space-y-4 shadow-sm cursor-pointer transition-all ${
-          focusedPreviewTarget === CMS_PREVIEW_TARGET_HERO
-            ? "border-indigo-400 ring-2 ring-indigo-500/60"
-            : "border-indigo-700/80"
-        }`}
-      >
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-indigo-950 pb-2.5">
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-indigo-400" />
-            <h4 className="text-xs font-bold text-[var(--studio-text)] uppercase tracking-wider flex items-center gap-2">
-              <span>📌 Hero / Toppbanner</span>
-              <span className="text-[10px] text-[var(--studio-accent-text)] font-normal bg-indigo-950 px-2 py-0.5 rounded border border-[var(--studio-accent-border)]">
-                Fast toppramme
-              </span>
-            </h4>
-          </div>
-          <span className="text-[11px] font-semibold text-[var(--studio-accent-text)]">
-            Låst øverst · Kan ikke flyttes eller slettes
-          </span>
-        </div>
-
-        <div className="space-y-1">
-          <label className="text-xs font-semibold text-[var(--studio-muted)] block">Tittel i Hero</label>
-          <input
-            type="text"
-            value={editingPage.heroTitle || ""}
-            onChange={(e) => onUpdate({ ...editingPage, heroTitle: e.target.value })}
-            placeholder={isHomePage ? settings.welcomeHeadline || "Velkommen til menigheten" : editingPage.title || "Overskrift i toppbanneret"}
-            className="w-full px-3 py-2 rounded-xl bg-[var(--studio-panel-bg)] border border-[var(--studio-border)] text-[var(--studio-input-text)] text-xs focus:outline-hidden focus:border-indigo-500"
-          />
-          <p className="text-[11px] text-[var(--studio-muted)]">
-            Sidetittelen over styrer menyen. Dette feltet er overskriften i toppbanneret.
-          </p>
-          {isFrontPage && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-              <label className="space-y-1 text-xs font-semibold text-[var(--studio-muted)]">
-                <span className="block">Tekststørrelse på tittelen</span>
-                <select
-                  value={heroTitleSizeOf(editingPage)}
-                  onChange={(e) => onUpdate({ heroTitleSize: e.target.value as HeroTitleSize })}
-                  className="w-full px-3 py-2 rounded-xl bg-[var(--studio-panel-bg)] border border-[var(--studio-border)] text-[var(--studio-input-text)] text-xs"
-                >
-                  {HERO_TITLE_SIZES.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                  ))}
-                </select>
-              </label>
-              <label className="space-y-1 text-xs font-semibold text-[var(--studio-muted)]">
-                <span className="block">Skrift på tittelen</span>
-                <select
-                  value={heroTitleFontOf(editingPage)}
-                  onChange={(e) => onUpdate({ heroTitleFont: e.target.value as HeroTitleFont })}
-                  className="w-full px-3 py-2 rounded-xl bg-[var(--studio-panel-bg)] border border-[var(--studio-border)] text-[var(--studio-input-text)] text-xs"
-                >
-                  {HERO_TITLE_FONTS.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                  ))}
-                </select>
-              </label>
-            </div>
-          )}
-        </div>
-
-        <div className="space-y-1">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <label className="text-xs font-semibold text-[var(--studio-muted)] block">
-                Ingress / Undertittel
-              </label>
-              {isHomePage && (
-                <label className="flex items-center gap-2 cursor-pointer text-[11px] font-semibold text-[var(--studio-muted)]">
-                  <input
-                    type="checkbox"
-                    checked={editingPage.showHeroSubtext !== false}
-                    onChange={(e) => onUpdate({ showHeroSubtext: e.target.checked })}
-                    className="w-4 h-4 rounded text-indigo-600 bg-[var(--studio-panel-bg)] border-[var(--studio-border)] cursor-pointer"
-                  />
-                  <span>Vis på siden</span>
-                </label>
-              )}
-            </div>
-            {editingPage.summary && (
-              <button
-                type="button"
-                onClick={() => {
-                  onUpdate({
-                    ...editingPage,
-                    metaDescription: editingPage.summary,
-                  });
-                  showCopiedIngress(true);
-                }}
-                className="text-[10px] text-[var(--studio-icon)] hover:text-[var(--studio-accent-text)] flex items-center gap-1 cursor-pointer transition-colors"
-                title="Kopier denne ingressen til meta-beskrivelsen for søkemotorer og sosiale medier"
-              >
-                {copiedIngress ? (
-                  <>
-                    <Check className="w-3 h-3 text-emerald-400" />
-                    <span className="text-emerald-400 font-semibold">Kopiert til SEO-felt</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-3 h-3" />
-                    <span>Bruk som SEO-beskrivelse</span>
-                  </>
-                )}
-              </button>
-            )}
-          </div>
-          <textarea
-            rows={2}
-            value={editingPage.summary || ""}
-            onChange={(e) => onUpdate({ ...editingPage, summary: e.target.value })}
-            placeholder="En engasjerende setning eller to som oppsummerer sidens budskap..."
-            className="w-full px-3 py-2 rounded-xl bg-[var(--studio-panel-bg)] border border-[var(--studio-border)] text-[var(--studio-input-text)] text-xs focus:outline-hidden focus:border-indigo-500 resize-y"
-          />
-        </div>
-
-        <div className="space-y-1">
-          <label className="text-xs font-semibold text-[var(--studio-muted)] block">
-            Bakgrunnsbilde
-          </label>
-          <CmsMediaPicker
-            label="Hovedbilde"
-            value={editingPage.heroImage || ""}
-            onChange={(url) => onUpdate({ heroImage: url })}
-            decorative
-            altValue={editingPage.heroImageAlt || ""}
-            onAltChange={(heroImageAlt) => onUpdate({ heroImageAlt })}
-            helpText="Dekorativt bakgrunnsbilde. Beskrivelse for skjermleser er valgfritt."
-            compact={false}
-          />
-        </div>
-
-        {isFrontPage && (
-          <div className="space-y-2.5 p-3 rounded-xl bg-[var(--studio-row)] border border-[var(--studio-border)]">
+  // With onlyBlockId, the section list shows this one block: its heading is left out, and the order is changed in the list.
+  const renderBlocksSection = (onlyBlockId?: string) => (
+    <div data-page-section="blocks" className="space-y-4">
+      {/* Visuell Blokkbygger & Modulstyring */}
+      <div className="space-y-3 bg-[var(--studio-row)] p-4 sm:p-5 rounded-2xl border border-[var(--studio-border)]">
+        {!onlyBlockId && (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[var(--studio-border)] pb-3">
             <div>
-              <span className="text-xs font-semibold text-[var(--studio-text)] block">Toppbildet: størrelse, tittel og flere bilder</span>
-              <p className="text-[11px] text-[var(--studio-muted)] leading-relaxed">
-                Med flere bilder toner toppen rolig fra det ene til det neste, og prikker under bildet lar den besøkende bla selv. Opptil tre bilder i alt.
+              <label className="text-xs font-bold text-[var(--studio-text)] uppercase tracking-wider block">
+                Innholdsblokker & Moduler
+              </label>
+              <p className="text-[11px] text-[var(--studio-muted)]">
+                Flytt kort opp eller ned, skjul dem, eller velg en layout. Innholdet i dynamiske moduler hentes av systemet.
               </p>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <label className="space-y-1 text-xs font-semibold text-[var(--studio-muted)]">
-                <span className="block">Høyde på toppbildet</span>
-                <select
-                  value={heroHeightOf(editingPage)}
-                  onChange={(e) => onUpdate({ heroHeight: e.target.value as HeroHeight })}
-                  className="w-full px-3 py-2 rounded-xl bg-[var(--studio-panel-bg)] border border-[var(--studio-border)] text-[var(--studio-input-text)] text-xs"
-                >
-                  {HERO_HEIGHTS.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                  ))}
-                </select>
-              </label>
-              <label className="space-y-1 text-xs font-semibold text-[var(--studio-muted)]">
-                <span className="block">Tittelen på bildet</span>
-                <select
-                  value={heroTitleStyleOf(editingPage)}
-                  onChange={(e) => onUpdate({ heroTitleStyle: e.target.value as HeroTitleStyle })}
-                  className="w-full px-3 py-2 rounded-xl bg-[var(--studio-panel-bg)] border border-[var(--studio-border)] text-[var(--studio-input-text)] text-xs"
-                >
-                  {HERO_TITLE_STYLES.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            {[0, 1].map((index) => (
-              <div key={index} className="space-y-1.5">
-                <CmsMediaPicker
-                  label={`Toppbilde ${index + 2}`}
-                  value={editingPage.heroImages?.[index] || ""}
-                  onChange={(url) => {
-                    const images = [...(editingPage.heroImages || [])];
-                    images[index] = url;
-                    // The titles follow their pictures when one is taken out
-                    onUpdate(heroExtrasOf(images, editingPage.heroImageTitles));
-                  }}
-                  decorative
-                />
-                <label className="space-y-1 text-xs font-semibold text-[var(--studio-muted)] block">
-                    <span className="block">{`Tittel på toppbilde ${index + 2}`}</span>
-                    <input
-                      type="text"
-                      disabled={!editingPage.heroImages?.[index]}
-                      value={editingPage.heroImageTitles?.[index] || ""}
-                      onChange={(e) => {
-                        const titles = editingPage.heroImages!.map((_, i) => editingPage.heroImageTitles?.[i] || "");
-                        titles[index] = e.target.value;
-                        onUpdate({ heroImageTitles: titles });
-                      }}
-                      placeholder={
-                        editingPage.heroImages?.[index]
-                          ? `Tomt gir hovedtittelen: ${editingPage.heroTitle?.trim() || "tittelen i toppen"}`
-                          : "Velg et bilde først"
-                      }
-                      className="w-full px-3 py-2 rounded-xl bg-[var(--studio-panel-bg)] border border-[var(--studio-border)] text-[var(--studio-input-text)] text-xs font-normal focus:outline-hidden focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                    />
-                  </label>
-              </div>
-            ))}
-            {(editingPage.heroImages?.length ?? 0) > 0 && (
-              <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-[var(--studio-text)]">
-                <input
-                  type="checkbox"
-                  checked={editingPage.heroArrows === true}
-                  onChange={(e) => onUpdate({ heroArrows: e.target.checked })}
-                  className="w-4 h-4 rounded text-indigo-600 bg-[var(--studio-panel-bg)] border-[var(--studio-border)] cursor-pointer"
-                />
-                <span>Piler på sidene av bildet</span>
-              </label>
-            )}
-            <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-[var(--studio-text)]">
-              <input
-                type="checkbox"
-                checked={editingPage.heroZoom !== false}
-                onChange={(e) => onUpdate({ heroZoom: e.target.checked })}
-                className="w-4 h-4 rounded text-indigo-600 bg-[var(--studio-panel-bg)] border-[var(--studio-border)] cursor-pointer"
-              />
-              <span>Rolig zoom på toppbildet</span>
-            </label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <label className="space-y-1 text-xs font-semibold text-[var(--studio-muted)]">
-                <span className="block">Menyen øverst</span>
-                <select
-                  value={heroMenuStyleOf(editingPage)}
-                  onChange={(e) => {
-                    const heroMenuStyle = e.target.value as HeroMenuStyle;
-                    onUpdate({ heroMenuStyle, heroMenuOverlay: heroMenuStyle !== "white" });
-                  }}
-                  className="w-full px-3 py-2 rounded-xl bg-[var(--studio-panel-bg)] border border-[var(--studio-border)] text-[var(--studio-input-text)] text-xs"
-                >
-                  {HERO_MENU_STYLES.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                  ))}
-                </select>
-              </label>
-              <label className="space-y-1 text-xs font-semibold text-[var(--studio-muted)]">
-                <span className="block">Slør over bildet</span>
-                <select
-                  value={heroVeilOf(editingPage)}
-                  onChange={(e) => onUpdate({ heroVeil: e.target.value as HeroVeil })}
-                  className="w-full px-3 py-2 rounded-xl bg-[var(--studio-panel-bg)] border border-[var(--studio-border)] text-[var(--studio-input-text)] text-xs"
-                >
-                  {HERO_VEILS.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                  ))}
-                </select>
-              </label>
             </div>
           </div>
         )}
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between gap-2">
-              <label className="text-xs font-semibold text-[var(--studio-muted)] block">Primærknapp</label>
-              <label className="flex items-center gap-2 cursor-pointer text-[11px] font-semibold text-[var(--studio-muted)] shrink-0">
-                <input
-                  type="checkbox"
-                  checked={editingPage.showHeroPrimaryCta !== false}
-                  onChange={(e) => onUpdate({ showHeroPrimaryCta: e.target.checked })}
-                  onClick={(e) => e.stopPropagation()}
-                  className="w-4 h-4 rounded text-indigo-600 bg-[var(--studio-panel-bg)] border-[var(--studio-border)] cursor-pointer"
-                />
-                <span>Vis på siden</span>
-              </label>
-            </div>
-            <input
-              type="text"
-              value={editingPage.heroCtaText || ""}
-              onChange={(e) => onUpdate({ ...editingPage, heroCtaText: e.target.value })}
-              placeholder={isHomePage ? "Se hva som skjer" : "Knappetekst"}
-              className="w-full px-3 py-2 rounded-xl bg-[var(--studio-panel-bg)] border border-[var(--studio-border)] text-[var(--studio-input-text)] text-xs focus:outline-hidden focus:border-indigo-500"
-            />
-            <CmsLinkPicker
-              value={editingPage.heroCtaLink || ""}
-              onChange={(heroCtaLink) => onUpdate({ ...editingPage, heroCtaLink })}
-              currentPageId={editingPage.id}
-              allowEmpty={isHomePage}
-              emptyLabel={isHomePage ? "Hva skjer på forsiden (anbefalt)" : "Ingen lenke"}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between gap-2">
-              <label className="text-xs font-semibold text-[var(--studio-muted)] block">Sekundærknapp</label>
-              <label className="flex items-center gap-2 cursor-pointer text-[11px] font-semibold text-[var(--studio-muted)] shrink-0">
-                <input
-                  type="checkbox"
-                  checked={editingPage.showHeroSecondaryCta !== false}
-                  onChange={(e) => onUpdate({ showHeroSecondaryCta: e.target.checked })}
-                  onClick={(e) => e.stopPropagation()}
-                  className="w-4 h-4 rounded text-indigo-600 bg-[var(--studio-panel-bg)] border-[var(--studio-border)] cursor-pointer"
-                />
-                <span>Vis på siden</span>
-              </label>
-            </div>
-            <input
-              type="text"
-              value={editingPage.heroCtaSecondaryText || ""}
-              onChange={(e) => onUpdate({ ...editingPage, heroCtaSecondaryText: e.target.value })}
-              placeholder={isHomePage ? "Bli kjent med oss" : "Knappetekst"}
-              className="w-full px-3 py-2 rounded-xl bg-[var(--studio-panel-bg)] border border-[var(--studio-border)] text-[var(--studio-input-text)] text-xs focus:outline-hidden focus:border-indigo-500"
-            />
-            <CmsLinkPicker
-              value={editingPage.heroCtaSecondaryLink || ""}
-              onChange={(heroCtaSecondaryLink) =>
-                onUpdate({ ...editingPage, heroCtaSecondaryLink })
-              }
-              currentPageId={editingPage.id}
-              allowEmpty
-              emptyLabel="Ingen lenke"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Visuell Blokkbygger & Modulstyring */}
-      <div className="space-y-3 bg-[var(--studio-row)] p-4 sm:p-5 rounded-2xl border border-[var(--studio-border)]">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[var(--studio-border)] pb-3">
-          <div>
-            <label className="text-xs font-bold text-[var(--studio-text)] uppercase tracking-wider block">
-              Innholdsblokker & Moduler
-            </label>
-            <p className="text-[11px] text-[var(--studio-muted)]">
-              Flytt kort opp eller ned, skjul dem, eller velg en layout. Innholdet i dynamiske moduler hentes av systemet.
-            </p>
-          </div>
-        </div>
 
         <VisualBlockManager
           blocks={visualBlocks}
@@ -906,259 +712,93 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
           selectedBlockId={focusedPreviewTarget === CMS_PREVIEW_TARGET_HERO ? null : focusedPreviewTarget}
           onSelectBlock={setFocusedPreviewTarget}
           currentPageId={editingPage.id}
+          openRequest={openRequest}
+          onlyBlockId={onlyBlockId}
+          orderInNav={Boolean(onlyBlockId)}
         />
       </div>
+    </div>
+  );
 
-      {/* SEO & Deling i sosiale medier */}
-      <div className="rounded-xl border border-[var(--studio-border)] bg-[var(--studio-bg)]/40 overflow-hidden">
-        <button
-          type="button"
-          onClick={() => setShowSeoDetails(!showSeoDetails)}
-          className="w-full p-3.5 flex items-center justify-between text-left hover:bg-[var(--studio-surface)]/50 transition-colors cursor-pointer"
-        >
-          <div className="flex items-center gap-2.5">
-            <Globe className="w-4 h-4 text-[var(--studio-icon)]" />
-            <div>
-              <span className="text-xs font-bold text-[var(--studio-text)] block">
-                Søkemotoroptimalisering (SEO) & Delingskort
-              </span>
-              <span className="text-[11px] text-[var(--studio-muted)] block">
-                Tilpass hvordan siden vises på Google, Facebook og andre sosiale medier.
-              </span>
-            </div>
-          </div>
-          {showSeoDetails ? (
-            <ChevronUp className="w-4 h-4 text-[var(--studio-muted)]" />
-          ) : (
-            <ChevronDown className="w-4 h-4 text-[var(--studio-muted)]" />
-          )}
-        </button>
+  const renderSeoSection = () => (
+    <SeoSection
+      editingPage={editingPage}
+      onUpdate={onUpdate}
+      showSeoDetails={showSeoDetails}
+      setShowSeoDetails={setShowSeoDetails}
+      siteHost={siteHost}
+      cleanSlug={cleanSlug}
+      previewTitle={previewTitle}
+      previewDescription={previewDescription}
+      shareImage={shareImage}
+    />
+  );
 
-        {showSeoDetails && (
-          <div className="p-4 pt-2 border-t border-[var(--studio-border)]/70 space-y-4 bg-[var(--studio-panel-bg)]/40">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-[var(--studio-muted)] block">
-                  Meta-beskrivelse for søkemotorer
-                </label>
-                <textarea
-                  rows={2}
-                  value={editingPage.metaDescription || ""}
-                  onChange={(e) => onUpdate({ ...editingPage, metaDescription: e.target.value })}
-                  placeholder="Kort beskrivelse (ca. 150-160 tegn) som Google viser under sidetittelen..."
-                  className="w-full px-3 py-2 rounded-xl bg-[var(--studio-bg)] border border-[var(--studio-border)] text-[var(--studio-input-text)] text-xs focus:outline-hidden focus:border-indigo-500 resize-y"
-                />
-              </div>
+  const renderPublishSection = () => (
+    <PublishSection
+      editingPage={editingPage}
+      onUpdate={onUpdate}
+    />
+  );
 
-              <div className="space-y-1">
-                <CmsMediaPicker
-                  label="Delingsbilde (OpenGraph / Facebook / Twitter)"
-                  value={editingPage.ogImage || ""}
-                  onChange={(ogImage) => onUpdate({ ...editingPage, ogImage })}
-                  helpText="La stå tom for å bruke hovedbildet automatisk når det har en delbar adresse."
-                  compact
-                />
-              </div>
-            </div>
-
-            {/* Google Search Result Preview */}
-            <div className="p-3 rounded-xl bg-white border border-stone-200 text-stone-800 space-y-1 shadow-xs">
-              <div className="flex items-center gap-1.5 text-[11px] text-stone-500">
-                <Search className="w-3 h-3 text-stone-400" />
-                <span className="truncate">{siteHost} › {cleanSlug}</span>
-              </div>
-              <div className="text-sm font-semibold text-blue-700 hover:underline truncate">
-                {previewTitle}
-              </div>
-              <div className="text-xs text-stone-600 leading-snug line-clamp-2">
-                {previewDescription}
-              </div>
-            </div>
-
-            {/* Social Share Card Preview */}
-            <div className="p-3 rounded-xl bg-[var(--studio-bg)] border border-[var(--studio-border)] text-[var(--studio-input-text)] space-y-2">
-              <div className="flex items-center gap-1.5 text-[11px] text-[var(--studio-muted)]">
-                <Share2 className="w-3 h-3 text-[var(--studio-icon)]" />
-                <span>Forhåndsvisning av delebilde på sosiale medier</span>
-              </div>
-              <div className="rounded-xl overflow-hidden border border-[var(--studio-border)] bg-[var(--studio-surface)]">
-                {shareImage ? (
-                  <img
-                    src={shareImage}
-                    alt={editingPage.title || "Forhåndsvisning"}
-                    className="w-full h-36 object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-24 bg-[var(--studio-surface)] flex items-center justify-center text-[var(--studio-muted)] text-xs gap-1.5">
-                    <ImageIcon className="w-4 h-4 text-[var(--studio-muted)]" />
-                    <span>Intet bilde valgt (standard logo/toppbanner benyttes)</span>
-                  </div>
-                )}
-                <div className="p-3 space-y-1 bg-[var(--studio-input)]">
-                  <div className="text-[10px] font-semibold text-[var(--studio-icon)] uppercase tracking-wider">
-                    {siteHost}
-                  </div>
-                  <h4 className="text-xs font-bold text-[var(--studio-text)] truncate">{previewTitle}</h4>
-                  <p className="text-[11px] text-[var(--studio-muted)] line-clamp-2 leading-relaxed">{previewDescription}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Publisering & Synlighet */}
-      <div className="p-4 rounded-xl bg-[var(--studio-row)] border border-[var(--studio-border)] space-y-4">
-        <h4 className="text-xs font-bold text-[var(--studio-text)] uppercase tracking-wider">
-          Publisering & Synlighet
-        </h4>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <label className="flex items-start gap-2.5 p-3 rounded-xl bg-[var(--studio-bg)] border border-[var(--studio-border)] cursor-pointer hover:border-[var(--studio-border)] transition-colors">
-            <input
-              type="checkbox"
-              checked={editingPage.isPublished !== false}
-              onChange={(e) => onUpdate({ ...editingPage, isPublished: e.target.checked })}
-              className="w-4 h-4 mt-0.5 rounded text-indigo-600 focus:ring-0"
-            />
-            <div>
-              <span className="font-semibold block text-[var(--studio-text)] text-xs">Aktiver publisering</span>
-              <span className="text-[11px] text-[var(--studio-muted)] block leading-tight mt-0.5">
-                Når aktivert, vil siden være synlig for publikum (eller automatisk fra planlagt dato).
-              </span>
-            </div>
-          </label>
-
-          <label className="flex items-start gap-2.5 p-3 rounded-xl bg-[var(--studio-bg)] border border-[var(--studio-border)] cursor-pointer hover:border-[var(--studio-border)] transition-colors">
-            <input
-              type="checkbox"
-              checked={editingPage.inNavMenu !== false}
-              onChange={(e) => onUpdate({ ...editingPage, inNavMenu: e.target.checked })}
-              className="w-4 h-4 mt-0.5 rounded text-indigo-600 focus:ring-0"
-            />
-            <div>
-              <span className="font-semibold block text-[var(--studio-text)] text-xs">Vis i offentlig meny</span>
-              <span className="text-[11px] text-[var(--studio-muted)] block leading-tight mt-0.5">
-                Vises i toppmenyen eller nedtrekksmenyen. Slått av er siden bare tilgjengelig via direkte lenke.
-              </span>
-            </div>
-          </label>
-        </div>
-
-        {/* 'Publiseringsdato'-velger (Planlagt publisering) */}
-        <div className="p-3.5 rounded-xl bg-[var(--studio-overlay)] border border-[var(--studio-border)] space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
-            <label className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-[var(--studio-icon)]" />
-              <span>Publiseringsdato & tidspunkt (Planlegging)</span>
-            </label>
-            {editingPage.publishAt && (
-              <button
-                type="button"
-                onClick={() =>
-                  onUpdate({
-                    ...editingPage,
-                    publishAt: undefined,
-                    publishedAt: undefined,
-                  })
-                }
-                className="text-[11px] text-amber-400 hover:text-amber-300 flex items-center gap-1 cursor-pointer transition-colors"
-                title="Fjern tidsplan og publiser umiddelbart"
-              >
-                <X className="w-3 h-3" />
-                <span>Nullstill dato (publiser umiddelbart)</span>
-              </button>
-            )}
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center">
-            <div className="relative flex-1">
-              <input
-                type="datetime-local"
-                value={toDatetimeLocal(editingPage.publishAt)}
-                onChange={(e) => handlePublishDateChange(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-[var(--studio-bg)] border border-[var(--studio-border)] text-[var(--studio-input-text)] text-xs font-mono focus:outline-hidden focus:border-indigo-500"
-              />
-            </div>
-
-            {/* Hurtigvalg-knapper */}
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <button
-                type="button"
-                onClick={() => handlePublishDateChange(getPresetDate("tomorrow"))}
-                className="px-2.5 py-1.5 rounded-lg bg-[var(--studio-surface)] hover:bg-[var(--studio-hover)] text-[var(--studio-muted)] text-[11px] font-medium transition-colors cursor-pointer"
-                title="Sett publisering til i morgen kl. 09:00"
-              >
-                I morgen 09:00
-              </button>
-              <button
-                type="button"
-                onClick={() => handlePublishDateChange(getPresetDate("sunday"))}
-                className="px-2.5 py-1.5 rounded-lg bg-[var(--studio-surface)] hover:bg-[var(--studio-hover)] text-[var(--studio-muted)] text-[11px] font-medium transition-colors cursor-pointer"
-                title="Sett publisering til kommende søndag kl. 08:00"
-              >
-                Søndag 08:00
-              </button>
-              <button
-                type="button"
-                onClick={() => handlePublishDateChange(getPresetDate("monday"))}
-                className="px-2.5 py-1.5 rounded-lg bg-[var(--studio-surface)] hover:bg-[var(--studio-hover)] text-[var(--studio-muted)] text-[11px] font-medium transition-colors cursor-pointer"
-                title="Sett publisering til neste mandag kl. 09:00"
-              >
-                Mandag 09:00
-              </button>
-            </div>
-          </div>
-
-          {/* Forklarende statusmelding basert på valgt dato */}
-          {editingPage.publishAt ? (
-            isFutureScheduled ? (
-              <div className="p-3 rounded-xl bg-blue-950/60 border border-blue-800/80 text-blue-200 text-xs flex items-start gap-2.5">
-                <Clock className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
-                <div className="space-y-0.5">
-                  <span className="font-bold block text-blue-100">
-                    Planlagt for automatisk publisering:
-                  </span>
-                  <p className="text-[11px] text-blue-300/90 leading-relaxed">
-                    Siden holdes automatisk som en skjult kladd for publikum frem til{" "}
-                    <strong className="text-[var(--studio-text)] font-semibold">
-                      {formatNorwegianDateTime(editingPage.publishAt)}
-                    </strong>
-                    . Da går siden automatisk over til statusen «Publisert» uten manuell handling.
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div className="p-2.5 rounded-xl bg-emerald-950/50 border border-emerald-800/60 text-emerald-200 text-xs flex items-center gap-2">
-                <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span className="text-[11px] text-emerald-300">
-                  Publiseringsdato er passert ({formatNorwegianDateTime(editingPage.publishAt)}). Siden er aktiv og synlig på nettsiden.
-                </span>
-              </div>
-            )
-          ) : (
-            <p className="text-[11px] text-[var(--studio-muted)]">
-              💡 La feltet stå tomt hvis du vil publisere siden umiddelbart ved lagring.
-            </p>
-          )}
-        </div>
-      </div>
+  const renderFormFields = () => (
+    <>
+      {renderSettingsSection()}
+      {renderHeroSection()}
+      {renderBlocksSection()}
+      {renderSeoSection()}
+      {renderPublishSection()}
     </>
   );
+
+  const renderSectionNav = () => (
+    <div className="w-[220px] shrink-0 sticky top-[calc(var(--demo-strip,0px)+6rem)] max-h-[82vh]">
+      <PageSectionNav
+        sections={sections}
+        activeId={activeId}
+        onSelect={(id) => {
+          setActiveSection(id);
+          if (id === "seo") setShowSeoDetails(true);
+          if (id !== "settings" && id !== "seo" && id !== "publish") {
+            setFocusedPreviewTarget(id === "hero" ? CMS_PREVIEW_TARGET_HERO : id);
+          }
+        }}
+        onReorderBlocks={(ids) =>
+          handleBlocksChange(
+            ids
+              .map((id) => visualBlocks.find((block) => block.id === id))
+              .filter((block): block is VisualBlock => Boolean(block))
+          )
+        }
+        onToggleHidden={(id) =>
+          handleBlocksChange(visualBlocks.map((block) => (block.id === id ? { ...block, hidden: !block.hidden } : block)))
+        }
+        onCollapse={() => setCollapsed(true)}
+        onAddBlock={() => setIsBlockPickerOpen(true)}
+      />
+    </div>
+  );
+
+  // Beside the list only the chosen section's fields are shown.
+  const renderActiveSection = () =>
+    activeId === "settings"
+      ? renderSettingsSection()
+      : activeId === "hero"
+      ? renderHeroSection()
+      : activeId === "seo"
+      ? renderSeoSection()
+      : activeId === "publish"
+      ? renderPublishSection()
+      : renderBlocksSection(activeId);
 
   return (
     <form
       onSubmit={onSave}
-      className={`p-4 sm:p-6 rounded-2xl bg-[var(--studio-surface)] border border-indigo-500/80 shadow-2xl space-y-5 transition-all ${
-        viewMode === "split"
-          ? "w-full max-w-none"
-          : viewMode === "preview"
-          ? "w-full max-w-none"
-          : "max-w-4xl mx-auto w-full"
-      }`}
+      // The editor fills the room it has in every mode, so the fields are not squeezed into a narrow middle
+      className="p-4 sm:p-6 rounded-2xl bg-[var(--studio-surface)] border border-indigo-500/80 shadow-2xl space-y-5 transition-all w-full max-w-none"
     >
       {/* The top bar stays in view while the page scrolls, so Lagre is always within reach */}
-      <div className="sticky top-[var(--demo-strip,0px)] z-30 -mx-4 sm:-mx-6 -mt-4 sm:-mt-6 px-4 sm:px-6 pt-4 sm:pt-6 rounded-t-2xl bg-[var(--studio-surface)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--studio-border)] pb-3">
+      <div className="sticky top-[var(--demo-strip,0px)] z-30 -mx-4 sm:-mx-6 -mt-4 sm:-mt-6 px-4 sm:px-6 pt-4 sm:pt-6 rounded-t-2xl bg-[var(--studio-surface)] flex flex-col sm:flex-row sm:flex-wrap sm:items-center justify-between gap-3 border-b border-[var(--studio-border)] pb-3">
         <h3 className="text-sm font-bold text-[var(--studio-text)] flex items-center gap-2">
           <Edit3 className="w-4 h-4 text-[var(--studio-icon)]" />
           <span>
@@ -1210,6 +850,36 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
           </button>
         </div>
 
+        {viewMode !== "preview" && <EditorTextSizeControl value={textSize} onChange={setTextSize} />}
+
+        {navFits && navCollapsed && (
+          <button
+            type="button"
+            onClick={() => setCollapsed(false)}
+            aria-label="Vis seksjoner"
+            className="px-3 py-1.5 rounded-xl bg-[var(--studio-bg)] hover:bg-[var(--studio-panel-bg)] text-[var(--studio-accent-text)] border border-indigo-700/60 text-xs font-semibold cursor-pointer"
+          >
+            Seksjoner
+          </button>
+        )}
+
+        {/* On narrow screens there is no list beside the fields, so a select jumps to a section instead */}
+        {!navFits && viewMode !== "preview" && (
+          <select
+            aria-label="Gå til seksjon"
+            value=""
+            onChange={(e) => goToSection(e.target.value)}
+            className="px-3 py-1.5 rounded-xl bg-[var(--studio-bg)] border border-[var(--studio-border)] text-[var(--studio-input-text)] text-xs cursor-pointer"
+          >
+            <option value="">Gå til seksjon …</option>
+            {sections.map((section) => (
+              <option key={section.id} value={section.id}>
+                {section.label}
+              </option>
+            ))}
+          </select>
+        )}
+
         <div className="flex items-center gap-2">
           <a
             href={previewUrl}
@@ -1223,6 +893,70 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
             <span className="hidden sm:inline">Forhåndsvis i ny fane</span>
             <span className="sm:hidden">Ny fane</span>
           </a>
+
+          {!isNewPage && (onDuplicate || onDelete) && (
+            // The wrapper is the anchor for the menu, and the reference for closing it on an outside click
+            <div ref={menuRef} className="relative">
+              <button
+                type="button"
+                aria-label="Mer"
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
+                onClick={() => setMenuOpen((open) => !open)}
+                className="p-1.5 rounded-xl bg-[var(--studio-bg)] hover:bg-[var(--studio-panel-bg)] text-[var(--studio-accent-text)] hover:text-[var(--studio-text)] border border-indigo-700/60 text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
+                title="Flere valg for siden"
+              >
+                <MoreHorizontal className="w-3.5 h-3.5 text-[var(--studio-icon)]" aria-hidden />
+              </button>
+              {menuOpen && (
+                <div
+                  role="menu"
+                  className="absolute right-0 top-full mt-2 z-40 min-w-[11rem] rounded-xl border border-[var(--studio-border)] bg-[var(--studio-surface)] shadow-lg py-1"
+                >
+                  {onDuplicate && (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        onDuplicate();
+                      }}
+                      className="w-full px-3 py-2 text-left text-xs font-semibold flex items-center gap-2 text-[var(--studio-text)] hover:bg-[var(--studio-hover)] cursor-pointer"
+                    >
+                      <Copy className="w-3.5 h-3.5 text-[var(--studio-icon)]" aria-hidden />
+                      <span>Kopier siden</span>
+                    </button>
+                  )}
+                  {onDelete && (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        onDelete();
+                      }}
+                      className="w-full px-3 py-2 text-left text-xs font-semibold flex items-center gap-2 text-rose-600 hover:bg-[var(--studio-hover)] cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" aria-hidden />
+                      <span>Slett siden</span>
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {editingPage.id && !isNewPage && (
+            <button
+              type="button"
+              onClick={() => setShowHistory(true)}
+              className="px-3 py-1.5 rounded-xl bg-[var(--studio-bg)] hover:bg-[var(--studio-panel-bg)] text-[var(--studio-accent-text)] hover:text-[var(--studio-text)] border border-indigo-700/60 text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
+              title="Tidligere versjoner av siden"
+            >
+              <History className="w-3.5 h-3.5 text-[var(--studio-icon)]" />
+              <span className="hidden sm:inline">Historikk</span>
+            </button>
+          )}
 
           <button
             type="submit"
@@ -1248,17 +982,42 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
         <div className="space-y-4">
           {renderLiveFrontendPreview()}
         </div>
-      ) : viewMode === "split" ? (
-        <div className="flex flex-col lg:flex-row gap-6 items-start w-full">
-          <div className="w-full lg:w-[460px] xl:w-[500px] 2xl:w-[540px] shrink-0 space-y-4 overflow-y-auto max-h-[82vh] pr-2">
-            {renderFormFields()}
+      ) : viewMode === "split" && showNav ? (
+        <div ref={splitRowRef} className="flex flex-col lg:flex-row gap-6 items-start w-full">
+          {renderSectionNav()}
+          <div ref={fieldsRef} className={`${fieldsColumnClass} space-y-4 overflow-y-auto max-h-[82vh] pr-2`} style={fieldsStyle}>
+            <div className="space-y-4" style={fieldsZoomStyle}>
+              {renderActiveSection()}
+            </div>
           </div>
+          {renderSplitter(true)}
           <div className="flex-1 min-w-0 w-full sticky top-[calc(var(--demo-strip,0px)+6rem)]">
             {renderLiveFrontendPreview()}
           </div>
         </div>
+      ) : viewMode === "split" ? (
+        <div ref={splitRowRef} className="flex flex-col lg:flex-row gap-6 items-start w-full">
+          <div ref={fieldsRef} className={`${fieldsColumnClass} space-y-4 overflow-y-auto max-h-[82vh] pr-2`} style={fieldsStyle}>
+            <div className="space-y-4" style={fieldsZoomStyle}>
+              {renderFormFields()}
+            </div>
+          </div>
+          {renderSplitter(false)}
+          <div className="flex-1 min-w-0 w-full sticky top-[calc(var(--demo-strip,0px)+6rem)]">
+            {renderLiveFrontendPreview()}
+          </div>
+        </div>
+      ) : viewMode === "edit" && showNav ? (
+        <div className="flex flex-col lg:flex-row gap-6 items-start w-full">
+          {renderSectionNav()}
+          <div className="flex-1 min-w-0">
+            <div className="space-y-4" style={fieldsZoomStyle}>
+              {renderActiveSection()}
+            </div>
+          </div>
+        </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-4" style={fieldsZoomStyle}>
           {renderFormFields()}
         </div>
       )}
@@ -1303,6 +1062,18 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
         </div>
       </div>
 
+      {showHistory && editingPage.id && (
+        <VersionHistoryDialog
+          kind="page"
+          targetId={editingPage.id}
+          current={editingPage as Record<string, unknown>}
+          onRestore={(version) => {
+            onUpdate(restoredFields(version) as Partial<CmsPage>);
+            setShowHistory(false);
+          }}
+          onClose={() => setShowHistory(false)}
+        />
+      )}
       <ContentBlockPickerModal
         isOpen={isBlockPickerOpen}
         onClose={() => setIsBlockPickerOpen(false)}

@@ -21,6 +21,13 @@ export function gatheringTemplateFields<T extends { id: string }>(template: T): 
   return { ...template, recordType: GATHERING_TEMPLATE_RECORD };
 }
 
+/** An earlier version of a page or a news article (see utils/contentVersions.ts). */
+export const CONTENT_VERSION_RECORD = "contentVersion";
+
+export function contentVersionFields<T extends { id: string }>(version: T): T & { recordType: string } {
+  return { ...version, recordType: CONTENT_VERSION_RECORD };
+}
+
 export const HEADCOUNT_RECORD = "gatheringHeadcount";
 
 export function headcountFields(count: GatheringHeadcount): GatheringHeadcount & { recordType: string } {

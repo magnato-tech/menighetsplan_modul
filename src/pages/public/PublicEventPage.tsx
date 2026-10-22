@@ -7,6 +7,7 @@ import { useFirebase } from "../../context/FirebaseDataContext";
 import { useResolvedMediaUrl } from "../../hooks/useMediaMap";
 import { toIcalendarEvent } from "../../utils/calendarFeed";
 import { isOpenCommunityGathering, isWorshipService, locationOf, ONGOING_MS } from "../../utils/gatherings";
+import { objectStyleOf } from "../../utils/focusPoint";
 
 const dayOf = (moment: string): string =>
   new Intl.DateTimeFormat("nb-NO", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(new Date(moment));
@@ -97,7 +98,12 @@ export const PublicEventPage: React.FC = () => {
         {event.summary?.trim() && <p className="text-lg text-stone-600 font-medium leading-relaxed">{event.summary.trim()}</p>}
       </header>
 
-      {image && <img src={image} alt={event.imageAlt?.trim() || ""} className="w-full aspect-video object-cover rounded-2xl border border-stone-200 bg-stone-100" />}
+      {image && (
+        // The wrapper clips a zoomed crop, so the picture never spills outside its place
+        <div className="overflow-hidden rounded-2xl">
+          <img src={image} alt={event.imageAlt?.trim() || ""} style={objectStyleOf(event.imageFocus)} className="w-full aspect-video object-cover rounded-2xl border border-stone-200 bg-stone-100" />
+        </div>
+      )}
 
       <dl className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
         <div className="flex items-start gap-2.5 p-4 rounded-xl bg-white border border-stone-200/80">

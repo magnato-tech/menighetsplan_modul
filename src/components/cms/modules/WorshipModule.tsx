@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { eventPath } from "../../../utils/gatheringPresentation";
 import { CmsResolvedLink } from "../CmsResolvedLink";
@@ -11,6 +11,7 @@ import {
   presentationText,
 } from "../../../utils/modulePresentation";
 import { PresentationSection } from "../PresentationSection";
+import { countdownText } from "../../../utils/worshipCountdown";
 import {
   Calendar,
   Clock,
@@ -50,6 +51,16 @@ export const WorshipModule: React.FC<WorshipModuleProps> = ({
     presentationText(config, "badge", autoLabel);
   const linkLabel = presentationText(config, "linkLabel", defaults.linkLabel);
   const linkUrl = presentationText(config, "linkUrl", defaults.linkUrl);
+
+  // Re-render every 30 seconds so the countdown stays current, but only when it is shown.
+  const showCountdown = config.countdown === "on" && !!nextWorship;
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!showCountdown) return;
+    const timer = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(timer);
+  }, [showCountdown]);
+  const countdown = nextWorship && showCountdown ? countdownText(new Date(nextWorship.startsAt), new Date(now)) : "";
 
   const infoCards = [
     {
@@ -124,6 +135,11 @@ export const WorshipModule: React.FC<WorshipModuleProps> = ({
                   <span>{locationOf(nextWorship)}</span>
                 </div>
               )}
+              {countdown && (
+                <span className="mt-1.5 inline-flex px-2.5 py-1 rounded-md bg-primary-50 text-primary-800 text-xs font-bold">
+                  {countdown}
+                </span>
+              )}
             </div>
           </div>
 
@@ -191,6 +207,13 @@ export const WorshipModule: React.FC<WorshipModuleProps> = ({
                 <MapPin className="w-4 h-4 text-primary-600" />
                 <span>{locationOf(nextWorship)}</span>
               </div>
+              {countdown && (
+                <div className="w-full">
+                  <span className="inline-flex px-2.5 py-1 rounded-md bg-primary-50 text-primary-800 text-xs font-bold">
+                    {countdown}
+                  </span>
+                </div>
+              )}
             </div>
           )}
         </div>
