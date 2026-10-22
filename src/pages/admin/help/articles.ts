@@ -139,6 +139,7 @@ const siderInnhold: HelpArticle = {
     "I en tekstblokk lager **Overskrift** og **Underoverskrift** overskrifter, og **Punktliste** og **Nummerert liste** lister.",
     "**Lenke**: merk ordene, skriv adressen eller velg en side, og trykk **Bruk**.",
     "Forhåndsvisningen viser teksten med en gang. Trykk **Ferdig**, og lagre siden til slutt.",
+    "Under feltene står **Utseende** (bakgrunn, hvit tekst og luft) og **Når den vises** (Vis fra og Vis til). Lukket viser de hva som er satt. En blokk med periode får et merke i Seksjoner, og den kommer og går på nettsiden av seg selv.",
   ],
   godt: "Skriv / på en tom linje i en tekstblokk for å gjøre den til overskrift eller liste. I bilde med tekst, infoboks og kort er det bare Fet, Kursiv og Lenke, fordi nettsiden bare viser det der. **Vis som tekst** viser tegnene (## og -) for den som vil skrive dem selv.",
   passPa: "Har teksten tegn feltet ikke har knapper for, for eksempel et sitat, vises den som vanlig tekst med en melding. Ingenting blir borte.",

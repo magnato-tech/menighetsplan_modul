@@ -11,6 +11,8 @@ export interface PageSection {
   label: string;
   /** A short second line, e.g. the block's type ("Tekst", "Modul: Hva skjer"). Optional. */
   detail?: string;
+  /** A short mark after the label, e.g. "fra 1.12.". Optional. */
+  badge?: string;
   /** Blocks only: hidden on the website. */
   hidden?: boolean;
   /** Holds changes not saved. */
@@ -174,6 +176,16 @@ export const PageSectionNav: React.FC<PageSectionNavProps> = ({
                 >
                   {section.label}
                 </span>
+                {section.badge && (
+                  <span
+                    title={section.badge}
+                    className={`inline-block mt-0.5 px-1.5 py-px rounded text-[9px] font-bold uppercase ${
+                      active ? "bg-white/20 text-white" : "bg-amber-950 text-amber-300"
+                    }`}
+                  >
+                    {section.badge}
+                  </span>
+                )}
                 {section.detail && <span className="block truncate text-[10px] opacity-70">{section.detail}</span>}
               </button>
 

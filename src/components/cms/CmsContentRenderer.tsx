@@ -27,6 +27,7 @@ import {
   HIDDEN_BLOCK_START,
 } from "../../utils/cmsBlocks";
 import { readModulePresentation } from "../../utils/modulePresentation";
+import { parseBlockSettingsLine } from "../../utils/blockSettings";
 import { CmsResolvedLink } from "./CmsResolvedLink";
 import { useMediaMap, useResolvedMediaUrl } from "../../hooks/useMediaMap";
 import { parseMediaAltComment, parseMediaId } from "../../utils/media";
@@ -89,6 +90,12 @@ export function parseCmsContent(rawContent: string): ParsedBlock[] {
     const trimmed = line.trim();
 
     if (trimmed === CMS_BLOCKS_AUTHORED) {
+      i++;
+      continue;
+    }
+
+    // Block settings are read by the block flow, never shown as text
+    if (parseBlockSettingsLine(trimmed)) {
       i++;
       continue;
     }

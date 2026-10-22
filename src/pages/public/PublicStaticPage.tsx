@@ -179,7 +179,7 @@ export const PublicStaticPage: React.FC<PublicStaticPageProps> = ({
 
       {/* Main Content Area */}
       <div className="bg-white rounded-2xl border border-stone-200/80 p-6 sm:p-10 shadow-xs space-y-4">
-        <VisualBlockFlow blocks={blocks} embed />
+        <VisualBlockFlow blocks={blocks} embed preview={isPreviewMode} />
       </div>
 
       {/* Lederskap & Stab (vises under Om oss hvis ikke allerede inkludert i blokk) */}

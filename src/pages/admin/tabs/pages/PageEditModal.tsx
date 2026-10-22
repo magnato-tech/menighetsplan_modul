@@ -34,6 +34,7 @@ import {
   VisualBlock,
 } from "../../../../utils/cmsBlocks";
 import { ensureSectionAnchors } from "../../../../utils/cmsLinks";
+import { blockPeriodBadge } from "../../../../utils/blockSettings";
 import { PageSectionNav, type PageSection } from "../../../../components/admin/PageSectionNav";
 import { readStoredFlag, writeStoredFlag } from "../../../../utils/storedFlag";
 import { useMediaQuery } from "../../../../hooks/useMediaQuery";
@@ -310,6 +311,7 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
         label: block.title?.trim() || "Uten tittel",
         detail: block.isDynamic ? "Modul" : "Innhold",
         hidden: block.hidden === true,
+        badge: blockPeriodBadge(block.settings) ?? undefined,
       })),
       { id: "seo", kind: "seo", label: "Søk og deling" },
       { id: "publish", kind: "publish", label: "Publisering" },
@@ -792,15 +794,8 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
   return (
     <form
       onSubmit={onSave}
-      className={`p-4 sm:p-6 rounded-2xl bg-[var(--studio-surface)] border border-indigo-500/80 shadow-2xl space-y-5 transition-all ${
-        viewMode === "split"
-          ? "w-full max-w-none"
-          : viewMode === "preview"
-          ? "w-full max-w-none"
-          : showNav
-          ? "max-w-6xl mx-auto w-full"
-          : "max-w-4xl mx-auto w-full"
-      }`}
+      // The editor fills the room it has in every mode, so the fields are not squeezed into a narrow middle
+      className="p-4 sm:p-6 rounded-2xl bg-[var(--studio-surface)] border border-indigo-500/80 shadow-2xl space-y-5 transition-all w-full max-w-none"
     >
       {/* The top bar stays in view while the page scrolls, so Lagre is always within reach */}
       <div className="sticky top-[var(--demo-strip,0px)] z-30 -mx-4 sm:-mx-6 -mt-4 sm:-mt-6 px-4 sm:px-6 pt-4 sm:pt-6 rounded-t-2xl bg-[var(--studio-surface)] flex flex-col sm:flex-row sm:flex-wrap sm:items-center justify-between gap-3 border-b border-[var(--studio-border)] pb-3">

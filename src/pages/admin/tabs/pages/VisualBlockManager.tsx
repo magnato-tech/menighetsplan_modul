@@ -21,6 +21,8 @@ import { ModulePresentationEditor } from "../../../../components/admin/ModulePre
 import { CmsMediaPicker } from "../../../../components/admin/CmsMediaPicker";
 import { CmsLinkPicker } from "../../../../components/admin/CmsLinkPicker";
 import type { RichTextFieldProps } from "../../../../components/admin/RichTextField";
+import type { BlockSettings } from "../../../../utils/blockSettings";
+import { BlockSettingsFields } from "./BlockSettingsFields";
 import {
   ChevronUp,
   ChevronDown,
@@ -217,6 +219,13 @@ export const VisualBlockManager: React.FC<VisualBlockManagerProps> = ({
       setEditFields(readStaticFields(block));
     }
     onSelectBlock?.(block.id);
+  };
+
+  // Settings are written at once, not on «Ferdig», so the page is marked as changed straight away
+  const handleSettingsChange = (index: number, settings: BlockSettings) => {
+    const next = [...blocks];
+    next[index] = { ...next[index], settings };
+    onChange(next);
   };
 
   const handleSaveEditContent = (index: number) => {
@@ -594,6 +603,15 @@ export const VisualBlockManager: React.FC<VisualBlockManagerProps> = ({
                     onSelectBlock?.(block.id);
                   }}
                 />
+              )}
+              {isEditing && (
+                <div className="mt-3 pt-3 border-t border-[var(--studio-border)]">
+                  <BlockSettingsFields
+                    value={block.settings}
+                    onChange={(settings) => handleSettingsChange(index, settings)}
+                    ownBackground={block.isDynamic}
+                  />
+                </div>
               )}
             </div>
           );

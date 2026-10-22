@@ -4,6 +4,7 @@ import {
   readModulePresentation,
 } from "./modulePresentation";
 import { stripSectionAnchorComment } from "./cmsLinks";
+import { formatBlockSettingsLine, parseBlockSettingsLine, type BlockSettings } from "./blockSettings";
 import { formatMediaAltComment, parseMediaAltComment } from "./media";
 
 export type DynamicModuleType =
@@ -23,6 +24,8 @@ export interface VisualBlock {
   hidden?: boolean;
   variant?: string;
   rawContent?: string;
+  /** When the block is shown and how it looks (see utils/blockSettings.ts). */
+  settings?: BlockSettings;
 }
 
 /** Wraps one serialized block so the public renderer skips it without dropping the editor card. */
@@ -169,6 +172,16 @@ export function parseContentToVisualBlocks(content: string): VisualBlock[] {
   const lines = content.split("\n");
   const blocks: VisualBlock[] = [];
   let textBuffer: string[] = [];
+  // A settings line applies to the next block only; text needs its own slot because it is flushed later.
+  let pendingSettings: BlockSettings | undefined;
+  let textSettings: BlockSettings | undefined;
+
+  const settingsOf = (settings?: BlockSettings) => (settings ? { settings } : {});
+  const takePendingSettings = () => {
+    const settings = pendingSettings;
+    pendingSettings = undefined;
+    return settingsOf(settings);
+  };
 
   const flushTextBuffer = () => {
     const raw = textBuffer.join("\n").trim();
@@ -182,9 +195,11 @@ export function parseContentToVisualBlocks(content: string): VisualBlock[] {
         title,
         isDynamic: false,
         rawContent: raw,
+        ...settingsOf(textSettings),
       });
     }
     textBuffer = [];
+    textSettings = undefined;
   };
 
   let i = 0;
@@ -193,6 +208,15 @@ export function parseContentToVisualBlocks(content: string): VisualBlock[] {
     const trimmed = line.trim();
 
     if (trimmed === CMS_BLOCKS_AUTHORED) {
+      i++;
+      continue;
+    }
+
+    // Settings line: ends any running text block and waits for the block that follows.
+    const lineSettings = parseBlockSettingsLine(trimmed);
+    if (lineSettings) {
+      flushTextBuffer();
+      pendingSettings = lineSettings;
       i++;
       continue;
     }
@@ -222,6 +246,7 @@ export function parseContentToVisualBlocks(content: string): VisualBlock[] {
     if (moduleMatch) {
       flushTextBuffer();
       const modName = `module-${moduleMatch[1]}` as DynamicModuleType;
+      const moduleSettings = takePendingSettings();
       const variant = moduleMatch[2] || DYNAMIC_MODULES_META[modName]?.supportedVariants[0]?.id || "default";
 
       const bodyLines: string[] = [];
@@ -243,6 +268,7 @@ export function parseContentToVisualBlocks(content: string): VisualBlock[] {
         isDynamic: true,
         variant,
         rawContent: rawContent || undefined,
+        ...moduleSettings,
       });
       continue;
     }
@@ -266,6 +292,7 @@ export function parseContentToVisualBlocks(content: string): VisualBlock[] {
         title: personLabel || (filter === "stab" ? "Stab & Ansatte" : "Personoversikt"),
         isDynamic: true,
         variant: filter,
+        ...takePendingSettings(),
       });
       continue;
     }
@@ -315,6 +342,7 @@ export function parseContentToVisualBlocks(content: string): VisualBlock[] {
         title: titleMap[blockType] || "Innholdsblokk",
         isDynamic: false,
         rawContent: fullBlockContent,
+        ...takePendingSettings(),
       });
       continue;
     }
@@ -330,9 +358,16 @@ export function parseContentToVisualBlocks(content: string): VisualBlock[] {
         title: ctaMatch[1].trim() || "Handlingsknapp",
         isDynamic: false,
         rawContent: trimmed,
+        ...takePendingSettings(),
       });
       i++;
       continue;
+    }
+
+    // A text block that starts right after a settings line takes those settings
+    if (trimmed && pendingSettings && textBuffer.join("").trim() === "") {
+      textSettings = pendingSettings;
+      pendingSettings = undefined;
     }
 
     // Regular line, append to text buffer
@@ -353,18 +388,22 @@ export function serializeVisualBlocksToContent(blocks: VisualBlock[]): string {
   const segments: string[] = [];
 
   for (const block of blocks) {
+    // The settings line goes first in the body, so it stays inside the hidden wrapper too
+    const settingsLine = formatBlockSettingsLine(block.settings);
+    const withSettings = (body: string) => (settingsLine ? `${settingsLine}\n${body}` : body);
+
     if (block.type.startsWith("module-")) {
       const variantStr = block.variant ? `[${block.variant}]` : "";
       const inner = block.rawContent?.trim();
       const body = inner
         ? `:::${block.type}${variantStr}\n${inner}\n:::`
         : `:::${block.type}${variantStr}\n:::`;
-      pushSegment(segments, body, block.hidden);
+      pushSegment(segments, withSettings(body), block.hidden);
     } else if (block.type === "person-grid") {
       const filterStr = block.variant ? `[${block.variant}]` : "";
-      pushSegment(segments, `:::personer${filterStr}\n:::`, block.hidden);
+      pushSegment(segments, withSettings(`:::personer${filterStr}\n:::`), block.hidden);
     } else if (block.rawContent) {
-      pushSegment(segments, block.rawContent, block.hidden);
+      pushSegment(segments, withSettings(block.rawContent), block.hidden);
     }
   }
 

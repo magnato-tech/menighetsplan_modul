@@ -353,7 +353,7 @@ export const PublicHomePage: React.FC<PublicHomePageProps> = ({
 
       <div data-cms-surface={liveDraft ? undefined : "public"}>
 
-        <VisualBlockFlow blocks={blocks} />
+        <VisualBlockFlow blocks={blocks} preview={isPreviewMode} />
 
       </div>
 
