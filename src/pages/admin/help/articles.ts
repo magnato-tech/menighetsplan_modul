@@ -183,9 +183,10 @@ const siderModuler: HelpArticle = {
   hvor: "Nettside → Sider & Innhold → Rediger → Legg til blokk eller modul",
   intro: "En modul fyller seg selv fra der innholdet hører hjemme: kalenderen, nyhetene, talene eller gruppene.",
   steg: [
-    "Trykk **Legg til blokk eller modul**. Finn for eksempel **Neste gudstjeneste**, **Hva skjer** eller **Kalender**, og trykk **Sett inn denne blokken**.",
+    "Trykk **Legg til blokk eller modul**. Finn for eksempel **Neste gudstjeneste**, **Hva skjer**, **Kalender**, **Kart** eller **Bildegalleri**, og trykk **Sett inn denne blokken**.",
     "Trykk **Rediger innhold** på modulen. Endre tittel, merkelapp, tekst, bakgrunnsbilde eller bakgrunnsfarge.",
     "Forhåndsvisningen viser valgene med en gang. Trykk **Ferdig**, og lagre siden til slutt.",
+    "**Kart**: skriv adressen og trykk **Finn på kartet**. **Bildegalleri**: legg til bilder fra biblioteket. **Neste gudstjeneste** kan vise en nedtelling med **Vis nedtelling**.",
   ],
   godt: "Innholdet i en modul endres der det hører hjemme: en tale under Taler & Prekener, en nyhet under Aktuelt & Nyheter, et arrangement i kalenderen.",
   seOgsa: ["sider-hvaskjer", "nyheter", "taler"],

@@ -5,6 +5,7 @@ import {
   DynamicModuleType,
   PERSON_GRID_VARIANTS,
   StaticBlockFields,
+  GRID_COLUMN_COUNTS,
   readStaticFields,
   applyStaticFields,
   staticPreviewText,
@@ -41,6 +42,8 @@ import {
   Info,
   Users,
   Heart,
+  MapPin,
+  Images,
   Headphones,
   Eye,
   EyeOff,
@@ -300,6 +303,10 @@ export const VisualBlockManager: React.FC<VisualBlockManagerProps> = ({
         return <Users className="w-4 h-4 text-[var(--studio-icon)]" />;
       case "module-giving":
         return <Heart className="w-4 h-4 text-rose-400" />;
+      case "module-map":
+        return <MapPin className="w-4 h-4 text-sky-400" />;
+      case "module-gallery":
+        return <Images className="w-4 h-4 text-amber-400" />;
       case "grid":
         return <LayoutGrid className="w-4 h-4 text-emerald-400" />;
       case "media-left":
@@ -587,8 +594,13 @@ export const VisualBlockManager: React.FC<VisualBlockManagerProps> = ({
                   }}
                   onSave={() => handleSaveEditContent(index)}
                   dataSourceNote={
-                    block.type.startsWith("module-")
-                      ? `Arrangement, artikler og tall hentes fra ${DYNAMIC_MODULES_META[block.type as DynamicModuleType]?.dataSource}. Feltene over styrrer bare tekst og utseende på modulen.`
+                    // The map and the gallery hold what is written here; the other modules fetch their content
+                    block.type === "module-map"
+                      ? "Kartet hentes fra OpenStreetMap, uten informasjonskapsler."
+                      : block.type === "module-gallery"
+                      ? "Bildene velges fra bildebiblioteket."
+                      : block.type.startsWith("module-")
+                      ? `Arrangement, artikler og tall hentes fra ${DYNAMIC_MODULES_META[block.type as DynamicModuleType]?.dataSource}. Feltene over styrer bare tekst og utseende på modulen.`
                       : undefined
                   }
                 />
@@ -708,8 +720,23 @@ function StaticBlockEditor({
         </div>
       ) : block.type === "grid" ? (
         <div className="space-y-2">
+          <label className="space-y-1 block">
+            <span className="text-[10px] font-semibold text-[var(--studio-muted)]">Antall spalter</span>
+            <select
+              className={fieldClass}
+              value={fields.columns}
+              onChange={(e) => set({ columns: Number(e.target.value) as StaticBlockFields["columns"] })}
+            >
+              {GRID_COLUMN_COUNTS.map((count) => (
+                <option key={count} value={count}>
+                  {count}
+                </option>
+              ))}
+            </select>
+          </label>
           {fields.cards.map((card, cardIndex) => (
-            <div key={cardIndex} className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-2 rounded-lg border border-[var(--studio-border)]">
+            <div key={cardIndex} className="space-y-1 p-2 rounded-lg border border-[var(--studio-border)]">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <label className="space-y-1 block">
                 <span className="text-[10px] font-semibold text-[var(--studio-muted)]">Kort {cardIndex + 1}: tittel</span>
                 <input
@@ -735,6 +762,16 @@ function StaticBlockEditor({
                   }}
                 />
               </div>
+            </div>
+            {fields.cards.length > 1 && (
+              <button
+                type="button"
+                onClick={() => set({ cards: fields.cards.filter((_, i) => i !== cardIndex) })}
+                className="text-[11px] font-semibold text-[var(--studio-muted)] hover:text-[var(--studio-text)] cursor-pointer"
+              >
+                Fjern kort {cardIndex + 1}
+              </button>
+            )}
             </div>
           ))}
           <button

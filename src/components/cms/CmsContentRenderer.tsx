@@ -20,11 +20,16 @@ import { NewsModule } from "./modules/NewsModule";
 import { SermonModule } from "./modules/SermonModule";
 import { GroupsModule } from "./modules/GroupsModule";
 import { GivingModule } from "./modules/GivingModule";
+import { MapModule } from "./modules/MapModule";
+import { GalleryModule } from "./modules/GalleryModule";
 import {
   CMS_BLOCKS_AUTHORED,
   DynamicModuleType,
+  GridColumnCount,
   HIDDEN_BLOCK_END,
   HIDDEN_BLOCK_START,
+  gridColumnsClass,
+  gridColumnsFrom,
 } from "../../utils/cmsBlocks";
 import { readModulePresentation } from "../../utils/modulePresentation";
 import { parseBlockSettingsLine } from "../../utils/blockSettings";
@@ -48,7 +53,7 @@ export type ParsedBlock =
       title?: string;
       body: string;
     }
-  | { type: "grid"; cards: { title?: string; body: string }[] }
+  | { type: "grid"; cards: { title?: string; body: string }[]; columns: GridColumnCount }
   | { type: "quote"; text: string; author?: string }
   | { type: "cta"; label: string; url: string; primary?: boolean }
   | { type: "list"; items: string[]; ordered?: boolean }
@@ -61,6 +66,8 @@ export type ParsedBlock =
   | { type: "module-sermon"; variant?: "player" | "minimal"; rawConfig?: string }
   | { type: "module-groups"; variant?: "banner" | "cards"; rawConfig?: string }
   | { type: "module-giving"; variant?: "card" | "vipps"; rawConfig?: string }
+  | { type: "module-map"; variant?: string; rawConfig?: string }
+  | { type: "module-gallery"; rawConfig?: string }
   | { type: "spacer" };
 
 function presentationFromRaw(rawConfig?: string, type?: DynamicModuleType) {
@@ -252,7 +259,7 @@ export function parseCmsContent(rawContent: string): ParsedBlock[] {
         i++; // skip closing :::
       }
       if (cards.length > 0) {
-        blocks.push({ type: "grid", cards });
+        blocks.push({ type: "grid", cards, columns: gridColumnsFrom(trimmed) });
       }
       continue;
     }
@@ -375,6 +382,12 @@ export function parseCmsContent(rawContent: string): ParsedBlock[] {
         continue;
       } else if (modType === "module-giving") {
         blocks.push({ type: "module-giving", variant: variant as "card" | "vipps", rawConfig });
+        continue;
+      } else if (modType === "module-map") {
+        blocks.push({ type: "module-map", variant, rawConfig });
+        continue;
+      } else if (modType === "module-gallery") {
+        blocks.push({ type: "module-gallery", rawConfig });
         continue;
       }
     }
@@ -687,7 +700,7 @@ export const CmsContentRenderer: React.FC<CmsContentRendererProps> = ({
             return (
               <div
                 key={idx}
-                className="grid grid-cols-1 sm:grid-cols-2 gap-4 my-4"
+                className={`grid grid-cols-1 ${gridColumnsClass(block.columns)} gap-4 my-4`}
               >
                 {block.cards.map((card, cardIdx) => (
                   <div
@@ -801,6 +814,23 @@ export const CmsContentRenderer: React.FC<CmsContentRendererProps> = ({
                 key={idx}
                 variant={block.variant}
                 presentation={presentationFromRaw(block.rawConfig, "module-giving")}
+              />
+            );
+
+          case "module-map":
+            return (
+              <MapModule
+                key={idx}
+                variant={block.variant}
+                presentation={presentationFromRaw(block.rawConfig, "module-map")}
+              />
+            );
+
+          case "module-gallery":
+            return (
+              <GalleryModule
+                key={idx}
+                presentation={presentationFromRaw(block.rawConfig, "module-gallery")}
               />
             );
 

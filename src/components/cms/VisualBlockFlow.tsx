@@ -11,6 +11,8 @@ import { NewsModule } from "./modules/NewsModule";
 import { SermonModule } from "./modules/SermonModule";
 import { GroupsModule } from "./modules/GroupsModule";
 import { GivingModule } from "./modules/GivingModule";
+import { MapModule } from "./modules/MapModule";
+import { GalleryModule } from "./modules/GalleryModule";
 
 interface VisualBlockFlowProps {
   blocks: VisualBlock[];
@@ -117,6 +119,10 @@ function BlockBody({ block, embed }: { block: VisualBlock; embed: boolean }) {
           presentation={presentation}
         />
       );
+    case "module-map":
+      return <MapModule variant={block.variant} presentation={presentation} />;
+    case "module-gallery":
+      return <GalleryModule presentation={presentation} />;
     case "person-grid":
       return <CmsContentRenderer content={`:::personer[${block.variant || "alle"}]\n:::`} />;
     default: {

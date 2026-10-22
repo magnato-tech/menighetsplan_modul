@@ -8,7 +8,8 @@ export interface ModulePresentationField {
   key: string;
   label: string;
   /** «toggle» is a box to tick, stored as "on" or "off". «group» picks one of the congregation's groups. */
-  type: "text" | "textarea" | "url" | "link" | "color" | "image" | "select" | "toggle" | "group";
+  /** «address» looks the text up on the map and stores lat/lon. «imageList» is a list of library pictures with captions. */
+  type: "text" | "textarea" | "url" | "link" | "color" | "image" | "imageList" | "address" | "select" | "toggle" | "group";
   placeholder?: string;
   help?: string;
   options?: { value: string; label: string }[];
@@ -35,6 +36,7 @@ function serializeRaw(config: ModulePresentationConfig): string {
 export const MODULE_PRESENTATION_DEFAULTS: Record<DynamicModuleType, ModulePresentationConfig> = {
   "module-worship": {
     badge: "",
+    countdown: "off",
     linkLabel: "Se detaljer",
     linkUrl: "section:@home:hva-skjer",
     info1Title: "Søndagsskole",
@@ -102,11 +104,52 @@ export const MODULE_PRESENTATION_DEFAULTS: Record<DynamicModuleType, ModulePrese
     backgroundImage: "",
     backgroundColor: "",
   },
+  "module-map": {
+    title: "Finn fram",
+    address: "",
+    // Coordinates come from the «Finn på kartet» lookup, not from typing
+    lat: "",
+    lon: "",
+  },
+  "module-gallery": {
+    title: "Bilder",
+    images: "[]",
+  },
 };
+
+/** One picture in a gallery block, with an optional caption. */
+export interface GalleryImage {
+  src: string;
+  caption: string;
+}
+
+/** The list is stored as one JSON line, so it fits the one-line-per-key format of the block. */
+export function parseGalleryImages(raw: string | undefined): GalleryImage[] {
+  if (!raw) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    // Bad rows are skipped, so one broken entry does not hide the rest of the gallery
+    return parsed.flatMap((item: unknown) => {
+      if (!item || typeof item !== "object") return [];
+      const { src, caption } = item as { src?: unknown; caption?: unknown };
+      if (typeof src !== "string" || !src.trim()) return [];
+      return [{ src: src.trim(), caption: typeof caption === "string" ? caption : "" }];
+    });
+  } catch {
+    // A value that is not JSON is treated as an empty gallery rather than breaking the page
+    return [];
+  }
+}
+
+export function serializeGalleryImages(images: GalleryImage[]): string {
+  return JSON.stringify(images);
+}
 
 export const MODULE_PRESENTATION_FIELDS: Record<DynamicModuleType, ModulePresentationField[]> = {
   "module-worship": [
     { key: "badge", label: "Merkelapp over tittel", type: "text", placeholder: "Tom = automatisk fra kalenderen" },
+    { key: "countdown", label: "Vis nedtelling", type: "toggle" },
     { key: "linkLabel", label: "Lenketekst", type: "text" },
     { key: "linkUrl", label: "Lenkemål", type: "link" },
     { key: "info1Title", label: "Infokort 1: tittel", type: "text" },
@@ -197,6 +240,20 @@ export const MODULE_PRESENTATION_FIELDS: Record<DynamicModuleType, ModulePresent
     { key: "body", label: "Tekst", type: "textarea" },
     { key: "backgroundImage", label: "Bakgrunnsbilde", type: "image" },
     { key: "backgroundColor", label: "Bakgrunnsfarge", type: "color" },
+  ],
+  "module-map": [
+    { key: "title", label: "Tittel", type: "text" },
+    {
+      key: "address",
+      label: "Adresse",
+      type: "address",
+      placeholder: "Gate og nummer, postnummer og sted",
+      help: "Skriv adressen, og trykk «Finn på kartet» for å plassere den på kartet.",
+    },
+  ],
+  "module-gallery": [
+    { key: "title", label: "Tittel", type: "text" },
+    { key: "images", label: "Bilder", type: "imageList" },
   ],
 };
 
