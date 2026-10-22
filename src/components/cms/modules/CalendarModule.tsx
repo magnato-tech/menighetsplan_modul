@@ -4,7 +4,7 @@ import { useFirebase } from "../../../context/FirebaseDataContext";
 import { useCms } from "../../../context/CmsContext";
 import { locationOf } from "../../../utils/gatherings";
 import { eventPath, teaserOf } from "../../../utils/gatheringPresentation";
-import { objectPositionOf } from "../../../utils/focusPoint";
+import { objectStyleOf } from "../../../utils/focusPoint";
 import { cardImageClass, revealClassOf, whatsOnGatherings, whatsOnOptionsOf, type WhatsOnOptions } from "../../../utils/whatsOn";
 import { useMediaMap } from "../../../hooks/useMediaMap";
 import { resolveMediaUrl } from "../../../utils/media";
@@ -51,8 +51,8 @@ interface EventCardProps {
 
 const EventCard: React.FC<EventCardProps> = ({ item, image, show, shape, className = "" }) => {
   const teaser = show.showSummary ? teaserOf(item) : "";
-  // The focus point keeps the important place in view when the picture fills the card
-  const focusStyle = show.imageFit === "cover" ? { objectPosition: objectPositionOf(item.imageFocus) } : undefined;
+  // The crop keeps the important place in view when the picture fills the card, and its zoom stays inside the card
+  const focusStyle = show.imageFit === "cover" ? objectStyleOf(item.imageFocus) : undefined;
   const row = shape === "row";
   const footer = (show.showTime || show.showLocation) && (
     <div className={`${row ? "mt-2" : "pt-4 mt-3 border-t border-stone-100"} flex items-center justify-between gap-3 text-xs text-stone-600`}>
@@ -106,7 +106,7 @@ const EventCard: React.FC<EventCardProps> = ({ item, image, show, shape, classNa
         <>
           <div className="space-y-2">
             {image && (
-              <div className={`-mx-5 -mt-5 mb-3 bg-stone-100 ${shape === "large" ? "aspect-[16/10]" : "aspect-video"}`}>
+              <div className={`-mx-5 -mt-5 mb-3 overflow-hidden bg-stone-100 ${shape === "large" ? "aspect-[16/10]" : "aspect-video"}`}>
                 <img src={image} alt={item.imageAlt?.trim() || ""} loading="lazy" className={cardImageClass(show.imageFit)} style={focusStyle} />
               </div>
             )}

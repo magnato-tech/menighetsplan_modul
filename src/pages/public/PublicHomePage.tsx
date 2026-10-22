@@ -27,7 +27,6 @@ import { useMediaMap, useResolvedMediaUrl } from "../../hooks/useMediaMap";
 import { resolveMediaUrl } from "../../utils/media";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { HeroBackdrop, useHeroSlides } from "../../components/public/HeroBackdrop";
-import { objectPositionOf } from "../../utils/focusPoint";
 import {
   HERO_TITLE_SIZE_CLASSES,
   heroFontFaceCss,
@@ -255,7 +254,7 @@ export const PublicHomePage: React.FC<PublicHomePageProps> = ({
 
       >
 
-          <HeroBackdrop images={heroImages} alt={heroImageAlt} zoom={activePage?.heroZoom !== false} veil={veil} shown={shown} focus={objectPositionOf(activePage?.heroFocus)} />
+          <HeroBackdrop images={heroImages} alt={heroImageAlt} zoom={activePage?.heroZoom !== false} veil={veil} shown={shown} focus={activePage?.heroFocus} />
 
 
 

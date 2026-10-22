@@ -15,7 +15,7 @@ import {
 import { VisualBlockFlow } from "../../components/cms/VisualBlockFlow";
 import { resolveVisualBlocks } from "../../utils/cmsBlocks";
 import { buildLinkContext, ensureSectionAnchors, resolveCmsLinkForDisplay } from "../../utils/cmsLinks";
-import { objectPositionOf } from "../../utils/focusPoint";
+import { objectStyleOf } from "../../utils/focusPoint";
 import { HeroButtons } from "../../components/cms/HeroButtons";
 import { isPagePublished } from "../../utils/menu";
 import { formatNorwegianDateTime } from "../../utils/dates";
@@ -172,7 +172,7 @@ export const PublicStaticPage: React.FC<PublicStaticPageProps> = ({
             src={heroImageSrc}
             alt={heroImageAlt}
             className="w-full h-full object-cover"
-            style={{ objectPosition: objectPositionOf(page?.heroFocus) }}
+            style={objectStyleOf(page?.heroFocus)}
           />
         </div>
       )}

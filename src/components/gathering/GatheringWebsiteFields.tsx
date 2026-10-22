@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { CmsMediaPicker } from "../admin/CmsMediaPicker";
-import { FocusPointPicker } from "../admin/FocusPointPicker";
+import { CropPicker } from "../admin/CropPicker";
 import type { GatheringFormValues } from "../../utils/gatheringForm";
 
 /** How an event is presented on the website. An event has these fields, and so has a template. */
@@ -41,7 +41,7 @@ const GatheringWebsiteFields: React.FC<GatheringWebsiteFieldsProps> = ({ values,
       />
       {values.imageFocus !== undefined && values.imageUrl.trim() && (
         <div className="mt-3 max-w-sm">
-          <FocusPointPicker image={values.imageUrl} value={values.imageFocus} onChange={(imageFocus) => onChange({ imageFocus })} />
+          <CropPicker image={values.imageUrl} value={values.imageFocus} onChange={(imageFocus) => onChange({ imageFocus })} aspect={16 / 9} />
         </div>
       )}
     </div>

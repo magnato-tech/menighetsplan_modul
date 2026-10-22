@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
+import { objectStyleOf } from "../../utils/focusPoint";
 
 interface HeroBackdropProps {
   /** One to three images. With more than one, the hero fades from one to the next. */
@@ -12,7 +13,7 @@ interface HeroBackdropProps {
   veil?: "none" | "light" | "dark";
   /** Which image is on show, when the page keeps track of it (see useHeroSlides). Otherwise the backdrop turns by itself. */
   shown?: HeroShown;
-  /** The place in the first image that stays in view, as CSS object-position (see utils/focusPoint.ts). */
+  /** The crop of the first image, "x% y%" or "x% y% z" (see utils/focusPoint.ts). The middle, without zoom, when not chosen. */
   focus?: string;
 }
 
@@ -80,17 +81,25 @@ export const HeroBackdrop: React.FC<HeroBackdropProps> = ({ images, alt = "", zo
       {images.map((src, index) => {
         const isActive = index === shown.active;
         const zooms = zoom && (isActive || index === shown.leaving);
+        // Only the first image is cropped. The crop zoom sits on a wrapper: the hero-zoom animation sets the
+        // picture's own transform, which would replace a crop scale put on the picture itself.
+        const crop = objectStyleOf(index === 0 ? focus : undefined);
         return (
-          <img
+          <div
             key={`${index}-${src}`}
-            src={src}
-            alt={index === 0 ? alt : ""}
-            aria-hidden={isActive ? undefined : true}
-            style={index === 0 && focus ? { objectPosition: focus, transformOrigin: focus } : undefined}
-            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-[1500ms] ease-in-out ${
-              isActive ? "opacity-100" : "opacity-0"
-            } ${zooms ? "hero-zoom" : ""}`}
-          />
+            className="absolute inset-0 overflow-hidden"
+            style={{ transform: crop.transform, transformOrigin: crop.transformOrigin }}
+          >
+            <img
+              src={src}
+              alt={index === 0 ? alt : ""}
+              aria-hidden={isActive ? undefined : true}
+              style={{ objectPosition: crop.objectPosition, transformOrigin: crop.objectPosition }}
+              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-[1500ms] ease-in-out ${
+                isActive ? "opacity-100" : "opacity-0"
+              } ${zooms ? "hero-zoom" : ""}`}
+            />
+          </div>
         );
       })}
       {veil === "dark" && <div className="absolute inset-0 bg-gradient-to-t from-stone-900/95 via-stone-900/70 to-stone-900/40" />}

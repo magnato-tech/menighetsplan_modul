@@ -168,7 +168,7 @@ const siderHero: HelpArticle = {
   intro: "Toppbildet er det første besøkende ser: bilde, tittel og meny.",
   steg: [
     "**Menyen øverst** står først: over bildet, eller som en hvit linje med bildet under. Den kan velges når forsiden har et bakgrunnsbilde.",
-    "Velg bakgrunnsbildet og fokuspunktet. **Høyde på toppbildet** og **Slør over bildet** står rett under, og bilde 2 og 3 kan få egen tittel.",
+    "Velg bakgrunnsbildet. Under **Endre utsnitt** drar du rammen dit bildet skal vises, og **Zoom** går nærmere. **Tilbakestill** gir hele bildet igjen. **Høyde på toppbildet** og **Slør over bildet** står rett under, og bilde 2 og 3 kan få egen tittel.",
     "Skriv **Tittel i Hero**, og velg **Tekststørrelse på tittelen**, **Skrift på tittelen** og hvordan **Tittelen på bildet** skal stå.",
     "Undertittel og knapper kommer til slutt, i samme rekkefølge som på forsiden.",
   ],

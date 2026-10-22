@@ -2,7 +2,7 @@ import React from "react";
 import { Check, Copy } from "lucide-react";
 import { CmsPage } from "../../../../../data/cmsData";
 import { CmsMediaPicker } from "../../../../../components/admin/CmsMediaPicker";
-import { FocusPointPicker } from "../../../../../components/admin/FocusPointPicker";
+import { CropPicker } from "../../../../../components/admin/CropPicker";
 import { CmsLinkPicker } from "../../../../../components/admin/CmsLinkPicker";
 import { useCms } from "../../../../../context/CmsContext";
 import { CMS_PREVIEW_TARGET_HERO } from "../../../../../utils/cmsBlocks";
@@ -107,7 +107,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           />
           {editingPage.heroImage && (
             <div className="pt-2 max-w-sm">
-              <FocusPointPicker image={editingPage.heroImage} value={editingPage.heroFocus || ""} onChange={(heroFocus) => onUpdate({ heroFocus })} />
+              <CropPicker image={editingPage.heroImage} value={editingPage.heroFocus || ""} onChange={(heroFocus) => onUpdate({ heroFocus })} aspect={16 / 9} />
             </div>
           )}
         </div>
