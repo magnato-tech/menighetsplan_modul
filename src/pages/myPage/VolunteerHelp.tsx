@@ -57,8 +57,8 @@ export const VolunteerHelp: React.FC = () => {
             <ol className="space-y-2 list-decimal pl-4 leading-relaxed text-sm text-slate-700">
               <li>Logg inn med Google eller en lenke på e-post. Adressen må stå på deg i registeret.</li>
               <li>Gruppene dine står under Mine grupper. Der ser du hvem som er med, og beskjedene.</li>
-              <li>En ledig oppgave i en gruppe du er med i, ligger under det som trenger svar. Trykk Ta oppgaven.</li>
-              <li>Er du spurt om en oppgave, svarer du Ja, jeg kan eller Kan ikke.</li>
+              <li>Er du spurt om en oppgave, står forespørselen øverst på Mine oppgaver. Svar Ja, jeg kan eller Kan ikke.</li>
+              <li>Ledige oppgaver i gruppene dine står under den. Er de mange, trykker du Se ledige oppgaver, og så Ta oppgave på den du vil ha.</li>
               <li>Står du allerede på en oppgave og ikke kan likevel, trykk Meld forfall og bekreft. Grunnen tas muntlig.</li>
             </ol>
             <button type="button" onClick={() => setOpen(false)} className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-700 text-white text-sm font-bold cursor-pointer">
