@@ -83,14 +83,27 @@ export interface MemberProposal {
 
 export interface ProgramItem {
   id?: string;
+  /** The clock time the post starts. Worked out from the gathering's start and the durations before it (see utils/programTiming.ts). */
   time: string;
+  /** How long the post lasts, in minutes. Absent on programmes made before durations: then read from the clock times. */
+  durationMinutes?: number;
   title: string;
   description?: string;
   taskId?: string;
   groupId?: string;
 }
 
-export type GatheringVisibility = "intern" | "offentlig" | "fremhevet";
+/**
+ * The meeting leader who last changed the programme. The assignment is what the database rules
+ * check: it must be that person's confirmed task on this very gathering.
+ */
+export interface ProgramEditedBy {
+  assignmentId: string;
+  personId: string;
+  personName: string;
+}
+
+export type GatheringVisibility ="intern" | "offentlig" | "fremhevet";
 
 export interface Gathering {
   id: string;
@@ -111,6 +124,10 @@ export interface Gathering {
   isGudstjeneste?: boolean; // Whether this is a church service
   cancelled?: boolean; // Whether event is cancelled
   programSchedule?: ProgramItem[];
+  /** Who last changed the programme from Min side, as meeting leader (see utils/programEditor.ts). */
+  programEditedBy?: ProgramEditedBy;
+  /** When the programme was last changed from Min side. ISO date. */
+  programEditedAt?: string;
   // How the event is presented on the website (see utils/gatheringPresentation.ts). All optional.
   /** A picture: an address, or a picture from the media library. */
   imageUrl?: string;

@@ -5,6 +5,7 @@ import { newGatheringOf, type GatheringFormValues } from "./gatheringForm";
 import { isWorshipService } from "./gatherings";
 import { newId } from "./id";
 import { normalizeClock } from "./runSheet";
+import { durationsOf, withComputedTimes } from "./programTiming";
 import { visibilityOf } from "./visibility";
 
 // Templates for events: the recipe for a kind of event, so one that is held again and again
@@ -86,6 +87,44 @@ export const itemClock = (start: string, item: Pick<TemplateProgramItem, "offset
 export const endClockOf = (start: string, template: Pick<GatheringTemplate, "durationMinutes">): string =>
   template.durationMinutes > 0 ? clockOf((minutesOf(start) ?? 0) + template.durationMinutes) : "";
 
+// ---------- The programme's lengths ----------
+
+/** The time of day as a date-time string, so programTiming can read it. Only the clock part is used. */
+const isoOfClock = (clock: string): string => {
+  const at = minutesOf(clock) ?? 0;
+  return new Date(2000, 0, 1, Math.floor(at / 60), at % 60).toISOString();
+};
+
+/** The items with their offsets worked out from the lengths before them, the first one at `start` minutes. */
+export function withOffsetsFromDurations(program: readonly TemplateProgramItem[], start: number): TemplateProgramItem[] {
+  let at = start;
+  return program.map((item) => {
+    const next = { ...item, offsetMinutes: at };
+    at += item.durationMinutes;
+    return next;
+  });
+}
+
+/**
+ * The template with each item's length filled in and its offset worked out from the lengths. An item
+ * without a usable length takes the gap to the next item's time, as programTiming reads older programmes.
+ * The programme keeps the place of its first item, so one that starts before the template's time still does.
+ */
+export function withTemplateDurations(template: GatheringTemplate): GatheringTemplate {
+  const sorted = [...template.program].sort((a, b) => a.offsetMinutes - b.offsetMinutes);
+  const endClock = endClockOf(template.time, template);
+  const durations = durationsOf(
+    sorted.map((item) => ({
+      time: itemClock(template.time, item),
+      durationMinutes: Number.isFinite(item.durationMinutes) ? item.durationMinutes : undefined,
+      title: item.title,
+    })),
+    endClock ? isoOfClock(endClock) : undefined,
+  );
+  const lengthened = sorted.map((item, index) => ({ ...item, durationMinutes: durations[index] }));
+  return { ...template, program: withOffsetsFromDurations(lengthened, sorted[0]?.offsetMinutes ?? 0) };
+}
+
 // ---------- Roles ----------
 
 type RoleRef = Pick<TemplateProgramItem, "roleId" | "roleName">;
@@ -160,7 +199,7 @@ export function formValuesFromTemplate(template: GatheringTemplate, values: Gath
 export interface PlannedGathering {
   gathering: NewGatheringInput;
   tasks: { key: string; input: Omit<NewTaskInput, "gatheringId"> }[];
-  program: { time: string; title: string; description?: string; taskKey?: string }[];
+  program: { time: string; durationMinutes?: number; title: string; description?: string; taskKey?: string }[];
 }
 
 export interface PlanOptions {
@@ -184,15 +223,28 @@ export function planGathering(values: GatheringFormValues, { template, roles = [
 
   const tasks = tasksOfTemplate(template, roles);
   const keys = new Set(tasks.map((task) => task.key));
+  // The programme starts where the template's first item stands, counted from the event's start. Each
+  // post then gets its clock time and length from programTiming, so the times follow the lengths.
+  const lengths = withTemplateDurations(template).program;
+  const programStart = new Date(new Date(gathering.startsAt).getTime() + (lengths[0]?.offsetMinutes ?? 0) * 60000).toISOString();
+  const timed = withComputedTimes(
+    lengths.map((item) => ({ time: "", title: item.title, durationMinutes: item.durationMinutes })),
+    programStart,
+    gathering.endsAt
+  );
   return {
     gathering,
     tasks: tasks.map((task) => ({ key: task.key, input: { title: task.title, volunteerRoleId: task.volunteerRoleId, groupId: task.groupId, neededCount: task.neededCount, status: "open" } })),
-    program: [...template.program]
-      .sort((a, b) => a.offsetMinutes - b.offsetMinutes)
-      .map((item) => {
-        const key = roleNameOf(item, roles) ? roleKeyOf(item, roles) : undefined;
-        return { time: itemClock(values.time, item), title: item.title, description: item.description, taskKey: key && keys.has(key) ? key : undefined };
-      }),
+    program: lengths.map((item, index) => {
+      const key = roleNameOf(item, roles) ? roleKeyOf(item, roles) : undefined;
+      return {
+        time: timed[index].time,
+        durationMinutes: timed[index].durationMinutes,
+        title: item.title,
+        description: item.description,
+        taskKey: key && keys.has(key) ? key : undefined,
+      };
+    }),
   };
 }
 
@@ -305,21 +357,24 @@ export function templateFromGathering(gathering: Gathering, tasks: readonly Task
 
 // ---------- The template a congregation can start from ----------
 
-/** A worship service at 11:00: offset and length in minutes from start, title, role, optional note for the run sheet. */
+/**
+ * A worship service at 11:00: offset and length in minutes from start, title, role, optional note for the run sheet.
+ * Each length runs to the next offset, so the clock times are the same as the programme always showed.
+ */
 const STANDARD_SERVICE_PROGRAM: readonly (readonly [number, number, string, string?, string?])[] = [
   [-15, 15, "Velkommen ved inngang", "Møtevert"],
   [0, 7, "Lovsang x2", "Lovsang"],
   [7, 3, "Velkommen. Åpningsord", "Møteleder", "Dagens tema"],
-  [10, 2, "Bønn", "Møteleder"],
+  [10, 5, "Bønn", "Møteleder"],
   [15, 3, "Kunngjøringer", "Møteleder"],
-  [18, 10, "Lovsang x3", "Lovsang"],
+  [18, 12, "Lovsang x3", "Lovsang"],
   [30, 2, "Barnekirke", "Barnekirke", "Barna går til sin samling"],
   [32, 8, "☕Kaffe / te-påfyll", "Møtevert"],
   [40, 2, "Bønn før tale", "Møteleder", "Forbønn for taler"],
   [42, 20, "Tale / undervisning", "Taler"],
   [62, 5, "Lovsang", "Lovsang"],
-  [67, 8, "Nattverd og presentasjon av bønnestasjoner (3stk)"],
-  [68, 7, "Forbønn", "Forbønn"],
+  [67, 1, "Nattverd og presentasjon av bønnestasjoner (3stk)"],
+  [68, 12, "Forbønn", "Forbønn"],
   [80, 2, "Kollekt", "Møteleder", "Vipps-skjerm under lovsang"],
   [82, 7, "Lovsang x2", "Lovsang"],
   [89, 1, "Velsignelsen", "Møteleder"],

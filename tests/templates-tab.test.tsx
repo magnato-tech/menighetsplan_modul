@@ -112,29 +112,29 @@ describe("Skjemaet for en mal", () => {
 
   test("viser programmet med klokkeslett, minutter, tittel og rolle", () => {
     show();
-    expect((screen.getByLabelText("Klokkeslett for punkt 1") as HTMLInputElement).value).toBe("10:45");
+    expect(screen.getByLabelText("Klokkeslett for punkt 1").textContent).toBe("10:45");
     expect((screen.getByLabelText("Tittel på punkt 2") as HTMLInputElement).value).toBe("Lovsang x2");
-    expect((screen.getByLabelText("Minutter for punkt 2") as HTMLInputElement).value).toBe("7");
+    expect((screen.getByLabelText("Varighet (min) for punkt 2") as HTMLInputElement).value).toBe("7");
     expect((screen.getByLabelText("Rolle for punkt 3") as HTMLSelectElement).selectedOptions[0].textContent).toBe("Møteleder");
   });
 
-  test("et punkt kan få ny tid, ny rolle og ny tittel, og lagres i rekkefølgen klokka gir", async () => {
+  test("en ny varighet flytter punktene etter, og ny rolle og tittel lagres med klokkeslettene", async () => {
     show();
-    fireEvent.change(screen.getByLabelText("Klokkeslett for punkt 1"), { target: { value: "11:20" } });
+    fireEvent.change(screen.getByLabelText("Varighet (min) for punkt 1"), { target: { value: "20" } });
     fireEvent.change(screen.getByLabelText("Tittel på punkt 1"), { target: { value: "Vitnesbyrd" } });
     fireEvent.change(screen.getByLabelText("Rolle for punkt 1"), { target: { value: "r-3" } });
     save();
 
     await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
-    expect(saved().program.map((item) => `${itemClock("11:00", item)} ${item.title}`)).toEqual(["11:00 Lovsang x2", "11:07 Velkommen. Åpningsord", "11:20 Vitnesbyrd"]);
-    expect(saved().program[2]).toMatchObject({ roleId: "r-3", roleName: "Taler" });
+    expect(saved().program.map((item) => `${itemClock("11:00", item)} ${item.title}`)).toEqual(["10:45 Vitnesbyrd", "11:05 Lovsang x2", "11:12 Velkommen. Åpningsord"]);
+    expect(saved().program[0]).toMatchObject({ roleId: "r-3", roleName: "Taler", durationMinutes: 20 });
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
   });
 
   test("et nytt punkt kommer etter det siste, og et punkt kan tas bort", async () => {
     show();
     fireEvent.click(screen.getByRole("button", { name: "Legg til punkt" }));
-    expect((screen.getByLabelText("Klokkeslett for punkt 4") as HTMLInputElement).value).toBe("11:10");
+    expect(screen.getByLabelText("Klokkeslett for punkt 4").textContent).toBe("11:10");
     fireEvent.change(screen.getByLabelText("Tittel på punkt 4"), { target: { value: "Bønn" } });
     fireEvent.click(screen.getByRole("button", { name: "Ta bort punkt 1" }));
     save();
@@ -149,7 +149,7 @@ describe("Skjemaet for en mal", () => {
     save();
 
     await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
-    expect(saved().program.map((item) => `${itemClock("11:00", item)} ${item.title}`)).toEqual(["10:45 Velkommen ved inngang", "11:00 Velkommen. Åpningsord", "11:07 Lovsang x2"]);
+    expect(saved().program.map((item) => `${itemClock("11:00", item)} ${item.title}`)).toEqual(["10:45 Velkommen ved inngang", "11:00 Velkommen. Åpningsord", "11:03 Lovsang x2"]);
   });
 
   test("programpunkt kan flyttes med dra og slipp", async () => {
@@ -163,7 +163,7 @@ describe("Skjemaet for en mal", () => {
     save();
 
     await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
-    expect(saved().program.map((item) => `${itemClock("11:00", item)} ${item.title}`)).toEqual(["10:45 Velkommen ved inngang", "11:00 Velkommen. Åpningsord", "11:07 Lovsang x2"]);
+    expect(saved().program.map((item) => `${itemClock("11:00", item)} ${item.title}`)).toEqual(["10:45 Velkommen ved inngang", "11:00 Velkommen. Åpningsord", "11:03 Lovsang x2"]);
   });
 
   test("oppgavene følger programmet, og en ekstra vakt kan legges til med antall", async () => {

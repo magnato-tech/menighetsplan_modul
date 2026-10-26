@@ -934,6 +934,101 @@ describe("Nyhetsbrevet", () => {
   });
 });
 
+describe("Møteleder og gudstjenesteleder endrer programmet", () => {
+  // The programme of one gathering, written from Min side (src/utils/programEditor.ts)
+  const PROGRAM = [{ id: "p1", time: "10:00", title: "Velkomst" }];
+  const writeProgram = (db: Firestore, gatheringId: string, assignmentId: string, personId: string, personName: string) =>
+    updateDoc(doc(db, `gatherings/${gatheringId}`), {
+      programSchedule: PROGRAM,
+      programEditedBy: { assignmentId, personId, personName },
+      programEditedAt: "2026-10-26T10:00:00.000Z",
+    });
+  const mette = () => signedIn("mette@eksempel.no");
+  const per = () => signedIn("per@eksempel.no");
+
+  beforeEach(async () => {
+    await env.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore() as unknown as Firestore;
+      const put = (path: string, data: object) => setDoc(doc(db, path), data);
+      await Promise.all([
+        put("persons/mette", { name: "Mette Berg", email: "mette@eksempel.no", globalRole: "member" }),
+        put("persons/per", { name: "Per Lund", email: "per@eksempel.no", globalRole: "member" }),
+        put("logins/mette@eksempel.no", { personId: "mette", role: "member" }),
+        put("logins/per@eksempel.no", { personId: "per", role: "member" }),
+        put("cms_settings/role-moteleder", { recordType: "volunteerRole", name: "Møteleder" }),
+        put("cms_settings/role-lyd", { recordType: "volunteerRole", name: "Lyd" }),
+        put("gatherings/g-prog-1", { groupId: "group-lyd", title: "Møte", visibility: "offentlig", isPublic: true, programSchedule: [] }),
+        put("gatherings/g-prog-2", { groupId: "group-intern", title: "Annet møte", visibility: "intern", isPublic: false, programSchedule: [] }),
+        put("tasks/t-moteleder-1", { gatheringId: "g-prog-1", groupId: "group-lyd", volunteerRoleId: "role-moteleder", title: "Møteleder", status: "open" }),
+        put("tasks/t-lyd-1", { gatheringId: "g-prog-1", groupId: "group-lyd", volunteerRoleId: "role-lyd", title: "Lyd", status: "open" }),
+        put("tasks/t-gudstjeneste-1", { gatheringId: "g-prog-1", groupId: "group-lyd", title: "Gudstjenesteleder", status: "open" }),
+        put("tasks/t-moteleder-avlyst", { gatheringId: "g-prog-1", groupId: "group-lyd", volunteerRoleId: "role-moteleder", title: "Møteleder", status: "cancelled" }),
+        put("tasks/t-moteleder-2", { gatheringId: "g-prog-2", groupId: "group-intern", volunteerRoleId: "role-moteleder", title: "Møteleder", status: "open" }),
+        put("assignments/am-mette", { taskId: "t-moteleder-1", personId: "mette", personName: "Mette Berg", response: "confirmed", gatheringId: "g-prog-1", gatheringGroupId: "group-lyd", gatheringPublic: true }),
+        put("assignments/am-per-pending", { taskId: "t-moteleder-1", personId: "per", personName: "Per Lund", response: "pending", gatheringId: "g-prog-1", gatheringGroupId: "group-lyd", gatheringPublic: true }),
+        put("assignments/am-mette-lyd", { taskId: "t-lyd-1", personId: "mette", personName: "Mette Berg", response: "confirmed", gatheringId: "g-prog-1", gatheringGroupId: "group-lyd", gatheringPublic: true }),
+        put("assignments/am-per-gud", { taskId: "t-gudstjeneste-1", personId: "per", personName: "Per Lund", response: "confirmed", gatheringId: "g-prog-1", gatheringGroupId: "group-lyd", gatheringPublic: true }),
+        put("assignments/am-mette-avlyst", { taskId: "t-moteleder-avlyst", personId: "mette", personName: "Mette Berg", response: "confirmed", gatheringId: "g-prog-1", gatheringGroupId: "group-lyd", gatheringPublic: true }),
+      ]);
+    });
+  });
+
+  test("den som har sagt ja til å lede, endrer programmet til det arrangementet, og bare det", async () => {
+    await assertSucceeds(writeProgram(mette(), "g-prog-1", "am-mette", "mette", "Mette Berg"));
+    expect((await getDoc(doc(kari(), "gatherings/g-prog-1"))).data()).toMatchObject({
+      programEditedBy: { assignmentId: "am-mette", personId: "mette", personName: "Mette Berg" },
+      programEditedAt: "2026-10-26T10:00:00.000Z",
+    });
+  });
+
+  test("den som ikke har svart ja ennå, endrer ikke programmet", async () => {
+    await assertFails(writeProgram(per(), "g-prog-1", "am-per-pending", "per", "Per Lund"));
+  });
+
+  test("en leder kan ikke endre programmet til et annet arrangement", async () => {
+    await assertFails(writeProgram(mette(), "g-prog-2", "am-mette", "mette", "Mette Berg"));
+  });
+
+  test("tittel og tid kan ikke endres sammen med programmet", async () => {
+    await assertFails(updateDoc(doc(mette(), "gatherings/g-prog-1"), {
+      programSchedule: PROGRAM,
+      programEditedBy: { assignmentId: "am-mette", personId: "mette", personName: "Mette Berg" },
+      programEditedAt: "2026-10-26T10:00:00.000Z",
+      title: "Endret",
+    }));
+    await assertFails(updateDoc(doc(mette(), "gatherings/g-prog-1"), {
+      programSchedule: PROGRAM,
+      programEditedBy: { assignmentId: "am-mette", personId: "mette", personName: "Mette Berg" },
+      programEditedAt: "2026-10-26T10:00:00.000Z",
+      startsAt: "2026-11-01T10:00:00.000Z",
+    }));
+  });
+
+  test("oppgaven må være en som leder: en med rollen Lyd gir ingen rett", async () => {
+    await assertFails(writeProgram(mette(), "g-prog-1", "am-mette-lyd", "mette", "Mette Berg"));
+  });
+
+  test("man kan ikke oppgi en annens bekreftede oppgave som sin egen", async () => {
+    // Per's confirmed leading assignment, named by Mette
+    await assertFails(writeProgram(mette(), "g-prog-1", "am-per-gud", "mette", "Mette Berg"));
+    // Mette's assignment, named as Per's
+    await assertFails(writeProgram(mette(), "g-prog-1", "am-mette", "per", "Per Lund"));
+  });
+
+  test("en oppgave som heter Gudstjenesteleder uten rolle-id, gir rett", async () => {
+    await assertSucceeds(writeProgram(per(), "g-prog-1", "am-per-gud", "per", "Per Lund"));
+  });
+
+  test("en avlyst oppgave gir ingen rett", async () => {
+    await assertFails(writeProgram(mette(), "g-prog-1", "am-mette-avlyst", "mette", "Mette Berg"));
+  });
+
+  test("gruppeleder og administrator endrer fortsatt arrangementet som før", async () => {
+    await assertSucceeds(updateDoc(doc(ola(), "gatherings/g-prog-1"), { title: "Møte med gjest" }));
+    await assertSucceeds(updateDoc(doc(kari(), "gatherings/g-prog-1"), { title: "Møte" }));
+  });
+});
+
 describe("En nettredaktør", () => {
   test("skriver nettsiden: sider, nyheter, taler, bilder, innstillingene og versjonene i historikken", async () => {
     const db = kristine();

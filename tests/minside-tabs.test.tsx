@@ -127,13 +127,36 @@ describe("Det som er tatt bort fra Min side", () => {
     expect(onShowAll).toHaveBeenCalledTimes(1);
   });
 
-  test("en forespørsel til deg står synlig over knappen, også når det er mange ledige oppgaver", () => {
-    const page = attention(5);
-    page.attentionItems.unshift({ id: "r1", type: "task_request", assignmentId: "as1", title: "Gudstjeneste 1. november", role: "Møteleder", startsAt: "2027-01-10T11:00:00" } as never);
-    render(<AttentionSection page={page} onShowAll={() => undefined} />);
-    expect(screen.getByText("Forespørsel til deg")).toBeTruthy();
+  const withRequests = (requestCount: number, openCount: number) => {
+    const page = attention(openCount);
+    for (let n = requestCount - 1; n >= 0; n--) {
+      page.attentionItems.unshift({ id: `r${n}`, type: "task_request", assignmentId: `as${n}`, title: `Gudstjeneste ${n + 1}`, role: "Møteleder", startsAt: "2027-01-10T11:00:00" } as never);
+    }
+    return page;
+  };
+
+  test("én forespørsel står øverst om gangen, med hvor mange det er, og resten ligger bak knappen", () => {
+    const onShowAll = vi.fn();
+    render(<AttentionSection page={withRequests(3, 5)} onShowAll={onShowAll} />);
+    expect(screen.getAllByText("Forespørsel til deg")).toHaveLength(1);
+    expect(screen.getByText("Gudstjeneste 1")).toBeTruthy();
+    expect(screen.getByText("1 av 3")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Ja, jeg kan" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Se ledige oppgaver (5)" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Se ledige oppgaver (5)" }));
+    expect(onShowAll).toHaveBeenCalledTimes(1);
+  });
+
+  test("med en forespørsel og to ledige oppgaver har forespørselen fokus, og de ledige ligger bak knappen", () => {
+    render(<AttentionSection page={withRequests(1, 2)} onShowAll={() => undefined} />);
+    expect(screen.getByText("Gudstjeneste 1")).toBeTruthy();
+    expect(screen.queryByText("1 av 1")).toBeNull();
+    expect(screen.getByRole("button", { name: "Se ledige oppgaver (2)" })).toBeTruthy();
+  });
+
+  test("med bare forespørsler heter knappen Se alle forespørsler", () => {
+    render(<AttentionSection page={withRequests(2, 0)} onShowAll={() => undefined} />);
+    expect(screen.getByText("1 av 2")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Se alle forespørsler (2)" })).toBeTruthy();
   });
 
   test("med én eller to saker står kortene rett på siden, uten overskrift, og gruppa nevnes bare når tittelen ikke sier det samme", () => {

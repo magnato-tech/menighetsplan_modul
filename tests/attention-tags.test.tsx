@@ -50,12 +50,14 @@ describe("Listen med tagger", () => {
 
   test("flere tagger kan trykkes inn, og alle som er trykket inn, vises", () => {
     show();
-    expect(screen.getByRole("heading", { name: "Dette trenger din handling (7)" })).toBeTruthy();
-    expect(cards()).toHaveLength(7);
+    // The request first, then the free tasks; the call stands on the page and is not repeated here
+    expect(screen.getByRole("heading", { name: "Forespurte og ledige oppgaver (6)" })).toBeTruthy();
+    expect(cards()).toHaveLength(6);
+    expect(cards()[0]).toBe("Lyd");
 
     fireEvent.click(within(tags()).getByRole("button", { name: "Rigging 2" }));
     expect(cards()).toEqual(["Rigging", "Rigging"]);
-    expect(screen.getByRole("heading", { name: "Dette trenger din handling (2 av 7)" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Forespurte og ledige oppgaver (2 av 6)" })).toBeTruthy();
 
     fireEvent.click(within(tags()).getByRole("button", { name: "Møteleder 1" }));
     expect(cards()).toEqual(["Rigging", "Rigging", "Møteleder"]);
@@ -66,7 +68,7 @@ describe("Listen med tagger", () => {
     fireEvent.click(within(tags()).getByRole("button", { name: "Rigging 2" }));
     expect(cards()).toEqual(["Møteleder"]);
     fireEvent.click(within(tags()).getByRole("button", { name: "Vis alle" }));
-    expect(cards()).toHaveLength(7);
+    expect(cards()).toHaveLength(6);
     expect(within(tags()).queryByRole("button", { name: "Vis alle" })).toBeNull();
   });
 
@@ -75,6 +77,12 @@ describe("Listen med tagger", () => {
     fireEvent.click(within(tags()).getByRole("button", { name: "Forbønn 1" }));
     fireEvent.click(screen.getByRole("button", { name: "Ta oppgave" }));
     expect(handleAttentionAnswer).toHaveBeenCalledWith(items[2], true);
+  });
+
+  test("med bare forespørsler heter listen Forespurte oppgaver", () => {
+    show([items[5]]);
+    expect(screen.getByRole("heading", { name: "Forespurte oppgaver (1)" })).toBeTruthy();
+    expect(cards()).toEqual(["Lyd"]);
   });
 
   test("med bare én rolle er det ingenting å velge mellom, og taggene vises ikke", () => {

@@ -6,7 +6,9 @@ import {
 } from "../hooks/useAppHooks";
 import { useTimedMessage } from "../hooks/useTimedMessage";
 import { studioTabUrl } from "../pages/admin/studio";
-import { buildRunSheet, programIndexOfRunSheetRow, reorderProgramSchedule } from "../utils/runSheet";
+import { buildRunSheet, programIndexOfRunSheetRow } from "../utils/runSheet";
+import { withComputedTimes } from "../utils/programTiming";
+import type { ProgramItem } from "../types";
 import { buildStaffingRoster, needsAction, summarizeStaffingRoster } from "../utils/staffingRoster";
 import { locationOf } from "../utils/gatherings";
 import {
@@ -25,6 +27,7 @@ import {
   Users,
 } from "lucide-react";
 import { ProgramView } from "./gathering/ProgramView";
+import { ProgramUndoToast } from "./gathering/ProgramUndoToast";
 import { StaffingView } from "./gathering/StaffingView";
 import { GatheringActions, type GatheringAction } from "./gathering/GatheringActions";
 import { CreateTaskDialog } from "./gathering/CreateTaskDialog";
@@ -90,6 +93,8 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
   const [isApplyingTemplate, setIsApplyingTemplate] = useState(false);
   const { templates: gatheringTemplates } = useGatheringTemplates();
   const [toastMessage, showToast] = useTimedMessage<string>();
+  // The programme as it was before the last change, so «Angre» can put it back
+  const [programUndo, setProgramUndo] = useState<{ id: number; previous: ProgramItem[]; what: string } | null>(null);
 
   // The programme and the tasks, built from what is registered and nothing else
   const runSheet = useMemo(
@@ -151,11 +156,22 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
     );
   }
 
-  const handleProgramReorder = (from: number, to: number) => {
-    if (from === to) return;
-    const res = updateGathering(gathering.id, { programSchedule: reorderProgramSchedule(programSchedule, from, to) });
-    if (res.success) showToast("Programposten er flyttet.");
+  // Saves the programme with its times worked out again. The change can be taken back until the notice hides.
+  const saveProgram = (items: ProgramItem[], what: string) => {
+    const res = updateGathering(gathering.id, {
+      programSchedule: withComputedTimes(items, gathering.startsAt, gathering.endsAt),
+    });
+    if (res.success) setProgramUndo({ id: Date.now(), previous: programSchedule, what });
     else showToast(res.error || "Programmet kunne ikke lagres.");
+  };
+
+  const undoProgram = () => {
+    if (!programUndo) return;
+    const res = updateGathering(gathering.id, {
+      programSchedule: withComputedTimes(programUndo.previous, gathering.startsAt, gathering.endsAt),
+    });
+    setProgramUndo(null);
+    if (!res.success) showToast(res.error || "Angringen kunne ikke lagres.");
   };
 
   // A template made of this event, as it stands: its programme, its tasks and how it is presented
@@ -181,7 +197,7 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
     ...(canAdminister
       ? [
           { key: "edit", label: "Rediger", icon: Edit3, onClick: () => setIsEditingGathering(true) },
-          { key: "task", label: "Ny oppgave", icon: Plus, onClick: () => setIsCreatingTask(true), primary: true },
+          { key: "task", label: "Ny programpost", icon: Plus, onClick: () => setIsCreatingTask(true), primary: true },
           ...(withPlanner
             ? [{ key: "template", label: "Hent fra mal", icon: LayoutTemplate, onClick: () => setIsApplyingTemplate(true), primary: true }]
             : []),
@@ -346,11 +362,26 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
           <p className="text-[10px] text-slate-500 mt-1">{view === "program" ? "Program" : "Bemanning"}</p>
         </div>
 
+        {/* Shown when a meeting leader last changed the programme from Min side */}
+        {view === "program" && gathering.programEditedBy && gathering.programEditedAt && (
+          <p className="px-1 pb-2 text-[11px] text-slate-400 print:hidden">
+            Sist endret av {gathering.programEditedBy.personName}, {formatNorwegianDateTime(gathering.programEditedAt)}
+          </p>
+        )}
+
         {view === "program" ? (
           <ProgramView
             rows={programRows}
+            items={programSchedule}
+            startsAt={gathering.startsAt}
+            endsAt={gathering.endsAt}
             canAdminister={canAdminister}
-            onReorder={canAdminister ? handleProgramReorder : undefined}
+            permissions={{
+              reorder: canAdminister,
+              edit: canAdminister,
+              deleteItem: () => true,
+            }}
+            onChangeProgram={saveProgram}
             focusRowId={null}
             emptyHint={
               canAdminister && withPlanner
@@ -368,6 +399,15 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
           />
         )}
       </div>
+
+      {programUndo && (
+        <ProgramUndoToast
+          key={programUndo.id}
+          what={programUndo.what}
+          onUndo={undoProgram}
+          onHide={() => setProgramUndo(null)}
+        />
+      )}
 
       <CreateTaskDialog
         detail={detail}
