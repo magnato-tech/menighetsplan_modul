@@ -118,13 +118,22 @@ describe("Det som er tatt bort fra Min side", () => {
       handleAttentionAnswer: vi.fn(),
     }) as unknown as MyPageModel;
 
-  test("handlingsboksen er én knapp med antallet i parentes", () => {
+  test("mange ledige oppgaver er én knapp med antallet i parentes", () => {
     const onShowAll = vi.fn();
     render(<AttentionSection page={attention(68)} onShowAll={onShowAll} />);
     const box = document.getElementById("section-trenger-oppmerksomhet")!;
-    expect(box.textContent).toBe("Ta oppgave (68)");
-    fireEvent.click(screen.getByRole("button", { name: "Ta oppgave (68)" }));
+    expect(box.textContent).toBe("Se ledige oppgaver (68)");
+    fireEvent.click(screen.getByRole("button", { name: "Se ledige oppgaver (68)" }));
     expect(onShowAll).toHaveBeenCalledTimes(1);
+  });
+
+  test("en forespørsel til deg står synlig over knappen, også når det er mange ledige oppgaver", () => {
+    const page = attention(5);
+    page.attentionItems.unshift({ id: "r1", type: "task_request", assignmentId: "as1", title: "Gudstjeneste 1. november", role: "Møteleder", startsAt: "2027-01-10T11:00:00" } as never);
+    render(<AttentionSection page={page} onShowAll={() => undefined} />);
+    expect(screen.getByText("Forespørsel til deg")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Ja, jeg kan" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Se ledige oppgaver (5)" })).toBeTruthy();
   });
 
   test("med én eller to saker står kortene rett på siden, uten overskrift, og gruppa nevnes bare når tittelen ikke sier det samme", () => {
