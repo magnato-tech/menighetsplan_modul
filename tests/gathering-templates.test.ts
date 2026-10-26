@@ -146,7 +146,7 @@ describe("Et arrangement fra en mal", () => {
     expect(plan.gathering).toMatchObject({ title: "Gudstjeneste", templateId: "mal-1", startsAt: combineDateAndTimeToIso("2026-10-18", "11:00") });
     expect(plan.tasks.map((task) => task.input.title)).toEqual(["Møtevert", "Lovsang", "Møteleder", "Barnekirke", "Taler", "Forbønn"]);
     expect(plan.program).toHaveLength(18);
-    expect(plan.program[0]).toEqual({ time: "10:45", title: "Velkommen ved inngang", description: undefined, taskKey: "r-vert" });
+    expect(plan.program[0]).toEqual({ time: "10:45", durationMinutes: 15, title: "Velkommen ved inngang", description: undefined, taskKey: "r-vert" });
     // The point nobody has, is in the programme without a task
     expect(plan.program.find((item) => item.title.startsWith("Nattverd"))?.taskKey).toBeUndefined();
   });

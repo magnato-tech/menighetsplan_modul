@@ -507,7 +507,7 @@ const roller: HelpArticle = {
     "Trykk **Instruks** på rollen, og skriv hva den som har rollen, skal gjøre. Trykk **Lagre instruks**.",
     "**Legg inn standardroller** gir en ferdig liste å starte med.",
   ],
-  godt: "Instruksen vises for den frivillige på Min Side og i bemanningen.",
+  godt: "Instruksen vises for den frivillige på Min Side og i bemanningen. Den som har svart ja til Møteleder eller Gudstjenesteleder, kan selv endre programmet for den ene gudstjenesten fra Min Side: dra postene med de seks prikkene, endre tittel og varighet med blyanten, og legge til med Ny programpost. Klokkeslettene regnes ut fra varigheten. Poster koblet til en oppgave kan ikke slettes.",
   seOgsa: ["bemanning", "maler"],
   tabs: ["planlegger-roller"],
 };

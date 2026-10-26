@@ -1,7 +1,8 @@
 import React from "react";
-import { AlertTriangle, Check, Clock, GripVertical } from "lucide-react";
+import { AlertTriangle, Check, Clock, GripVertical, Pencil } from "lucide-react";
 import type { RunSheetRow } from "../../utils/runSheet";
 import { holdsSlot } from "../../utils/staffing";
+import { REORDER_ROW_ATTR, type PointerReorderHandleProps } from "../../hooks/usePointerReorder";
 
 interface ProgramRowCardProps {
   row: RunSheetRow;
@@ -10,13 +11,16 @@ interface ProgramRowCardProps {
    * for an admin and on a leader's own groups), or only those who have said yes ("names").
    */
   staffing: "full" | "names";
-  canReorder?: boolean;
+  /** The post's place in the programme, when it is one. Task rows have none. */
+  index: number | null;
+  /** Handle props for moving the post. Missing when the reader may not move posts. */
+  reorder?: PointerReorderHandleProps;
+  /** How long the post lasts, in minutes. */
+  durationMinutes?: number;
+  /** Opens the post for changing. Missing when the reader may not change posts. */
+  onEdit?: () => void;
   isDragging?: boolean;
   isDragOver?: boolean;
-  onDragStart?: (event: React.DragEvent) => void;
-  onDragEnd?: () => void;
-  onDragOver?: (event: React.DragEvent) => void;
-  onDrop?: (event: React.DragEvent) => void;
 }
 
 /**
@@ -26,13 +30,12 @@ interface ProgramRowCardProps {
 export const ProgramRowCard: React.FC<ProgramRowCardProps> = ({
   row,
   staffing,
-  canReorder = false,
+  index,
+  reorder,
+  durationMinutes,
+  onEdit,
   isDragging = false,
   isDragOver = false,
-  onDragStart,
-  onDragEnd,
-  onDragOver,
-  onDrop,
 }) => {
   const people = row.assignedPersons
     .filter((p) => (staffing === "full" ? holdsSlot(p.assignment) : p.response === "confirmed"))
@@ -42,20 +45,18 @@ export const ProgramRowCard: React.FC<ProgramRowCardProps> = ({
   return (
     <div
       id={`schedule-row-${row.id}`}
-      onDragOver={canReorder ? onDragOver : undefined}
-      onDrop={canReorder ? onDrop : undefined}
+      {...(index !== null ? { [REORDER_ROW_ATTR]: index } : {})}
       className={`p-3 bg-white rounded-2xl border border-slate-200/80 flex items-start gap-2.5 break-inside-avoid transition-all ${
         isDragging ? "opacity-50" : ""
       } ${isDragOver ? "border-indigo-400 ring-1 ring-indigo-200" : ""} print:rounded-none print:border-x-0 print:border-t-0 print:p-1.5`}
     >
-      {canReorder && (
+      {reorder && (
         <button
           type="button"
-          draggable
           aria-label={`Flytt programposten ${row.title}`}
-          onDragStart={onDragStart}
-          onDragEnd={onDragEnd}
-          className="p-1 -ml-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-grab active:cursor-grabbing touch-none shrink-0 print:hidden"
+          aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"
+          {...reorder}
+          className="p-1 -ml-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-grab active:cursor-grabbing touch-none select-none shrink-0 print:hidden"
         >
           <GripVertical className="w-4 h-4" aria-hidden />
         </button>
@@ -67,6 +68,7 @@ export const ProgramRowCard: React.FC<ProgramRowCardProps> = ({
       <div className="min-w-0 flex-1 space-y-1">
         <div>
           <p className="text-sm font-bold text-slate-900 leading-snug">{row.title}</p>
+          {durationMinutes !== undefined && <p className="text-[11px] font-semibold text-slate-400">{durationMinutes} min</p>}
           {row.description && <p className="text-xs text-slate-500">{row.description}</p>}
         </div>
 
@@ -111,6 +113,18 @@ export const ProgramRowCard: React.FC<ProgramRowCardProps> = ({
           </div>
         )}
       </div>
+
+      {onEdit && (
+        <button
+          type="button"
+          onClick={onEdit}
+          aria-label="Endre posten"
+          title="Endre posten"
+          className="p-2 -mr-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer shrink-0 print:hidden"
+        >
+          <Pencil className="w-4 h-4" aria-hidden />
+        </button>
+      )}
     </div>
   );
 };

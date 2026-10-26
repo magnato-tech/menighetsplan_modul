@@ -1,25 +1,70 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Info } from "lucide-react";
+import type { ProgramItem } from "../../types";
 import type { RunSheetRow } from "../../utils/runSheet";
 import { programIndexOfRunSheetRow } from "../../utils/runSheet";
+import { durationsOf, moveProgramItem, programStartMinutes, withComputedTimes } from "../../utils/programTiming";
+import { usePointerReorder } from "../../hooks/usePointerReorder";
 import { ProgramRowCard } from "./ProgramRowCard";
+import { ProgramPostDialog } from "./ProgramPostDialog";
+
+export interface ProgramPermissions {
+  /** May move posts. */
+  reorder: boolean;
+  /** May change a post's title, text and length. */
+  edit: boolean;
+  /** May delete this post. */
+  deleteItem: (item: ProgramItem) => boolean;
+}
 
 interface ProgramViewProps {
-  /** The programme items of the run sheet, in order. */
+  /** The programme's rows, in order. Only programme posts, not tasks without a post. */
   rows: RunSheetRow[];
+  /** The programme itself, as saved on the gathering. */
+  items: ProgramItem[];
+  /** The gathering's start and end: the clock times are worked out from these. */
+  startsAt: string;
+  endsAt?: string;
   /** Whether the reader sees the whole staffing on every item (an admin) or only on their own groups. */
   canAdminister: boolean;
-  /** An admin may move programme items by dragging them. */
-  onReorder?: (from: number, to: number) => void;
+  permissions: ProgramPermissions;
+  /** Saves the whole programme. `what` is a short Norwegian note of the change, for the undo message. */
+  onChangeProgram: (items: ProgramItem[], what: string) => void;
   /** A row the view was opened for, to scroll to. */
   focusRowId?: string | null;
   emptyHint: string;
 }
 
-/** «Program»: the programme as it runs, with who is set up. Read only, apart from moving items. */
-export const ProgramView: React.FC<ProgramViewProps> = ({ rows, canAdminister, onReorder, focusRowId, emptyHint }) => {
-  const [dragged, setDragged] = useState<number | null>(null);
-  const [dragOver, setDragOver] = useState<number | null>(null);
+/**
+ * «Program»: the programme as it runs, with who is set up. Who may move or change posts is decided by
+ * `permissions`; the one who sees the view only reads the names and the gaps.
+ */
+export const ProgramView: React.FC<ProgramViewProps> = ({
+  rows,
+  items,
+  startsAt,
+  endsAt,
+  canAdminister,
+  permissions,
+  onChangeProgram,
+  focusRowId,
+  emptyHint,
+}) => {
+  const listRef = useRef<HTMLDivElement>(null);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const durations = useMemo(() => durationsOf(items, endsAt), [items, endsAt]);
+
+  const handleMove = (from: number, to: number) => {
+    if (from === to) return;
+    const title = items[from]?.title ?? "";
+    onChangeProgram(moveProgramItem(items, from, to, startsAt, endsAt), `Flyttet «${title}»`);
+  };
+
+  const { dragFrom, dragOver, handlePropsFor } = usePointerReorder({
+    containerRef: listRef,
+    count: items.length,
+    onMove: handleMove,
+  });
 
   const scrolledTo = useRef<string | null>(null);
   useEffect(() => {
@@ -40,46 +85,63 @@ export const ProgramView: React.FC<ProgramViewProps> = ({ rows, canAdminister, o
     );
   }
 
-  const reset = () => {
-    setDragged(null);
-    setDragOver(null);
+  // Every post gets its length written out before a change, so the times of the rest stay right
+  const withDurations = (): ProgramItem[] => items.map((item, index) => ({ ...item, durationMinutes: durations[index] }));
+
+  const saveEdit = (edited: ProgramItem) => {
+    if (editingIndex === null) return;
+    const next = withDurations();
+    next[editingIndex] = edited;
+    setEditingIndex(null);
+    onChangeProgram(withComputedTimes(next, startsAt, endsAt), `Endret «${edited.title}»`);
   };
 
+  const deleteEdited = () => {
+    if (editingIndex === null) return;
+    const title = items[editingIndex]?.title ?? "";
+    const next = withDurations().filter((_, index) => index !== editingIndex);
+    setEditingIndex(null);
+    // The programme keeps its start, also when its first post is the one removed
+    onChangeProgram(withComputedTimes(next, startsAt, endsAt, programStartMinutes(items, startsAt)), `Slettet «${title}»`);
+  };
+
+  const editedItem = editingIndex !== null ? items[editingIndex] : undefined;
+
   return (
-    <div className="space-y-2 print:space-y-0">
-      {onReorder && rows.length > 1 && (
-        <p className="px-1 text-[11px] text-slate-400 print:hidden">Dra i håndtaket for å flytte en programpost.</p>
+    <div className="space-y-2 print:space-y-0" ref={listRef}>
+      {permissions.reorder && rows.length > 1 && (
+        <p className="px-1 text-[11px] text-slate-400 print:hidden">
+          Dra i håndtaket for å flytte en programpost. Med tastatur: Alt og piltast opp eller ned.
+        </p>
       )}
       {rows.map((row) => {
         const index = programIndexOfRunSheetRow(row.id);
-        const reorder = Boolean(onReorder) && index !== null;
+        const movable = permissions.reorder && index !== null;
         return (
           <ProgramRowCard
             key={row.id}
             row={row}
-            staffing={canAdminister || row.isMyGroup ? "full" : "names"}
-            canReorder={reorder}
-            isDragging={reorder && dragged === index}
-            isDragOver={reorder && dragOver === index}
-            onDragStart={(event) => {
-              setDragged(index);
-              event.dataTransfer.effectAllowed = "move";
-              event.dataTransfer.setData("text/plain", String(index));
-            }}
-            onDragEnd={reset}
-            onDragOver={(event) => {
-              event.preventDefault();
-              event.dataTransfer.dropEffect = "move";
-              if (dragOver !== index) setDragOver(index);
-            }}
-            onDrop={(event) => {
-              event.preventDefault();
-              if (dragged !== null && index !== null && dragged !== index) onReorder?.(dragged, index);
-              reset();
-            }}
+            index={index}
+            // The one who leads the gathering sees who is asked and what is unstaffed, like the planning does
+            staffing={canAdminister || permissions.edit || row.isMyGroup ? "full" : "names"}
+            reorder={movable && index !== null ? handlePropsFor(index) : undefined}
+            durationMinutes={index !== null ? durations[index] : undefined}
+            onEdit={permissions.edit && index !== null ? () => setEditingIndex(index) : undefined}
+            isDragging={movable && dragFrom === index}
+            isDragOver={movable && dragOver === index && dragFrom !== index}
           />
         );
       })}
+
+      {editedItem && editingIndex !== null && (
+        <ProgramPostDialog
+          item={{ ...editedItem, durationMinutes: durations[editingIndex] }}
+          canDelete={permissions.deleteItem(editedItem)}
+          onSave={saveEdit}
+          onDelete={deleteEdited}
+          onClose={() => setEditingIndex(null)}
+        />
+      )}
     </div>
   );
 };

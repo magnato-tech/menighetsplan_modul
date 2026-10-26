@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Gathering } from "../../types";
+import { Gathering, ProgramItem } from "../../types";
 import { X } from "lucide-react";
 import { GatheringDetail } from "./gatheringDetail";
 import { findExistingTaskForRole, sortVolunteerRoles } from "../../utils/roleStaffing";
 import { studioTabUrl } from "../../pages/admin/studio";
+import { DEFAULT_DURATION_MINUTES, withComputedTimes } from "../../utils/programTiming";
 
 interface CreateTaskDialogProps {
   detail: GatheringDetail;
@@ -25,8 +26,9 @@ export const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
   const { group, volunteerRoles, gatheringTasks, allGroups, createTask, updateGathering } = detail;
 
   const [selectedRoleId, setSelectedRoleId] = useState<string>("");
-  const [programTime, setProgramTime] = useState<string>("11:00");
   const [programTitle, setProgramTitle] = useState<string>("");
+  const [programDescription, setProgramDescription] = useState<string>("");
+  const [programDuration, setProgramDuration] = useState<number>(DEFAULT_DURATION_MINUTES);
   const [taskGroupId, setTaskGroupId] = useState<string>("");
   const [neededCount, setNeededCount] = useState<number>(1);
   const [pendingShare, setPendingShare] = useState<{ existingTaskId: string } | null>(null);
@@ -47,23 +49,30 @@ export const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
 
   const resetForm = () => {
     setSelectedRoleId("");
-    setProgramTime("11:00");
     setProgramTitle("");
+    setProgramDescription("");
+    setProgramDuration(DEFAULT_DURATION_MINUTES);
     setTaskGroupId("");
     setNeededCount(1);
     setPendingShare(null);
   };
 
-  const appendProgramPost = (taskId: string) => {
-    const newItem = {
-      time: programTime.trim(),
+  /** Adds the post at the end. Without a role, `taskId` is left out and the post stands alone. */
+  const appendProgramPost = (taskId?: string) => {
+    // The description field is only shown without a role, so it is left out when a role is chosen
+    const description = taskId ? "" : programDescription.trim();
+    const newItem: ProgramItem = {
+      time: "",
+      durationMinutes: programDuration,
       title: programTitle.trim(),
-      taskId,
+      ...(description ? { description } : {}),
+      ...(taskId ? { taskId } : {}),
     };
-    const updatedSchedule = [...(gathering.programSchedule || []), newItem];
+    // The clock times follow from the gathering's start and the lengths, so the new post gets its own
+    const updatedSchedule = withComputedTimes([...(gathering.programSchedule || []), newItem], gathering.startsAt, gathering.endsAt);
     const res = updateGathering(gathering.id, { programSchedule: updatedSchedule });
     if (res.success) {
-      showToast(`Programposten «${programTitle.trim()}» ble lagt til!`);
+      showToast(`Programposten «${programTitle.trim()}» ble lagt til`);
       resetForm();
       onClose();
     } else {
@@ -89,12 +98,14 @@ export const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
 
   const handleCreatePost = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedRoleId || !selectedRole) {
-      showToast("Velg en rolle fra biblioteket.");
+    if (!programTitle.trim()) {
+      showToast("Programposten trenger en tittel.");
       return;
     }
-    if (!programTime.trim() || !programTitle.trim()) {
-      showToast("Programposten trenger tid og tittel.");
+
+    // Without a role the post stands alone: no task is made for it
+    if (!selectedRole) {
+      appendProgramPost();
       return;
     }
 
@@ -189,14 +200,13 @@ export const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
         ) : (
           <form onSubmit={handleCreatePost} className="space-y-3 text-xs">
             <div>
-              <label className="block font-bold text-slate-700 mb-1">Rolle fra biblioteket *</label>
+              <label className="block font-bold text-slate-700 mb-1">Rolle fra biblioteket (valgfritt)</label>
               <select
                 value={selectedRoleId}
                 onChange={(e) => setSelectedRoleId(e.target.value)}
                 className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-semibold text-slate-800 cursor-pointer"
-                required
               >
-                <option value="">Velg rolle...</option>
+                <option value="">Ingen rolle (bare programpost)</option>
                 {sortedRoles.map((role) => (
                   <option key={role.id} value={role.id}>
                     {role.name}
@@ -208,17 +218,6 @@ export const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Klokkeslett *</label>
-                <input
-                  type="text"
-                  value={programTime}
-                  onChange={(e) => setProgramTime(e.target.value)}
-                  placeholder="11:00"
-                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-semibold text-slate-900"
-                  required
-                />
-              </div>
-              <div>
                 <label className="block font-bold text-slate-700 mb-1">Programtittel *</label>
                 <input
                   type="text"
@@ -228,7 +227,30 @@ export const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
                   required
                 />
               </div>
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Varighet (min)</label>
+                <input
+                  type="number"
+                  min={0}
+                  step={5}
+                  value={programDuration}
+                  onChange={(e) => setProgramDuration(Math.max(0, Number(e.target.value) || 0))}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-semibold text-slate-900"
+                />
+              </div>
             </div>
+
+            {!selectedRoleId && (
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Beskrivelse (valgfritt)</label>
+                <textarea
+                  value={programDescription}
+                  onChange={(e) => setProgramDescription(e.target.value)}
+                  rows={2}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900"
+                />
+              </div>
+            )}
 
             {teamFieldVisible && (
               <div>

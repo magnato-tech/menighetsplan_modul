@@ -9,7 +9,10 @@ import {
   ShieldAlert,
   CheckCircle2,
   Info,
+  Pencil,
 } from "lucide-react";
+import { useFirebase } from "../context/FirebaseDataContext";
+import { programEditorAssignment } from "../utils/programEditor";
 
 export const TaskDetailPage: React.FC = () => {
   const { taskId } = useParams<{ taskId: string }>();
@@ -31,6 +34,7 @@ export const TaskDetailPage: React.FC = () => {
     reportAbsence,
   } = useTaskDetail(taskId);
 
+  const { tasks, assignments, volunteerRoles, currentUser } = useFirebase();
   const [actionFeedback, setActionFeedback] = useState<string | null>(null);
   const [isConfirmingAbsence, setIsConfirmingAbsence] = useState(false);
 
@@ -245,6 +249,17 @@ export const TaskDetailPage: React.FC = () => {
             {instruction || "Ingen instruks oppgitt for denne oppgaven ennå."}
           </p>
         </div>
+
+        {/* A meeting leader's own task: the programme of the gathering can be changed from its run sheet */}
+        {gathering && task && programEditorAssignment(gathering, tasks, assignments, volunteerRoles, currentUser.id)?.taskId === task.id && (
+          <Link
+            to={`/samling/${gathering.id}`}
+            className="flex items-center justify-center gap-2 py-2.5 rounded-xl border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition-colors"
+          >
+            <Pencil className="w-3.5 h-3.5" aria-hidden />
+            Se og endre programmet
+          </Link>
+        )}
 
         {/* Action Button Section */}
         <div className="pt-2 border-t border-slate-100 space-y-2.5">

@@ -136,6 +136,28 @@ service cloud.firestore {
         && leads(get(/databases/$(database)/documents/gatherings/$(gatheringId)).data.groupId);
     }
 
+    // A role that leads the gathering. The same list as PROGRAM_EDITOR_ROLES in src/utils/programEditor.ts.
+    function leadsGatheringRole(task) {
+      return task.get('volunteerRoleId', null) is string
+        ? get(/databases/$(database)/documents/cms_settings/$(task.volunteerRoleId)).data.get('name', '') in ['Møteleder', 'Gudstjenesteleder']
+        : task.get('title', '') in ['Møteleder', 'Gudstjenesteleder'];
+    }
+
+    // The one who has said yes to leading this gathering. The assignment named in the write must be theirs,
+    // confirmed, on a task of this gathering that is not cancelled.
+    function editsProgramOf(gatheringId) {
+      let by = request.resource.data.programEditedBy;
+      let a = get(/databases/$(database)/documents/assignments/$(by.assignmentId)).data;
+      let t = get(/databases/$(database)/documents/tasks/$(a.taskId)).data;
+      return isMember()
+        && by.personId == me()
+        && a.personId == me()
+        && a.response == 'confirmed'
+        && t.gatheringId == gatheringId
+        && t.get('status', '') != 'cancelled'
+        && leadsGatheringRole(t);
+    }
+
     function changedOnly(fields) {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(fields);
     }
@@ -249,7 +271,12 @@ service cloud.firestore {
       allow update: if isAdmin()
         || (leads(resource.data.groupId) && request.resource.data.groupId == resource.data.groupId)
         // A web editor gives the event its picture and text on the website, and nothing else
-        || (isWebEditor() && changedOnly(['imageUrl', 'imageAlt', 'imageFocus', 'summary', 'content', 'linkUrl', 'linkLabel', 'visibility', 'isPublic']));
+        || (isWebEditor() && changedOnly(['imageUrl', 'imageAlt', 'imageFocus', 'summary', 'content', 'linkUrl', 'linkLabel', 'visibility', 'isPublic']))
+        // The meeting leader changes the programme of their own gathering, and nothing else
+        || (changedOnly(['programSchedule', 'programEditedBy', 'programEditedAt'])
+            && request.resource.data.programEditedBy is map
+            && request.resource.data.programEditedBy.keys().hasOnly(['assignmentId', 'personId', 'personName'])
+            && editsProgramOf(gatheringId));
       allow delete: if isAdmin() || leads(resource.data.groupId);
     }
 

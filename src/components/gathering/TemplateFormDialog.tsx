@@ -2,7 +2,16 @@ import React, { Suspense, lazy, useState } from "react";
 import { ArrowDown, ArrowUp, Clock, GripVertical, Image as ImageIcon, LayoutTemplate, ListChecks, Plus, Save, Trash2, X } from "lucide-react";
 import type { GatheringVisibility, VolunteerRole } from "../../types";
 import { DEFAULT_LOCATION } from "../../utils/gatherings";
-import { itemClock, minutesOf, roleNameOf, tasksOfTemplate, type GatheringTemplate, type TemplateProgramItem } from "../../utils/gatheringTemplates";
+import {
+  itemClock,
+  minutesOf,
+  roleNameOf,
+  tasksOfTemplate,
+  withOffsetsFromDurations,
+  withTemplateDurations,
+  type GatheringTemplate,
+  type TemplateProgramItem,
+} from "../../utils/gatheringTemplates";
 import { newId } from "../../utils/id";
 
 // The picture chooser brings the media library with it, so it is fetched when the part is opened
@@ -26,15 +35,14 @@ const label = "block text-xs font-bold text-slate-700 mb-1";
 const sectionTitle = "text-sm font-black text-slate-900 flex items-center gap-2";
 const iconButton = "p-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 cursor-pointer disabled:opacity-30 disabled:cursor-default";
 
-const byTime = (a: TemplateProgramItem, b: TemplateProgramItem) => a.offsetMinutes - b.offsetMinutes;
-
 /**
  * The form a template for events is made and changed in (see utils/gatheringTemplates.ts): what
  * an event from the template is called and when it is held, its programme with a role on each
  * item, the tasks it needs beyond those, and how it is presented on the website.
  */
 export const TemplateFormDialog: React.FC<TemplateFormDialogProps> = ({ isNew, initial, groups, roles, withPlanner, onSave, onClose }) => {
-  const [template, setTemplate] = useState<GatheringTemplate>({ ...initial, program: [...initial.program].sort(byTime) });
+  // Older templates get their lengths from the gaps between their clock times
+  const [template, setTemplate] = useState<GatheringTemplate>(() => withTemplateDurations(initial));
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [websiteOpen, setWebsiteOpen] = useState(Boolean(initial.imageUrl || initial.summary || initial.content || initial.linkUrl));
@@ -45,34 +53,33 @@ export const TemplateFormDialog: React.FC<TemplateFormDialogProps> = ({ isNew, i
   // ---------- The programme ----------
   const setItem = (id: string, changes: Partial<TemplateProgramItem>) =>
     set({ program: template.program.map((item) => (item.id === id ? { ...item, ...changes } : item)) });
-  const setItemClock = (id: string, clock: string) => {
-    const at = minutesOf(clock);
-    const start = minutesOf(template.time);
-    if (at !== null && start !== null) setItem(id, { offsetMinutes: at - start });
-  };
+  /** The start of the programme, as minutes from the event's start. Kept when the lengths change. */
+  const programStart = () => template.program[0]?.offsetMinutes ?? 0;
+  /** A new length for a post: the clock times of the posts after it follow. */
+  const setItemDuration = (id: string, durationMinutes: number) =>
+    set({ program: withOffsetsFromDurations(template.program.map((item) => (item.id === id ? { ...item, durationMinutes } : item)), programStart()) });
   const setItemRole = (id: string, roleId: string) => {
     const role = roles.find((candidate) => candidate.id === roleId);
     setItem(id, { roleId: role?.id, roleName: role?.name });
   };
   const addItem = () => {
-    const last = template.program.at(-1);
-    set({ program: [...template.program, { id: newId("item"), offsetMinutes: last ? last.offsetMinutes + last.durationMinutes : 0, durationMinutes: 5, title: "" }] });
+    const program = [...template.program, { id: newId("item"), offsetMinutes: 0, durationMinutes: 5, title: "" }];
+    set({ program: withOffsetsFromDurations(program, programStart()) });
   };
-  const removeItem = (id: string) => set({ program: template.program.filter((item) => item.id !== id) });
-  /** Moves an item one place: the two swap times, so the programme still runs in the order shown. */
+  const removeItem = (id: string) => set({ program: withOffsetsFromDurations(template.program.filter((item) => item.id !== id), programStart()) });
+  /** Moves an item one place. Each post keeps its length, and the clock times follow the new order. */
   const moveItem = (index: number, by: -1 | 1) => {
     const other = index + by;
     if (other < 0 || other >= template.program.length) return;
     reorderProgram(index, other);
   };
-  /** Moves a row in the list; the clock times on each row stay put, like when using the arrows. */
+  /** Moves a row in the list. Each post keeps its length, and the clock times are worked out again. */
   const reorderProgram = (from: number, to: number) => {
     if (from === to || from < 0 || to < 0 || from >= template.program.length || to >= template.program.length) return;
     const program = [...template.program];
-    const offsets = program.map((item) => item.offsetMinutes);
     const [moved] = program.splice(from, 1);
     program.splice(to, 0, moved);
-    set({ program: program.map((item, index) => ({ ...item, offsetMinutes: offsets[index] })) });
+    set({ program: withOffsetsFromDurations(program, programStart()) });
   };
   const handleProgramDragStart = (event: React.DragEvent, index: number) => {
     setDraggedProgramIndex(index);
@@ -94,7 +101,6 @@ export const TemplateFormDialog: React.FC<TemplateFormDialogProps> = ({ isNew, i
     setDraggedProgramIndex(null);
     setDragOverProgramIndex(null);
   };
-  const sortProgram = () => set({ program: [...template.program].sort(byTime) });
 
   // ---------- The tasks beyond the programme ----------
   const addExtra = (roleId: string) => {
@@ -118,7 +124,7 @@ export const TemplateFormDialog: React.FC<TemplateFormDialogProps> = ({ isNew, i
       ...template,
       name: template.name.trim(),
       title: template.title.trim(),
-      program: [...template.program].sort(byTime).map((item) => ({ ...item, title: item.title.trim() })),
+      program: template.program.map((item) => ({ ...item, title: item.title.trim() })),
     });
     setSaving(false);
     if (saved) onClose();
@@ -238,8 +244,9 @@ export const TemplateFormDialog: React.FC<TemplateFormDialogProps> = ({ isNew, i
                   Program
                 </h3>
                 <p className="text-xs text-slate-600">
-                  Klokkeslettene gjelder når arrangementet starter kl. {template.time}. Starter et arrangement til en annen tid, flytter hele programmet seg
-                  etter. Rollen på et punkt blir en oppgave som skal bemannes. Dra i håndtaket for å flytte et punkt opp eller ned.
+                  Klokkeslettene regnes ut fra varigheten til hvert punkt (Varighet, i minutter), og gjelder når arrangementet starter kl. {template.time}. Starter
+                  et arrangement til en annen tid, flytter hele programmet seg etter. Rollen på et punkt blir en oppgave som skal bemannes. Dra i håndtaket for å
+                  flytte et punkt opp eller ned.
                 </p>
                 {template.program.length === 0 ? (
                   <p className="text-xs text-slate-500">Malen har ikke noe program ennå.</p>
@@ -264,20 +271,16 @@ export const TemplateFormDialog: React.FC<TemplateFormDialogProps> = ({ isNew, i
                         >
                           <GripVertical className="w-4 h-4" aria-hidden="true" />
                         </button>
-                        <input
-                          type="time"
-                          aria-label={`Klokkeslett for punkt ${index + 1}`}
-                          value={itemClock(template.time, item)}
-                          onChange={(e) => setItemClock(item.id, e.target.value)}
-                          onBlur={sortProgram}
-                          className={small}
-                        />
+                        <output aria-label={`Klokkeslett for punkt ${index + 1}`} className="px-2 py-2 text-sm font-semibold text-slate-700 tabular-nums">
+                          {itemClock(template.time, item)}
+                        </output>
                         <input
                           type="number"
                           min={0}
-                          aria-label={`Minutter for punkt ${index + 1}`}
+                          step={1}
+                          aria-label={`Varighet (min) for punkt ${index + 1}`}
                           value={item.durationMinutes}
-                          onChange={(e) => setItem(item.id, { durationMinutes: Math.max(0, Number(e.target.value) || 0) })}
+                          onChange={(e) => setItemDuration(item.id, Math.max(0, Number(e.target.value) || 0))}
                           className={small}
                         />
                         <input

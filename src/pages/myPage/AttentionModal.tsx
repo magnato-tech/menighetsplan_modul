@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { formatNorwegianDateTime } from "../../utils/dates";
 import { MyPageModel } from "./useMyPage";
-import { attentionTags, attentionText, withAttentionTags } from "./attention";
+import { attentionListItems, attentionTags, attentionText, withAttentionTags } from "./attention";
 import { repeatsTitle } from "../../utils/labels";
 import {
   AlertCircle,
@@ -16,7 +16,12 @@ interface AttentionModalProps {
 }
 
 export const AttentionModal: React.FC<AttentionModalProps> = ({ page, onClose }) => {
-  const { attentionItems, handleAttentionAnswer } = page;
+  const { handleAttentionAnswer } = page;
+  // The requests first, so what is asked of the user is seen before the free tasks
+  const attentionItems = attentionListItems(page.attentionItems);
+  const hasRequests = attentionItems.some((item) => item.type === "task_request");
+  const hasOpen = attentionItems.some((item) => item.type === "open_task");
+  const heading = hasRequests && hasOpen ? "Forespurte og ledige oppgaver" : hasRequests ? "Forespurte oppgaver" : "Ledige oppgaver";
   // The roles pressed in. What is shown, has one of them; with none pressed, everything is shown.
   const [chosen, setChosen] = useState<ReadonlySet<string>>(new Set());
   const tags = attentionTags(attentionItems);
@@ -40,7 +45,7 @@ export const AttentionModal: React.FC<AttentionModalProps> = ({ page, onClose })
           <div className="flex items-center gap-2">
             <AlertCircle className="w-5 h-5 text-amber-600" />
             <h3 className="font-bold text-sm text-slate-900">
-              Dette trenger din handling ({active.size > 0 ? `${shown.length} av ${attentionItems.length}` : attentionItems.length})
+              {heading} ({active.size > 0 ? `${shown.length} av ${attentionItems.length}` : attentionItems.length})
             </h3>
           </div>
           <button

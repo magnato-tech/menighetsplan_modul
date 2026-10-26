@@ -14,13 +14,24 @@ interface SharedRunSheetViewProps {
   /** To the full planning, for a leader or an administrator. */
   planningLink: string | null;
   backLink: string;
+  /** Replaces the default buttons in the header (to planning and print), for a reader who may change the programme. */
+  headerActions?: React.ReactNode;
+  /** Replaces the read-only programme, for a reader who may change it (see ProgramView). */
+  program?: React.ReactNode;
 }
 
 /**
  * «Kjøreplan»: the programme of an event and who is responsible for each item, as everyone who
  * may see the event reads it. Only those who have accepted are named; nothing can be changed here.
  */
-export const SharedRunSheetView: React.FC<SharedRunSheetViewProps> = ({ detail, personId, planningLink, backLink }) => {
+export const SharedRunSheetView: React.FC<SharedRunSheetViewProps> = ({
+  detail,
+  personId,
+  planningLink,
+  backLink,
+  headerActions,
+  program,
+}) => {
   const { gathering, programSchedule, tasksWithDetails, volunteerRoles } = detail;
   const [instructionFor, setInstructionFor] = useState<InstructionTarget | null>(null);
 
@@ -42,25 +53,27 @@ export const SharedRunSheetView: React.FC<SharedRunSheetViewProps> = ({ detail, 
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Tilbake til kalenderen</span>
           </Link>
-          <div className="flex flex-wrap items-center gap-2">
-            {planningLink && (
-              <Link
-                to={planningLink}
-                className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 px-2.5 py-1.5 rounded-lg transition-colors"
+          {headerActions ?? (
+            <div className="flex flex-wrap items-center gap-2">
+              {planningLink && (
+                <Link
+                  to={planningLink}
+                  className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 px-2.5 py-1.5 rounded-lg transition-colors"
+                >
+                  <SlidersHorizontal className="w-3.5 h-3.5" />
+                  <span>Åpne planlegging</span>
+                </Link>
+              )}
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
               >
-                <SlidersHorizontal className="w-3.5 h-3.5" />
-                <span>Åpne planlegging</span>
-              </Link>
-            )}
-            <button
-              type="button"
-              onClick={() => window.print()}
-              className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
-            >
-              <Printer className="w-3.5 h-3.5 text-slate-500" />
-              <span>Skriv ut</span>
-            </button>
-          </div>
+                <Printer className="w-3.5 h-3.5 text-slate-500" />
+                <span>Skriv ut</span>
+              </button>
+            </div>
+          )}
         </div>
 
         <div>
@@ -89,27 +102,28 @@ export const SharedRunSheetView: React.FC<SharedRunSheetViewProps> = ({ detail, 
           Kjøreplan
         </h2>
 
-        {rows.length === 0 ? (
-          <div className="p-6 text-center text-xs text-slate-500 bg-white rounded-2xl border border-slate-200/80">
-            Programmet er ikke lagt inn ennå.
-          </div>
-        ) : (
-          rows.map((row) => (
-            <SharedRunSheetRowCard
-              key={row.id}
-              row={row}
-              href={planningLink && row.isMyGroup ? `${planningLink}#schedule-row-${row.id}` : undefined}
-              onShowInstruction={(shown) =>
-                setInstructionFor({
-                  title: shown.roleTitle || shown.title,
-                  instruction: shown.instruction || "",
-                  time: shown.meetAt || shown.time,
-                  groupName: shown.groupName,
-                })
-              }
-            />
-          ))
-        )}
+        {program ??
+          (rows.length === 0 ? (
+            <div className="p-6 text-center text-xs text-slate-500 bg-white rounded-2xl border border-slate-200/80">
+              Programmet er ikke lagt inn ennå.
+            </div>
+          ) : (
+            rows.map((row) => (
+              <SharedRunSheetRowCard
+                key={row.id}
+                row={row}
+                href={planningLink && row.isMyGroup ? `${planningLink}#schedule-row-${row.id}` : undefined}
+                onShowInstruction={(shown) =>
+                  setInstructionFor({
+                    title: shown.roleTitle || shown.title,
+                    instruction: shown.instruction || "",
+                    time: shown.meetAt || shown.time,
+                    groupName: shown.groupName,
+                  })
+                }
+              />
+            ))
+          ))}
       </div>
 
       {instructionFor && (

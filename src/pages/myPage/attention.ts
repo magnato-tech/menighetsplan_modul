@@ -19,6 +19,14 @@ export type AttentionItem =
   /** A task in one of the user's groups with a free slot. */
   | (AttentionBase & { type: "open_task"; taskId: string; taskDescription?: string; needsSubstitute: boolean });
 
+/**
+ * What the window on Min side holds: the requests to the user first, then the free tasks. A call to a
+ * gathering stands on the page on its own, so it is not repeated there.
+ */
+export function attentionListItems<T extends AttentionItem>(items: readonly T[]): T[] {
+  return [...items.filter((item) => item.type === "task_request"), ...items.filter((item) => item.type === "open_task")];
+}
+
 export interface AttentionText {
   label: string;
   note?: string;
