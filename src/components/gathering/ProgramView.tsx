@@ -110,7 +110,8 @@ export const ProgramView: React.FC<ProgramViewProps> = ({
   return (
     <div className="space-y-2 print:space-y-0" ref={listRef}>
       {permissions.reorder && rows.length > 1 && (
-        <p className="px-1 text-[11px] text-slate-400 print:hidden">
+        // On a phone the six dots speak for themselves; the hint (with the keys) is for a big screen
+        <p className="hidden sm:block px-1 text-[11px] text-slate-400 print:hidden">
           Dra i håndtaket for å flytte en programpost. Med tastatur: Alt og piltast opp eller ned.
         </p>
       )}

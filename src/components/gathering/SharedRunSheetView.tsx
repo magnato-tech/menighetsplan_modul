@@ -44,41 +44,19 @@ export const SharedRunSheetView: React.FC<SharedRunSheetViewProps> = ({
 
   return (
     <div className="w-full max-w-2xl mx-auto bg-slate-50 sm:my-4 sm:rounded-3xl sm:border sm:border-slate-200/80 overflow-hidden print:bg-white print:border-none print:my-0">
-      <div className="p-4 bg-white border-b border-slate-200/80 space-y-3 print:p-2 print:border-b-2 print:border-slate-800">
-        <div className="flex flex-wrap items-center justify-between gap-2 print:hidden">
-          <Link
-            to={backLink}
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/80 px-2.5 py-1.5 rounded-lg transition-colors whitespace-nowrap"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Tilbake til kalenderen</span>
-          </Link>
-          {headerActions ?? (
-            <div className="flex flex-wrap items-center gap-2">
-              {planningLink && (
-                <Link
-                  to={planningLink}
-                  className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 px-2.5 py-1.5 rounded-lg transition-colors"
-                >
-                  <SlidersHorizontal className="w-3.5 h-3.5" />
-                  <span>Åpne planlegging</span>
-                </Link>
-              )}
-              <button
-                type="button"
-                onClick={() => window.print()}
-                className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
-              >
-                <Printer className="w-3.5 h-3.5 text-slate-500" />
-                <span>Skriv ut</span>
-              </button>
-            </div>
-          )}
-        </div>
-
-        <div>
+      {/* One compact row on a phone: back, the gathering, and the actions as icons */}
+      <div className="px-3 py-3 sm:p-4 bg-white border-b border-slate-200/80 flex items-start gap-2 print:p-2 print:border-b-2 print:border-slate-800">
+        <Link
+          to={backLink}
+          aria-label="Tilbake til kalenderen"
+          title="Tilbake til kalenderen"
+          className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-xl text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/80 transition-colors print:hidden"
+        >
+          <ArrowLeft className="w-4 h-4" aria-hidden />
+        </Link>
+        <div className="flex-1 min-w-0">
           <h1 className="text-lg sm:text-xl font-extrabold text-slate-900 leading-tight">{gathering.title}</h1>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-600 mt-1.5 font-medium">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-600 mt-1 font-medium">
             <span className="flex items-center gap-1">
               <Calendar className="w-3.5 h-3.5 text-slate-400" />
               {formatNorwegianDateTime(gathering.startsAt)}
@@ -94,11 +72,37 @@ export const SharedRunSheetView: React.FC<SharedRunSheetViewProps> = ({
             </span>
           )}
         </div>
+        <div className="shrink-0 flex items-center gap-1.5 print:hidden">
+          {headerActions ?? (
+            <>
+              {planningLink && (
+                <Link
+                  to={planningLink}
+                  aria-label="Åpne planlegging"
+                  title="Åpne planlegging"
+                  className="inline-flex items-center justify-center w-9 h-9 rounded-xl text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors"
+                >
+                  <SlidersHorizontal className="w-4 h-4" aria-hidden />
+                </Link>
+              )}
+              <button
+                type="button"
+                onClick={() => window.print()}
+                aria-label="Skriv ut"
+                title="Skriv ut"
+                className="inline-flex items-center justify-center w-9 h-9 rounded-xl text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
+              >
+                <Printer className="w-4 h-4" aria-hidden />
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="p-3 sm:p-4 space-y-2.5">
-        <h2 className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-600 px-1">
-          <Clock className="w-3.5 h-3.5" />
+        {/* The list shows what it is; the word is kept for screen readers and on paper */}
+        <h2 className="sr-only print:not-sr-only print:flex print:items-center print:gap-1.5 print:text-xs print:font-bold print:uppercase">
+          <Clock className="w-3.5 h-3.5" aria-hidden />
           Kjøreplan
         </h2>
 

@@ -133,24 +133,27 @@ export const GatheringRunSheetPage: React.FC = () => {
           planningLink={null}
           backLink={CALENDAR_ON_MY_PAGE}
           headerActions={
-            <div className="flex flex-wrap items-center gap-2 print:hidden">
+            <>
+              {/* Icons only, so the programme gets the room on a phone; the names are in aria-label and title */}
               <button
                 type="button"
                 onClick={() => setCreating(true)}
-                className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
+                aria-label="Ny programpost"
+                title="Ny programpost"
+                className="inline-flex items-center justify-center w-9 h-9 rounded-xl text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-colors cursor-pointer"
               >
-                <Plus className="w-3.5 h-3.5" aria-hidden />
-                <span>Ny programpost</span>
+                <Plus className="w-5 h-5" aria-hidden />
               </button>
               <button
                 type="button"
                 onClick={() => window.print()}
-                className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
+                aria-label="Skriv ut"
+                title="Skriv ut"
+                className="inline-flex items-center justify-center w-9 h-9 rounded-xl text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
               >
-                <Printer className="w-3.5 h-3.5 text-slate-500" aria-hidden />
-                <span>Skriv ut</span>
+                <Printer className="w-4 h-4" aria-hidden />
               </button>
-            </div>
+            </>
           }
           program={
             <ProgramView
