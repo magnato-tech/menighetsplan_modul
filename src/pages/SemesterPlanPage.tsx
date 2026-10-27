@@ -107,6 +107,19 @@ export const SemesterPlanPage: React.FC = () => {
     if (!more) await goOn(false, note);
   };
 
+  // "declined" and not forfall: when planning ahead, taking a task and leaving it again is not an absence,
+  // and must not raise warnings for the leaders. The task is free again, and the card stays where it is.
+  const leave = (choice: CardTask) => {
+    if (!choice.mine) return;
+    const result = updateAssignmentStatus(choice.mine.id, "declined");
+    if (!result.success) {
+      setProblem(result.error || "Kunne ikke fjerne deg fra oppgaven.");
+      return;
+    }
+    setSaved(null);
+    setProblem(null);
+  };
+
   const startAgain = async () => {
     if (await restartAnswer(plan, currentUser.id)) {
       setSaved(null);
@@ -194,9 +207,20 @@ export const SemesterPlanPage: React.FC = () => {
 
         <ul className="space-y-2">
           {card.tasks.map((choice) =>
-            choice.holdsPlace ? (
+            choice.holdsPlace && choice.mine?.response === "confirmed" ? (
+              <li key={choice.task.id} className="rounded-xl bg-emerald-50 border border-emerald-300 text-sm font-bold text-emerald-950">
+                <button
+                  type="button"
+                  aria-label={`Fjern deg fra ${choice.label}`}
+                  onClick={() => leave(choice)}
+                  className="block w-full p-3 rounded-xl text-left hover:bg-emerald-100 cursor-pointer"
+                >
+                  {`Du står på ${choice.label}`}
+                </button>
+              </li>
+            ) : choice.holdsPlace ? (
               <li key={choice.task.id} className="p-3 rounded-xl bg-emerald-50 border border-emerald-300 text-sm font-bold text-emerald-950">
-                {choice.mine?.response === "pending" ? `Du er spurt om ${choice.label}. Svar på Min side.` : `Du står på ${choice.label}`}
+                {`Du er spurt om ${choice.label}. Svar på Min side.`}
               </li>
             ) : (
               <li key={choice.task.id} className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3">

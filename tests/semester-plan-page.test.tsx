@@ -2,7 +2,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import type { Gathering, Group, Task } from "../src/types";
+import type { Assignment, Gathering, Group, Task } from "../src/types";
 import { answerInRound, cardsFor, waitsForAnswer, type SemesterAnswer, type SemesterPlan } from "../src/utils/semesterPlan";
 import { SemesterPlanPage } from "../src/pages/SemesterPlanPage";
 
@@ -33,7 +33,7 @@ const tasks: Task[] = [
   { id: "t-feb", gatheringId: "g-feb", groupId: "lyd", title: "Lyd", status: "open", neededCount: 1 },
 ];
 
-const state = vi.hoisted(() => ({ stored: null as unknown }));
+const state = vi.hoisted(() => ({ stored: null as unknown, assignments: [] as Assignment[] }));
 const services = vi.hoisted(() => ({
   saveAnswerStep: vi.fn(async () => true),
   restartAnswer: vi.fn(async () => true),
@@ -50,7 +50,7 @@ vi.mock("../src/services/semesterPlans", () => services);
 vi.mock("../src/hooks/useSemesterPlans", () => ({
   useMySemesterPlans: () => {
     const stored = state.stored as SemesterAnswer | null;
-    const cards = cardsFor(plan, "kari", { gatherings, tasks, groups, assignments: [] });
+    const cards = cardsFor(plan, "kari", { gatherings, tasks, groups, assignments: state.assignments });
     const now = new Date("2026-11-01T10:00:00.000Z");
     return { mine: [{ plan, cards, answer: answerInRound(plan, stored), stored, waiting: waitsForAnswer(plan, cards, stored, now) }], ready: true };
   },
@@ -68,6 +68,7 @@ const show = () =>
 
 beforeEach(() => {
   state.stored = null;
+  state.assignments = [];
   vi.clearAllMocks();
 });
 afterEach(cleanup);
@@ -121,5 +122,41 @@ describe("Semesterplanen på Min side", () => {
     state.stored = { id: "x", planId: plan.id, personId: "kari", passed: ["g-jan", "g-feb"], declined: [], finishedAt: "2026-11-01T10:00:00.000Z", round: plan.opensAt };
     show();
     expect(screen.getByText("Takk! Du er ferdig med semesterplanen.")).toBeTruthy();
+  });
+
+  test("den bekreftede oppgaven fjernes ved å klikke den grønne raden, uten å gå videre", () => {
+    state.assignments = [{ id: "a-lyd", taskId: "t-lyd", personId: "kari", response: "confirmed" }];
+    show();
+    const card = screen.getByRole("article");
+    fireEvent.click(within(card).getByRole("button", { name: "Fjern deg fra Lyd" }));
+    expect(planner.updateAssignmentStatus).toHaveBeenCalledWith("a-lyd", "declined");
+    expect(planner.assignTaskToPerson).not.toHaveBeenCalled();
+    expect(screen.getByText("1 av 2")).toBeTruthy();
+    expect(services.saveAnswerStep).not.toHaveBeenCalled();
+  });
+
+  test("en oppgave man er spurt om, kan ikke fjernes med klikk", () => {
+    state.assignments = [{ id: "a-lyd", taskId: "t-lyd", personId: "kari", response: "pending" }];
+    show();
+    const card = screen.getByRole("article");
+    expect(within(card).queryByRole("button", { name: "Fjern deg fra Lyd" })).toBeNull();
+    expect(within(card).getByText("Du er spurt om Lyd. Svar på Min side.")).toBeTruthy();
+  });
+
+  test("den grønne raden viser samme tekst som før, og ingenting nytt", () => {
+    state.assignments = [{ id: "a-lyd", taskId: "t-lyd", personId: "kari", response: "confirmed" }];
+    show();
+    const row = screen.getByRole("button", { name: "Fjern deg fra Lyd" });
+    expect(row.textContent).toBe("Du står på Lyd");
+    expect(screen.queryByText(/Fjern/)).toBeNull();
+  });
+
+  test("etter å ha gått fra oppgaven kan man ta den igjen", () => {
+    state.assignments = [{ id: "a-lyd", taskId: "t-lyd", personId: "kari", response: "declined" }];
+    show();
+    const lydRow = screen.getByText("Lyd", { selector: "p" }).closest("li") as HTMLElement;
+    fireEvent.click(within(lydRow).getByRole("button", { name: "Ta oppgave" }));
+    expect(planner.updateAssignmentStatus).toHaveBeenCalledWith("a-lyd", "confirmed");
+    expect(planner.assignTaskToPerson).not.toHaveBeenCalled();
   });
 });
