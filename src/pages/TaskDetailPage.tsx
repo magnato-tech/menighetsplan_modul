@@ -240,17 +240,7 @@ export const TaskDetailPage: React.FC = () => {
           )}
         </div>
 
-        {/* Instruction / Description for the role */}
-        <div className="space-y-1.5">
-          <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-            Instruks for rollen
-          </h3>
-          <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal bg-slate-50/50 p-3.5 rounded-xl border border-slate-100 whitespace-pre-line">
-            {instruction || "Ingen instruks oppgitt for denne oppgaven ennå."}
-          </p>
-        </div>
-
-        {/* A meeting leader's own task: the programme of the gathering can be changed from its run sheet */}
+        {/* A meeting leader's own task: the way to the programme comes first, above the long instruction */}
         {gathering && task && programEditorAssignment(gathering, tasks, assignments, volunteerRoles, currentUser.id)?.taskId === task.id && (
           <Link
             to={`/samling/${gathering.id}`}
@@ -260,6 +250,16 @@ export const TaskDetailPage: React.FC = () => {
             Se og endre programmet
           </Link>
         )}
+
+        {/* Instruction / Description for the role */}
+        <div className="space-y-1.5">
+          <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            Instruks for rollen
+          </h3>
+          <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal bg-slate-50/50 p-3.5 rounded-xl border border-slate-100 whitespace-pre-line">
+            {instruction || "Ingen instruks oppgitt for denne oppgaven ennå."}
+          </p>
+        </div>
 
         {/* Action Button Section */}
         <div className="pt-2 border-t border-slate-100 space-y-2.5">
