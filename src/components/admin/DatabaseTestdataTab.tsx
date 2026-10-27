@@ -215,7 +215,7 @@ export const DatabaseTestdataTab: React.FC<DatabaseTestdataTabProps> = ({
             />
             <div className="flex justify-between text-[10px] text-slate-400 font-mono">
               <span>0 (Ingen)</span>
-              <span className="text-indigo-400 font-semibold">32 (Fullt testsett)</span>
+              <span className="text-indigo-400 font-semibold">{FULL_DEMO_COUNTS.personCount} (Fullt testsett)</span>
               <span>50</span>
               <span>100 (Maks)</span>
             </div>
