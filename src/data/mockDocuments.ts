@@ -19,7 +19,7 @@ import {
 import { Person, Group, type GatheringHeadcount, type VolunteerRole } from "../types";
 import { buildInitialVolunteerRoles } from "./defaultVolunteerRoles";
 import { enrichTasksWithVolunteerRoles } from "./mockTaskVolunteerRoles";
-import { gatheringTemplateFields, headcountFields, volunteerRoleFields } from "./settingsRecords";
+import { SEMESTER_PLAN_RECORD, gatheringTemplateFields, headcountFields, volunteerRoleFields } from "./settingsRecords";
 import { weeksBetween, withLiveDates } from "../utils/liveDates";
 import { demoServiceTemplate } from "./demoServices";
 
@@ -242,6 +242,26 @@ export { demoServiceTemplate };
 export function demoTemplateDocument(): MockDocument {
   const template = demoServiceTemplate();
   return { collection: CMS_COLLECTIONS.SETTINGS, id: template.id, data: gatheringTemplateFields(template) };
+}
+
+/**
+ * An open semester plan for the demo, stored the way the plans are (see services/semesterPlans.ts).
+ * It opens on the Monday of the content week, so it is open in the demo whatever day it is, and
+ * its dates are moved with the rest of the demo content.
+ */
+export function demoSemesterPlanDocument(now: number = Date.now()): MockDocument {
+  const plan = {
+    id: "semesterplan-demo",
+    recordType: SEMESTER_PLAN_RECORD,
+    // A year, as the product owner asked: «Semesterplanen for 2027 er klar». It holds while the plan's days are in that year
+    name: "2027",
+    firstDay: "2026-11-06",
+    lastDay: "2027-04-06",
+    answerBy: "2026-10-06",
+    opensAt: "2026-08-31T08:00:00+02:00",
+    createdAt: "2026-08-30T18:00:00.000Z",
+  };
+  return { collection: CMS_COLLECTIONS.SETTINGS, id: plan.id, data: withLiveDates(plan, weeksBetween(DEMO_CONTENT_WEEK, now)) };
 }
 
 /**

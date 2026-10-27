@@ -3,6 +3,7 @@ import type { Gathering, Group, Task } from "../../types";
 import { combineDateAndTimeToIso, parseIsoToDateAndTime } from "../../utils/dates";
 import { planFormProblems, planSummary, type SemesterPlan, type SemesterPlanForm } from "../../utils/semesterPlan";
 import { newId } from "../../utils/id";
+import { clockToNorwegian, dayToNorwegian, norwegianToClock, norwegianToDay } from "../../utils/norwegianDateInput";
 import { studioCardPadded, studioInputFull, studioPrimaryButton, studioSecondaryButton } from "./studioTheme";
 
 interface SemesterPlanFormCardProps {
@@ -41,6 +42,41 @@ function formOf(plan: SemesterPlan, reopen: boolean): SemesterPlanForm {
 
 const labelClass = "block text-xs font-bold text-[var(--studio-text)] mb-1.5";
 
+interface NorwegianFieldProps {
+  id: string;
+  /** The stored value: an ISO day or "HH:MM". */
+  value: string;
+  /** Shows the stored value as Norwegian text. */
+  toText: (value: string) => string;
+  /** Reads the typed text back to the stored value, or "" while it is incomplete or invalid. */
+  fromText: (text: string) => string;
+  placeholder: string;
+  onChange: (value: string) => void;
+}
+
+/** A plain text field in Norwegian format. It keeps what is typed, and tidies it when the field is left. */
+const NorwegianField: React.FC<NorwegianFieldProps> = ({ id, value, toText, fromText, placeholder, onChange }) => {
+  const [text, setText] = useState(() => toText(value));
+  return (
+    <input
+      id={id}
+      type="text"
+      inputMode="numeric"
+      placeholder={placeholder}
+      value={text}
+      onChange={(event) => {
+        setText(event.target.value);
+        onChange(fromText(event.target.value));
+      }}
+      onBlur={() => {
+        const parsed = fromText(text);
+        if (parsed) setText(toText(parsed));
+      }}
+      className={studioInputFull}
+    />
+  );
+};
+
 /**
  * The form a semester plan is made and changed in. While it is filled in, it says how many events
  * the plan holds and how many get the flag, so a period without tasks is seen before it is released.
@@ -49,6 +85,7 @@ export const SemesterPlanFormCard: React.FC<SemesterPlanFormCardProps> = ({ plan
   const [form, setForm] = useState<SemesterPlanForm>(() => (plan ? formOf(plan, reopen) : newForm()));
   const [saving, setSaving] = useState(false);
   const set = (field: keyof SemesterPlanForm) => (event: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, [field]: event.target.value });
+  const setValue = (field: keyof SemesterPlanForm) => (value: string) => setForm({ ...form, [field]: value });
 
   const summary = useMemo(() => planSummary(form, gatherings, tasks, groups), [form, gatherings, tasks, groups]);
   const problems = planFormProblems(form, others);
@@ -90,13 +127,27 @@ export const SemesterPlanFormCard: React.FC<SemesterPlanFormCardProps> = ({ plan
           <label htmlFor="semester-first-day" className={labelClass}>
             Første dag
           </label>
-          <input id="semester-first-day" type="date" value={form.firstDay} onChange={set("firstDay")} className={studioInputFull} />
+          <NorwegianField
+            id="semester-first-day"
+            value={form.firstDay}
+            toText={dayToNorwegian}
+            fromText={norwegianToDay}
+            placeholder="dd.mm.åååå"
+            onChange={setValue("firstDay")}
+          />
         </div>
         <div>
           <label htmlFor="semester-last-day" className={labelClass}>
             Siste dag
           </label>
-          <input id="semester-last-day" type="date" value={form.lastDay} onChange={set("lastDay")} className={studioInputFull} />
+          <NorwegianField
+            id="semester-last-day"
+            value={form.lastDay}
+            toText={dayToNorwegian}
+            fromText={norwegianToDay}
+            placeholder="dd.mm.åååå"
+            onChange={setValue("lastDay")}
+          />
         </div>
       </div>
 
@@ -105,19 +156,40 @@ export const SemesterPlanFormCard: React.FC<SemesterPlanFormCardProps> = ({ plan
           <label htmlFor="semester-answer-by" className={labelClass}>
             Svarfrist
           </label>
-          <input id="semester-answer-by" type="date" value={form.answerBy} onChange={set("answerBy")} className={studioInputFull} />
+          <NorwegianField
+            id="semester-answer-by"
+            value={form.answerBy}
+            toText={dayToNorwegian}
+            fromText={norwegianToDay}
+            placeholder="dd.mm.åååå"
+            onChange={setValue("answerBy")}
+          />
         </div>
         <div>
           <label htmlFor="semester-opens-date" className={labelClass}>
             Åpner, dato
           </label>
-          <input id="semester-opens-date" type="date" value={form.opensDate} onChange={set("opensDate")} className={studioInputFull} />
+          <NorwegianField
+            id="semester-opens-date"
+            value={form.opensDate}
+            toText={dayToNorwegian}
+            fromText={norwegianToDay}
+            placeholder="dd.mm.åååå"
+            onChange={setValue("opensDate")}
+          />
         </div>
         <div>
           <label htmlFor="semester-opens-time" className={labelClass}>
             Åpner, klokkeslett
           </label>
-          <input id="semester-opens-time" type="time" value={form.opensTime} onChange={set("opensTime")} className={studioInputFull} />
+          <NorwegianField
+            id="semester-opens-time"
+            value={form.opensTime}
+            toText={clockToNorwegian}
+            fromText={norwegianToClock}
+            placeholder="tt:mm"
+            onChange={setValue("opensTime")}
+          />
         </div>
       </div>
 

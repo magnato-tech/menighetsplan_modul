@@ -3,7 +3,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { loadEnv } from 'vite';
 import { CMS_COLLECTIONS, PLAIN_COLLECTIONS } from '../src/data/collections';
-import { DEMO_CONTENT_WEEK, FULL_DEMO_COUNTS, demoTemplateDocument, getCustomMockDocuments } from '../src/data/mockDocuments';
+import { DEMO_CONTENT_WEEK, FULL_DEMO_COUNTS, demoSemesterPlanDocument, demoTemplateDocument, getCustomMockDocuments } from '../src/data/mockDocuments';
 import { OPERATING_MODE_DOC_ID, operatingModeOf } from '../src/data/settingsRecords';
 import { chunk } from '../src/utils/chunk';
 import { parseDataset } from '../src/utils/dataset';
@@ -114,8 +114,9 @@ export async function resetDemo(target: ResetTarget, now: number, fetchFn: Fetch
   const nameOf = (place: string) => `projects/${target.projectId}/databases/${target.databaseId}/documents/${place}`;
 
   // Made before anything is touched: content that cannot be stored stops the reset here
-  // With the template for a worship service, which every congregation in the demo gets (see siteDocuments)
-  const example = [...getCustomMockDocuments(FULL_DEMO_COUNTS, now), demoTemplateDocument()];
+  // With the template for a worship service, which every congregation in the demo gets (see siteDocuments),
+  // and an open semester plan, which only the example congregation gets
+  const example = [...getCustomMockDocuments(FULL_DEMO_COUNTS, now), demoTemplateDocument(), demoSemesterPlanDocument(now)];
   const sites: SiteContent[] = [
     { site: null, documents: example },
     ...sets.map(({ id, set }) => ({ site: id, documents: siteDocuments(example, set, now) })),
