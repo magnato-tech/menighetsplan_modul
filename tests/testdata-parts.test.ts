@@ -96,7 +96,7 @@ describe("Testdata fyller planleggeren og lar nettsiden være", () => {
   test("demo-planleggeren på nytt tar med samlingene, men ikke sidene", async () => {
     await restoreFullMockDatabase();
 
-    expect(count(COLLECTIONS.GATHERINGS)).toBe(19 + 1);
+    expect(count(COLLECTIONS.GATHERINGS)).toBe(30);
     expect(ids(CMS_COLLECTIONS.PAGES)).toEqual(["lmk-forside"]);
   });
 

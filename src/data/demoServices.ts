@@ -11,7 +11,7 @@ import { itemClock, standardServiceTemplate, tasksOfTemplate, withTemplateDurati
 
 /** The first Sunday, the last, and the group the services belong to. */
 const FIRST_SUNDAY = "2026-09-06";
-const LAST_SUNDAY = "2027-06-27";
+const LAST_SUNDAY = "2027-04-25";
 const OWNER_GROUP = "group-lederskap";
 const START = "11:00";
 
