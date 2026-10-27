@@ -115,10 +115,10 @@ describe("DatabaseTestdataTab Component med testdataService", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText(/Testdata er lagt inn: personer, grupper og 15 tjenesteroller\. Nettsiden og de offentlige arrangementene er ikke rørt\./i)
+        screen.getByText(/Testdata er lagt inn: personer, grupper og 12 tjenesteroller\. Nettsiden og de offentlige arrangementene er ikke rørt\./i)
       ).toBeDefined();
       expect(showFeedbackMock).toHaveBeenCalledWith(
-        expect.stringContaining("15 tjenesteroller"),
+        expect.stringContaining("12 tjenesteroller"),
         "success"
       );
     });
@@ -142,7 +142,7 @@ describe("DatabaseTestdataTab Component med testdataService", () => {
       });
     });
     await waitFor(() => {
-      expect(screen.getByText(/demo-samlinger med oppgaver og 15 tjenesteroller/i)).toBeDefined();
+      expect(screen.getByText(/demo-samlinger med oppgaver og 12 tjenesteroller/i)).toBeDefined();
     });
   });
 

@@ -1,4 +1,4 @@
-import type { Gathering, ProgramItem, Task } from "../types";
+import type { Assignment, Gathering, ProgramItem, Task } from "../types";
 import { buildInitialVolunteerRoles, volunteerRoleIdForName, type DefaultVolunteerRoleName } from "./defaultVolunteerRoles";
 import { itemClock, standardServiceTemplate, tasksOfTemplate, withTemplateDurations, type GatheringTemplate } from "../utils/gatheringTemplates";
 
@@ -16,6 +16,10 @@ const OWNER_GROUP = "group-lederskap";
 const START = "11:00";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+// One service has a confirmed meeting leader already, so someone can try the run sheet as meeting
+// leader: the product owner logs in as Andreas Lind (a demo-door persona) and changes the programme.
+const CONFIRMED_MEETING_LEADER = { day: "2026-11-15", personId: "person-14" };
 
 /** The teams that are not in the standard programme, but are needed every Sunday: the template's extra staffing. */
 const EXTRA_STAFFING: readonly [DefaultVolunteerRoleName, number][] = [
@@ -70,33 +74,46 @@ function sundays(): string[] {
 }
 
 /**
- * The services, each with its tasks and its programme tied to them. `written` are the gatherings
- * written by hand: a Sunday with one of them at the time of the service is left to it.
+ * The services, each with its tasks and its programme tied to them, and the assignments that are
+ * confirmed in them. `written` are the gatherings written by hand: a Sunday with one of them at the
+ * time of the service is left to it.
  */
-export function demoServiceSeries(written: readonly Pick<Gathering, "startsAt">[]): { gatherings: Gathering[]; tasks: Task[] } {
+export function demoServiceSeries(written: readonly Pick<Gathering, "startsAt">[]): { gatherings: Gathering[]; tasks: Task[]; assignments: Assignment[] } {
   const roles = buildInitialVolunteerRoles();
   const template = withTemplateDurations(demoServiceTemplate());
   const templateTasks = tasksOfTemplate(template, roles);
   const taken = new Set(written.map((gathering) => gathering.startsAt.slice(0, 16)));
+  const meetingLeaderRoleId = volunteerRoleIdForName("Møteleder");
 
   const gatherings: Gathering[] = [];
   const tasks: Task[] = [];
+  const assignments: Assignment[] = [];
   for (const day of sundays()) {
     if (taken.has(`${day}T${START}`)) continue;
     const id = `gathering-gudstjeneste-${day}`;
     const taskIds = new Map<string, string>();
     templateTasks.forEach((templateTask, index) => {
+      // The meeting leader of the one service with a confirmed leader is filled
+      const confirmed = day === CONFIRMED_MEETING_LEADER.day && templateTask.volunteerRoleId === meetingLeaderRoleId;
       const task: Task = {
         id: `task-gudstjeneste-${day}-${index + 1}`,
         gatheringId: id,
         title: templateTask.title,
-        status: "open",
+        status: confirmed ? "confirmed" : "open",
         neededCount: templateTask.neededCount,
         ...(templateTask.volunteerRoleId ? { volunteerRoleId: templateTask.volunteerRoleId } : {}),
         ...(templateTask.groupId ? { groupId: templateTask.groupId } : {}),
       };
       tasks.push(task);
       taskIds.set(templateTask.key, task.id);
+      if (confirmed) {
+        assignments.push({
+          id: `assign-gudstjeneste-${day}-moteleder`,
+          taskId: task.id,
+          personId: CONFIRMED_MEETING_LEADER.personId,
+          response: "confirmed",
+        });
+      }
     });
     const programSchedule: ProgramItem[] = template.program.map((item, index) => {
       const taskId = item.roleId ? taskIds.get(item.roleId) : undefined;
@@ -128,5 +145,5 @@ export function demoServiceSeries(written: readonly Pick<Gathering, "startsAt">[
       seriesId: "serie-gudstjeneste",
     });
   }
-  return { gatherings, tasks };
+  return { gatherings, tasks, assignments };
 }

@@ -11,7 +11,7 @@ export const MOCK_TASK_VOLUNTEER_ROLE: Record<string, (typeof DEFAULT_VOLUNTEER_
   "task-1": "Lyd",
   "task-2": "Bilde",
   "task-8": "Bilde",
-  "task-9": "Markedsføring",
+  "task-9": "Lyd",
   "task-3": "Kjøkken",
   "task-4": "Møtevert",
   "task-5": "Baking",

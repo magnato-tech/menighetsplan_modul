@@ -40,7 +40,7 @@ export interface CustomMockCounts {
 /** The whole example congregation: what the demo is filled with, and what «full demo» in admin writes. */
 export const FULL_DEMO_COUNTS: CustomMockCounts = {
   personCount: initialPersons.length,
-  groupCount: 14,
+  groupCount: 15,
   // Every gathering and task, with the services every other Sunday (see demoServices.ts)
   gatheringCount: initialGatherings.length,
   taskCount: initialTasks.length,

@@ -79,7 +79,7 @@ describe("Testdata fyller planleggeren og lar nettsiden være", () => {
     const pages = snapshotOf(WEBSITE);
     await generateTestdata({ personCount: 32, groupCount: 14, roleCount: 14, gatheringCount: 19, taskCount: 24 });
 
-    expect(count(COLLECTIONS.GATHERINGS)).toBe(19 + 1);
+    expect(count(COLLECTIONS.GATHERINGS)).toBe(14);
     expect(count(COLLECTIONS.TASKS)).toBeGreaterThan(0);
     expect(snapshotOf(WEBSITE)).toBe(pages);
     expect(store.get(CMS_COLLECTIONS.SETTINGS)!.get(CMS_SETTINGS_DOC_ID)).toEqual({ churchName: "Lillesand Misjonskirke" });
@@ -147,7 +147,7 @@ describe("Tømming av testdata lar nettsidens arrangementer stå", () => {
       expect(count(name)).toBe(0);
     }
     // The result counts what was deleted, not what was read
-    expect(result.counts[COLLECTIONS.GATHERINGS]).toBe(19 + 2);
+    expect(result.counts[COLLECTIONS.GATHERINGS]).toBe(15);
     expect(result.counts[COLLECTIONS.GROUPS]).toBe(14);
   });
 

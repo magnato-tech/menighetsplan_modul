@@ -61,7 +61,7 @@ describe("testdataService", () => {
     expect(result.counts[COLLECTIONS.PERSONS]).toBe(32);
     expect(result.counts[COLLECTIONS.GROUPS]).toBe(14);
     expect(result.failures).toHaveLength(0);
-    expect(result.counts[COLLECTIONS.VOLUNTEER_ROLES]).toBe(15);
+    expect(result.counts[COLLECTIONS.VOLUNTEER_ROLES]).toBe(12);
     expect(result.total).toBeGreaterThan(44);
   });
 

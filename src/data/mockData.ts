@@ -460,7 +460,7 @@ export const initialGroups: Group[] = [
     id: "group-lyd",
     name: "Lyd og bilde",
     category: "tjenestegruppe",
-    memberIds: ["person-14", "person-18", "person-19", "person-2", "person-1", "person-9", "person-34", "person-36", "person-44"],
+    memberIds: ["person-14", "person-18", "person-19", "person-2", "person-9", "person-34", "person-36", "person-44"],
     leaderIds: ["person-14"], // Andreas Lind is leader
     deputyLeaderIds: ["person-18"], // Eirik Halvorsen is deputy
     meetingSchedule: {
@@ -486,7 +486,7 @@ export const initialGroups: Group[] = [
     id: "group-kjokken",
     name: "Kjøkken",
     category: "tjenestegruppe",
-    memberIds: ["person-15", "person-21", "person-27", "person-31", "person-1", "person-2", "person-8", "person-35", "person-41"],
+    memberIds: ["person-15", "person-21", "person-27", "person-31", "person-2", "person-8", "person-35", "person-41"],
     leaderIds: ["person-15"], // Camilla Bakke
     deputyLeaderIds: ["person-21"], // Anne Grethe Nilsen
     meetingSchedule: {
@@ -499,7 +499,7 @@ export const initialGroups: Group[] = [
     id: "group-motevert",
     name: "Møtevert",
     category: "tjenestegruppe",
-    memberIds: ["person-32", "person-4", "person-15", "person-1", "person-9", "person-28", "person-37", "person-38"],
+    memberIds: ["person-32", "person-4", "person-15", "person-9", "person-28", "person-37", "person-38"],
     leaderIds: ["person-32"], // Torleif Røed
     deputyLeaderIds: ["person-4"], // Jonas Lie
     meetingSchedule: {
@@ -534,7 +534,7 @@ export const initialGroups: Group[] = [
     id: "group-bonn",
     name: "Bønnetjeneste & forbønn",
     category: "tjenestegruppe",
-    memberIds: ["person-20", "person-12", "person-21", "person-25", "person-38", "person-43"],
+    memberIds: ["person-20", "person-12", "person-21", "person-25", "person-38", "person-43", "person-1"],
     leaderIds: ["person-20"], // Fredrik Dahl
     deputyLeaderIds: ["person-12"], // Ruth Elisabeth Foss
     meetingSchedule: {
@@ -542,6 +542,16 @@ export const initialGroups: Group[] = [
       time: "10:15",
       frequency: "hver uke",
     },
+  },
+  {
+    id: "group-moteledere",
+    name: "Møteledere og talere",
+    category: "tjenestegruppe",
+    memberIds: ["person-5", "person-7", "person-14", "person-12", "person-1"],
+    // Led by one who leads no other team, so the demo door still offers Andreas Lind as the team leader
+    leaderIds: ["person-7"], // Per Kristian Moen
+    deputyLeaderIds: ["person-5"], // Thomas Viken
+    // No regular meeting: they are set up for each service
   },
   {
     id: "group-ungdom",
@@ -1125,7 +1135,7 @@ export const initialGatherings: Gathering[] = [...handwrittenGatherings, ...serv
 
 export const initialTasks: Task[] = [...handwrittenTasks, ...serviceSeries.tasks];
 
-export const initialAssignments: Assignment[] = [
+const handwrittenAssignments: Assignment[] = [
   {
     id: "assign-aug-1",
     taskId: "task-aug-1",
@@ -1229,6 +1239,9 @@ export const initialAssignments: Assignment[] = [
     response: "confirmed",
   },
 ];
+
+// The assignments of the services every other Sunday, after the handwritten ones (see demoServices.ts)
+export const initialAssignments: Assignment[] = [...handwrittenAssignments, ...serviceSeries.assignments];
 
 export const initialGatheringAttendances: GatheringAttendance[] = [
   {
