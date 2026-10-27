@@ -492,6 +492,7 @@ Den som har avslått eller meldt forfall, holder ingen plass.
 * En grunn for forfallet lagres ikke. Det er et valg, ikke en mangel: opplysningen kan være privat, og tas muntlig.
 * Kommer forfallet eller avslaget **mindre enn 48 timer før samlingen starter**, er det **akutt**: oppgaven merkes og løftes fram i «Trenger oppfølging» til plassen er fylt igjen.
 * Hver tildeling får tidspunkt for når den ble opprettet og når den ble besvart.
+* **Unntak: semesterplanen** *(27. oktober, produkteier)*. Den som legger fra seg en oppgave i semesterplanen, lagres som **avslått**, ikke forfall, og ingen varsles. I planlegging langt fram er det å ta og legge fra seg oppgaver ikke et forfall, og forfall der ville bare vært støy. Alle andre steder er det forfall, så de andre blir orientert. Er arrangementet mindre enn 48 timer unna, regnes det likevel som akutt (se over). Se 11.5.
 
 ### 6.3 Oppgavens status følger av tildelingene
 
@@ -699,6 +700,31 @@ En gruppeleder ser hele programmet, med status på egne grupper og bare navn på
 
 ### 11.4 YouTube uten sporing
 YouTube-lenker på taler gjøres om til `youtube-nocookie.com`, slik at en besøkende ikke får sporingskapsler før videoen spilles av.
+
+### 11.5 Semesterplan
+Administrator frigir planleggingen av et semester. Alle som er med i et team med oppgaver i perioden, går gjennom arrangementene ett om gangen på Min side og tar oppgaver, sier fra at de ikke kan, eller går videre (`src/utils/semesterPlan.ts`, `SemesterPlanPage.tsx`, `SemesterPlanFormCard.tsx`).
+
+**Admin** (Planlegging › Semesterplan):
+
+| Del | Slik er det |
+|:---|:---|
+| **Ny semesterplan** | Navn, første og siste dag, svarfrist, og når planen åpner (dato og klokkeslett). Mens skjemaet fylles ut, står det hvor mange arrangementer med oppgaver for team planen har, og hvor mange som får flagget. Planer kan ikke overlappe |
+| **Datoer** | Skrives og vises som `dd.mm.åååå`, klokkeslett som `tt:mm`, uansett hvilket språk nettleseren har. `1.1.2027` og `2100` rettes til `01.01.2027` og `21:00` når feltet forlates (`src/utils/norwegianDateInput.ts`) |
+| **Status** | **Planlagt** før den åpner, **Åpen** til og med svarfristen, **Lukket** etter. Ingen ser planen før den åpner |
+| **Under hver plan** | Antall arrangementer, hvor mange som får flagget, og hvor mange som har gått gjennom. **Endre**, **Kopier lenke** (lenken de frivillige går gjennom planen på) og **Slett** |
+| **Åpne på nytt** | En lukket plan kan åpnes igjen med ny åpning og ny svarfrist. Da får alle flagget igjen og begynner fra første kort. Det de har sagt at de ikke kan, huskes |
+| **Hvilke arrangementer** | De som ligger mellom første og siste dag, ikke er avlyst og har minst én oppgave for et team. Det regnes ut når planen vises: et arrangement som legges inn senere i perioden, kommer med av seg selv |
+
+**Den frivillige** (Min side):
+
+| Del | Slik er det |
+|:---|:---|
+| **Flagget** | «Semesterplanen for {navn} er klar», med antall arrangementer og svarfristen, og **Start**. Står til man er ferdig, eller planen lukkes |
+| **Kortene** | Ett arrangement per kort, med oppgavene for alle teamene man er med i. **Ta oppgave** på en rolle med ledig plass, **Kan ikke** for hele dagen, eller **Neste**. Alt lagres med en gang, så man kan gå fra og fortsette der man slapp |
+| **Legge fra seg en oppgave** *(27. oktober, produkteier)* | Et trykk på den grønne linjen «Du står på …» gjør oppgaven ledig igjen. Ingen ny knapp og ingen tekst. Det lagres som avslått og ikke forfall, så lederne får ingen varsler (se 6.2). Gjelder bare oppgaver man har tatt selv: «Du er spurt om …» svares på fra Min side |
+| **Slutten** | «Takk! Du er ferdig med semesterplanen», med oppgavene man har tatt, og **Gå gjennom igjen** |
+
+**Møteleder** *(27. oktober)*: Møteleder og Taler hører til et team (i demoen «Møteledere og talere»), så de kommer med i semesterplanen. Den som har sagt ja til Møteleder på en gudstjeneste, kan endre kjøreplanen for den gudstjenesten fra oppgaven sin (**Se og endre programmet**): flytte, endre og legge til programposter. Databasen tillater det bare for den som har sagt ja til nettopp den rollen på nettopp det arrangementet, og bare programmet.
 
 ---
 
@@ -1690,6 +1716,20 @@ Bestilt av produkteier. Backloggen og kartleggingen (WordPress, Squarespace, Wix
 **Rettet og sluppet til Lillesand 21. oktober 2026** (`stabil` = `6c42820`, bare denne rettingen oppå `6f9bc98`): knappen «Populer testdata (32 personer)» og boksen «Fyll inn testdata nå» er fjernet fra Lederskap & Stab, der de sto også i en menighets app i drift. Henvisningen til et simulert halvår i analysebordet vises bare i demo. `tests/no-testdata-in-production.test.tsx` passer på at de ikke kommer tilbake.
 
 **Sluppet til menighetene 21. oktober 2026** (`stabil` flyttet fram til `6f9bc98` etter beskjed fra produkteier): menylinjen i Sider, forsiden trinn 1 og 2, Lagre som holder siden åpen, menyene som står fast, advarselen om endringer som ikke er lagret, forhåndsvisningen som viser toppen av seksjonen, «Hva skjer» med valg, kalenderen i planleggingen, fargene i lys admin og navnet på tekstblokker. Databasereglene var ikke endret, så ingenting måtte limes inn hos Lillesand.
+
+### Semesterplan, demo og standardroller (26.–27. oktober 2026)
+
+Bestilt av produkteier. Ligger på grenen `semesterplan`, ikke på `main`, og er ikke sluppet. Hvordan semesterplanen virker, står i 11.5.
+
+| Del | Hva som er levert |
+|---|---|
+| **Semesterplan** | Admin frigir et semester, og de frivillige går gjennom kortene på Min side (11.5) |
+| **Norske dato- og tidsfelt** | Skjemaet for semesterplanen viser og tar imot `dd.mm.åååå` og `tt:mm`, også i en nettleser på engelsk |
+| **Legge fra seg en oppgave** | Et trykk på «Du står på …» i semesterplanen gjør oppgaven ledig igjen, uten forfall (6.2) |
+| **Gudstjenester i demoen** | Alle gudstjenestene i demoen fra og med «10. januar» (slik datoene står i dag) er laget fra gudstjenestemalen, annenhver søndag til juni, med hele programmet. De håndskrevne gudstjenestene med ett eller to programpunkter er tatt bort (`src/data/demoServices.ts`) |
+| **Semesterplan i demoen** | Eksempelmenigheten har en åpen semesterplan, «2027», som nullstillingen legger inn (`demoSemesterPlanDocument`). Den flyttes med resten av datoene, så den er alltid åpen |
+| **Standardroller** | De 12 rollene fra menighetens ark, med instruksene: Baking, Barnekirke, Bilde, Forbønn, Kjøkken, Lovsang, Lyd, Møteleder, Møtevert, Pynting, Rigging og Taler. Oppvask, Markedsføring og Koordinator mannsgruppe er tatt ut. Rollene som er igjen, beholder id-ene (`DEFAULT_VOLUNTEER_ROLE_IDS`), så ingenting som er lagret hos en menighet, peker feil |
+| **Møteledere og talere** | Ny tjenestegruppe i demoen, som Møteleder og Taler hører til. Andreas Lind står som bekreftet møteleder på første gudstjeneste i semesterplanen, så kjøreplanen kan prøves som møteleder. Administrator Kari Nordmann er med i Møteledere og talere, Rigging og Bønnetjeneste & forbønn |
 
 ---
 
