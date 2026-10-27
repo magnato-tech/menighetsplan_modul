@@ -1070,3 +1070,44 @@ describe("En nettredaktør", () => {
     await assertFails(updateDoc(doc(hakon(), "gatherings/g-apen"), { summary: "Ny" }));
   });
 });
+
+describe("Semesterplanen", () => {
+  const plan = { recordType: "semesterPlan", name: "Våren", firstDay: "2027-01-01", lastDay: "2027-06-01", answerBy: "2026-12-01", opensAt: "2026-10-27T17:00:00.000Z", createdAt: "2026-10-27T10:00:00.000Z" };
+  const answerOf = (personId: string) => ({ recordType: "semesterAnswer", planId: "semester-1", personId, passed: ["g-apen"], declined: [], round: plan.opensAt, updatedAt: "2026-10-27T18:00:00.000Z" });
+
+  test("bare administrator frigir en plan, og et medlem leser den", async () => {
+    await assertFails(setDoc(doc(hakon(), "cms_settings/semester-1"), plan));
+    await assertSucceeds(setDoc(doc(kari(), "cms_settings/semester-1"), plan));
+    await assertSucceeds(getDocs(query(collection(hakon(), "cms_settings"), where("recordType", "==", "semesterPlan"))));
+    await assertFails(getDocs(query(collection(visitor(), "cms_settings"), where("recordType", "==", "semesterPlan"))));
+  });
+
+  test("et medlem skriver sitt eget svar, steg for steg, og ingen andres", async () => {
+    const db = hakon();
+    await assertSucceeds(setDoc(doc(db, "cms_settings/semester-answer-semester-1-hakon"), answerOf("hakon"), { merge: true }));
+    await assertSucceeds(
+      setDoc(doc(db, "cms_settings/semester-answer-semester-1-hakon"), { recordType: "semesterAnswer", planId: "semester-1", personId: "hakon", declined: arrayUnion("g-intern"), finishedAt: "2026-10-27T18:05:00.000Z" }, { merge: true })
+    );
+    await assertSucceeds(
+      setDoc(doc(db, "cms_settings/semester-answer-semester-1-hakon"), { recordType: "semesterAnswer", planId: "semester-1", personId: "hakon", passed: [], finishedAt: deleteField() }, { merge: true })
+    );
+    // Someone else's answer, under their id or under one's own
+    await assertFails(setDoc(doc(db, "cms_settings/semester-answer-semester-1-ola"), answerOf("ola")));
+    await assertFails(setDoc(doc(db, "cms_settings/semester-answer-semester-1-hakon"), answerOf("ola")));
+    // Under another id, or with more in it
+    await assertFails(setDoc(doc(db, "cms_settings/svar-hakon"), answerOf("hakon")));
+    await assertFails(setDoc(doc(db, "cms_settings/semester-answer-semester-1-hakon"), { ...answerOf("hakon"), role: "admin" }));
+    // Not a way to change other marked documents
+    await assertFails(setDoc(doc(db, "cms_settings/role-1"), answerOf("hakon")));
+  });
+
+  test("et medlem kan ikke ta over et svar som er en annens", async () => {
+    await env.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore() as unknown as Firestore, "cms_settings/semester-answer-semester-1-ola"), answerOf("ola"));
+    });
+    await assertFails(setDoc(doc(hakon(), "cms_settings/semester-answer-semester-1-ola"), { passed: arrayUnion("g-intern") }, { merge: true }));
+    await assertSucceeds(setDoc(doc(ola(), "cms_settings/semester-answer-semester-1-ola"), { passed: arrayUnion("g-intern") }, { merge: true }));
+    await assertFails(deleteDoc(doc(ola(), "cms_settings/semester-answer-semester-1-ola")));
+    await assertSucceeds(deleteDoc(doc(kari(), "cms_settings/semester-answer-semester-1-ola")));
+  });
+});

@@ -8,6 +8,7 @@ import { MY_PAGE_TABS, MyPageTabs, toMyPageTab, type MyPageTab } from "./myPage/
 import { MyCalendarPanel } from "./myPage/MyCalendarPanel";
 import { AttentionModal } from "./myPage/AttentionModal";
 import { VolunteerHelp } from "./myPage/VolunteerHelp";
+import { SemesterPlanDone, SemesterPlanWaiting } from "./myPage/SemesterPlanSection";
 import { CheckCircle2, Info } from "lucide-react";
 
 // Min side shows as little as it can: nothing that repeats something, explains what can be seen,
@@ -15,7 +16,9 @@ import { CheckCircle2, Info } from "lucide-react";
 
 export const MyPage: React.FC = () => {
   const page = useMyPage();
-  const { feedbackMessage, clearFeedbackMessage, myGroups, attentionItems, hasServiceGroupMembership } = page;
+  const { feedbackMessage, clearFeedbackMessage, myGroups, attentionItems, hasServiceGroupMembership, semesterPlans } = page;
+  const plansWaiting = semesterPlans.filter((item) => item.waiting);
+  const plansDone = semesterPlans.filter((item) => !item.waiting);
 
   const [searchParams] = useSearchParams();
 
@@ -67,8 +70,15 @@ export const MyPage: React.FC = () => {
 
         {tab === "oppgaver" && (
           <>
+            {/* A semester plan waiting for the user comes first: it covers the whole semester at once */}
+            {plansWaiting.length > 0 && <SemesterPlanWaiting plans={plansWaiting} />}
+
             {/* What waits for an answer, and the open tasks, belong with one's tasks and nowhere else */}
-            {attentionItems.length > 0 && <AttentionSection page={page} onShowAll={() => setShowAttentionModal(true)} />}
+            {attentionItems.length > 0 && (
+              <AttentionSection page={page} quiet={plansWaiting.length > 0} onShowAll={() => setShowAttentionModal(true)} />
+            )}
+
+            {plansDone.length > 0 && <SemesterPlanDone plans={plansDone} />}
 
             {!hasServiceGroupMembership && attentionItems.length === 0 && (
               <p className="text-xs text-slate-600 bg-slate-100 border border-slate-200/80 rounded-xl px-3.5 py-2.5 leading-relaxed">

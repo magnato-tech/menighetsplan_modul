@@ -38,9 +38,9 @@ describe("Fanene i admin følger nivået", () => {
     expect(STUDIO_TABS.every((tab) => isTabInLevel(tab, "plan"))).toBe(true);
   });
 
-  test("Menighetsplattform mangler oppgavene, gruppene og tjenesterollene, og ingenting annet", () => {
+  test("Menighetsplattform mangler oppgavene, gruppene, tjenesterollene og semesterplanen, og ingenting annet", () => {
     const missing = STUDIO_TABS.filter((tab) => !isTabInLevel(tab, "plattform"));
-    expect(missing).toEqual(["planlegger-oppgaver", "planlegger-grupper", "planlegger-roller"]);
+    expect(missing).toEqual(["planlegger-oppgaver", "planlegger-grupper", "planlegger-roller", "planlegger-semesterplan"]);
     expect([...PLANNER_TABS].sort()).toEqual([...missing].sort());
   });
 

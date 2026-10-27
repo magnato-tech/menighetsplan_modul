@@ -35,6 +35,7 @@ const AdminStudio = lazy(() =>
   import("./pages/admin/AdminStudio").then((m) => ({ default: m.AdminStudio }))
 );
 const MyPage = lazy(() => import("./pages/MyPage").then((m) => ({ default: m.MyPage })));
+const SemesterPlanPage = lazy(() => import("./pages/SemesterPlanPage").then((m) => ({ default: m.SemesterPlanPage })));
 const TaskDetailPage = lazy(() =>
   import("./pages/TaskDetailPage").then((m) => ({ default: m.TaskDetailPage }))
 );
@@ -139,6 +140,7 @@ function AppContent() {
             <Suspense fallback={<LazyRouteFallback />}>
               <Routes>
                 <Route path="/minside" element={<MyPage />} />
+                <Route path="/minside/semesterplan/:planId" element={<SemesterPlanPage />} />
                 <Route path="/leder" element={<LeaderPage />} />
                 <Route path="/leder/gruppe/:groupId" element={<LeaderGroupDetailPage />} />
                 <Route path="/leder/samling/:gatheringId" element={<LeaderGatheringDetailPage />} />

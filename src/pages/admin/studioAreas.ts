@@ -34,6 +34,7 @@ const TAB_AREAS: Record<StudioTab, StudioArea | null> = {
   "planlegger-personer": "planlegging",
   "planlegger-roller": "planlegging",
   "planlegger-maler": "planlegging",
+  "planlegger-semesterplan": "planlegging",
   arshjul: "planlegging",
   epost: "planlegging",
   "database-admin": null,

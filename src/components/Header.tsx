@@ -3,7 +3,8 @@ import { Link, useLocation } from "react-router-dom";
 import { AccountMenu } from "./AccountMenu";
 import { useCms } from "../context/CmsContext";
 import { useLeaderDashboard } from "../hooks/useAppHooks";
-import { Shield } from "lucide-react";
+import { Flag, Shield } from "lucide-react";
+import { useMySemesterPlans } from "../hooks/useSemesterPlans";
 
 export const Header: React.FC = () => {
   const { settings } = useCms();
@@ -15,7 +16,10 @@ export const Header: React.FC = () => {
 
   const isLeaderPath = location.pathname.startsWith("/leder");
   const isAdminPath = location.pathname.startsWith("/admin");
-  const isMyPagePath = location.pathname === "/minside" || location.pathname === "/";
+  const isMyPagePath = location.pathname === "/minside" || location.pathname.startsWith("/minside/") || location.pathname === "/";
+  // A semester plan waiting for the person: the flag by Min side stays until they have gone through it
+  const { mine: semesterPlans } = useMySemesterPlans();
+  const planWaits = semesterPlans.some((item) => item.waiting);
 
   return (
     <header className="sticky top-[var(--demo-strip,0px)] z-40 bg-white border-b border-slate-200/80 shadow-xs">
@@ -42,13 +46,19 @@ export const Header: React.FC = () => {
           <Link
             to="/minside"
             id="nav-tab-min-side"
-            className={`text-xs font-bold px-2.5 py-1.5 rounded-xl whitespace-nowrap transition-all cursor-pointer ${
+            className={`text-xs font-bold px-2.5 py-1.5 rounded-xl whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
               isMyPagePath
                 ? "bg-slate-900 text-white shadow-xs"
                 : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
             }`}
           >
-            Min side
+            <span>Min side</span>
+            {planWaits && (
+              <Flag
+                className={`w-3.5 h-3.5 ${isMyPagePath ? "text-amber-300" : "text-amber-600"}`}
+                aria-label="Semesterplanen venter på deg"
+              />
+            )}
           </Link>
 
           {isLeader && (

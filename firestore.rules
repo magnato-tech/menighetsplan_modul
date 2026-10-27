@@ -410,13 +410,25 @@ service cloud.firestore {
     }
 
     // The settings, and the marked documents that are stored beside them: the roles, the
-    // headcounts, the templates, the visit counts, the add-ons and the operating mode
+    // headcounts, the templates, the semester plans and the answers to them, the visit counts,
+    // the add-ons and the operating mode
     // (see src/data/settingsRecords.ts).
     match /cms_settings/{docId} {
       function isTrafficDay(data) {
         return docId.matches('^traffic-[0-9]{4}-[0-9]{2}-[0-9]{2}$')
           && data.recordType == 'siteTraffic'
           && data.keys().hasOnly(['recordType', 'date', 'views', 'hours', 'visits', 'entries', 'deepVisits', 'seconds', 'missing', 'actions', 'sermons']);
+      }
+
+      // One person's way through a semester plan (see src/utils/semesterPlan.ts): the person writes
+      // their own, under the id made of the plan and themselves, and nothing else in it
+      function isOwnSemesterAnswer(data) {
+        return isMember()
+          && data.recordType == 'semesterAnswer'
+          && data.personId == me()
+          && data.planId is string
+          && docId == 'semester-answer-' + data.planId + '-' + me()
+          && data.keys().hasOnly(['recordType', 'planId', 'personId', 'passed', 'declined', 'finishedAt', 'round', 'updatedAt']);
       }
 
       // The website reads the settings, which add-ons are on and the operating mode, and the
@@ -428,6 +440,7 @@ service cloud.firestore {
         // A web editor writes the website's settings, and the versions kept of pages and news
         || (isWebEditor() && (docId == 'global' || request.resource.data.recordType == 'contentVersion'))
         || (isMember() && request.resource.data.recordType == 'gatheringHeadcount')
+        || isOwnSemesterAnswer(request.resource.data)
         // A visit to the website adds to the sums of the day
         || isTrafficDay(request.resource.data);
       allow update: if isAdmin()
@@ -437,6 +450,10 @@ service cloud.firestore {
         || (isMember()
             && resource.data.recordType == 'gatheringHeadcount'
             && request.resource.data.recordType == 'gatheringHeadcount')
+        || (isMember()
+            && resource.data.recordType == 'semesterAnswer'
+            && resource.data.personId == me()
+            && isOwnSemesterAnswer(request.resource.data))
         || (resource.data.recordType == 'siteTraffic' && isTrafficDay(request.resource.data));
       // The oldest versions beyond the thirty kept are removed by whoever saves
       allow delete: if isAdmin() || (isWebEditor() && resource.data.recordType == 'contentVersion');

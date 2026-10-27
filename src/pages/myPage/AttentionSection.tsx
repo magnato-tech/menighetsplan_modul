@@ -15,12 +15,14 @@ interface AttentionSectionProps {
   page: MyPageModel;
   /** Opens the list of the requests and the free tasks. */
   onShowAll: () => void;
+  /** While a semester plan waits, the free tasks give way to it: the button is a plain link. */
+  quiet?: boolean;
 }
 
 /** From this many free tasks, they are gathered behind the button instead of shown one by one. */
 const OPEN_AS_BUTTON_FROM = 3;
 
-export const AttentionSection: React.FC<AttentionSectionProps> = ({ page, onShowAll }) => {
+export const AttentionSection: React.FC<AttentionSectionProps> = ({ page, onShowAll, quiet = false }) => {
   const { attentionItems, handleAttentionAnswer } = page;
   // A call to a gathering is always shown. Of the requests, one stands on top at a time (the nearest);
   // when it is answered, the next takes its place. Everything else is behind one button.
@@ -29,7 +31,7 @@ export const AttentionSection: React.FC<AttentionSectionProps> = ({ page, onShow
   const openTasks = attentionItems.filter((item) => item.type === "open_task");
   const firstRequest = requests[0];
   // A free task or two show as cards only when nothing is asked of the user; else the request has the focus
-  const openAsCards = !firstRequest && openTasks.length > 0 && openTasks.length < OPEN_AS_BUTTON_FROM;
+  const openAsCards = !quiet && !firstRequest && openTasks.length > 0 && openTasks.length < OPEN_AS_BUTTON_FROM;
   const hasMore = requests.length > 1 || (openTasks.length > 0 && !openAsCards);
   const buttonText = openTasks.length > 0 ? `Se ledige oppgaver (${openTasks.length})` : `Se alle forespørsler (${requests.length})`;
 
@@ -118,7 +120,13 @@ export const AttentionSection: React.FC<AttentionSectionProps> = ({ page, onShow
 
       {openAsCards && <div className="space-y-3">{openTasks.map((item) => renderCard(item))}</div>}
 
-      {hasMore && (
+      {hasMore && quiet && (
+        <button type="button" id="btn-see-and-handle-attention" onClick={() => onShowAll()} className="block mx-auto text-xs font-semibold text-slate-600 underline underline-offset-2 hover:text-slate-900 cursor-pointer">
+          {buttonText}
+        </button>
+      )}
+
+      {hasMore && !quiet && (
         /* Everything else in one list: the requests first, then the free tasks */
         <button
           type="button"

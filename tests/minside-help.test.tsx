@@ -13,7 +13,8 @@ describe("Hjelp på Min side", () => {
     fireEvent.click(screen.getByRole("button", { name: "Slik bruker du Min side" }));
     const help = screen.getByRole("dialog", { name: "Slik bruker du Min side" });
     expect(within(help).getByText(/Meld forfall/)).toBeTruthy();
-    expect(within(help).getAllByRole("listitem")).toHaveLength(5);
+    expect(within(help).getAllByRole("listitem")).toHaveLength(6);
+    expect(within(help).getByText(/semesterplanen er åpnet/)).toBeTruthy();
 
     // Three ways out: the cross, «Lukk», and a press outside
     fireEvent.click(within(help).getByRole("button", { name: "Lukk" }));
