@@ -27,7 +27,8 @@ import { validateEvent } from './src/utils/validation';
 import type { Gathering, GatheringAttendance, Group, Person } from './src/types';
 
 const app = express();
-const port = 3000;
+// 3000 unless PORT says otherwise, so two projects can run side by side on one machine
+const port = Number(process.env.PORT) || 3000;
 
 // The server belongs to the same installation as the app, and reads the same settings: the
 // hosting's own, or the .env files Vite reads on a developer's machine (see src/installation.ts)
@@ -464,7 +465,8 @@ async function startServer() {
     void refreshSiteContent();
   } else {
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      // The live reload gets its own port next to Vite's usual one, moved as far as the app's port is
+      server: { middlewareMode: true, hmr: { port: 24678 + (port - 3000) } },
       appType: 'spa',
     });
     app.use((req, res, next) => {
