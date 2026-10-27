@@ -20,8 +20,8 @@ import { Person, Group, type GatheringHeadcount, type VolunteerRole } from "../t
 import { buildInitialVolunteerRoles } from "./defaultVolunteerRoles";
 import { enrichTasksWithVolunteerRoles } from "./mockTaskVolunteerRoles";
 import { gatheringTemplateFields, headcountFields, volunteerRoleFields } from "./settingsRecords";
-import { standardServiceTemplate, type GatheringTemplate } from "../utils/gatheringTemplates";
 import { weeksBetween, withLiveDates } from "../utils/liveDates";
+import { demoServiceTemplate } from "./demoServices";
 
 export interface MockDocument {
   collection: string;
@@ -39,10 +39,11 @@ export interface CustomMockCounts {
 
 /** The whole example congregation: what the demo is filled with, and what «full demo» in admin writes. */
 export const FULL_DEMO_COUNTS: CustomMockCounts = {
-  personCount: 32,
+  personCount: initialPersons.length,
   groupCount: 14,
-  gatheringCount: 19,
-  taskCount: 24,
+  // Every gathering and task, with the services every other Sunday (see demoServices.ts)
+  gatheringCount: initialGatherings.length,
+  taskCount: initialTasks.length,
   roleCount: 14,
 };
 
@@ -229,11 +230,8 @@ export function getCustomMockDocuments(counts?: CustomMockCounts, now: number = 
   return documents.map((document) => ({ ...document, data: withLiveDates(document.data, weeks) }));
 }
 
-/** The standard template for a worship service, tied to the demo's roles, with the same places every time it is made. */
-export function demoServiceTemplate(): GatheringTemplate {
-  const template = standardServiceTemplate(buildInitialVolunteerRoles());
-  return { ...template, id: "mal-gudstjeneste", program: template.program.map((item, index) => ({ ...item, id: `punkt-${index + 1}` })) };
-}
+// The demo's template for a worship service is made where its services are (see demoServices.ts)
+export { demoServiceTemplate };
 
 /**
  * The template as a document of the demo, in the place and the form it is stored in. It is put

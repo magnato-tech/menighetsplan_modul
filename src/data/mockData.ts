@@ -8,6 +8,7 @@ import {
   GatheringAttendance,
   GatheringHeadcount,
 } from "../types";
+import { demoServiceSeries } from "./demoServices";
 
 // Three of the four have a public profile with a registered consent. Ingrid has not
 // consented, so she is never named on the public website although she leads a group.
@@ -368,6 +369,90 @@ export const initialPersons: Person[] = [
     email: "torleif.roed@eksempel.no",
     globalRole: "member",
   },
+  {
+    id: "person-33",
+    name: "Nora Eide",
+    phone: "934 22 101",
+    email: "nora.eide@eksempel.no",
+    globalRole: "member",
+  },
+  {
+    id: "person-34",
+    name: "Even Holm",
+    phone: "945 33 202",
+    email: "even.holm@eksempel.no",
+    globalRole: "member",
+  },
+  {
+    id: "person-35",
+    name: "Ane Sørensen",
+    phone: "956 44 303",
+    email: "ane.sorensen@eksempel.no",
+    globalRole: "member",
+  },
+  {
+    id: "person-36",
+    name: "Jakob Strøm",
+    phone: "967 55 404",
+    email: "jakob.strom@eksempel.no",
+    globalRole: "member",
+  },
+  {
+    id: "person-37",
+    name: "Linnea Berge",
+    phone: "978 66 505",
+    email: "linnea.berge@eksempel.no",
+    globalRole: "member",
+  },
+  {
+    id: "person-38",
+    name: "Ole Martin Haug",
+    phone: "989 77 606",
+    email: "olemartin.haug@eksempel.no",
+    globalRole: "member",
+  },
+  {
+    id: "person-39",
+    name: "Ingeborg Lunde",
+    phone: "913 88 707",
+    email: "ingeborg.lunde@eksempel.no",
+    globalRole: "member",
+  },
+  {
+    id: "person-40",
+    name: "Sindre Nesse",
+    phone: "924 99 808",
+    email: "sindre.nesse@eksempel.no",
+    globalRole: "member",
+  },
+  {
+    id: "person-41",
+    name: "Marte Hovland",
+    phone: "935 10 909",
+    email: "marte.hovland@eksempel.no",
+    globalRole: "member",
+  },
+  {
+    id: "person-42",
+    name: "Kristian Aasen",
+    phone: "946 21 010",
+    email: "kristian.aasen@eksempel.no",
+    globalRole: "member",
+  },
+  {
+    id: "person-43",
+    name: "Hanne Riise",
+    phone: "957 32 121",
+    email: "hanne.riise@eksempel.no",
+    globalRole: "member",
+  },
+  {
+    id: "person-44",
+    name: "Petter Grønli",
+    phone: "968 43 232",
+    email: "petter.gronli@eksempel.no",
+    globalRole: "member",
+  },
 ];
 
 export const initialGroups: Group[] = [
@@ -375,7 +460,7 @@ export const initialGroups: Group[] = [
     id: "group-lyd",
     name: "Lyd og bilde",
     category: "tjenestegruppe",
-    memberIds: ["person-14", "person-18", "person-19", "person-2", "person-1"],
+    memberIds: ["person-14", "person-18", "person-19", "person-2", "person-1", "person-9", "person-34", "person-36", "person-44"],
     leaderIds: ["person-14"], // Andreas Lind is leader
     deputyLeaderIds: ["person-18"], // Eirik Halvorsen is deputy
     meetingSchedule: {
@@ -388,7 +473,7 @@ export const initialGroups: Group[] = [
     id: "group-rigging",
     name: "Rigging",
     category: "tjenestegruppe",
-    memberIds: ["person-19", "person-18", "person-2", "person-1"],
+    memberIds: ["person-19", "person-18", "person-2", "person-1", "person-7", "person-26", "person-36", "person-42"],
     leaderIds: ["person-19"],
     deputyLeaderIds: ["person-18"],
     meetingSchedule: {
@@ -401,7 +486,7 @@ export const initialGroups: Group[] = [
     id: "group-kjokken",
     name: "Kjøkken",
     category: "tjenestegruppe",
-    memberIds: ["person-15", "person-21", "person-27", "person-31", "person-1", "person-2"],
+    memberIds: ["person-15", "person-21", "person-27", "person-31", "person-1", "person-2", "person-8", "person-35", "person-41"],
     leaderIds: ["person-15"], // Camilla Bakke
     deputyLeaderIds: ["person-21"], // Anne Grethe Nilsen
     meetingSchedule: {
@@ -414,7 +499,7 @@ export const initialGroups: Group[] = [
     id: "group-motevert",
     name: "Møtevert",
     category: "tjenestegruppe",
-    memberIds: ["person-32", "person-4", "person-15", "person-1"],
+    memberIds: ["person-32", "person-4", "person-15", "person-1", "person-9", "person-28", "person-37", "person-38"],
     leaderIds: ["person-32"], // Torleif Røed
     deputyLeaderIds: ["person-4"], // Jonas Lie
     meetingSchedule: {
@@ -427,7 +512,7 @@ export const initialGroups: Group[] = [
     id: "group-barn",
     name: "Barnekirke",
     category: "tjenestegruppe",
-    memberIds: ["person-6", "person-3", "person-22", "person-10"],
+    memberIds: ["person-6", "person-3", "person-22", "person-10", "person-33", "person-39", "person-41"],
     leaderIds: ["person-6"], // Silje Markussen
     deputyLeaderIds: ["person-3"], // Ingrid Berg
     // No regular meeting: the children's church is part of the service, not a meeting of its own
@@ -436,7 +521,7 @@ export const initialGroups: Group[] = [
     id: "group-lovsang",
     name: "Lovsang & musikk",
     category: "tjenestegruppe",
-    memberIds: ["person-13", "person-16", "person-17", "person-29"],
+    memberIds: ["person-13", "person-16", "person-17", "person-29", "person-33", "person-40", "person-44"],
     leaderIds: ["person-13"], // Martin Kleveland
     deputyLeaderIds: ["person-16"], // Henrik Olsen
     meetingSchedule: {
@@ -449,7 +534,7 @@ export const initialGroups: Group[] = [
     id: "group-bonn",
     name: "Bønnetjeneste & forbønn",
     category: "tjenestegruppe",
-    memberIds: ["person-20", "person-12", "person-21", "person-25"],
+    memberIds: ["person-20", "person-12", "person-21", "person-25", "person-38", "person-43"],
     leaderIds: ["person-20"], // Fredrik Dahl
     deputyLeaderIds: ["person-12"], // Ruth Elisabeth Foss
     meetingSchedule: {
@@ -475,7 +560,7 @@ export const initialGroups: Group[] = [
     id: "group-hus-1",
     name: "Husfellesskap Sentrum",
     category: "husgruppe",
-    memberIds: ["person-1", "person-2", "person-3", "person-4", "person-20", "person-24"],
+    memberIds: ["person-1", "person-2", "person-3", "person-4", "person-20", "person-24", "person-6", "person-12", "person-33", "person-34", "person-35"],
     leaderIds: ["person-2"], // Ola Hansen (Leder)
     deputyLeaderIds: ["person-1"], // Kari Nordmann (Nestleder)
     memberJoinedAt: {
@@ -500,7 +585,7 @@ export const initialGroups: Group[] = [
     id: "group-hus-2",
     name: "Husfellesskap Havna",
     category: "husgruppe",
-    memberIds: ["person-25", "person-26", "person-15", "person-16", "person-17"],
+    memberIds: ["person-25", "person-26", "person-15", "person-16", "person-17", "person-10", "person-14", "person-21", "person-36", "person-37", "person-38"],
     leaderIds: ["person-25"], // Solveig Knudsen
     deputyLeaderIds: ["person-26"], // Geir Knudsen
     meetingSchedule: {
@@ -513,7 +598,7 @@ export const initialGroups: Group[] = [
     id: "group-hus-3",
     name: "Husfellesskap Borkedalen",
     category: "husgruppe",
-    memberIds: ["person-27", "person-28", "person-7", "person-8", "person-9"],
+    memberIds: ["person-27", "person-28", "person-7", "person-8", "person-9", "person-11", "person-18", "person-31", "person-32", "person-39", "person-40", "person-41"],
     leaderIds: ["person-27"], // Ellen Fossli
     deputyLeaderIds: ["person-28"], // Lars Fossli
     meetingSchedule: {
@@ -526,7 +611,7 @@ export const initialGroups: Group[] = [
     id: "group-hus-ung",
     name: "Ung Voksen Fellesskap",
     category: "husgruppe",
-    memberIds: ["person-29", "person-30", "person-22", "person-23", "person-13"],
+    memberIds: ["person-29", "person-30", "person-22", "person-23", "person-13", "person-5", "person-19", "person-42", "person-43", "person-44"],
     leaderIds: ["person-29"], // Julie Haugen
     deputyLeaderIds: ["person-30"], // Mathias Johannessen
     meetingSchedule: {
@@ -553,7 +638,8 @@ export const initialGroups: Group[] = [
   },
 ];
 
-export const initialGatherings: Gathering[] = [
+/** The gatherings written by hand. The services every other Sunday are added after them (see demoServices.ts). */
+const handwrittenGatherings: Gathering[] = [
   {
     id: "gathering-hus-1",
     groupId: "group-hus-1",
@@ -952,7 +1038,7 @@ export const initialGroupMessages: GroupMessage[] = [
   },
 ];
 
-export const initialTasks: Task[] = [
+const handwrittenTasks: Task[] = [
   {
     id: "task-aug-1",
     gatheringId: "gathering-aug-1",
@@ -1190,6 +1276,14 @@ export const initialTasks: Task[] = [
     neededCount: 1,
   },
 ];
+
+// The services every other Sunday, from the standard template, after those written by hand: a
+// demo filled with fewer gatherings than all (FULL_DEMO_COUNTS) gets the handwritten ones first.
+const serviceSeries = demoServiceSeries(handwrittenGatherings);
+
+export const initialGatherings: Gathering[] = [...handwrittenGatherings, ...serviceSeries.gatherings];
+
+export const initialTasks: Task[] = [...handwrittenTasks, ...serviceSeries.tasks];
 
 export const initialAssignments: Assignment[] = [
   {
