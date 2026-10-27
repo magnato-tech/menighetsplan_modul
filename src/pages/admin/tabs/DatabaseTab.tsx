@@ -9,6 +9,7 @@ import {
   type DatabaseAdminResult,
 } from "../../../services/databaseAdmin";
 import { DEFAULT_VOLUNTEER_ROLE_NAMES } from "../../../data/defaultVolunteerRoles";
+import { FULL_DEMO_COUNTS } from "../../../data/mockDocuments";
 import { ShowFeedback, StudioData } from "../studio";
 import { DatabaseTestdataTab } from "../../../components/admin/DatabaseTestdataTab";
 import { SimulationPanel } from "../../../components/admin/SimulationPanel";
@@ -78,12 +79,12 @@ const PRESET_PACKAGES: PresetPackage[] = [
   {
     id: "full",
     name: "Fullskala menighet",
-    description: "Komplett menighetsregister: 32 personer, 14 grupper, samlinger og oppgaver.",
-    persons: 32,
-    groups: 12,
-    gatherings: 19,
-    tasks: 24,
-    tag: "32 personer (Maks)",
+    description: `Komplett menighetsregister: ${FULL_DEMO_COUNTS.personCount} personer, ${FULL_DEMO_COUNTS.groupCount} grupper, samlinger og oppgaver.`,
+    persons: FULL_DEMO_COUNTS.personCount ?? 0,
+    groups: FULL_DEMO_COUNTS.groupCount ?? 0,
+    gatherings: FULL_DEMO_COUNTS.gatheringCount ?? 0,
+    tasks: FULL_DEMO_COUNTS.taskCount ?? 0,
+    tag: `${FULL_DEMO_COUNTS.personCount} personer (Maks)`,
   },
 ];
 
@@ -105,10 +106,10 @@ export const DatabaseTab: React.FC<DatabaseTabProps> = ({ showFeedback }) => {
   const deletionLocked = operatingMode !== "demo";
 
   // Custom counts state
-  const [personCount, setPersonCount] = useState<number>(32);
-  const [groupCount, setGroupCount] = useState<number>(14);
-  const [gatheringCount, setGatheringCount] = useState<number>(19);
-  const [taskCount, setTaskCount] = useState<number>(24);
+  const [personCount, setPersonCount] = useState<number>(FULL_DEMO_COUNTS.personCount ?? 0);
+  const [groupCount, setGroupCount] = useState<number>(FULL_DEMO_COUNTS.groupCount ?? 0);
+  const [gatheringCount, setGatheringCount] = useState<number>(FULL_DEMO_COUNTS.gatheringCount ?? 0);
+  const [taskCount, setTaskCount] = useState<number>(FULL_DEMO_COUNTS.taskCount ?? 0);
   const [activePreset, setActivePreset] = useState<string>("full");
 
   // Checkbox for clearing planner records before population
@@ -162,22 +163,22 @@ export const DatabaseTab: React.FC<DatabaseTabProps> = ({ showFeedback }) => {
     }
   };
 
-  const handleQuickPopulate32 = async () => {
+  const handleQuickPopulateFull = async () => {
     if (isWorking) return;
     setIsWorking(true);
     try {
-      setPersonCount(32);
-      setGroupCount(12);
-      setGatheringCount(19);
-      setTaskCount(24);
+      setPersonCount(FULL_DEMO_COUNTS.personCount ?? 0);
+      setGroupCount(FULL_DEMO_COUNTS.groupCount ?? 0);
+      setGatheringCount(FULL_DEMO_COUNTS.gatheringCount ?? 0);
+      setTaskCount(FULL_DEMO_COUNTS.taskCount ?? 0);
       setActivePreset("full");
 
       const result: DatabaseAdminResult = await populateCustomMockData(
         {
-          personCount: 32,
-          groupCount: 14,
-          gatheringCount: 19,
-          taskCount: 24,
+          personCount: FULL_DEMO_COUNTS.personCount,
+          groupCount: FULL_DEMO_COUNTS.groupCount,
+          gatheringCount: FULL_DEMO_COUNTS.gatheringCount,
+          taskCount: FULL_DEMO_COUNTS.taskCount,
         },
         { clearPlannerFirst: clearBeforePopulate }
       );
@@ -186,11 +187,11 @@ export const DatabaseTab: React.FC<DatabaseTabProps> = ({ showFeedback }) => {
         showFeedback(`Fylling fullført med feil: ${result.failures[0].message}`, "error");
       } else {
         showFeedback(
-          `Databasen er fylt med 32 personer, 14 grupper, 19 samlinger, oppgaver og ${DEFAULT_VOLUNTEER_ROLE_NAMES.length} tjenesteroller.`
+          `Databasen er fylt med ${FULL_DEMO_COUNTS.personCount} personer, ${FULL_DEMO_COUNTS.groupCount} grupper, ${FULL_DEMO_COUNTS.gatheringCount} samlinger, ${FULL_DEMO_COUNTS.taskCount} oppgaver og ${DEFAULT_VOLUNTEER_ROLE_NAMES.length} tjenesteroller.`
         );
       }
     } catch (err) {
-      showFeedback(err instanceof Error ? err.message : "Kunne ikke fylle med 32 personer.", "error");
+      showFeedback(err instanceof Error ? err.message : `Kunne ikke fylle med ${FULL_DEMO_COUNTS.personCount} personer.`, "error");
     } finally {
       setIsWorking(false);
     }
@@ -225,7 +226,7 @@ export const DatabaseTab: React.FC<DatabaseTabProps> = ({ showFeedback }) => {
         showFeedback(`Gjenoppretting fullført med feil: ${result.failures[0].message}`, "error");
       } else {
         showFeedback(
-          `Demo-planleggeren er lagt inn på nytt: 32 personer, 14 grupper, samlinger, oppgaver og ${DEFAULT_VOLUNTEER_ROLE_NAMES.length} tjenesteroller. Sidene på nettsiden er ikke rørt.`
+          `Demo-planleggeren er lagt inn på nytt: ${FULL_DEMO_COUNTS.personCount} personer, ${FULL_DEMO_COUNTS.groupCount} grupper, samlinger, oppgaver og ${DEFAULT_VOLUNTEER_ROLE_NAMES.length} tjenesteroller. Sidene på nettsiden er ikke rørt.`
         );
       }
     } catch (err) {
@@ -432,7 +433,7 @@ export const DatabaseTab: React.FC<DatabaseTabProps> = ({ showFeedback }) => {
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-[11px] text-[var(--studio-accent-text)] font-semibold bg-[var(--studio-accent-bg)] border border-[var(--studio-accent-border)] px-2.5 py-1 rounded-lg">
-                  Maks oppsett: 32 personer / 14 grupper
+                  Maks oppsett: {FULL_DEMO_COUNTS.personCount} personer / {FULL_DEMO_COUNTS.groupCount} grupper
                 </span>
               </div>
             </div>
@@ -500,12 +501,12 @@ export const DatabaseTab: React.FC<DatabaseTabProps> = ({ showFeedback }) => {
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-[var(--studio-muted)] font-semibold">Personer:</span>
-                <span className="font-mono font-bold text-[var(--studio-icon)] text-sm">{personCount} av 32</span>
+                <span className="font-mono font-bold text-[var(--studio-icon)] text-sm">{personCount} av {FULL_DEMO_COUNTS.personCount}</span>
               </div>
               <input
                 type="range"
                 min={4}
-                max={32}
+                max={FULL_DEMO_COUNTS.personCount}
                 value={personCount}
                 onChange={(e) => handleCustomChange(setPersonCount, Number(e.target.value))}
                 className="w-full accent-indigo-500 cursor-pointer"
@@ -513,7 +514,7 @@ export const DatabaseTab: React.FC<DatabaseTabProps> = ({ showFeedback }) => {
               <div className="flex justify-between text-[10px] text-[var(--studio-muted)] font-mono">
                 <span>4 (Minimum)</span>
                 <span>16</span>
-                <span>32 (Maks)</span>
+                <span>{FULL_DEMO_COUNTS.personCount} (Maks)</span>
               </div>
             </div>
 
@@ -521,12 +522,12 @@ export const DatabaseTab: React.FC<DatabaseTabProps> = ({ showFeedback }) => {
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-[var(--studio-muted)] font-semibold">Grupper & Husfellesskap:</span>
-                <span className="font-mono font-bold text-emerald-400 text-sm">{groupCount} av 14</span>
+                <span className="font-mono font-bold text-emerald-400 text-sm">{groupCount} av {FULL_DEMO_COUNTS.groupCount}</span>
               </div>
               <input
                 type="range"
                 min={2}
-                max={12}
+                max={FULL_DEMO_COUNTS.groupCount}
                 value={groupCount}
                 onChange={(e) => handleCustomChange(setGroupCount, Number(e.target.value))}
                 className="w-full accent-emerald-500 cursor-pointer"
@@ -534,7 +535,7 @@ export const DatabaseTab: React.FC<DatabaseTabProps> = ({ showFeedback }) => {
               <div className="flex justify-between text-[10px] text-[var(--studio-muted)] font-mono">
                 <span>2 (Kjerne)</span>
                 <span>6</span>
-                <span>12 (Maks)</span>
+                <span>{FULL_DEMO_COUNTS.groupCount} (Maks)</span>
               </div>
             </div>
 
@@ -542,12 +543,12 @@ export const DatabaseTab: React.FC<DatabaseTabProps> = ({ showFeedback }) => {
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-[var(--studio-muted)] font-semibold">Samlinger & Gudstjenester:</span>
-                <span className="font-mono font-bold text-amber-400 text-sm">{gatheringCount} av 19</span>
+                <span className="font-mono font-bold text-amber-400 text-sm">{gatheringCount} av {FULL_DEMO_COUNTS.gatheringCount}</span>
               </div>
               <input
                 type="range"
                 min={2}
-                max={19}
+                max={FULL_DEMO_COUNTS.gatheringCount}
                 value={gatheringCount}
                 onChange={(e) => handleCustomChange(setGatheringCount, Number(e.target.value))}
                 className="w-full accent-amber-500 cursor-pointer"
@@ -555,7 +556,7 @@ export const DatabaseTab: React.FC<DatabaseTabProps> = ({ showFeedback }) => {
               <div className="flex justify-between text-[10px] text-[var(--studio-muted)] font-mono">
                 <span>2</span>
                 <span>10</span>
-                <span>19 (Maks)</span>
+                <span>{FULL_DEMO_COUNTS.gatheringCount} (Maks)</span>
               </div>
             </div>
 
@@ -563,12 +564,12 @@ export const DatabaseTab: React.FC<DatabaseTabProps> = ({ showFeedback }) => {
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-[var(--studio-muted)] font-semibold">Bemanningsoppgaver:</span>
-                <span className="font-mono font-bold text-sky-400 text-sm">{taskCount} av 21</span>
+                <span className="font-mono font-bold text-sky-400 text-sm">{taskCount} av {FULL_DEMO_COUNTS.taskCount}</span>
               </div>
               <input
                 type="range"
                 min={2}
-                max={21}
+                max={FULL_DEMO_COUNTS.taskCount}
                 value={taskCount}
                 onChange={(e) => handleCustomChange(setTaskCount, Number(e.target.value))}
                 className="w-full accent-sky-500 cursor-pointer"
@@ -576,7 +577,7 @@ export const DatabaseTab: React.FC<DatabaseTabProps> = ({ showFeedback }) => {
               <div className="flex justify-between text-[10px] text-[var(--studio-muted)] font-mono">
                 <span>2</span>
                 <span>11</span>
-                <span>21 (Maks)</span>
+                <span>{FULL_DEMO_COUNTS.taskCount} (Maks)</span>
               </div>
             </div>
           </div>
@@ -589,7 +590,7 @@ export const DatabaseTab: React.FC<DatabaseTabProps> = ({ showFeedback }) => {
             <span>Hva inkluderes med {personCount} personer og {groupCount} grupper:</span>
           </div>
           <p className="text-[var(--studio-muted)] text-[11px] leading-relaxed">
-            {personCount >= 32
+            {personCount >= (FULL_DEMO_COUNTS.personCount ?? 0)
               ? "Alle 3 pastorer (Hovedpastor, Ungdomspastor, Barne- og familiepastor), hele menighetsrådet (7 personer), hele staben (diakon, musikk, teknikk), samtlige frivillige teamledere og 4 husfellesskap (Sentrum, Havna, Borkedalen, Ung Voksen)."
               : personCount >= 16
               ? "Pastorer, rådsmedlemmer, stabsmedlemmer (diakoni, musikk), frivillige teamledere (kaffe, lovsang, lyd) og husfellesskap."
@@ -641,15 +642,15 @@ export const DatabaseTab: React.FC<DatabaseTabProps> = ({ showFeedback }) => {
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
-            {/* Hurtigknapp: 32 personer fullskala */}
+            {/* Hurtigknapp: hele demosettet */}
             <button
               type="button"
-              onClick={handleQuickPopulate32}
+              onClick={handleQuickPopulateFull}
               disabled={isWorking}
               className="px-4 py-2.5 rounded-xl bg-[var(--studio-accent-bg)] hover:bg-indigo-900/80 border border-indigo-700/70 text-[var(--studio-accent-text)] text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow-xs disabled:opacity-50"
             >
               <Sparkles className="w-4 h-4 text-amber-400" />
-              <span>Populer 32 testpersoner</span>
+              <span>Populer {FULL_DEMO_COUNTS.personCount} testpersoner</span>
             </button>
 
             {/* Hovedknapp med valgte glidebryter-verdier */}
@@ -731,7 +732,7 @@ export const DatabaseTab: React.FC<DatabaseTabProps> = ({ showFeedback }) => {
                 <span>Legg inn demo-planleggeren på nytt</span>
               </span>
               <p className="text-[11px] text-[var(--studio-accent-text)]/80 leading-relaxed">
-                Fyller planleggeren med 32 personer, grupper, demo-samlinger, oppgaver og alle{" "}
+                Fyller planleggeren med {FULL_DEMO_COUNTS.personCount} personer, grupper, demo-samlinger, oppgaver og alle{" "}
                 {DEFAULT_VOLUNTEER_ROLE_NAMES.length} tjenesteroller fra rollebiblioteket. Sidene, nyhetene og talene på
                 nettsiden røres ikke. Demo-nettsiden velges under «Velg menighet».
               </p>

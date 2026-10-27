@@ -36,9 +36,9 @@ export const DatabaseTestdataTab: React.FC<DatabaseTestdataTabProps> = ({
   const { isFirestoreConnected, allPersons, groups } = useFirebase();
 
   // 1. Tre kontrollere med glidebrytere (0-100) for 'Personer', 'Grupper' og 'Roller'
-  const [personCount, setPersonCount] = useState<number>(FULL_DEMO_COUNTS.personCount ?? 32);
-  const [groupCount, setGroupCount] = useState<number>(14);
-  const [roleCount, setRoleCount] = useState<number>(14);
+  const [personCount, setPersonCount] = useState<number>(FULL_DEMO_COUNTS.personCount ?? 0);
+  const [groupCount, setGroupCount] = useState<number>(FULL_DEMO_COUNTS.groupCount ?? 0);
+  const [roleCount, setRoleCount] = useState<number>(FULL_DEMO_COUNTS.roleCount ?? 0);
 
   // 2. En avkrysningsboks for 'Tøm eksisterende testdata' (standard valgt)
   const [clearExistingData, setClearExistingData] = useState<boolean>(true);
@@ -68,11 +68,11 @@ export const DatabaseTestdataTab: React.FC<DatabaseTestdataTabProps> = ({
         await clearPlannerTestData();
       }
 
-      // Trigger Firebase Firestore-skriving: genererer 32 testpersoner med varierende tilhørighet og roller
+      // Trigger Firebase Firestore-skriving: genererer testpersoner med varierende tilhørighet og roller
       const result: TestdataServiceResult = await generateTestdata({
-        personCount: Math.max(FULL_DEMO_COUNTS.personCount ?? 32, personCount),
-        groupCount: groupCount > 0 ? groupCount : 14,
-        roleCount: roleCount > 0 ? roleCount : 14,
+        personCount: Math.max(FULL_DEMO_COUNTS.personCount ?? 0, personCount),
+        groupCount: groupCount > 0 ? groupCount : FULL_DEMO_COUNTS.groupCount ?? 0,
+        roleCount: roleCount > 0 ? roleCount : FULL_DEMO_COUNTS.roleCount ?? 0,
         ...(withGatherings ? { gatheringCount: FULL_DEMO_COUNTS.gatheringCount, taskCount: FULL_DEMO_COUNTS.taskCount } : {}),
       });
 
@@ -246,7 +246,7 @@ export const DatabaseTestdataTab: React.FC<DatabaseTestdataTabProps> = ({
             />
             <div className="flex justify-between text-[10px] text-slate-400 font-mono">
               <span>0 (Ingen)</span>
-              <span className="text-emerald-400 font-semibold">14 (Team & husfellesskap)</span>
+              <span className="text-emerald-400 font-semibold">{FULL_DEMO_COUNTS.groupCount} (Team & husfellesskap)</span>
               <span>50</span>
               <span>100 (Maks)</span>
             </div>
@@ -277,7 +277,7 @@ export const DatabaseTestdataTab: React.FC<DatabaseTestdataTabProps> = ({
             />
             <div className="flex justify-between text-[10px] text-slate-400 font-mono">
               <span>0 (Ingen)</span>
-              <span className="text-purple-400 font-semibold">14 (Pastorer, råd & stab)</span>
+              <span className="text-purple-400 font-semibold">{FULL_DEMO_COUNTS.roleCount} (Pastorer, råd & stab)</span>
               <span>50</span>
               <span>100 (Maks)</span>
             </div>

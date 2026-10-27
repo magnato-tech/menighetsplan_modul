@@ -35,7 +35,7 @@ vi.mock("firebase/firestore", () => {
 
 import { CMS_COLLECTIONS, CMS_SETTINGS_DOC_ID, COLLECTIONS } from "../src/data/collections";
 import { initialCmsPages } from "../src/data/cmsData";
-import { initialGatherings } from "../src/data/mockData";
+import { initialGatherings, initialPersons } from "../src/data/mockData";
 import { populateDemoPersons, populateWithMockData, restoreFullMockDatabase } from "../src/services/databaseAdmin";
 import { clearTestdata, deleteGroupsTestdata, generateDemoWebsite, generateTestdata } from "../src/services/testdataService";
 
@@ -118,8 +118,9 @@ describe("Testdata fyller planleggeren og lar nettsiden være", () => {
     const result = await populateWithMockData();
 
     expect(result.failures).toEqual([]);
-    expect(count(COLLECTIONS.PERSONS)).toBe(32);
-    expect(count(COLLECTIONS.GATHERINGS)).toBe(19);
+    // The full demo set: as many persons and gatherings as the mock data holds (FULL_DEMO_COUNTS uses the same lengths)
+    expect(count(COLLECTIONS.PERSONS)).toBe(initialPersons.length);
+    expect(count(COLLECTIONS.GATHERINGS)).toBe(initialGatherings.length);
     expect(count(CMS_COLLECTIONS.PAGES)).toBe(initialCmsPages.length);
     expect(result.total).toBe([...store.values()].reduce((sum, table) => sum + table.size, 0));
   });

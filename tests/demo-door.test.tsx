@@ -155,7 +155,8 @@ describe("Hvem man går inn som i demoen", () => {
     const byWay = Object.fromEntries(demoDoors(initialPersons, initialGroups).map((door) => [door.way, door]));
     expect(byWay.administrator?.person.name).toBe("Kari Nordmann");
     expect(byWay.tjenestegruppeleder?.person.name).toBe("Andreas Lind");
-    expect(byWay.medlemUtenTjeneste?.person.name).toBe("Håkon Tveit");
+    // Håkon Tveit is in Lyd og bilde and Møtevert now, so the one with no service team is Bjørn Egeland
+    expect(byWay.medlemUtenTjeneste?.person.name).toBe("Bjørn Egeland");
     expect(byWay.husgruppeleder?.person.name).toBeTruthy();
     const volunteer = byWay.tjenestegruppemedlem?.person;
     expect(volunteer?.name).toBeTruthy();
