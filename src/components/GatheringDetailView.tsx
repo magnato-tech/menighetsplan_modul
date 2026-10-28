@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
   useLeaderGatheringDetail,
   formatNorwegianDateTime,
@@ -13,7 +13,6 @@ import { buildStaffingRoster, needsAction, summarizeStaffingRoster } from "../ut
 import { locationOf } from "../utils/gatherings";
 import {
   ArrowLeft,
-  Calendar,
   MapPin,
   CheckCircle2,
   AlertTriangle,
@@ -30,6 +29,8 @@ import { ProgramView } from "./gathering/ProgramView";
 import { ProgramUndoToast } from "./gathering/ProgramUndoToast";
 import { StaffingView } from "./gathering/StaffingView";
 import { ProgramSidePanel } from "./gathering/ProgramSidePanel";
+import { GatheringDateNav } from "./gathering/GatheringDateNav";
+import { gatheringSequence, type SequenceItem } from "../utils/gatheringSequence";
 import { GatheringActions, type GatheringAction } from "./gathering/GatheringActions";
 import { CreateTaskDialog } from "./gathering/CreateTaskDialog";
 import { ApplyTemplateDialog } from "./gathering/ApplyTemplateDialog";
@@ -75,16 +76,18 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
     programSchedule,
     updateGathering,
     volunteerRoles,
+    openableGatherings,
   } = detail;
 
   // The form the event is changed in is the one it was made in (see utils/gatheringForm.ts)
-  const { groups: allGroups } = useFirebase();
+  const { groups: allGroups, gatherings: allGatherings } = useFirebase();
   const withPlanner = hasPlanner(useLevel());
 
   const isExplicitAdminView = mode === "admin" || (isUserAdmin && mode !== "leader");
   const [searchParams, setSearchParams] = useSearchParams();
   const fromRunSheet = searchParams.get("fra") === "kjoreplan";
-  const { hash } = useLocation();
+  const { hash, pathname } = useLocation();
+  const navigate = useNavigate();
   const canAdminister = isUserAdmin || isExplicitAdminView;
   // A group leader changes the staffing of the groups they lead. The rest reads as it does for everyone.
   const limitToMyGroups = !canAdminister;
@@ -109,6 +112,26 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
   }, [programSchedule, tasksWithDetails, volunteerRoles, limitToMyGroups]);
   const summary = summarizeStaffingRoster(roster);
   const toOrder = roster.filter((row) => needsAction(row.state)).length;
+
+  // The gatherings the arrows step through: all for an admin, the ones the leader can open otherwise
+  const sequence = useMemo(() => {
+    if (!detail.gathering) return [];
+    const groupById = new Map(allGroups.map((g) => [g.id, g]));
+    const items: SequenceItem[] = (canAdminister ? allGatherings : openableGatherings).map((g) => ({
+      gathering: g,
+      group: groupById.get(g.groupId),
+    }));
+    const current: SequenceItem = { gathering: detail.gathering, group: groupById.get(detail.gathering.groupId) };
+    return gatheringSequence(current, items);
+  }, [detail.gathering, canAdminister, allGatherings, openableGatherings, allGroups]);
+
+  // Moves to another gathering in the same address shape, keeping the tab (program or bemanning)
+  const openGathering = (gatheringId: string) => {
+    const base = pathname.startsWith("/admin/") ? "/admin/samling/" : "/leder/samling/";
+    const params = new URLSearchParams();
+    params.set("vis", view);
+    navigate({ pathname: `${base}${gatheringId}`, search: `?${params.toString()}` });
+  };
 
   // Opened from a row of the run sheet everyone sees (#schedule-row-…): that row's role in Bemanning
   const focusTaskId = useMemo(() => {
@@ -266,10 +289,7 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
         <div>
           <h1 className="text-lg sm:text-xl font-extrabold text-slate-900 leading-tight">{gathering.title}</h1>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-600 mt-1 font-medium">
-            <span className="flex items-center gap-1">
-              <Calendar className="w-3.5 h-3.5 text-slate-400" />
-              {formatNorwegianDateTime(gathering.startsAt)}
-            </span>
+            <GatheringDateNav gathering={gathering} sequence={sequence} onOpen={openGathering} />
             <span className="flex items-center gap-1">
               <MapPin className="w-3.5 h-3.5 text-slate-400" />
               {locationOf(gathering)}

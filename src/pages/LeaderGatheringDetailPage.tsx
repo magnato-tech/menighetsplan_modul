@@ -5,5 +5,5 @@ import { GatheringDetailView } from "../components/GatheringDetailView";
 export const LeaderGatheringDetailPage: React.FC = () => {
   const { gatheringId } = useParams<{ gatheringId: string }>();
 
-  return <GatheringDetailView gatheringId={gatheringId || ""} mode="leader" />;
+  return <GatheringDetailView key={gatheringId} gatheringId={gatheringId || ""} mode="leader" />;
 };
