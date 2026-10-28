@@ -10,6 +10,8 @@ interface UpcomingGatheringsPanelProps {
   /** Whether the installation has the planner: without it there is no staffing to show. */
   withPlanner: boolean;
   onShowAll: () => void;
+  /** A gathering the phone already shows above the list, as the next service: on a phone it is left out here. */
+  shownAboveOnPhone?: string;
 }
 
 /** How the staffing of one gathering stands, in words with icons. */
@@ -48,11 +50,50 @@ const StaffingLine: React.FC<{ staffing: UpcomingGathering["staffing"] }> = ({ s
   );
 };
 
+interface UpcomingGatheringCardProps {
+  upcoming: UpcomingGathering;
+  /** The first one is the largest, with the label «Neste» */
+  first: boolean;
+  withPlanner: boolean;
+}
+
+/** One gathering as a card, with its staffing. Used by the planning overview and its start page on a phone. */
+export const UpcomingGatheringCard: React.FC<UpcomingGatheringCardProps> = ({ upcoming: { item, staffing }, first, withPlanner }) => {
+  const g = item.gathering;
+  const toOrder = staffing.forfall + staffing.ubesatt;
+  return (
+    <Link
+      to={`/admin/samling/${g.id}${withPlanner ? "?vis=bemanning" : "?vis=program"}`}
+      className={`block h-full rounded-2xl border bg-[var(--studio-surface)] hover:bg-[var(--studio-hover)] transition-colors ${
+        first ? "p-5" : "p-4"
+      } ${withPlanner && toOrder > 0 ? "border-rose-700/70" : "border-[var(--studio-border)] hover:border-indigo-500"}`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 space-y-1">
+          {first && <span className="text-[10px] font-black uppercase tracking-wider text-[var(--studio-icon)]">Neste</span>}
+          <p className={`font-black text-[var(--studio-text)] leading-tight ${first ? "text-lg" : "text-base"}`}>{g.title}</p>
+          <p className="text-xs text-[var(--studio-muted)]">{formatNorwegianDateTime(g.startsAt)}</p>
+          <p className="text-xs text-[var(--studio-muted)] flex items-center gap-1">
+            <MapPin className="w-3 h-3" aria-hidden />
+            {locationOf(g)}
+          </p>
+        </div>
+        <ChevronRight className="w-5 h-5 text-[var(--studio-muted)] shrink-0 mt-1" aria-hidden />
+      </div>
+      {withPlanner && (
+        <div className="mt-3 pt-3 border-t border-[var(--studio-border)] text-sm font-bold">
+          <StaffingLine staffing={staffing} />
+        </div>
+      )}
+    </Link>
+  );
+};
+
 /**
  * What the planning overview opens with: the next gatherings, each one press from its staffing.
  * The next one is the largest, because that is where something may need fixing today.
  */
-export const UpcomingGatheringsPanel: React.FC<UpcomingGatheringsPanelProps> = ({ upcoming, withPlanner, onShowAll }) => (
+export const UpcomingGatheringsPanel: React.FC<UpcomingGatheringsPanelProps> = ({ upcoming, withPlanner, onShowAll, shownAboveOnPhone }) => (
   <section aria-labelledby="upcoming-heading" className="space-y-3">
     <div className="flex items-center justify-between gap-2">
       <h2 id="upcoming-heading" className="text-sm font-bold uppercase tracking-wider text-[var(--studio-muted)] flex items-center gap-2">
@@ -75,39 +116,11 @@ export const UpcomingGatheringsPanel: React.FC<UpcomingGatheringsPanelProps> = (
       </p>
     ) : (
       <ul className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        {upcoming.map(({ item, staffing }, index) => {
-          const g = item.gathering;
-          const toOrder = staffing.forfall + staffing.ubesatt;
-          const first = index === 0;
-          return (
-            <li key={g.id}>
-              <Link
-                to={`/admin/samling/${g.id}${withPlanner ? "?vis=bemanning" : "?vis=program"}`}
-                className={`block h-full rounded-2xl border bg-[var(--studio-surface)] hover:bg-[var(--studio-hover)] transition-colors ${
-                  first ? "p-5" : "p-4"
-                } ${withPlanner && toOrder > 0 ? "border-rose-700/70" : "border-[var(--studio-border)] hover:border-indigo-500"}`}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 space-y-1">
-                    {first && <span className="text-[10px] font-black uppercase tracking-wider text-[var(--studio-icon)]">Neste</span>}
-                    <p className={`font-black text-[var(--studio-text)] leading-tight ${first ? "text-lg" : "text-base"}`}>{g.title}</p>
-                    <p className="text-xs text-[var(--studio-muted)]">{formatNorwegianDateTime(g.startsAt)}</p>
-                    <p className="text-xs text-[var(--studio-muted)] flex items-center gap-1">
-                      <MapPin className="w-3 h-3" aria-hidden />
-                      {locationOf(g)}
-                    </p>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-[var(--studio-muted)] shrink-0 mt-1" aria-hidden />
-                </div>
-                {withPlanner && (
-                  <div className="mt-3 pt-3 border-t border-[var(--studio-border)] text-sm font-bold">
-                    <StaffingLine staffing={staffing} />
-                  </div>
-                )}
-              </Link>
-            </li>
-          );
-        })}
+        {upcoming.map((entry, index) => (
+          <li key={entry.item.gathering.id} className={entry.item.gathering.id === shownAboveOnPhone ? "hidden md:block" : undefined}>
+            <UpcomingGatheringCard upcoming={entry} first={index === 0} withPlanner={withPlanner} />
+          </li>
+        ))}
       </ul>
     )}
   </section>

@@ -29,6 +29,7 @@ import {
 import { ProgramView } from "./gathering/ProgramView";
 import { ProgramUndoToast } from "./gathering/ProgramUndoToast";
 import { StaffingView } from "./gathering/StaffingView";
+import { ProgramSidePanel } from "./gathering/ProgramSidePanel";
 import { GatheringActions, type GatheringAction } from "./gathering/GatheringActions";
 import { CreateTaskDialog } from "./gathering/CreateTaskDialog";
 import { ApplyTemplateDialog } from "./gathering/ApplyTemplateDialog";
@@ -124,6 +125,10 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
     setSearchParams(params, { replace: true });
   };
 
+  // A role picked from the programme panel: it is marked and scrolled to, also when picked again
+  const [picked, setPicked] = useState<{ taskId: string; nonce: number } | null>(null);
+  const pickTask = (taskId: string) => setPicked((prev) => ({ taskId, nonce: (prev?.nonce ?? 0) + 1 }));
+
   // Access check
   if (!gathering || !hasAccess) {
     return (
@@ -216,7 +221,9 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
   return (
     <div
       data-ui="light"
-      className={`w-full max-w-none bg-slate-50 overflow-x-hidden flex flex-col print:shadow-none print:my-0 print:border-none print:bg-white ${
+      className={`w-full max-w-none ${
+        view === "bemanning" ? "xl:max-w-7xl xl:mx-auto" : ""
+      } bg-slate-50 overflow-x-hidden flex flex-col print:shadow-none print:my-0 print:border-none print:bg-white ${
         isExplicitAdminView
           ? "min-h-0 rounded-2xl border border-slate-200/80 shadow-sm"
           : "min-h-screen shadow-md sm:my-4 sm:rounded-3xl sm:border sm:border-slate-200/80"
@@ -279,42 +286,36 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
             type="button"
             id="gathering-staffing-barometer"
             onClick={() => showView("bemanning")}
-            className={`w-full p-2.5 rounded-xl border flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-bold text-left cursor-pointer print:hidden ${
-              toOrder > 0
-                ? "bg-red-50 border-red-200 text-red-900"
-                : summary.venter > 0
-                ? "bg-amber-50 border-amber-200 text-amber-900"
-                : "bg-emerald-50 border-emerald-200 text-emerald-900"
-            }`}
+            className="w-full p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium text-slate-700 text-left cursor-pointer print:hidden"
           >
             {toOrder === 0 && summary.venter === 0 ? (
               <span className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" aria-hidden />
+                <CheckCircle2 className="w-4 h-4 text-emerald-700" aria-hidden />
                 Fullt bemannet
               </span>
             ) : (
               <>
                 {summary.forfall > 0 && (
                   <span className="flex items-center gap-1">
-                    <AlertTriangle className="w-4 h-4 text-red-600" aria-hidden />
+                    <AlertTriangle className="w-4 h-4 text-red-700" aria-hidden />
                     {summary.forfall} forfall
                   </span>
                 )}
                 {summary.ubesatt > 0 && (
                   <span className="flex items-center gap-1">
-                    <AlertTriangle className="w-4 h-4 text-red-600" aria-hidden />
+                    <AlertTriangle className="w-4 h-4 text-red-700" aria-hidden />
                     {summary.ubesatt} ubesatt
                   </span>
                 )}
                 {summary.venter > 0 && (
                   <span className="flex items-center gap-1">
-                    <Clock className="w-4 h-4 text-amber-600" aria-hidden />
+                    <Clock className="w-4 h-4 text-amber-700" aria-hidden />
                     {summary.venter} venter på svar
                   </span>
                 )}
               </>
             )}
-            <span className="ml-auto font-semibold opacity-80">
+            <span className="ml-auto font-semibold">
               {limitToMyGroups ? "Dine grupper: " : ""}
               {summary.dekket} av {summary.total} dekket
             </span>
@@ -390,13 +391,27 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
             }
           />
         ) : (
-          <StaffingView
-            detail={detail}
-            rows={roster}
-            canAdminister={canAdminister}
-            focusTaskId={focusTaskId}
-            showToast={showToast}
-          />
+          // From xl the programme sits beside the staffing; below xl the panel is not shown
+          <div className="xl:flex xl:items-start xl:gap-4">
+            <ProgramSidePanel
+              rows={programRows}
+              roster={roster}
+              highlightTaskId={picked?.taskId ?? null}
+              onPickTask={pickTask}
+              onShowProgram={() => showView("program")}
+            />
+            <div className="min-w-0 flex-1">
+              <StaffingView
+                detail={detail}
+                rows={roster}
+                canAdminister={canAdminister}
+                focusTaskId={picked?.taskId ?? focusTaskId}
+                focusNonce={picked?.nonce ?? 0}
+                highlightTaskId={picked?.taskId ?? null}
+                showToast={showToast}
+              />
+            </div>
+          </div>
         )}
       </div>
 

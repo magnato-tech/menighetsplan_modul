@@ -465,7 +465,14 @@ function AdminStudioContent() {
 
         <StudioTabPanel tab="dashboard" activeTab={activeTab} visited={mayShow("dashboard")}>
 
-          <LazyDashboardTab studio={studio} area={area} onTabChange={handleTabChange} onCreateIn={handleCreateIn} />
+          <LazyDashboardTab
+            studio={studio}
+            area={area}
+            webEditor={webEditor}
+            onTabChange={handleTabChange}
+            onAreaChange={handleAreaChange}
+            onCreateIn={handleCreateIn}
+          />
 
         </StudioTabPanel>
 

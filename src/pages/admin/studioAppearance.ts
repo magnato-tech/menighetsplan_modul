@@ -15,7 +15,8 @@ export interface StudioAppearance {
 }
 
 export function parseStudioTheme(value: string | null): StudioTheme {
-  return value === "light" ? "light" : "dark";
+  // Light until the person has chosen dark themselves
+  return value === "dark" ? "dark" : "light";
 }
 
 export function readStudioTheme(key: string, storage: Storage = localStorage): StudioTheme {

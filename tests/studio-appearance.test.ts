@@ -33,7 +33,8 @@ describe("Admin Studio-utseende", () => {
 
   assert(parseStudioTheme("light") === "light", "Parser lys modus");
   assert(parseStudioTheme("dark") === "dark", "Parser mørk modus");
-  assert(parseStudioTheme("ukjent") === "dark", "Ukjent verdi faller tilbake til mørk");
+  assert(parseStudioTheme("ukjent") === "light", "Ukjent verdi faller tilbake til lys");
+  assert(parseStudioTheme(null) === "light", "Uten eget valg er admin lys");
 
   writeStudioTheme(STUDIO_SIDEBAR_THEME_KEY, "light", storage);
   assert(readStudioTheme(STUDIO_SIDEBAR_THEME_KEY, storage) === "light", "Lagrer sidemeny-tema");
