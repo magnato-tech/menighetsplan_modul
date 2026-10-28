@@ -30,7 +30,7 @@ import { StudioData, ShowFeedback, studioTabUrl } from "../studio";
 import { useLevel } from "../../../hooks/useLevel";
 import { hasPlanner } from "../../../utils/level";
 import { visibilityOf } from "../../../utils/visibility";
-import { DEFAULT_LOCATION, isWorshipService, locationOf } from "../../../utils/gatherings";
+import { DEFAULT_LOCATION, isWorshipService, locationOf, speakerNamesOf } from "../../../utils/gatherings";
 import { NewGatheringDialog } from "../NewGatheringDialog";
 import { useFirebase } from "../../../context/FirebaseDataContext";
 import { useMediaQuery } from "../../../hooks/useMediaQuery";
@@ -144,7 +144,7 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
     onCreateHandled?.();
   }, [createRequested]);
 
-  const { assignments, deleteGatheringWithStaffing, getPersonById } = useFirebase();
+  const { assignments, allPersons, deleteGatheringWithStaffing, getPersonById } = useFirebase();
 
   // The events as a month, a week, cards or a table. The choice is remembered in this browser.
   const [chosenView, setChosenView] = useState<GatheringsView>(() => readStored(VIEW_KEY, "table", isView));
@@ -152,9 +152,9 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
     setChosenView(next);
     store(VIEW_KEY, next);
   };
-  // A phone gets the cards or the week: a month and a table do not fit it
+  // A phone gets the month (compact) or the cards: a week and a table do not fit it. A week chosen before is a month.
   const wide = useMediaQuery("(min-width: 768px)");
-  const view: GatheringsView = wide ? chosenView : chosenView === "week" ? "week" : "cards";
+  const view: GatheringsView = wide ? chosenView : chosenView === "cards" || chosenView === "table" ? "cards" : "month";
   const calendarView = view === "month" || view === "week";
   // The day the month or the week is drawn around
   const [anchor, setAnchor] = useState(() => new Date());
@@ -174,11 +174,12 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
   const filteredGatherings = useMemo(() => filterByKinds(adminGatherings, kinds), [adminGatherings, kinds]);
   const [sortKey, setSortKey] = useState<GatheringSortKey>("date");
   const [sortDirection, setSortDirection] = useState<GatheringSortDirection>("asc");
-  // Coming events first; the held ones are a press away
+  // Coming events first; the held ones are a press away on PC. A phone always shows the coming ones.
   const [period, setPeriod] = useState<GatheringPeriod>("kommende");
+  const shownPeriod: GatheringPeriod = wide ? period : "kommende";
   const sortedGatherings = useMemo(
-    () => gatheringsInPeriod(filteredGatherings, period, Date.now(), sortKey, sortDirection),
-    [filteredGatherings, period, sortKey, sortDirection]
+    () => gatheringsInPeriod(filteredGatherings, shownPeriod, Date.now(), sortKey, sortDirection),
+    [filteredGatherings, shownPeriod, sortKey, sortDirection]
   );
   // On a phone the secondary actions of a card are behind «…»
   const [openActionsId, setOpenActionsId] = useState<string | null>(null);
@@ -305,7 +306,7 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
         </div>
 
         <div className="flex items-center justify-between gap-3">
-          {!calendarView && (
+          {wide && !calendarView && (
           <div className="inline-flex rounded-xl border border-[var(--studio-border)] bg-[var(--studio-surface)] p-0.5" role="group" aria-label="Periode">
             {(["kommende", "tidligere"] as const).map((p) => (
               <button
@@ -328,7 +329,6 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
           </p>
           )}
           <div className="inline-flex rounded-xl border border-[var(--studio-border)] bg-[var(--studio-surface)] p-0.5 ml-auto" role="group" aria-label="Visning">
-            {wide && (
             <button
               type="button"
               onClick={() => setView("month")}
@@ -340,7 +340,7 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
               <CalendarDays className="w-3.5 h-3.5" aria-hidden="true" />
               Måned
             </button>
-            )}
+            {wide && (
             <button
               type="button"
               onClick={() => setView("week")}
@@ -352,6 +352,7 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
               <CalendarRange className="w-3.5 h-3.5" aria-hidden="true" />
               Uke
             </button>
+            )}
             <button
               type="button"
               onClick={() => setView("cards")}
@@ -412,6 +413,7 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
           {sortedGatherings.map((item) => {
             const g = item.gathering;
             const staffing = item.staffing;
+            const speakers = speakerNamesOf(g.id, item.tasks, assignments, studio.adminVolunteerRoles, allPersons);
 
             return (
               <div
@@ -462,8 +464,12 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
                   </div>
                   <p className="text-xs text-[var(--studio-muted)]">
                     {formatNorwegianDateTime(g.startsAt)} · {locationOf(g)}
-                    {g.theme && ` · Tema: ${g.theme}`}
                   </p>
+                  {(g.theme || speakers.length > 0) && (
+                    <p className="text-xs text-[var(--studio-muted)]">
+                      {[g.theme && `Tema: ${g.theme}`, speakers.length > 0 && `Taler: ${speakers.join(", ")}`].filter(Boolean).join(" · ")}
+                    </p>
+                  )}
                 </Link>
                 <button
                   type="button"

@@ -1,9 +1,10 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import type { AdminGatheringItem } from "../../../../hooks/useAppHooks";
 import { monthLabel } from "../../../../utils/calendarMonth";
-import { calendarKindOf, dayKey, monthWeeks, weekDays, weekNumber, type CalendarKind } from "../../../../utils/adminCalendar";
+import { calendarKindOf, defaultMonthDay, dayKey, monthWeeks, weekDays, weekNumber, type CalendarKind } from "../../../../utils/adminCalendar";
+import { locationOf } from "../../../../utils/gatherings";
 import { visibilityOf } from "../../../../utils/visibility";
 import type { CalendarMonthCell } from "../../../../utils/calendarMonth";
 
@@ -19,6 +20,8 @@ const WEEKDAYS = ["Man", "Tir", "Ons", "Tor", "Fre", "Lør", "Søn"];
 const WEEKDAYS_LONG = ["Mandag", "Tirsdag", "Onsdag", "Torsdag", "Fredag", "Lørdag", "Søndag"];
 /** How many events a day in the month shows before «+N til». */
 const MONTH_DAY_MAX = 3;
+/** How many coloured dots a day on a phone shows, one for each event up to this. */
+const PHONE_DOT_MAX = 3;
 
 const clock = (iso: string) => new Intl.DateTimeFormat("no-NO", { hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
 const dayAndMonth = (date: Date) => new Intl.DateTimeFormat("no-NO", { day: "numeric", month: "short" }).format(date);
@@ -33,7 +36,7 @@ interface GatheringsCalendarProps {
   onShowWeek: (day: Date) => void;
   /** A press on a free part of a day: a new event that day ("2026-10-25"). */
   onNewOnDay: (day: string) => void;
-  /** A phone: the week as seven rows, not seven columns. */
+  /** A phone: the month is compact, and the events of the chosen day are listed under it. */
   narrow: boolean;
 }
 
@@ -91,6 +94,40 @@ const NewButton: React.FC<{ cell: CalendarMonthCell; onNewOnDay: (day: string) =
   </button>
 );
 
+/** A day on a phone: the number, a dot for each event up to three, and a press selects the day. */
+const PhoneDay: React.FC<{ cell: CalendarMonthCell; items: AdminGatheringItem[]; selected: boolean; onSelect: () => void }> = ({
+  cell,
+  items,
+  selected,
+  onSelect,
+}) => (
+  <button
+    type="button"
+    onClick={onSelect}
+    aria-pressed={selected}
+    data-calendar-day={dayKey(cell.date)}
+    className={`mx-auto h-11 w-11 flex flex-col items-center justify-center gap-0.5 rounded-lg cursor-pointer ${
+      selected ? "bg-[var(--studio-hover)]" : "hover:bg-[var(--studio-hover)]/60"
+    } ${cell.isToday ? "ring-2 ring-inset ring-indigo-500" : ""} ${cell.inMonth ? "" : "opacity-50"}`}
+  >
+    <span
+      className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold tabular-nums ${
+        selected ? "bg-indigo-600 text-white" : "text-[var(--studio-text)]"
+      }`}
+    >
+      {cell.date.getDate()}
+    </span>
+    <span className="flex items-center gap-0.5 h-1.5" aria-hidden="true">
+      {items.slice(0, PHONE_DOT_MAX).map((item) => (
+        <span key={item.gathering.id} className={`w-1.5 h-1.5 rounded-full ${KIND_COLORS[calendarKindOf(item.gathering, item.group)]}`} />
+      ))}
+    </span>
+    {items.length > 0 && (
+      <span className="sr-only">{items.length === 1 ? "1 arrangement" : `${items.length} arrangementer`}</span>
+    )}
+  </button>
+);
+
 /**
  * «Kalender» in the planner shown as a month or a week. Events are only opened from here, never moved:
  * an event has tasks and people who said yes, and often a series («Flytt resten av serien» moves those).
@@ -99,13 +136,17 @@ export const GatheringsCalendar: React.FC<GatheringsCalendarProps> = ({ items, m
   const byId = useMemo(() => new Map(items.map((item) => [item.gathering.id, item])), [items]);
   const events = useMemo(() => items.map((item) => item.gathering), [items]);
   const itemsOf = (cell: CalendarMonthCell) => cell.events.map((g) => byId.get(g.id)!).filter(Boolean);
+  // The day a phone's month has picked, for the month it was picked in. None picked: defaultMonthDay decides.
+  const [picked, setPicked] = useState<{ month: string; day: string } | null>(null);
 
-  const step = (direction: 1 | -1) =>
+  const step = (direction: 1 | -1) => {
+    setPicked(null);
     onAnchorChange(
       mode === "month"
         ? new Date(anchor.getFullYear(), anchor.getMonth() + direction, 1)
         : new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate() + 7 * direction)
     );
+  };
 
   const days = mode === "week" ? weekDays(anchor, events) : [];
   const title =
@@ -119,7 +160,10 @@ export const GatheringsCalendar: React.FC<GatheringsCalendarProps> = ({ items, m
       <div className="flex items-center gap-1">
         <button
           type="button"
-          onClick={() => onAnchorChange(new Date())}
+          onClick={() => {
+            setPicked(null);
+            onAnchorChange(new Date());
+          }}
           className="px-2.5 py-1 rounded-lg text-[11px] font-bold text-[var(--studio-text)] border border-[var(--studio-border)] hover:bg-[var(--studio-hover)] cursor-pointer"
         >
           I dag
@@ -135,6 +179,63 @@ export const GatheringsCalendar: React.FC<GatheringsCalendarProps> = ({ items, m
   );
 
   const frame = "rounded-2xl bg-[var(--studio-surface)] border border-[var(--studio-border)] overflow-hidden";
+
+  if (mode === "month" && narrow) {
+    const monthKey = `${anchor.getFullYear()}-${anchor.getMonth()}`;
+    const weeks = monthWeeks(anchor.getFullYear(), anchor.getMonth(), events);
+    const cells = weeks.flat();
+    const selectedKey = picked?.month === monthKey ? picked.day : defaultMonthDay(cells);
+    const selectedCell = cells.find((cell) => dayKey(cell.date) === selectedKey);
+    const dayItems = selectedCell ? itemsOf(selectedCell) : [];
+    return (
+      <div className={frame} data-calendar-view="month">
+        {header}
+        <div className="grid grid-cols-7 px-1 pt-1 border-b border-[var(--studio-border)]">
+          {WEEKDAYS.map((day) => (
+            <div key={day} className="pb-1 text-center text-[10px] font-bold uppercase tracking-wide text-[var(--studio-muted)]">
+              {day}
+            </div>
+          ))}
+        </div>
+        <div className="p-1 space-y-1">
+          {weeks.map((week) => (
+            <div key={dayKey(week[0].date)} className="grid grid-cols-7">
+              {week.map((cell) => (
+                <PhoneDay
+                  key={dayKey(cell.date)}
+                  cell={cell}
+                  items={itemsOf(cell)}
+                  selected={dayKey(cell.date) === selectedKey}
+                  onSelect={() => setPicked({ month: monthKey, day: dayKey(cell.date) })}
+                />
+              ))}
+            </div>
+          ))}
+        </div>
+        <ul className="divide-y divide-[var(--studio-border)] border-t border-[var(--studio-border)]">
+          {dayItems.length === 0 && <li className="px-3 py-3 text-xs text-[var(--studio-muted)]">Ingen arrangementer denne dagen.</li>}
+          {dayItems.map((item) => {
+            const g = item.gathering;
+            return (
+              <li key={g.id}>
+                <Link
+                  to={`/admin/samling/${g.id}?vis=bemanning`}
+                  data-calendar-event={g.id}
+                  className="flex items-start gap-3 px-3 py-2.5 min-h-11 hover:bg-[var(--studio-hover)]/40"
+                >
+                  <span className="w-11 shrink-0 pt-0.5 text-xs font-bold tabular-nums text-[var(--studio-muted)]">{clock(g.startsAt)}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className={`block text-sm font-semibold text-[var(--studio-text)] ${g.cancelled ? "line-through opacity-60" : ""}`}>{g.title}</span>
+                    <span className="block text-xs text-[var(--studio-muted)]">{locationOf(g)}</span>
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    );
+  }
 
   if (mode === "month") {
     const weeks = monthWeeks(anchor.getFullYear(), anchor.getMonth(), events);
@@ -189,34 +290,31 @@ export const GatheringsCalendar: React.FC<GatheringsCalendarProps> = ({ items, m
     );
   }
 
-  // The week: seven columns on a large screen, seven rows on a phone, so the whole week is on the screen
+  // The week: seven columns, so the whole week is on the screen. A phone never gets the week.
   return (
     <div className={frame} data-calendar-view="week">
       {header}
-      <div className={narrow ? "divide-y divide-[var(--studio-border)]" : "grid grid-cols-7 divide-x divide-[var(--studio-border)]"}>
+      <div className="grid grid-cols-7 divide-x divide-[var(--studio-border)]">
         {days.map((cell, index) => {
           const dayItems = itemsOf(cell);
           return (
             <div
               key={dayKey(cell.date)}
               {...dayProps(cell, onNewOnDay)}
-              className={`group cursor-pointer hover:bg-[var(--studio-hover)]/40 ${
-                narrow ? "flex items-start gap-2 px-2 py-1.5 min-h-[34px]" : "min-h-[220px] p-1.5 space-y-1"
-              }`}
+              className="group cursor-pointer hover:bg-[var(--studio-hover)]/40 min-h-[220px] p-1.5 space-y-1"
             >
-              <div className={narrow ? "w-14 shrink-0 flex items-center gap-1" : "flex items-center justify-between"}>
+              <div className="flex items-center justify-between">
                 <span className={`text-[10px] font-bold uppercase ${cell.isToday ? "text-[var(--studio-accent-text)]" : "text-[var(--studio-muted)]"}`}>
                   {WEEKDAYS[index]}
                 </span>
                 <DayNumber cell={cell} />
-                {!narrow && <NewButton cell={cell} onNewOnDay={onNewOnDay} />}
+                <NewButton cell={cell} onNewOnDay={onNewOnDay} />
               </div>
-              <div className={narrow ? "flex-1 min-w-0 space-y-0.5" : "space-y-0.5"}>
+              <div className="space-y-0.5">
                 {dayItems.map((item) => (
                   <EventPill key={item.gathering.id} item={item} />
                 ))}
               </div>
-              {narrow && <NewButton cell={cell} onNewOnDay={onNewOnDay} />}
             </div>
           );
         })}

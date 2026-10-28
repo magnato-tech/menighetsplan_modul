@@ -1,4 +1,4 @@
-import type { Gathering } from "../types";
+import type { Assignment, Gathering, Person, Task, VolunteerRole } from "../types";
 import { isPubliclyVisible, visibilityOf } from "./visibility";
 
 // What the public sees of the gatherings: which are worship services, which lie ahead,
@@ -68,4 +68,36 @@ export function pickHighlight(gatherings: Gathering[], now: number): Highlight |
   if (worship) return { gathering: worship, kind: "worship" };
 
   return candidates.length > 0 ? { gathering: candidates[0], kind: "next" } : null;
+}
+
+/** A task that is the speaker's: the volunteer role «Taler», or a task called «Taler» or «Dagens taler». */
+function isSpeakerTask(task: Pick<Task, "volunteerRoleId" | "title">, roles: Pick<VolunteerRole, "id" | "name">[]): boolean {
+  const roleName = task.volunteerRoleId ? roles.find((role) => role.id === task.volunteerRoleId)?.name : undefined;
+  if (roleName?.trim().toLowerCase() === "taler") return true;
+  const title = task.title.trim().toLowerCase();
+  return title === "taler" || title === "dagens taler";
+}
+
+/**
+ * The names of those who have said yes («confirmed») to the speaker's task of a gathering, in the order
+ * the assignments were made. A name is the person's name in the register, or the one kept on the
+ * assignment when the person is no longer there. Nobody who has not said yes is named.
+ */
+export function speakerNamesOf(
+  gatheringId: string,
+  tasks: Pick<Task, "id" | "gatheringId" | "volunteerRoleId" | "title">[],
+  assignments: Pick<Assignment, "taskId" | "personId" | "response" | "personName">[],
+  roles: Pick<VolunteerRole, "id" | "name">[],
+  persons: Pick<Person, "id" | "name">[]
+): string[] {
+  const speakerTaskIds = new Set(
+    tasks.filter((task) => task.gatheringId === gatheringId && isSpeakerTask(task, roles)).map((task) => task.id)
+  );
+  const names: string[] = [];
+  for (const assignment of assignments) {
+    if (assignment.response !== "confirmed" || !speakerTaskIds.has(assignment.taskId)) continue;
+    const name = persons.find((person) => person.id === assignment.personId)?.name ?? assignment.personName;
+    if (name && !names.includes(name)) names.push(name);
+  }
+  return names;
 }

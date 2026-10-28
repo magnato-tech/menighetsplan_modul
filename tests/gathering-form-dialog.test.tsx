@@ -13,6 +13,7 @@ const { installation, planner, library } = vi.hoisted(() => ({
     assignments: [] as { id: string; taskId: string; personId: string; personName?: string; response: string }[],
     deleteGatheringWithStaffing: vi.fn((_gatheringId: string) => ({ success: true }) as { success: boolean; error?: string }),
     getPersonById: (id: string) => ({ astri: { name: "Astri Berg" }, preben: { name: "Preben Dahl" } })[id],
+    allPersons: [] as { id: string; name: string }[],
   },
   library: { templates: [] as unknown[] },
 }));
