@@ -29,6 +29,7 @@ import {
 import { ProgramView } from "./gathering/ProgramView";
 import { ProgramUndoToast } from "./gathering/ProgramUndoToast";
 import { StaffingView } from "./gathering/StaffingView";
+import { ProgramSidePanel } from "./gathering/ProgramSidePanel";
 import { GatheringActions, type GatheringAction } from "./gathering/GatheringActions";
 import { CreateTaskDialog } from "./gathering/CreateTaskDialog";
 import { ApplyTemplateDialog } from "./gathering/ApplyTemplateDialog";
@@ -124,6 +125,10 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
     setSearchParams(params, { replace: true });
   };
 
+  // A role picked from the programme panel: it is marked and scrolled to, also when picked again
+  const [picked, setPicked] = useState<{ taskId: string; nonce: number } | null>(null);
+  const pickTask = (taskId: string) => setPicked((prev) => ({ taskId, nonce: (prev?.nonce ?? 0) + 1 }));
+
   // Access check
   if (!gathering || !hasAccess) {
     return (
@@ -216,7 +221,9 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
   return (
     <div
       data-ui="light"
-      className={`w-full max-w-none bg-slate-50 overflow-x-hidden flex flex-col print:shadow-none print:my-0 print:border-none print:bg-white ${
+      className={`w-full max-w-none ${
+        view === "bemanning" ? "xl:max-w-7xl xl:mx-auto" : ""
+      } bg-slate-50 overflow-x-hidden flex flex-col print:shadow-none print:my-0 print:border-none print:bg-white ${
         isExplicitAdminView
           ? "min-h-0 rounded-2xl border border-slate-200/80 shadow-sm"
           : "min-h-screen shadow-md sm:my-4 sm:rounded-3xl sm:border sm:border-slate-200/80"
@@ -384,13 +391,27 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
             }
           />
         ) : (
-          <StaffingView
-            detail={detail}
-            rows={roster}
-            canAdminister={canAdminister}
-            focusTaskId={focusTaskId}
-            showToast={showToast}
-          />
+          // From xl the programme sits beside the staffing; below xl the panel is not shown
+          <div className="xl:flex xl:items-start xl:gap-4">
+            <ProgramSidePanel
+              rows={programRows}
+              roster={roster}
+              highlightTaskId={picked?.taskId ?? null}
+              onPickTask={pickTask}
+              onShowProgram={() => showView("program")}
+            />
+            <div className="min-w-0 flex-1">
+              <StaffingView
+                detail={detail}
+                rows={roster}
+                canAdminister={canAdminister}
+                focusTaskId={picked?.taskId ?? focusTaskId}
+                focusNonce={picked?.nonce ?? 0}
+                highlightTaskId={picked?.taskId ?? null}
+                showToast={showToast}
+              />
+            </div>
+          </div>
         )}
       </div>
 

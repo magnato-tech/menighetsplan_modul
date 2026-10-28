@@ -23,6 +23,10 @@ interface StaffingViewProps {
   canAdminister: boolean;
   /** A task the view was opened for (from the run sheet everyone sees), to scroll to. */
   focusTaskId?: string | null;
+  /** Changes each time a role is picked, so the same role scrolls again. */
+  focusNonce?: number;
+  /** The role picked from the programme panel: its team opens, and the role is marked. */
+  highlightTaskId?: string | null;
   showToast: (text: string) => void;
 }
 
@@ -35,6 +39,10 @@ const DONE_TEXT: Record<"confirmed" | "pending" | "withdrawn" | "declined", stri
 
 const NO_TEAM = "uten-team";
 const teamKeyOf = (row: RosterRow) => row.groupId ?? NO_TEAM;
+
+/** From `md` the teams start open; on a phone they start folded. Read once, when the view opens. */
+const startsOpen = () =>
+  typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(min-width: 768px)").matches;
 
 /** One count in a team's header: an icon, the number, and the words for a screen reader. */
 const TeamCount: React.FC<{ icon: React.ReactNode; count: number; words: string }> = ({ icon, count, words }) => (
@@ -49,10 +57,18 @@ const TeamCount: React.FC<{ icon: React.ReactNode; count: number; words: string 
 
 /**
  * «Bemanning»: one card per team, with the counts of the team in its header and every role of the
- * team under it. Free slots are filled from «Fyll plassen». On a phone a team is folded to its
- * header until it is opened.
+ * team under it. Free slots are filled from «Fyll plassen». A team is folded to its header until it
+ * is opened: on a phone that is the start, from `md` all teams start open.
  */
-export const StaffingView: React.FC<StaffingViewProps> = ({ detail, rows, canAdminister, focusTaskId, showToast }) => {
+export const StaffingView: React.FC<StaffingViewProps> = ({
+  detail,
+  rows,
+  canAdminister,
+  focusTaskId,
+  focusNonce = 0,
+  highlightTaskId = null,
+  showToast,
+}) => {
   const { updateAssignmentStatus, removeAssignment } = detail;
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [assigning, setAssigning] = useState<{ taskId: string; mode: AssignMode } | null>(null);
@@ -64,17 +80,31 @@ export const StaffingView: React.FC<StaffingViewProps> = ({ detail, rows, canAdm
   // The one free slot whose «Tildel» and «Forespør» are open, as "taskId:number"
   const [fillingSlot, setFillingSlot] = useState<string | null>(null);
 
+  // Teams the reader has folded or opened. The others start as the screen says (see startsOpen).
+  const [wide] = useState(startsOpen);
+  const [overrides, setOverrides] = useState<ReadonlyMap<string, boolean>>(() => new Map());
+  const isOpen = (key: string) => overrides.get(key) ?? wide;
+  const setTeamsOpen = (keys: string[], open: boolean) =>
+    setOverrides((prev) => {
+      const next = new Map(prev);
+      for (const key of keys) next.set(key, open);
+      return next;
+    });
+
   // The team of the role to scroll to is unfolded, so it can be seen on a phone too
   const focusRow = focusTaskId ? rows.find((r) => r.task.id === focusTaskId) : undefined;
   const focusKey = focusRow ? teamKeyOf(focusRow) : null;
-  const [openTeams, setOpenTeams] = useState<ReadonlySet<string>>(() => new Set(focusKey ? [focusKey] : []));
   const scrolledTo = useRef<string | null>(null);
+  const scrollKey = focusTaskId ? `${focusTaskId}:${focusNonce}` : null;
   useEffect(() => {
-    if (!focusKey) return;
-    setOpenTeams((prev) => (prev.has(focusKey) ? prev : new Set([...prev, focusKey])));
-  }, [focusKey]);
+    // A picked role may be hidden by the «må ordnes» filter, so the filter is turned off to show it
+    if (!scrollKey) return;
+    setOnlyAction(false);
+    if (focusKey) setOverrides((prev) => (prev.get(focusKey) === true ? prev : new Map(prev).set(focusKey, true)));
+  }, [focusKey, scrollKey]);
 
   const teams = useMemo(() => rosterByTeam(rows), [rows]);
+  const allTeamKeys = teams.map((team) => team.groupId ?? NO_TEAM);
   const anyNeedsAction = rows.some((row) => needsAction(row.state));
   const filterOn = onlyAction && anyNeedsAction;
   const shownIds = useMemo(() => new Set(rowsNeedingAction(rows, held).map((row) => row.task.id)), [rows, held]);
@@ -90,15 +120,15 @@ export const StaffingView: React.FC<StaffingViewProps> = ({ detail, rows, canAdm
     if (taskId && row && !held.has(taskId)) setHeld(new Map([...held, [taskId, placeOf(row, held)]]));
   };
 
-  // Scroll to the role once, when its team is open
+  // Scroll to the role once for each pick, when its team is open
   useEffect(() => {
-    if (!focusTaskId || scrolledTo.current === focusTaskId) return;
-    if (focusKey && !openTeams.has(focusKey)) return;
+    if (!focusTaskId || !scrollKey || scrolledTo.current === scrollKey) return;
+    if (focusKey && !(overrides.get(focusKey) ?? wide)) return;
     const target = document.getElementById(`roster-${focusTaskId}`);
     if (!target) return;
-    scrolledTo.current = focusTaskId;
-    target.scrollIntoView({ block: "center" });
-  }, [focusTaskId, focusKey, openTeams, teams]);
+    scrolledTo.current = scrollKey;
+    target.scrollIntoView({ block: "center", behavior: "smooth" });
+  }, [scrollKey, focusTaskId, focusKey, overrides, wide, teams, filterOn]);
 
   // Escape closes the choice of a free slot
   useEffect(() => {
@@ -110,13 +140,7 @@ export const StaffingView: React.FC<StaffingViewProps> = ({ detail, rows, canAdm
     return () => document.removeEventListener("keydown", close);
   }, [fillingSlot]);
 
-  const toggleTeam = (key: string) =>
-    setOpenTeams((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
+  const toggleTeam = (key: string) => setTeamsOpen([key], !isOpen(key));
 
   const handleStatusChange = (assignmentId: string, response: PersonResponse, personName?: string) => {
     const taskId = taskIdOfAssignment(assignmentId);
@@ -156,17 +180,22 @@ export const StaffingView: React.FC<StaffingViewProps> = ({ detail, rows, canAdm
 
   const teamCard = (team: RosterTeamCard, shown: RosterRow[]) => {
     const key = team.groupId ?? NO_TEAM;
-    const open = openTeams.has(key);
+    const open = isOpen(key);
     const contentId = `team-${key}`;
+    const holdsPick = team.rows.some((row) => row.task.id === highlightTaskId);
     return (
-      <section key={key} aria-label={team.name} className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+      <section
+        key={key}
+        aria-label={team.name}
+        className={`bg-white rounded-xl border overflow-hidden ${holdsPick ? "border-indigo-400" : "border-slate-200"}`}
+      >
         <h2 className="text-base font-semibold text-slate-900">
           <button
             type="button"
             aria-expanded={open}
             aria-controls={contentId}
             onClick={() => toggleTeam(key)}
-            className="w-full min-h-11 flex items-center justify-between gap-3 px-4 py-3 text-left cursor-pointer md:cursor-default"
+            className="w-full min-h-11 flex items-center justify-between gap-3 px-4 py-3 text-left cursor-pointer"
           >
             <span className="min-w-0 truncate">{team.name}</span>
             <span className="shrink-0 flex items-center gap-3 text-xs font-semibold text-slate-700">
@@ -177,16 +206,17 @@ export const StaffingView: React.FC<StaffingViewProps> = ({ detail, rows, canAdm
                 count={team.free}
                 words={team.free === 1 ? "ledig" : "ledige"}
               />
-              <ChevronDown className={`w-4 h-4 text-slate-500 md:hidden transition-transform ${open ? "rotate-180" : ""}`} aria-hidden />
+              <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform ${open ? "rotate-180" : ""}`} aria-hidden />
             </span>
           </button>
         </h2>
 
-        <div id={contentId} className={`${open ? "block" : "hidden"} md:block print:block border-t border-slate-200`}>
+        <div id={contentId} className={`${open ? "block" : "hidden"} print:block border-t border-slate-200`}>
           {shown.map((row) => (
             <StaffingRosterRowCard
               key={row.task.id}
               row={row}
+              highlighted={row.task.id === highlightTaskId}
               canIntervene={canAdminister || row.isMyGroup}
               canAdminister={canAdminister}
               openMenuAssignmentId={openMenuId}
@@ -228,19 +258,33 @@ export const StaffingView: React.FC<StaffingViewProps> = ({ detail, rows, canAdm
 
   return (
     <div className="space-y-4">
-      <div>
+      <div className="flex flex-wrap items-center gap-2 print:hidden">
         <button
           type="button"
           aria-pressed={filterOn}
           disabled={!anyNeedsAction}
           onClick={() => setOnlyAction((on) => !on)}
-          className={`min-h-11 px-4 rounded-full border text-sm font-semibold print:hidden ${
+          className={`min-h-11 px-4 rounded-full border text-sm font-semibold ${
             filterOn
               ? "bg-slate-800 text-white border-slate-800"
               : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50 cursor-pointer"
           } disabled:cursor-default disabled:text-slate-500 disabled:bg-white`}
         >
           {anyNeedsAction ? "Vis bare det som må ordnes" : "Alt er dekket"}
+        </button>
+        <button
+          type="button"
+          onClick={() => setTeamsOpen(allTeamKeys, true)}
+          className="min-h-11 px-4 rounded-full border border-slate-300 bg-white hover:bg-slate-50 cursor-pointer text-sm font-semibold text-slate-700"
+        >
+          Fold ut alle
+        </button>
+        <button
+          type="button"
+          onClick={() => setTeamsOpen(allTeamKeys, false)}
+          className="min-h-11 px-4 rounded-full border border-slate-300 bg-white hover:bg-slate-50 cursor-pointer text-sm font-semibold text-slate-700"
+        >
+          Fold sammen alle
         </button>
       </div>
 

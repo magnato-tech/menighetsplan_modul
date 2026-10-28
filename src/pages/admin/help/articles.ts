@@ -415,6 +415,7 @@ const bemanning: HelpArticle = {
     "Ved en ledig plass trykker du **Fyll plassen**, og velger **Tildel** (personen er avtalt) eller **Forespør** (den får en forespørsel på Min Side).",
     "Trykk på en person for å sette **Bekreftet**, **Forespurt** eller **Forfall**. Den som sa nei, står bak «sa nei».",
     "Vil du se bare det som må ordnes, trykk **Vis bare det som må ordnes**.",
+    "På en stor skjerm står programmet til venstre ved siden av teamene. Trykk på en post for å se rollen den bruker.",
   ],
   godt: "Trykk på rollenavnet for å se instruksen. Bytte: sett **Forfall** på den som ikke kan, og **Fyll plassen** på samme rolle. **Program** viser kjøreplanen; der endres ikke bemanningen. En gruppeleder ser bemanningen til sine egne grupper.",
   seOgsa: ["oppgaver", "roller"],

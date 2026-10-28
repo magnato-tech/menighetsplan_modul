@@ -196,3 +196,89 @@ describe("Filteret «Vis bare det som må ordnes»", () => {
     expect(filter.disabled).toBe(true);
   });
 });
+
+/** The header button of a team, which says whether it is open. */
+const teamHeader = (name: string) => within(teamCard(name)).getByRole("button", { name: new RegExp(`^${name}`) });
+
+describe("Foldes per team", () => {
+  test("«Fold sammen alle» folder alle team, og «Fold ut alle» åpner dem", () => {
+    renderView(rowsOf(details));
+    const names = ["Lovsang", "Møtevert", "Uten team"];
+    for (const name of names) expect(teamHeader(name).getAttribute("aria-expanded")).toBe("false");
+
+    fireEvent.click(screen.getByRole("button", { name: "Fold ut alle" }));
+    for (const name of names) expect(teamHeader(name).getAttribute("aria-expanded")).toBe("true");
+
+    fireEvent.click(screen.getByRole("button", { name: "Fold sammen alle" }));
+    for (const name of names) expect(teamHeader(name).getAttribute("aria-expanded")).toBe("false");
+  });
+
+  test("fra md starter alle team åpne, og et trykk på headeren folder det", () => {
+    const original = window.matchMedia;
+    window.matchMedia = vi.fn().mockReturnValue({ matches: true }) as unknown as typeof window.matchMedia;
+    try {
+      renderView(rowsOf(details));
+      expect(teamHeader("Lovsang").getAttribute("aria-expanded")).toBe("true");
+      fireEvent.click(teamHeader("Lovsang"));
+      expect(teamHeader("Lovsang").getAttribute("aria-expanded")).toBe("false");
+    } finally {
+      window.matchMedia = original;
+    }
+  });
+
+  test("et team med valgt rolle åpnes, og rollen er merket og rullet til", () => {
+    const scroll = vi.fn();
+    Object.defineProperty(Element.prototype, "scrollIntoView", { value: scroll, configurable: true, writable: true });
+
+    render(
+      <StaffingView
+        detail={detail}
+        rows={rowsOf(details)}
+        canAdminister
+        highlightTaskId="Barnekirke"
+        focusTaskId="Barnekirke"
+        focusNonce={1}
+        showToast={() => undefined}
+      />
+    );
+    expect(teamHeader("Lovsang").getAttribute("aria-expanded")).toBe("true");
+    expect(roleBlock("Barnekirke").getAttribute("aria-current")).toBe("true");
+    expect(roleBlock("Lovsang").getAttribute("aria-current")).toBeNull();
+    expect(scroll).toHaveBeenCalledTimes(1);
+    expect(scroll).toHaveBeenCalledWith({ block: "center", behavior: "smooth" });
+  });
+
+  test("valg av samme rolle to ganger ruller til den igjen", () => {
+    const scroll = vi.fn();
+    Object.defineProperty(Element.prototype, "scrollIntoView", { value: scroll, configurable: true, writable: true });
+
+    const props = { detail, canAdminister: true, highlightTaskId: "Barnekirke", focusTaskId: "Barnekirke", showToast: () => undefined };
+    const view = render(<StaffingView {...props} rows={rowsOf(details)} focusNonce={1} />);
+    view.rerender(<StaffingView {...props} rows={rowsOf(details)} focusNonce={2} />);
+    expect(scroll).toHaveBeenCalledTimes(2);
+  });
+
+  test("en rolle uten programtid står med «Utenfor programmet»", () => {
+    const schedule = [{ time: "10:00", title: "Preken", taskId: "Taler" }];
+    renderView(buildStaffingRoster(schedule, details));
+
+    expect(within(roleBlock("Lovsang")).getByText("Utenfor programmet")).toBeTruthy();
+    expect(within(roleBlock("Taler")).queryByText("Utenfor programmet")).toBeNull();
+  });
+
+  test("et valgt fra programmet vises selv om «må ordnes»-filteret skjuler den, og filteret slås av", () => {
+    const scroll = vi.fn();
+    Object.defineProperty(Element.prototype, "scrollIntoView", { value: scroll, configurable: true, writable: true });
+
+    const props = { detail, canAdminister: true, showToast: () => undefined };
+    const view = render(<StaffingView {...props} rows={rowsOf(details)} />);
+    fireEvent.click(screen.getByRole("button", { name: "Vis bare det som må ordnes" }));
+    expect(document.getElementById("roster-Lovsang")).toBeNull();
+
+    view.rerender(<StaffingView {...props} rows={rowsOf(details)} highlightTaskId="Lovsang" focusTaskId="Lovsang" focusNonce={1} />);
+    expect(screen.getByRole("button", { name: "Vis bare det som må ordnes" }).getAttribute("aria-pressed")).toBe("false");
+    expect(roleBlock("Lovsang").getAttribute("aria-current")).toBe("true");
+    expect(teamHeader("Lovsang").getAttribute("aria-expanded")).toBe("true");
+    expect(scroll).toHaveBeenCalledTimes(1);
+  });
+});

@@ -21,6 +21,8 @@ interface StaffingRosterRowCardProps {
   onToggleFill: (slot: string) => void;
   onAssign: (taskId: string, mode: AssignMode) => void;
   onEditTask: (task: Task) => void;
+  /** The role picked from the programme panel: tinted, with a bar on its left. */
+  highlighted?: boolean;
 }
 
 /** When the role is on: the programme items it is used in, or when its people meet. */
@@ -48,6 +50,7 @@ export const StaffingRosterRowCard: React.FC<StaffingRosterRowCardProps> = ({
   onToggleFill,
   onAssign,
   onEditTask,
+  highlighted = false,
 }) => {
   const [showDeclined, setShowDeclined] = useState(false);
   const cancelled = row.state === "avlyst";
@@ -57,8 +60,16 @@ export const StaffingRosterRowCard: React.FC<StaffingRosterRowCardProps> = ({
   const slots = cancelled ? 0 : row.free;
 
   return (
-    <div id={`roster-${row.task.id}`} className="break-inside-avoid">
-      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-2 bg-slate-50 border-y border-slate-200">
+    <div
+      id={`roster-${row.task.id}`}
+      aria-current={highlighted ? "true" : undefined}
+      className={`break-inside-avoid ${highlighted ? "bg-indigo-50/60 shadow-[inset_3px_0_0_#6366F1]" : ""}`}
+    >
+      <div
+        className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-2 border-y border-slate-200 ${
+          highlighted ? "" : "bg-slate-50"
+        }`}
+      >
         {row.instruction ? (
           <button
             type="button"
@@ -73,6 +84,9 @@ export const StaffingRosterRowCard: React.FC<StaffingRosterRowCardProps> = ({
         )}
 
         <div className="flex items-center gap-3 text-[11px] text-slate-600">
+            {!cancelled && row.programTimes.length === 0 && (
+              <span className="text-[11px] text-slate-500">Utenfor programmet</span>
+            )}
             {cancelled && (
               <span className="inline-flex items-center gap-1 text-xs font-semibold">
                 <Ban className="w-3.5 h-3.5" aria-hidden />
