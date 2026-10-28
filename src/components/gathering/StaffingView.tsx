@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Check, ChevronDown, CircleDashed, Clock, Info } from "lucide-react";
+import { Check, ChevronDown, CircleDashed, Clock, Info, Users } from "lucide-react";
 import type { GatheringDetail, EditableTask, InstructionTarget } from "./gatheringDetail";
 import {
   needsAction,
@@ -14,6 +14,7 @@ import { StaffingRosterRowCard, type AssignMode } from "./StaffingRosterRowCard"
 import { AssignPersonDialog } from "./AssignPersonDialog";
 import { InstructionDialog } from "./InstructionDialog";
 import { EditTaskDialog } from "./EditTaskDialog";
+import { TeamCardDialog } from "./TeamCardDialog";
 import type { PersonResponse } from "./PersonAssignmentMenu";
 
 interface StaffingViewProps {
@@ -81,6 +82,8 @@ export const StaffingView: React.FC<StaffingViewProps> = ({
   const [onlyAction, setOnlyAction] = useState(false);
   // The one free slot whose «Tildel» and «Forespør» are open, as "taskId:number"
   const [fillingSlot, setFillingSlot] = useState<string | null>(null);
+  // The team whose card is open in the popup. Only one at a time.
+  const [openTeamId, setOpenTeamId] = useState<string | null>(null);
 
   // Teams the reader has folded or opened. The others start as the screen says (see startsOpen).
   const [wide] = useState(startsOpen);
@@ -185,33 +188,52 @@ export const StaffingView: React.FC<StaffingViewProps> = ({
     const open = isOpen(key);
     const contentId = `team-${key}`;
     const holdsPick = team.rows.some((row) => row.task.id === highlightTaskId);
+    // A real group's card opens for those who may open it: admin for all, a leader for her own groups
+    const groupId = team.groupId;
+    const canOpen = Boolean(groupId) && (canAdminister || team.rows.some((row) => row.isMyGroup));
+    const openerId = groupId ? `team-open-${groupId}` : undefined;
     return (
       <section
         key={key}
         aria-label={team.name}
-        className={`bg-white rounded-xl border overflow-hidden ${holdsPick ? "border-indigo-400" : "border-slate-200"}`}
+        className={`group bg-white rounded-xl border overflow-hidden ${holdsPick ? "border-indigo-400" : "border-slate-200"}`}
       >
-        <h2 className="text-base font-semibold text-slate-900">
-          <button
-            type="button"
-            aria-expanded={open}
-            aria-controls={contentId}
-            onClick={() => toggleTeam(key)}
-            className="w-full min-h-11 flex items-center justify-between gap-3 px-4 py-3 text-left cursor-pointer"
-          >
-            <span className="min-w-0 truncate">{team.name}</span>
-            <span className="shrink-0 flex items-center gap-3 text-xs font-semibold text-slate-700">
-              <TeamCount icon={<Check className="w-4 h-4 text-emerald-700" aria-hidden />} count={team.confirmed} words="bekreftet" />
-              <TeamCount icon={<Clock className="w-4 h-4 text-amber-500" aria-hidden />} count={team.pending} words="venter" />
-              <TeamCount
-                icon={<CircleDashed className="w-4 h-4 text-slate-500" aria-hidden />}
-                count={team.free}
-                words={team.free === 1 ? "ledig" : "ledige"}
-              />
-              <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform ${open ? "rotate-180" : ""}`} aria-hidden />
-            </span>
-          </button>
-        </h2>
+        <div className="flex items-center">
+          <h2 className="min-w-0 flex-1 text-base font-semibold text-slate-900">
+            <button
+              type="button"
+              aria-expanded={open}
+              aria-controls={contentId}
+              onClick={() => toggleTeam(key)}
+              className="w-full min-h-11 flex items-center justify-between gap-3 px-4 py-3 text-left cursor-pointer"
+            >
+              <span className="min-w-0 truncate">{team.name}</span>
+              <span className="shrink-0 flex items-center gap-3 text-xs font-semibold text-slate-700">
+                <TeamCount icon={<Check className="w-4 h-4 text-emerald-700" aria-hidden />} count={team.confirmed} words="bekreftet" />
+                <TeamCount icon={<Clock className="w-4 h-4 text-amber-500" aria-hidden />} count={team.pending} words="venter" />
+                <TeamCount
+                  icon={<CircleDashed className="w-4 h-4 text-slate-500" aria-hidden />}
+                  count={team.free}
+                  words={team.free === 1 ? "ledig" : "ledige"}
+                />
+                <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform ${open ? "rotate-180" : ""}`} aria-hidden />
+              </span>
+            </button>
+          </h2>
+          {canOpen && groupId && (
+            // From md the icon shows on hover or focus; on a phone it is always there, with a 44 px target
+            <button
+              type="button"
+              id={openerId}
+              aria-label={`Åpne teamet ${team.name}`}
+              title={`Åpne teamet ${team.name}`}
+              onClick={() => setOpenTeamId(groupId)}
+              className="shrink-0 w-11 h-11 md:w-8 md:h-8 mr-1 md:mr-2 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 cursor-pointer md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
+            >
+              <Users className="w-4 h-4" aria-hidden />
+            </button>
+          )}
+        </div>
 
         <div id={contentId} className={`${open ? "block" : "hidden"} print:block border-t border-slate-200`}>
           {shown.map((row) => (
@@ -320,6 +342,14 @@ export const StaffingView: React.FC<StaffingViewProps> = ({
       )}
 
       {editingTask && <EditTaskDialog detail={detail} task={editingTask} showToast={showToast} onClose={() => setEditingTask(null)} />}
+
+      {openTeamId && (
+        <TeamCardDialog
+          groupId={openTeamId}
+          returnFocusId={`team-open-${openTeamId}`}
+          onClose={() => setOpenTeamId(null)}
+        />
+      )}
     </div>
   );
 };

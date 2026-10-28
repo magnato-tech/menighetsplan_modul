@@ -23,6 +23,33 @@ vi.mock("../src/components/gathering/AssignPersonDialog", async () => {
 vi.mock("../src/components/gathering/InstructionDialog", () => ({ InstructionDialog: () => null }));
 vi.mock("../src/components/gathering/EditTaskDialog", () => ({ EditTaskDialog: () => null }));
 
+// The team's card in the popup: its tabs and name are real, what is inside the tabs is not needed here
+vi.mock("../src/hooks/useAppHooks", () => ({
+  useLeaderGroupDetail: (groupId: string) => ({
+    hasAccess: true,
+    hasLeaderAccess: true,
+    isLeader: true,
+    isDeputy: false,
+    isAdmin: true,
+    currentUser: { id: "kari", name: "Kari", globalRole: "admin" },
+    group: {
+      id: groupId,
+      name: groupId === "lovsang" ? "Lovsang" : "Møtevert",
+      category: "tjeneste",
+      memberIds: [],
+      leaderIds: [],
+    },
+    members: [],
+    messages: [],
+  }),
+}));
+vi.mock("../src/components/GroupChat", () => ({ GroupChat: () => null }));
+vi.mock("../src/components/HusfellesskapView", () => ({ HusfellesskapView: () => null }));
+vi.mock("../src/pages/leaderGroup/GroupScheduleCard", () => ({ GroupScheduleCard: () => null }));
+vi.mock("../src/pages/leaderGroup/GroupActivities", () => ({ GroupActivities: () => null }));
+vi.mock("../src/pages/leaderGroup/GroupMembers", () => ({ GroupMembers: () => null }));
+vi.mock("../src/pages/leaderGroup/GroupMetaForm", () => ({ GroupMetaForm: () => null }));
+
 const teams: Record<string, Group> = {
   lovsang: { id: "lovsang", name: "Lovsang", memberIds: [], leaderIds: [] },
   vert: { id: "vert", name: "Møtevert", memberIds: [], leaderIds: [] },
@@ -281,5 +308,87 @@ describe("Foldes per team", () => {
     expect(roleBlock("Lovsang").getAttribute("aria-current")).toBe("true");
     expect(teamHeader("Lovsang").getAttribute("aria-expanded")).toBe("true");
     expect(scroll).toHaveBeenCalledTimes(1);
+  });
+});
+
+/** The icon that opens a team's card, and the popup it opens. */
+const openIcon = (name: string) => screen.getByRole("button", { name: `Åpne teamet ${name}` });
+const popup = () => screen.getByRole("dialog");
+
+describe("Teamkortet i en popup", () => {
+  test("et team med gruppe har ikon med navn, «Uten team» har ingen", () => {
+    renderView(rowsOf(details));
+
+    expect(openIcon("Lovsang").getAttribute("title")).toBe("Åpne teamet Lovsang");
+    expect(openIcon("Møtevert")).toBeTruthy();
+    expect(within(screen.getByRole("region", { name: "Uten team" })).queryByRole("button", { name: /Åpne teamet/ })).toBeNull();
+  });
+
+  test("ikonet ligger utenfor foldeknappen, så det ikke blir en knapp i en knapp", () => {
+    renderView(rowsOf(details));
+
+    expect(teamCard("Lovsang").contains(openIcon("Lovsang"))).toBe(true);
+    expect(teamHeader("Lovsang").contains(openIcon("Lovsang"))).toBe(false);
+  });
+
+  test("et trykk på ikonet åpner kortet med gruppens navn og de tre fanene", () => {
+    renderView(rowsOf(details));
+
+    fireEvent.click(openIcon("Lovsang"));
+
+    const dialog = popup();
+    expect(dialog.getAttribute("aria-modal")).toBe("true");
+    const labelId = dialog.getAttribute("aria-labelledby")!;
+    expect(document.getElementById(labelId)?.textContent).toBe("Lovsang");
+    expect(within(dialog).getByRole("heading", { name: "Lovsang" })).toBeTruthy();
+    expect(within(dialog).getByRole("button", { name: /Aktiviteter/ })).toBeTruthy();
+    expect(within(dialog).getByRole("button", { name: /Gruppechat/ })).toBeTruthy();
+    expect(within(dialog).getByRole("button", { name: /Deltakere/ })).toBeTruthy();
+  });
+
+  test("Escape lukker kortet, og Bemanning står som før med samme foldete team", () => {
+    renderView(rowsOf(details));
+    fireEvent.click(teamHeader("Møtevert"));
+    expect(teamHeader("Møtevert").getAttribute("aria-expanded")).toBe("true");
+
+    fireEvent.click(openIcon("Lovsang"));
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(teamCard("Lovsang")).toBeTruthy();
+    expect(teamCard("Møtevert")).toBeTruthy();
+    expect(teamHeader("Lovsang").getAttribute("aria-expanded")).toBe("false");
+    expect(teamHeader("Møtevert").getAttribute("aria-expanded")).toBe("true");
+  });
+
+  test("«Lukk» og et trykk utenfor kortet lukker det", () => {
+    renderView(rowsOf(details));
+
+    fireEvent.click(openIcon("Lovsang"));
+    fireEvent.click(screen.getByRole("button", { name: "Lukk" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+
+    fireEvent.click(openIcon("Møtevert"));
+    fireEvent.click(popup().parentElement!);
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  test("fokus går inn i kortet og tilbake til ikonet når det lukkes, og siden får rulle igjen", () => {
+    renderView(rowsOf(details));
+
+    fireEvent.click(openIcon("Lovsang"));
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Lukk" }));
+    expect(document.body.style.overflow).toBe("hidden");
+
+    fireEvent.click(screen.getByRole("button", { name: "Lukk" }));
+    expect(document.activeElement).toBe(openIcon("Lovsang"));
+    expect(document.body.style.overflow).toBe("");
+  });
+
+  test("en leder ser ikonet bare på egne team", () => {
+    renderView(rowsOf(details), false);
+
+    expect(openIcon("Lovsang")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Åpne teamet Møtevert" })).toBeNull();
   });
 });
