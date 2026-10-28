@@ -45,7 +45,9 @@ const startsOpen = () =>
   typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(min-width: 768px)").matches;
 
 /** One count in a team's header: an icon, the number, and the words for a screen reader. */
-const TeamCount: React.FC<{ icon: React.ReactNode; count: number; words: string }> = ({ icon, count, words }) => (
+// A count of nothing is not shown: as few signs as possible
+const TeamCount: React.FC<{ icon: React.ReactNode; count: number; words: string }> = ({ icon, count, words }) =>
+  count === 0 ? null : (
   <span className="inline-flex items-center gap-1">
     {icon}
     <span aria-hidden="true">{count}</span>
@@ -200,7 +202,7 @@ export const StaffingView: React.FC<StaffingViewProps> = ({
             <span className="min-w-0 truncate">{team.name}</span>
             <span className="shrink-0 flex items-center gap-3 text-xs font-semibold text-slate-700">
               <TeamCount icon={<Check className="w-4 h-4 text-emerald-700" aria-hidden />} count={team.confirmed} words="bekreftet" />
-              <TeamCount icon={<Clock className="w-4 h-4 text-amber-700" aria-hidden />} count={team.pending} words="venter" />
+              <TeamCount icon={<Clock className="w-4 h-4 text-amber-500" aria-hidden />} count={team.pending} words="venter" />
               <TeamCount
                 icon={<CircleDashed className="w-4 h-4 text-slate-500" aria-hidden />}
                 count={team.free}
