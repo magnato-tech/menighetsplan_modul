@@ -221,9 +221,7 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
   return (
     <div
       data-ui="light"
-      className={`w-full max-w-none ${
-        view === "bemanning" ? "xl:max-w-7xl xl:mx-auto" : ""
-      } bg-slate-50 overflow-x-hidden flex flex-col print:shadow-none print:my-0 print:border-none print:bg-white ${
+      className={`w-full max-w-none bg-slate-50 overflow-x-hidden flex flex-col print:shadow-none print:my-0 print:border-none print:bg-white ${
         isExplicitAdminView
           ? "min-h-0 rounded-2xl border border-slate-200/80 shadow-sm"
           : "min-h-screen shadow-md sm:my-4 sm:rounded-3xl sm:border sm:border-slate-200/80"

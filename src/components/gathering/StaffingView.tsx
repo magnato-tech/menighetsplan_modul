@@ -290,7 +290,8 @@ export const StaffingView: React.FC<StaffingViewProps> = ({
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+      {/* As many team columns as the width holds, each at least 20rem: the page fills the screen */}
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,20rem),1fr))] gap-4 items-start">
         {shownTeams.map(({ team, shown }) => teamCard(team, shown))}
       </div>
 
