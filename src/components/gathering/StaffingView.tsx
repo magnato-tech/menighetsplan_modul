@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronDown, CircleDashed, Clock, Info, Users } from "lucide-react";
 import type { GatheringDetail, EditableTask, InstructionTarget } from "./gatheringDetail";
 import {
@@ -6,10 +6,12 @@ import {
   placeOf,
   rosterByTeam,
   rowsNeedingAction,
+  estimatedTeamHeight,
   type RosterPlace,
   type RosterRow,
   type RosterTeamCard,
 } from "../../utils/staffingRoster";
+import { columnCountFor, masonryColumns } from "../../utils/masonry";
 import { StaffingRosterRowCard, type AssignMode } from "./StaffingRosterRowCard";
 import { AssignPersonDialog } from "./AssignPersonDialog";
 import { InstructionDialog } from "./InstructionDialog";
@@ -28,6 +30,8 @@ interface StaffingViewProps {
   focusNonce?: number;
   /** The role picked from the programme panel: its team opens, and the role is marked. */
   highlightTaskId?: string | null;
+  /** The width the team columns are laid out in. Measured from the page when not given (tests give it). */
+  width?: number;
   showToast: (text: string) => void;
 }
 
@@ -70,6 +74,7 @@ export const StaffingView: React.FC<StaffingViewProps> = ({
   focusTaskId,
   focusNonce = 0,
   highlightTaskId = null,
+  width,
   showToast,
 }) => {
   const { updateAssignmentStatus, removeAssignment } = detail;
@@ -117,6 +122,25 @@ export const StaffingView: React.FC<StaffingViewProps> = ({
   const shownTeams = teams
     .map((team) => ({ team, shown: filterOn ? team.rows.filter((row) => shownIds.has(row.task.id)) : team.rows }))
     .filter((entry) => entry.shown.length > 0);
+
+  // The team cards in columns with no gaps: each next card goes into the shortest column (utils/masonry.ts).
+  // The width is read from the page, and without ResizeObserver (tests) there is one column.
+  const columnsRef = useRef<HTMLDivElement>(null);
+  const [measuredWidth, setMeasuredWidth] = useState(0);
+  const hasRows = rows.length > 0;
+  useLayoutEffect(() => {
+    const el = columnsRef.current;
+    if (!el || width !== undefined) return;
+    const read = () => setMeasuredWidth(el.clientWidth);
+    read();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(read);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasRows, width]);
+  const columnCount = columnCountFor(width ?? measuredWidth);
+  const heights = shownTeams.map(({ team, shown }) => estimatedTeamHeight(shown, isOpen(team.groupId ?? NO_TEAM)));
+  const columns = masonryColumns(heights, columnCount);
 
   const taskIdOfAssignment = (assignmentId: string) =>
     rows.find((row) => row.people.some((p) => p.assignment.id === assignmentId))?.task.id;
@@ -312,9 +336,13 @@ export const StaffingView: React.FC<StaffingViewProps> = ({
         </button>
       </div>
 
-      {/* As many team columns as the width holds, each at least 20rem: the page fills the screen */}
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,20rem),1fr))] gap-4 items-start">
-        {shownTeams.map(({ team, shown }) => teamCard(team, shown))}
+      {/* As many team columns as the width holds, each at least 20rem. A card goes into the shortest column, so no gaps */}
+      <div ref={columnsRef} className="flex items-start gap-4">
+        {columns.map((indexes, column) => (
+          <div key={column} data-staffing-column className="min-w-0 flex-1 flex flex-col gap-4">
+            {indexes.map((index) => teamCard(shownTeams[index].team, shownTeams[index].shown))}
+          </div>
+        ))}
       </div>
 
       {assigning && (

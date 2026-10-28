@@ -360,6 +360,27 @@ export function useLeaderGatheringDetail(gatheringId: string) {
   const isAdmin = currentUser.globalRole === "admin";
   const hasAccess = Boolean(isAdmin || isLeader || isDeputy);
 
+  // Every gathering the user can open, by the same rule as hasAccess: the gathering's own group, or a group
+  // with a task on it, is led by the user. An admin opens them all. Used by the arrows on the gathering page.
+  const openableGatherings = useMemo(() => {
+    if (isAdmin) return gatherings;
+    const groupById = new Map(groups.map((g) => [g.id, g]));
+    const groupIdsOf = new Map<string, Set<string>>();
+    for (const task of tasks) {
+      if (!task.gatheringId || !task.groupId) continue;
+      const ids = groupIdsOf.get(task.gatheringId) ?? new Set<string>();
+      ids.add(task.groupId);
+      groupIdsOf.set(task.gatheringId, ids);
+    }
+    return gatherings.filter((g) => {
+      const ids = [g.groupId, ...(groupIdsOf.get(g.id) ?? [])];
+      return ids.some((id) => {
+        const group = groupById.get(id);
+        return Boolean(group && leadsGroup(group, currentUser.id));
+      });
+    });
+  }, [isAdmin, gatherings, groups, tasks, currentUser.id]);
+
   // The people in a group, for a leader to assign from
   const membersOf = useCallback(
     (g: Group) =>
@@ -437,5 +458,6 @@ export function useLeaderGatheringDetail(gatheringId: string) {
     updateGathering,
     volunteerRoles,
     gatheringTasks,
+    openableGatherings,
   };
 }

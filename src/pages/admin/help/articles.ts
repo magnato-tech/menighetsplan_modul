@@ -417,7 +417,7 @@ const bemanning: HelpArticle = {
     "Vil du se bare det som må ordnes, trykk **Vis bare det som må ordnes**.",
     "På en stor skjerm står programmet til venstre ved siden av teamene. Trykk på en post for å se rollen den bruker.",
   ],
-  godt: "Trykk på rollenavnet for å se instruksen. Bytte: sett **Forfall** på den som ikke kan, og **Fyll plassen** på samme rolle. **Program** viser kjøreplanen; der endres ikke bemanningen. En gruppeleder ser bemanningen til sine egne grupper.",
+  godt: "Trykk på rollenavnet for å se instruksen. Bytte: sett **Forfall** på den som ikke kan, og **Fyll plassen** på samme rolle. **Program** viser kjøreplanen; der endres ikke bemanningen. En gruppeleder ser bemanningen til sine egne grupper. Pilene ved datoen går til forrige og neste samling; trykk på datoen for en liste over dem.",
   seOgsa: ["oppgaver", "roller"],
 };
 

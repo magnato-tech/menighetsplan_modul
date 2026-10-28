@@ -36,6 +36,15 @@ export function formatNorwegianDateTime(isoString: string): string {
   return `${capitalize(WEEKDAYS[date.getDay()])} ${date.getDate()}. ${MONTHS_SHORT[date.getMonth()]} kl. ${clockOf(date)}`;
 }
 
+const WEEKDAYS_SHORT = ["søn.", "man.", "tir.", "ons.", "tor.", "fre.", "lør."];
+
+/** "søn. 1. nov. · 11:00", for the short lists of dates. */
+export function formatNorwegianShortDateTime(isoString: string): string {
+  const date = parse(isoString);
+  if (!date) return isoString;
+  return `${WEEKDAYS_SHORT[date.getDay()]} ${date.getDate()}. ${MONTHS_SHORT[date.getMonth()]} · ${clockOf(date)}`;
+}
+
 /** A chat message's time: "I dag kl. 08:15", "I går kl. 21:40", or "1. sep. kl. 13:00" for older ones. */
 export function formatChatMessageTime(isoString: string): string {
   const date = parse(isoString);

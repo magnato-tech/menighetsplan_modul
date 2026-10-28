@@ -207,6 +207,21 @@ export function rosterByTeam(rows: RosterRow[]): RosterTeamCard[] {
 }
 
 /**
+ * The height of a team card, in lines, estimated without measuring the screen: the header, and when the
+ * card is open, per role a band, a line per person who holds or is asked, a line per free slot, and a line
+ * for those who said no. A folded card is its header only. Used to set the teams in columns (utils/masonry.ts).
+ */
+export function estimatedTeamHeight(rows: RosterRow[], open: boolean): number {
+  if (!open) return 1;
+  return rows.reduce((total, row) => {
+    const holding = row.people.filter((p) => p.response !== "declined").length;
+    const declined = row.people.length > holding ? 1 : 0;
+    const slots = row.state === "avlyst" ? 0 : row.free;
+    return total + 1 + holding + slots + declined;
+  }, 1);
+}
+
+/**
  * The rows the «Vis bare det som må ordnes» filter shows: what must be found someone for, and the
  * rows changed while the view is open, so a row does not vanish under the finger.
  */
