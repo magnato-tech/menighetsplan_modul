@@ -68,3 +68,10 @@ export const SEMESTER_PLAN_RECORD = "semesterPlan";
 
 /** One person's way through a semester plan. The person writes it, and only their own (see firestore.rules). */
 export const SEMESTER_ANSWER_RECORD = "semesterAnswer";
+
+/**
+ * The notes on one gathering (see utils/gatheringNote.ts). One document per gathering, under the id
+ * `gathering-note-<gatheringId>`: not on the gathering itself, which anyone may read on the website.
+ */
+export const GATHERING_NOTE_RECORD = "gatheringNote";
+export const GATHERING_NOTE_DOC_PREFIX = "gathering-note-";

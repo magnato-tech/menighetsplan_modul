@@ -70,18 +70,58 @@ export function pickHighlight(gatherings: Gathering[], now: number): Highlight |
   return candidates.length > 0 ? { gathering: candidates[0], kind: "next" } : null;
 }
 
-/** A task that is the speaker's: the volunteer role «Taler», or a task called «Taler» or «Dagens taler». */
-function isSpeakerTask(task: Pick<Task, "volunteerRoleId" | "title">, roles: Pick<VolunteerRole, "id" | "name">[]): boolean {
+/** The volunteer roles that lead a gathering, by the names they go by (the standard «Møteleder» and its aliases). */
+export const LEADER_ROLE_NAMES = ["Møteleder", "Gudstjenesteleder", "Leder"] as const;
+
+/** The volunteer role of the speaker, and the task called so when it has no role. */
+export const SPEAKER_ROLE_NAMES = ["Taler", "Dagens taler"] as const;
+
+/**
+ * A task that is held by a volunteer role with one of the names, or, when the role is not that, is
+ * called one of them. The title is read too, for tasks made before the roles were.
+ */
+function isRoleTask(task: Pick<Task, "volunteerRoleId" | "title">, roleNames: readonly string[], roles: Pick<VolunteerRole, "id" | "name">[]): boolean {
+  const wanted = new Set(roleNames.map((name) => name.trim().toLowerCase()));
   const roleName = task.volunteerRoleId ? roles.find((role) => role.id === task.volunteerRoleId)?.name : undefined;
-  if (roleName?.trim().toLowerCase() === "taler") return true;
-  const title = task.title.trim().toLowerCase();
-  return title === "taler" || title === "dagens taler";
+  if (roleName && wanted.has(roleName.trim().toLowerCase())) return true;
+  return wanted.has(task.title.trim().toLowerCase());
+}
+
+/** The tasks of a gathering that are held by one of the roles named. Empty when the gathering has none of them. */
+export function roleTasksOf<T extends Pick<Task, "id" | "gatheringId" | "volunteerRoleId" | "title">>(
+  gatheringId: string,
+  roleNames: readonly string[],
+  tasks: T[],
+  roles: Pick<VolunteerRole, "id" | "name">[]
+): T[] {
+  return tasks.filter((task) => task.gatheringId === gatheringId && isRoleTask(task, roleNames, roles));
 }
 
 /**
- * The names of those who have said yes («confirmed») to the speaker's task of a gathering, in the order
- * the assignments were made. A name is the person's name in the register, or the one kept on the
+ * The names of those who have said yes («confirmed») to a role on a gathering, in the order the
+ * assignments were made. A name is the person's name in the register, or the one kept on the
  * assignment when the person is no longer there. Nobody who has not said yes is named.
+ */
+export function roleHolderNamesOf(
+  gatheringId: string,
+  roleNames: readonly string[],
+  tasks: Pick<Task, "id" | "gatheringId" | "volunteerRoleId" | "title">[],
+  assignments: Pick<Assignment, "taskId" | "personId" | "response" | "personName">[],
+  roles: Pick<VolunteerRole, "id" | "name">[],
+  persons: Pick<Person, "id" | "name">[]
+): string[] {
+  const roleTaskIds = new Set(roleTasksOf(gatheringId, roleNames, tasks, roles).map((task) => task.id));
+  const names: string[] = [];
+  for (const assignment of assignments) {
+    if (assignment.response !== "confirmed" || !roleTaskIds.has(assignment.taskId)) continue;
+    const name = persons.find((person) => person.id === assignment.personId)?.name ?? assignment.personName;
+    if (name && !names.includes(name)) names.push(name);
+  }
+  return names;
+}
+
+/**
+ * The names of those who have said yes to the speaker's task of a gathering («Taler»). See roleHolderNamesOf.
  */
 export function speakerNamesOf(
   gatheringId: string,
@@ -90,14 +130,5 @@ export function speakerNamesOf(
   roles: Pick<VolunteerRole, "id" | "name">[],
   persons: Pick<Person, "id" | "name">[]
 ): string[] {
-  const speakerTaskIds = new Set(
-    tasks.filter((task) => task.gatheringId === gatheringId && isSpeakerTask(task, roles)).map((task) => task.id)
-  );
-  const names: string[] = [];
-  for (const assignment of assignments) {
-    if (assignment.response !== "confirmed" || !speakerTaskIds.has(assignment.taskId)) continue;
-    const name = persons.find((person) => person.id === assignment.personId)?.name ?? assignment.personName;
-    if (name && !names.includes(name)) names.push(name);
-  }
-  return names;
+  return roleHolderNamesOf(gatheringId, SPEAKER_ROLE_NAMES, tasks, assignments, roles, persons);
 }

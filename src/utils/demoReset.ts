@@ -7,6 +7,7 @@ import { withoutStaffPictures } from "./demoPortraits";
 import { GATHERING_TEMPLATE_RECORD } from "../data/settingsRecords";
 import { collectionPrefixOf } from "./demoSite";
 import { weeksBetween, withLiveDates } from "./liveDates";
+import { isGatheringNotePlace } from "./gatheringNote";
 import { withQuietHero } from "./heroLayout";
 
 // The rules for resetting the demo's database: which database may be reset, what each
@@ -132,7 +133,7 @@ export interface ResetPlan {
  * congregation's id in front, and the plain names alone for the example congregation.
  *
  * `left` are the places of documents that are neither content nor a visitor's: how the owner
- * has set up the demo. They are not written and not removed.
+ * has set up the demo. They are not written and not removed. So are the notes on gatherings.
  */
 export function planReset(sites: readonly SiteContent[], existing: readonly string[], left: readonly string[] = []): ResetPlan {
   const write = sites.flatMap(({ site, documents }) =>
@@ -145,7 +146,8 @@ export function planReset(sites: readonly SiteContent[], existing: readonly stri
   if (left.some((path) => kept.has(path))) {
     throw new Error("Et dokument i demoinnholdet ligger der oppsettet av demoen skal ligge.");
   }
-  return { write, remove: existing.filter((path) => !kept.has(path) && !left.includes(path)) };
+  // The notes on gatherings are a congregation's own content, and are kept (see utils/gatheringNote.ts)
+  return { write, remove: existing.filter((path) => !kept.has(path) && !left.includes(path) && !isGatheringNotePlace(path)) };
 }
 
 // ---------- A document as the database takes it from outside the app ----------

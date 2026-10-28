@@ -207,6 +207,7 @@ var isNewsletter = (audience) => audience.kind === "members" || audience.kind ==
 var leadersOf = (group) => [...group.leaderIds ?? [], ...group.deputyLeaderIds ?? []];
 var everyoneIn = (group) => [...group.memberIds ?? [], ...leadersOf(group)];
 function audiencePersonIds(audience, groups, persons) {
+  if (audience.kind === "persons") return [];
   if (audience.kind === "members") return persons.filter((person) => person.congregationMember === true).map((person) => person.id);
   if (audience.kind === "everyone") return persons.map((person) => person.id);
   const serviceGroups = groups.filter(isServiceGroup);
@@ -214,8 +215,9 @@ function audiencePersonIds(audience, groups, persons) {
   return [...new Set(ids)];
 }
 function emailRecipients(audience, persons, groups, onlyPersonIds, optedOutPersonIds2 = /* @__PURE__ */ new Set()) {
-  const only = onlyPersonIds ? new Set(onlyPersonIds) : null;
-  const wanted = new Set(audiencePersonIds(audience, groups, persons).filter((id) => !only || only.has(id)));
+  const named = audience.kind === "persons" ? onlyPersonIds ?? [] : audiencePersonIds(audience, groups, persons);
+  const only = audience.kind === "persons" || !onlyPersonIds ? null : new Set(onlyPersonIds);
+  const wanted = new Set(named.filter((id) => !only || only.has(id)));
   const byAddress = /* @__PURE__ */ new Map();
   const withoutEmail = [];
   for (const person of persons) {
@@ -247,7 +249,7 @@ function firstNameOf(name) {
 function toEmailAudience(value) {
   if (!value || typeof value !== "object") return null;
   const { kind, groupId } = value;
-  if (kind === "leaders" || kind === "serviceGroups" || kind === "members" || kind === "everyone") return { kind };
+  if (kind === "leaders" || kind === "serviceGroups" || kind === "members" || kind === "everyone" || kind === "persons") return { kind };
   if (kind === "group" && typeof groupId === "string" && groupId.trim() !== "") return { kind, groupId };
   return null;
 }

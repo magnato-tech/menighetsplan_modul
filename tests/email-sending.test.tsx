@@ -8,7 +8,7 @@ import { CMS_COLLECTIONS, CMS_SETTINGS_DOC_ID, COLLECTIONS } from "../src/data/c
 import { EMAIL_DOC_ID, EMAIL_RECORD } from "../src/data/settingsRecords";
 import { EMAIL_TEMPLATES, emailDraftError, renderEmail, toEmailDraft } from "../src/utils/emailMessage";
 import { emailRecordOf, recentSameSending, stopMessage, withLogEntry, withRestSent, type EmailLogEntry, type EmailOutcome, type EmailRecord } from "../src/utils/emailOutcome";
-import { audienceKey, audienceLabel, emailRecipients, toEmailAudience, usableEmail } from "../src/utils/emailRecipients";
+import { audienceKey, audienceLabel, emailRecipients, isNewsletter, toEmailAudience, usableEmail } from "../src/utils/emailRecipients";
 import type { Group, Person } from "../src/types";
 
 // E-mail from the administration to leaders and volunteers. Every person here is made up.
@@ -61,6 +61,17 @@ describe("Hvem en e-post går til", () => {
   test("de som gjenstår etter en stoppet utsending, er bare dem av mottakerne som er nevnt", () => {
     const rest = emailRecipients({ kind: "serviceGroups" }, persons, groups, ["nest", "utenfor", "ektefelle-2"]);
     expect(rest.recipients.map((recipient) => recipient.email)).toEqual(["familien@example.org", "nora@example.org"]);
+  });
+
+  test("personer som er nevnt, og ingen andre: e-post til alle på et arrangement, som ikke er et nyhetsbrev", () => {
+    const named = emailRecipients({ kind: "persons" }, persons, groups, ["frivillig", "uten", "ektefelle-1", "finnes-ikke"]);
+    expect(named.recipients.map((recipient) => recipient.email)).toEqual(["familien@example.org", "frida@example.org"]);
+    expect(named.withoutEmail.map((one) => one.id)).toEqual(["uten"]);
+    // Without a list, nobody: a «persons» audience is never the whole register
+    expect(emailRecipients({ kind: "persons" }, persons, groups).recipients).toEqual([]);
+    expect(toEmailAudience({ kind: "persons" })).toEqual({ kind: "persons" });
+    expect(isNewsletter({ kind: "persons" })).toBe(false);
+    expect(audienceLabel({ kind: "persons" }, groups)).toBe("Valgte personer");
   });
 
   test("adresser og mottakergrupper leses uten å stole på dem", () => {
@@ -253,6 +264,19 @@ describe("Utsendingen der installasjonen kjører", () => {
       expect((await send(bad, body)).body).toMatchObject({ ok: false, reason: "bad-request" });
     }
     expect([...noReply.mails, ...nobody.mails, ...bad.mails]).toEqual([]);
+  });
+
+  test("til bestemte personer går e-posten bare til dem som er nevnt, uten avmelding og banner", async () => {
+    const place = world();
+    const { body } = await send(place, request({ audience: { kind: "persons" }, onlyPersonIds: ["frivillig", "uten", "ole-finnes-ikke"] }));
+    expect(body).toMatchObject({ ok: true, mode: "send", sent: 1, withoutEmail: 1, stopped: null });
+    expect(place.sentTo()).toEqual(["frida@example.org"]);
+    expect("headers" in place.mails[0][0]).toBe(false);
+
+    // Nobody named: nothing is sent, and the whole register is not
+    const none = world();
+    expect((await send(none, request({ audience: { kind: "persons" } }))).body).toMatchObject({ ok: false, reason: "no-recipients" });
+    expect(none.mails).toHaveLength(0);
   });
 
   test("mange mottakere sendes i bolker, og stopper tjenesten, sies det hvem som gjenstår", async () => {
