@@ -240,7 +240,7 @@ export const StaffingView: React.FC<StaffingViewProps> = ({
                   count={team.free}
                   words={team.free === 1 ? "ledig" : "ledige"}
                 />
-                <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform ${open ? "rotate-180" : ""}`} aria-hidden />
+                <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform print:hidden ${open ? "rotate-180" : ""}`} aria-hidden />
               </span>
             </button>
           </h2>
@@ -252,7 +252,7 @@ export const StaffingView: React.FC<StaffingViewProps> = ({
               aria-label={`Åpne teamet ${team.name}`}
               title={`Åpne teamet ${team.name}`}
               onClick={() => setOpenTeamId(groupId)}
-              className="shrink-0 w-11 h-11 md:w-8 md:h-8 mr-1 md:mr-2 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 cursor-pointer md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
+              className="shrink-0 w-11 h-11 md:w-8 md:h-8 mr-1 md:mr-2 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 cursor-pointer md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity print:hidden"
             >
               <Users className="w-4 h-4" aria-hidden />
             </button>

@@ -14,7 +14,9 @@ export type EmailAudience =
   | { kind: "serviceGroups" }
   | { kind: "group"; groupId: string }
   | { kind: "members" }
-  | { kind: "everyone" };
+  | { kind: "everyone" }
+  /** Exactly the persons named when it is sent (`onlyPersonIds`), e.g. everyone on a gathering. Never a newsletter. */
+  | { kind: "persons" };
 
 type PersonOfRegister = Pick<Person, "id" | "name" | "email" | "congregationMember">;
 type GroupOfRegister = Pick<Group, "id" | "name" | "category" | "memberIds" | "leaderIds" | "deputyLeaderIds">;
@@ -50,8 +52,12 @@ export const isNewsletter = (audience: EmailAudience): boolean => audience.kind 
 const leadersOf = (group: GroupOfRegister): string[] => [...(group.leaderIds ?? []), ...(group.deputyLeaderIds ?? [])];
 const everyoneIn = (group: GroupOfRegister): string[] => [...(group.memberIds ?? []), ...leadersOf(group)];
 
-/** The ids of the persons an audience is, in no particular order and each once. */
+/**
+ * The ids of the persons an audience is, in no particular order and each once. A «persons» audience is
+ * named by the caller instead (see emailRecipients), so it has none of its own here.
+ */
 export function audiencePersonIds(audience: EmailAudience, groups: readonly GroupOfRegister[], persons: readonly PersonOfRegister[]): string[] {
+  if (audience.kind === "persons") return [];
   if (audience.kind === "members") return persons.filter((person) => person.congregationMember === true).map((person) => person.id);
   if (audience.kind === "everyone") return persons.map((person) => person.id);
   const serviceGroups = groups.filter(isServiceGroup);
@@ -67,7 +73,7 @@ export function audiencePersonIds(audience: EmailAudience, groups: readonly Grou
 /**
  * The addresses an audience is reached on, each once, sorted so the same question gives the same
  * order. With `onlyPersonIds`, only those of the audience who are among them: what is left after
- * a sending that stopped halfway.
+ * a sending that stopped halfway. For a «persons» audience, `onlyPersonIds` is the audience itself.
  *
  * A newsletter is not sent to an address where anyone has unsubscribed (`optedOutPersonIds`): a
  * family that shares an address shares the inbox, and the one who unsubscribed would get it anyway.
@@ -80,8 +86,9 @@ export function emailRecipients(
   onlyPersonIds?: readonly string[],
   optedOutPersonIds: ReadonlySet<string> = new Set()
 ): EmailRecipients {
-  const only = onlyPersonIds ? new Set(onlyPersonIds) : null;
-  const wanted = new Set(audiencePersonIds(audience, groups, persons).filter((id) => !only || only.has(id)));
+  const named = audience.kind === "persons" ? (onlyPersonIds ?? []) : audiencePersonIds(audience, groups, persons);
+  const only = audience.kind === "persons" || !onlyPersonIds ? null : new Set(onlyPersonIds);
+  const wanted = new Set(named.filter((id) => !only || only.has(id)));
   const byAddress = new Map<string, PersonOfRegister[]>();
   const withoutEmail: PersonOfRegister[] = [];
 
@@ -124,6 +131,7 @@ export function audienceLabel(audience: EmailAudience, groups: readonly Pick<Gro
   if (audience.kind === "serviceGroups") return "Alle i tjenestegruppene";
   if (audience.kind === "members") return "Nyhetsbrev: medlemmer av menigheten";
   if (audience.kind === "everyone") return "Nyhetsbrev: alle i registeret med e-post";
+  if (audience.kind === "persons") return "Valgte personer";
   return groups.find((group) => group.id === audience.groupId)?.name ?? "Én gruppe";
 }
 
@@ -134,7 +142,7 @@ export const audienceKey = (audience: EmailAudience): string => (audience.kind =
 export function toEmailAudience(value: unknown): EmailAudience | null {
   if (!value || typeof value !== "object") return null;
   const { kind, groupId } = value as { kind?: unknown; groupId?: unknown };
-  if (kind === "leaders" || kind === "serviceGroups" || kind === "members" || kind === "everyone") return { kind };
+  if (kind === "leaders" || kind === "serviceGroups" || kind === "members" || kind === "everyone" || kind === "persons") return { kind };
   if (kind === "group" && typeof groupId === "string" && groupId.trim() !== "") return { kind, groupId };
   return null;
 }

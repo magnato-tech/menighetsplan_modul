@@ -168,6 +168,7 @@ Adminpanelet ligger på `/admin` og heter **Admin**. Øverst i menyen velges **P
 * En handling bekreftes med en melding som forsvinner av seg selv. En lagring som feiler, vises i et rødt banner og blir ikke stående som om den var lagret.
 * **Moduler** (under System & Database) viser hvilke moduler produktet har, og slår delene av dem av og på for hele menigheten (kapittel 2.6).
 * **Innlogging.** `/admin` er bare for administratorer. Den som ikke er logget inn, sendes til innloggingssiden, og en frivillig får beskjed om at det kreves administrator (kapittel 10.1). Nederst i menyen står hvem som er logget inn, og «Logg ut».
+* **Menyen kan foldes.** Fra `md` har menyen en knapp, ‹‹ / ››, på alle faner og detaljsider. Foldet står menyen som en smal rad med ikoner, med tooltip og skjermleserens navn på hvert punkt; tellere og lister skjules, og en uløst «må ordnes» eller en ulagret endring vises som en prikk på ikonet. Standard er foldet under 1280 px og åpen fra 1280 px, og følger vinduet når det endres størrelse. Mens en side redigeres, er menyen foldet, med mindre brukeren har åpnet den. Et trykk på knappen huskes i nettleseren (`menighetsplan:admin-meny`, «open» eller «folded») og vinner over bredden. Under `md` er det uendret: menyen glir inn fra ☰.
 
 ### 2.4 Analysebord
 
@@ -698,6 +699,16 @@ Kjøreplanen alle ser, fra kalenderen på Min side, viser bare dem som har aksep
 En gruppeleder ser hele programmet, med status på egne grupper og bare navn på dem som har akseptert i andre. Under Bemanning ser hun bare egne grupper, og kan gjøre det samme som administrator der.
 
 **Forrige og neste:** Pilene ved datoen i headeren går til forrige og neste samling i den rekken samlingen hører til: samme serie, alle gudstjenester på tvers av grupper, eller samlinger av samme slag i samme gruppe. Avlyste er med. Trykk på datoen for en liste med tre før og ti etter, og fanen (Program eller Bemanning) beholdes. En leder ser bare de samlingene hun kan åpne.
+
+**Møteleder og taler øverst:** Under tittel, dato, sted og temaet står en linje: «Møteleder: …» og «Taler: …», med navnene på dem som har sagt ja til oppgaven med rollen Møteleder (også under navnene Gudstjenesteleder og Leder) og Taler. Har arrangementet en slik oppgave uten at noen har sagt ja, står «ledig» med varselikon. Har arrangementet ingen slik oppgave, står linja ikke der (`roleHolderNamesOf` i `src/utils/gatherings.ts`).
+
+**Notater:** En rad under linja med Møteleder og Taler, som er lukket til den åpnes. Står det tekst, har ordet en liten indigo prikk. Notatet lagres ikke på arrangementet, fordi arrangementet kan leses av alle på nettsiden, men som ett dokument per arrangement i `cms_settings` (`gathering-note-<id>`). Bare administrator skriver det, med «Lagre» eller Ctrl+S. En leder ser teksten, men ikke et felt å skrive i. Nullstillingen av demoen lar notatene stå, og de er med i datasettet som annet innhold under nettsiden.
+
+**Utskrift:** «Skriv ut» gir et ark med tittel, tid, sted, tema, linja med Møteleder og Taler, notatet (uten å folde det ut, bare når det står tekst) og fanen som vises, Program eller Bemanning. Sidepanelet med programmet, pilene og datovelgeren, fanene, verktøyknappene, «Fyll plassen», filter- og foldeknappene og teamikonet står ikke på papiret.
+
+**E-post til alle som er med:** Konvolutt-ikonet i øverste rad, bare for administrator, åpner en dialog. Mottakerne er alle med en åpen tildeling på arrangementet, bekreftet eller spurt, én gang hver. De uten brukbar e-postadresse nevnes ved navn. Emnet fylles inn med tittel og dato, og teksten er tom. Utsendingen går gjennom den samme utsendingen som «Send e-post», til en egen mottakerliste som ikke er et nyhetsbrev, så den har ingen avmeldingslenke. Den føres i loggen med tittel og dato. Uten lagret svaradresse, og i demoen, sier dialogen det med en lenke til «Send e-post».
+
+**Melding til teamene:** Snakkebobla-ikonet i øverste rad, bare for administrator, åpner en dialog med teamene på arrangementet. Hvert team står én gang, og alle er valgt fra start. Teksten sendes som den står til hvert valgt team i teamets gruppechat, uten noe skrevet foran. Etter sendingen kommer en melding om hvor mange team den gikk til.
 
 **Planlagt:** skjermbilde for å redigere programmet.
 
@@ -1749,6 +1760,12 @@ Bestilt av produkteier. Ligger på grenen `semesterplan`, ikke på `main`, og er
 | **Forrige og neste gudstjeneste** | Pilene ved datoen på samlingssiden går til forrige og neste i rekken samlingen hører til (kapittel 11.2), og datoen åpner en liste over dem. Levert |
 | **Teamkortet fra Bemanning** | Ikonet ved et team med en gruppe åpner gruppekortet i en popup over Bemanning, med aktiviteter, gruppechat og deltakere. Lukkes popupen, står man der man var, med teamene foldet eller åpne som før. En leder ser ikonet bare på egne team. Kapittel 11.2 beskriver visningen |
 | **Program og bemanning på ett ark** | Fra `xl` står programmet til venstre for teamene i Bemanning: tid, tittel, og hvem som har sagt ja eller hvor mange som er ledige (forfall i rødt med ikon). Et trykk på en post åpner og merker rollen. Programmet og teamene kan foldes, og «Fold ut alle» og «Fold sammen alle» gjelder alle teamene. En rolle uten programtid står med «Utenfor programmet». Kapittel 11.2 beskriver visningen |
+| **Møteleder og taler øverst** | Under tittel, tid, sted og tema står «Møteleder: …» og «Taler: …» med dem som har sagt ja, eller «ledig» med varselikon der ingen har sagt ja. Kapittel 11.2 |
+| **Notater på samlingen** | En rad under linja med Møteleder og Taler, som kan åpnes og skrives i av administrator. Lagres per samling i `cms_settings`, ikke på samlingen. Ingen endringer i reglene. Kapittel 11.2 |
+| **Utskrift** | «Skriv ut» gir tittel, tid, sted, tema, Møteleder og Taler, notatet og fanen. Verktøy, faner og sidepanel står ikke på papiret. Kapittel 11.2 |
+| **E-post til alle som er med** | Administrator sender e-post til alle med en åpen tildeling på arrangementet, til en egen mottakerliste som ikke er et nyhetsbrev. Kapittel 11.2 |
+| **Melding til teamene** | Administrator sender én melding til hvert team på arrangementet, i teamets gruppechat. Kapittel 11.2 |
+| **Menyen kan foldes** | Fra `md` kan admins sidemeny foldes til ikoner med ‹‹ / ››, på alle faner (kapittel 2.3). Standard er foldet under `xl` (1280 px), og et trykk huskes i nettleseren |
 | **Kalender på mobil** | Under 768 px står bare Måned og Kort, og Kommende og Tidligere er borte: mobil viser alltid det som kommer. Måneden er kompakt, så den får plass i 375 px uten å rulle sidelengs: sju kolonner, datoen i en trykkflate på 44 px, og opptil tre prikker i filterfarvene for dagens arrangementer, med «N arrangementer» for skjermleser. Ingen tekst om arrangementene i rutene, og ingen «+N til». Et trykk på en dag velger den (`aria-pressed`) og lister arrangementene under kalenderen med tid, tittel og sted; en rad åpner arrangementet på Bemanning. Valgt dag er i dag hvis den har arrangementer, ellers neste dag med arrangementer i måneden (`defaultMonthDay` i `src/utils/adminCalendar.ts`). Et lagret valg av Uke vises som Måned på mobil. Kortet, på mobil og PC: dato og sted på første linje, og «Tema: …» og «Taler: …» på en egen linje under, bare når det finnes noe. Taler er de som har sagt ja til oppgaven «Taler» (`speakerNamesOf` i `src/utils/gatherings.ts`). Tester i `tests/gathering-calendar-phone.test.tsx`, `tests/admin-calendar.test.tsx` og `tests/gathering-speakers.test.ts` |
 
 ---

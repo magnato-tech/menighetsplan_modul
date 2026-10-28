@@ -6,6 +6,7 @@ import { CMS_COLLECTIONS, PLAIN_COLLECTIONS } from '../src/data/collections';
 import { DEMO_CONTENT_WEEK, FULL_DEMO_COUNTS, demoSemesterPlanDocument, demoTemplateDocument, getCustomMockDocuments } from '../src/data/mockDocuments';
 import { OPERATING_MODE_DOC_ID, operatingModeOf } from '../src/data/settingsRecords';
 import { chunk } from '../src/utils/chunk';
+import { isGatheringNotePlace } from '../src/utils/gatheringNote';
 import { parseDataset } from '../src/utils/dataset';
 import {
   firestoreFieldsOf,
@@ -146,7 +147,7 @@ export async function resetDemo(target: ResetTarget, now: number, fetchFn: Fetch
   const wanted = new Set(plan.write.map(pathOf));
   const after = new Set((await readAll(fetchFn, target, siteIds)).map((d) => pathInDatabase(d.name)));
   const missing = [...wanted].filter((place) => !after.has(place));
-  const extra = [...after].filter((place) => !wanted.has(place) && !OWNERS_SETUP.includes(place));
+  const extra = [...after].filter((place) => !wanted.has(place) && !OWNERS_SETUP.includes(place) && !isGatheringNotePlace(place));
   if (missing.length > 0 || extra.length > 0) {
     throw new Error(
       `Databasen er ikke som den skal etter nullstillingen. Mangler: ${missing.slice(0, 5).join(', ') || 'ingen'}. For mye: ${extra.slice(0, 5).join(', ') || 'ingen'}.`

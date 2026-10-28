@@ -189,12 +189,14 @@
   }
 }
 
-/* The admin menu folded to icons while a page is edited: the names stay for screen readers */
+/* The admin menu folded to icons (from md up): the names stay for screen readers, and .sidebar-folded shows only then */
 @media (min-width: 768px) {
   [data-compact="true"] .sidebar-text { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
   [data-compact="true"] .sidebar-hide { display: none; }
+  [data-compact="true"] .sidebar-folded { display: flex; }
+  [data-compact="true"] .sidebar-scroll { scrollbar-width: none; }
   [data-compact="true"] .sidebar-scroll button,
-  [data-compact="true"] .sidebar-scroll a { justify-content: center; }
+  [data-compact="true"] .sidebar-scroll a { justify-content: center; padding-left: 0; padding-right: 0; }
   [data-compact="true"] .sidebar-scroll,
   [data-compact="true"] .sidebar-foot { padding-left: 0.5rem; padding-right: 0.5rem; }
 }

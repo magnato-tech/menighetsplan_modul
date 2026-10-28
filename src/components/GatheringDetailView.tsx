@@ -11,6 +11,7 @@ import { withComputedTimes } from "../utils/programTiming";
 import type { ProgramItem } from "../types";
 import { buildStaffingRoster, needsAction, summarizeStaffingRoster } from "../utils/staffingRoster";
 import { locationOf } from "../utils/gatherings";
+import { teamsOfTasks } from "../utils/gatheringMail";
 import {
   ArrowLeft,
   MapPin,
@@ -24,12 +25,18 @@ import {
   Globe,
   ListOrdered,
   Users,
+  Mail,
+  MessageSquare,
 } from "lucide-react";
 import { ProgramView } from "./gathering/ProgramView";
 import { ProgramUndoToast } from "./gathering/ProgramUndoToast";
 import { StaffingView } from "./gathering/StaffingView";
 import { ProgramSidePanel } from "./gathering/ProgramSidePanel";
 import { GatheringDateNav } from "./gathering/GatheringDateNav";
+import { GatheringRoleHolders } from "./gathering/GatheringRoleHolders";
+import { GatheringNotes } from "./gathering/GatheringNotes";
+import { GatheringMailDialog } from "./gathering/GatheringMailDialog";
+import { GatheringTeamMessageDialog } from "./gathering/GatheringTeamMessageDialog";
 import { gatheringSequence, type SequenceItem } from "../utils/gatheringSequence";
 import { GatheringActions, type GatheringAction } from "./gathering/GatheringActions";
 import { CreateTaskDialog } from "./gathering/CreateTaskDialog";
@@ -77,10 +84,12 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
     updateGathering,
     volunteerRoles,
     openableGatherings,
+    allPersons,
+    gatheringTasks,
   } = detail;
 
   // The form the event is changed in is the one it was made in (see utils/gatheringForm.ts)
-  const { groups: allGroups, gatherings: allGatherings } = useFirebase();
+  const { groups: allGroups, gatherings: allGatherings, assignments } = useFirebase();
   const withPlanner = hasPlanner(useLevel());
 
   const isExplicitAdminView = mode === "admin" || (isUserAdmin && mode !== "leader");
@@ -95,6 +104,8 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
   const [isEditingGathering, setIsEditingGathering] = useState(false);
   const [isCreatingTask, setIsCreatingTask] = useState(false);
   const [isApplyingTemplate, setIsApplyingTemplate] = useState(false);
+  const [isMailing, setIsMailing] = useState(false);
+  const [isMessaging, setIsMessaging] = useState(false);
   const { templates: gatheringTemplates } = useGatheringTemplates();
   const [toastMessage, showToast] = useTimedMessage<string>();
   // The programme as it was before the last change, so «Angre» can put it back
@@ -111,6 +122,8 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
     return limitToMyGroups ? rows.filter((row) => row.isMyGroup) : rows;
   }, [programSchedule, tasksWithDetails, volunteerRoles, limitToMyGroups]);
   const summary = summarizeStaffingRoster(roster);
+  // The teams of this gathering, each once: the groups of its tasks
+  const teams = useMemo(() => teamsOfTasks(gatheringTasks, allGroups), [gatheringTasks, allGroups]);
   const toOrder = roster.filter((row) => needsAction(row.state)).length;
 
   // The gatherings the arrows step through: all for an admin, the ones the leader can open otherwise
@@ -273,6 +286,28 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
           </Link>
 
           <div className="flex items-center gap-2">
+            {canAdminister && (
+              <div className="flex items-center gap-1 print:hidden">
+                <button
+                  type="button"
+                  aria-label="E-post til alle som er med"
+                  title="E-post til alle som er med"
+                  onClick={() => setIsMailing(true)}
+                  className="w-9 h-9 flex items-center justify-center rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 cursor-pointer"
+                >
+                  <Mail className="w-4 h-4" aria-hidden />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Melding til teamene"
+                  title="Melding til teamene"
+                  onClick={() => setIsMessaging(true)}
+                  className="w-9 h-9 flex items-center justify-center rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 cursor-pointer"
+                >
+                  <MessageSquare className="w-4 h-4" aria-hidden />
+                </button>
+              </div>
+            )}
             <span
               className={`hidden sm:inline text-[10px] font-bold px-2 py-0.5 rounded-full border ${
                 isExplicitAdminView
@@ -296,7 +331,10 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
             </span>
           </div>
           {gathering.theme && <p className="text-xs text-slate-500 mt-1">Tema: {gathering.theme}</p>}
+          <GatheringRoleHolders gatheringId={gathering.id} tasks={gatheringTasks} assignments={assignments} roles={volunteerRoles} persons={allPersons} />
         </div>
+
+        <GatheringNotes gatheringId={gathering.id} canEdit={isUserAdmin} authorName={detail.currentUser.name} />
 
         {/* The staffing in one line. Not for an event without tasks: nobody is lacking where nobody is asked for */}
         {summary.total > 0 && (
@@ -372,14 +410,10 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
       </div>
 
       <div className="p-3 sm:p-4 space-y-2 flex-1 print:p-0">
-        {/* Print-only header */}
-        <div className="hidden print:block mb-4 border-b border-slate-300 pb-2">
-          <h1 className="text-xl font-bold text-black">{gathering.title}</h1>
-          <p className="text-xs text-slate-600">
-            {formatNorwegianDateTime(gathering.startsAt)} • {locationOf(gathering)}
-          </p>
-          <p className="text-[10px] text-slate-500 mt-1">{view === "program" ? "Program" : "Bemanning"}</p>
-        </div>
+        {/* On paper the header above stays (title, time, place, Tema, leaders and notes); this names the view printed */}
+        <p className="hidden print:block text-sm font-bold text-black border-b border-slate-300 pb-1 mb-2">
+          {view === "program" ? "Program" : "Bemanning"}
+        </p>
 
         {/* Shown when a meeting leader last changed the programme from Min side */}
         {view === "program" && gathering.programEditedBy && gathering.programEditedAt && (
@@ -459,6 +493,31 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
         showToast={showToast}
         onClose={() => setIsApplyingTemplate(false)}
       />
+
+      {isMailing && canAdminister && (
+        <GatheringMailDialog
+          gathering={gathering}
+          tasks={gatheringTasks}
+          assignments={assignments}
+          persons={allPersons}
+          onSent={(count) => {
+            setIsMailing(false);
+            showToast(count === 1 ? "E-posten er sendt til 1 person." : `E-posten er sendt til ${count} personer.`);
+          }}
+          onClose={() => setIsMailing(false)}
+        />
+      )}
+
+      {isMessaging && canAdminister && (
+        <GatheringTeamMessageDialog
+          teams={teams}
+          onSent={(count) => {
+            setIsMessaging(false);
+            showToast(`Sendt til ${count} team`);
+          }}
+          onClose={() => setIsMessaging(false)}
+        />
+      )}
 
       {isEditingGathering && (
         <GatheringFormDialog
