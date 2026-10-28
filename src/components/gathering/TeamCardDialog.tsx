@@ -59,7 +59,8 @@ export const TeamCardDialog: React.FC<TeamCardDialogProps> = ({ groupId, returnF
             <X className="w-5 h-5" aria-hidden />
           </button>
         </div>
-        <LeaderGroupCard groupId={groupId} inPopup />
+        {/* Opened from the staffing, so the people of the team come first */}
+        <LeaderGroupCard groupId={groupId} inPopup initialTab="medlemmer" />
       </div>
     </div>,
     document.body

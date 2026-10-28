@@ -344,6 +344,9 @@ describe("Teamkortet i en popup", () => {
     expect(within(dialog).getByRole("button", { name: /Aktiviteter/ })).toBeTruthy();
     expect(within(dialog).getByRole("button", { name: /Gruppechat/ })).toBeTruthy();
     expect(within(dialog).getByRole("button", { name: /Deltakere/ })).toBeTruthy();
+    // Opened from the staffing, the card starts on the members
+    expect(dialog.querySelector("#section-group-medlemmer-tab")?.hasAttribute("hidden")).toBe(false);
+    expect(dialog.querySelector("#section-group-aktiviteter-tab")?.hasAttribute("hidden")).toBe(true);
   });
 
   test("Escape lukker kortet, og Bemanning står som før med samme foldete team", () => {
