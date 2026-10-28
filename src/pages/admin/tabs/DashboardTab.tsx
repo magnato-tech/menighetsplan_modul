@@ -4,6 +4,9 @@ import { useCms } from "../../../context/CmsContext";
 import {
   Globe,
   Calendar,
+  ChevronRight,
+  CircleHelp,
+  ExternalLink,
   FileText,
   Plus,
   Users,
@@ -12,6 +15,7 @@ import {
   Newspaper,
   Sliders,
   Headphones,
+  User,
 } from "lucide-react";
 import {
   StudioData,
@@ -23,9 +27,10 @@ import {
   upcomingGatherings,
   withinWeeks,
 } from "../studio";
-import { UpcomingGatheringsPanel } from "./dashboard/UpcomingGatheringsPanel";
+import { UpcomingGatheringCard, UpcomingGatheringsPanel } from "./dashboard/UpcomingGatheringsPanel";
 import { SiteCheckCard } from "../../../components/admin/SiteCheckCard";
-import type { StudioArea } from "../studioAreas";
+import { STUDIO_AREAS, STUDIO_AREA_NAMES, type StudioArea } from "../studioAreas";
+import { useStudioMenuEntries } from "../studioMenu";
 import { useLevel } from "../../../hooks/useLevel";
 import { hasPlanner } from "../../../utils/level";
 import { countPages } from "../../../utils/menu";
@@ -34,12 +39,22 @@ interface DashboardTabProps {
   studio: StudioData;
   /** The part of the admin that is chosen: the overview shows what belongs to it (see studioAreas.ts). */
   area: StudioArea;
+  /** A web editor has the website part only, so there is no choice of part. */
+  webEditor?: boolean;
   onTabChange: (tab: StudioTab) => void;
+  /** The choice of part on a phone, where the overview holds it (on a larger screen the side menu does). */
+  onAreaChange: (area: StudioArea) => void;
   /** Opens the tab with its editor for a new item already showing. */
   onCreateIn: (tab: StudioTab) => void;
 }
 
-export const DashboardTab: React.FC<DashboardTabProps> = ({ studio, area, onTabChange, onCreateIn }) => {
+// One row of the menu on a phone: large enough to tap, with a thin line between the rows
+const MENU_ROW =
+  "w-full min-h-[52px] flex items-center gap-3 px-4 py-3 text-left text-sm font-bold text-[var(--studio-text)] hover:bg-[var(--studio-hover)] transition-colors cursor-pointer";
+const ALERT_RED = "text-[11px] px-2 py-0.5 rounded-md bg-red-900/60 border border-red-700 text-red-300 font-bold";
+const ALERT_AMBER = "text-[11px] px-2 py-0.5 rounded-md bg-amber-100 text-amber-950 font-bold";
+
+export const DashboardTab: React.FC<DashboardTabProps> = ({ studio, area, webEditor = false, onTabChange, onAreaChange, onCreateIn }) => {
   const { adminGatherings, adminTasks } = studio;
   const { pages, news, sermons, staff, settings, media } = useCms();
   // The moment the overview was opened, for what «Sjekk nettsiden» counts as ahead and as old
@@ -49,8 +64,13 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ studio, area, onTabC
   const withPlanner = hasPlanner(useLevel());
   const planning = area === "planlegging";
   const pageCounts = countPages(pages);
+  // The menu on a phone: the same entries as the side menu shows for this part
+  const menuEntries = useStudioMenuEntries(studio, area, { webEditor });
   // What the planning opens with: the next gatherings, and what must be ordered in the nearest weeks
-  const upcoming = planning ? upcomingGatherings(adminGatherings, adminTasks, 3) : [];
+  const allUpcoming = planning ? upcomingGatherings(adminGatherings, adminTasks, Infinity) : [];
+  const upcoming = allUpcoming.slice(0, 3);
+  // On a phone the next service comes first: the first gudstjeneste, or else the first gathering
+  const nextService = allUpcoming.find((entry) => entry.item.gathering.isGudstjeneste === true) ?? allUpcoming[0];
   const upcomingCount = planning ? upcomingGatherings(adminGatherings, [], Infinity).length : 0;
   const near = planning ? withinWeeks(adminTasks, NEAR_WEEKS) : [];
   const nearToOrder = near.filter(isUrgentTask).length;
@@ -60,7 +80,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ studio, area, onTabC
     <div className="max-w-6xl mx-auto space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[var(--studio-border)] pb-6">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-[var(--studio-text)] tracking-tight">
+          <h1 className="text-xl sm:text-3xl font-black text-[var(--studio-text)] tracking-tight">
             {planning ? "Planlegging" : "Nettside"}
           </h1>
           <p className={`text-xs sm:text-sm text-[var(--studio-muted)] mt-1 ${planning ? "hidden sm:block" : ""}`}>
@@ -70,7 +90,8 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ studio, area, onTabC
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* On a phone these two are rows in the menu below */}
+        <div className="hidden md:flex items-center gap-2">
           <Link
             to="/"
             target="_blank"
@@ -89,16 +110,78 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ studio, area, onTabC
         </div>
       </div>
 
+      {/* Start page on a phone: the next service, the choice of part, then the menu. Not on a larger screen. */}
+      {planning && nextService && (
+        <div className="md:hidden">
+          <UpcomingGatheringCard upcoming={nextService} first withPlanner={withPlanner} />
+        </div>
+      )}
+
+      {!webEditor && (
+        <div role="tablist" aria-label="Del av admin" className="md:hidden grid grid-cols-2 gap-1 p-1 rounded-xl bg-[var(--studio-surface)]">
+          {STUDIO_AREAS.map((choice) => (
+            <button
+              key={choice}
+              type="button"
+              role="tab"
+              aria-selected={area === choice}
+              onClick={() => onAreaChange(choice)}
+              className={`px-2 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer ${
+                area === choice ? "bg-indigo-600 text-white shadow-sm" : "text-[var(--studio-muted)] hover:text-[var(--studio-text)]"
+              }`}
+            >
+              {STUDIO_AREA_NAMES[choice]}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <nav aria-label="Admin-menyen" className="md:hidden rounded-2xl bg-[var(--studio-surface)] border border-[var(--studio-border)] divide-y divide-[var(--studio-border)] overflow-hidden">
+        {menuEntries.map((entry) => (
+          <button key={entry.tab} type="button" onClick={() => onTabChange(entry.tab)} className={MENU_ROW}>
+            <entry.icon className={`w-5 h-5 shrink-0 ${entry.iconClass}`} aria-hidden="true" />
+            <span className="flex-1 min-w-0 truncate">{entry.label}</span>
+            {entry.count !== undefined && (
+              <span className="text-xs px-2 py-0.5 rounded-md bg-[var(--studio-bg)] text-[var(--studio-muted)]">{entry.count}</span>
+            )}
+            {entry.alerts?.map((alert) => (
+              <span key={alert.text} title={alert.title} className={alert.tone === "red" ? ALERT_RED : ALERT_AMBER}>
+                {alert.text}
+              </span>
+            ))}
+            <ChevronRight className="w-4 h-4 shrink-0 text-[var(--studio-muted)]" aria-hidden="true" />
+          </button>
+        ))}
+
+        {/* In both parts, as in the side menu */}
+        <button type="button" onClick={() => onTabChange("cms-hjelp")} className={MENU_ROW}>
+          <CircleHelp className="w-5 h-5 shrink-0" aria-hidden="true" />
+          <span className="flex-1 min-w-0 truncate">Hjelp</span>
+          <ChevronRight className="w-4 h-4 shrink-0 text-[var(--studio-muted)]" aria-hidden="true" />
+        </button>
+        <Link to="/minside" className={MENU_ROW}>
+          <User className="w-5 h-5 shrink-0" aria-hidden="true" />
+          <span className="flex-1 min-w-0 truncate">Gå til Min Side</span>
+          <ChevronRight className="w-4 h-4 shrink-0 text-[var(--studio-muted)]" aria-hidden="true" />
+        </Link>
+        <Link to="/" target="_blank" rel="noreferrer" className={MENU_ROW}>
+          <ExternalLink className="w-5 h-5 shrink-0 text-emerald-400" aria-hidden="true" />
+          <span className="flex-1 min-w-0 truncate">Åpne offentlig nettside</span>
+          <ChevronRight className="w-4 h-4 shrink-0 text-[var(--studio-muted)]" aria-hidden="true" />
+        </Link>
+      </nav>
+
       {planning && (
         <UpcomingGatheringsPanel
           upcoming={upcoming}
           withPlanner={withPlanner}
           onShowAll={() => onTabChange("planlegger-samlinger")}
+          shownAboveOnPhone={nextService?.item.gathering.id}
         />
       )}
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {planning && (
         <div
           onClick={() => onTabChange("planlegger-samlinger")}
@@ -195,7 +278,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ studio, area, onTabC
       {!planning && <SiteCheckCard pages={pages} news={news} gatherings={gatherings} media={media} now={now} onTabChange={onTabChange} />}
 
       {/* Quick Actions Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="hidden md:grid md:grid-cols-2 gap-6">
         {/* Hurtighandlinger Nettside CMS */}
         {!planning && (
         <div className="p-6 rounded-2xl bg-[var(--studio-surface)] border border-[var(--studio-border)] space-y-4">

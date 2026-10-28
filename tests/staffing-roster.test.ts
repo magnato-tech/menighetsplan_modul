@@ -3,6 +3,8 @@ import { assert } from "./assert";
 import {
   buildStaffingRoster,
   orderStaffingRoster,
+  rosterByTeam,
+  rowsNeedingAction,
   staffingStateOf,
   summarizeStaffingRoster,
   type RosterPlace,
@@ -122,6 +124,37 @@ describe("Bemanning", () => {
   assert(
     summary.forfall === 2 && summary.ubesatt === 1 && summary.venter === 1 && summary.dekket === 2 && summary.total === 6,
     "Oppsummeringen teller hver tilstand, og avlyste oppgaver er ikke med"
+  );
+
+  // 5b. The teams as cards: the same order, and what each team adds up to
+  const cards = rosterByTeam(rows);
+  assert(
+    cards.map((t) => t.name).join(",") === "Møtevert,Lovsang,Gudstjenesteleder,Uten team",
+    "Teamkortene står i samme rekkefølge som teamene i Må ordnes-visningen, og uten team sist"
+  );
+  assert(
+    cards.map((t) => t.rows.length).join(",") === "3,2,1,1",
+    "Hver rad står i ett teamkort, også det som må ordnes"
+  );
+  const team = (name: string) => cards.find((t) => t.name === name)!;
+  assert(
+    team("Lovsang").confirmed === 2 && team("Lovsang").pending === 0 && team("Lovsang").free === 1,
+    "Lovsang-kortet teller bekreftede og ledige på alle sine roller"
+  );
+  assert(
+    team("Møtevert").pending === 1 && team("Møtevert").free === 1 && team("Møtevert").confirmed === 0,
+    "Møtevert-kortet teller venter og ledig, og en avlyst rolle teller ikke som ledig"
+  );
+  assert(team("Uten team").confirmed === 1 && team("Uten team").free === 0, "Roller uten team får et eget kort");
+
+  // 5c. What the filter shows: what must be ordered, and what was changed while the view is open
+  assert(
+    rowsNeedingAction(rows).map((r) => r.task.id).join(",") === "Møteleder,Møtevert,Barnekirke",
+    "Filteret viser forfall og ubesatt, og ingen andre"
+  );
+  assert(
+    rowsNeedingAction(rows, new Map<string, RosterPlace>([["Kirkekaffe", "team"]])).some((r) => r.task.id === "Kirkekaffe"),
+    "En rolle som er endret mens visningen er åpen, blir stående i filteret"
   );
 
   // 6. One rule

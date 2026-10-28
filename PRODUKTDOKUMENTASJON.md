@@ -133,6 +133,8 @@ Demoen er appen installert én gang til, med egen database og egen adresse, og m
 
 Adminpanelet ligger på `/admin` og heter **Admin**. Øverst i menyen velges **Planlegging** eller **Nettside**, og menyen til venstre og Oversikt viser bare den delen. Oversikt, Hjelp og Moduler står i begge. Valget er ikke nivået: nivået (Menighetsplattform eller Menighetsplan) sier hva menigheten har, valget sier hva man jobber med nå. Hver fane har sin egen adresse (`/admin?tab=…`), og et påbegynt utkast overlever et fanebytte. Deler av panelet som ikke alle menigheter skal ha, er **moduler**: de slås på under **Moduler** og står først da i menyen (kapittel 2.6).
 
+**Admin på mobil (28. oktober 2026).** Under `md` (768 px) er Oversikt startsiden i admin, og den viser, ovenfra og ned: neste gudstjeneste (den første gudstjenesten framover, ellers det første arrangementet), valget mellom Planlegging og Nettside, og menyen som rader. Radene er de samme som i menyen til venstre, med samme tall og varsler, og lager én liste (`studioMenu.ts`). Under menyen står de kommende arrangementene (i Nettside: sjekken av nettsiden). Hjelp, Min Side og den offentlige nettsiden står nederst i menyen. Knappene «Se nettsiden live» og «Min Side» øverst, tallkortene og hurtighandlingene vises bare fra `md` og opp. ☰ finnes fortsatt øverst i alle faner.
+
 ### 2.1 Planlegging – admin for webappen
 
 | Fane | Hva administratoren gjør | Status |
@@ -515,6 +517,8 @@ Alltid ikon og tekst, aldri farge alene:
 
 En samling er rød så lenge én oppgave er rød, gul når ingen er røde og minst én er gul, og ellers grønn.
 
+I Bemanning (11.2) vises de samme tilstandene slik: hvert team har et kort, og headeren teller bekreftet (hake), venter (klokke) og ledig (stiplet ring) med tall og ord for skjermlesere. Ledig plass står som «Ledig plass» med knappen «Fyll plassen». Oppsummeringslinja over fanene er hvit, og farge er bare en ekstra markering.
+
 ---
 
 ## 7. Synlighet og personvern
@@ -689,7 +693,7 @@ Kjøreplanen alle ser (`/samling/:id`) viser programmet og oppgavene på én tid
 Kjøreplanen alle ser, fra kalenderen på Min side, viser bare dem som har akseptert. Planleggingen (`/leder/samling/:id` og `/admin/samling/:id`) har to visninger *(levert 20. oktober)*:
 
 - **Program** (`?vis=program`): programpostene med klokkeslett, tema, rolle, team og hvem som er satt opp. Bemanningen endres ikke her. Administrator flytter programposter med dra og slipp.
-- **Bemanning** (`?vis=bemanning`, åpnes først): hver rolle én gang, også når programmet bruker den i flere programposter, med team, klokkeslettene den brukes, og personene. Øverst står «Må ordnes»: forfall, så ubesatt. Resten står per team. Tildel og Forespør står på en rolle med ledig plass. Et trykk på en person gir Bekreftet, Forespurt, Forfall og Slett, og et trykk på navnet øverst ringer når registeret har nummeret. Et trykk på rollenavnet viser instruksen.
+- **Bemanning** (`?vis=bemanning`, åpnes først): hver rolle én gang, også når programmet bruker den i flere programposter. Hvert team har et kort, med tellerne bekreftet, venter og ledig i headeren. Under `md` er kortet foldet til headeren til man trykker på det; fra `md` og opp står alle åpne, og kortene står i to kolonner fra `lg`. Under hver rolle står klokkeslettene den brukes, og personene, én per linje. Ledig plass får knappen «Fyll plassen», som åpner «Tildel» (avtalt) og «Forespør» (forespørsel). De som har sagt nei, står bak en knapp «N sa nei». Et trykk på en person gir Bekreftet, Forespurt, Forfall og Slett, og et trykk på navnet ringer når registeret har nummeret. Et trykk på rollenavnet viser instruksen. «Vis bare det som må ordnes» skjuler alt som er dekket, og en rolle som endres mens visningen er åpen, blir stående.
 
 En gruppeleder ser hele programmet, med status på egne grupper og bare navn på dem som har akseptert i andre. Under Bemanning ser hun bare egne grupper, og kan gjøre det samme som administrator der.
 
@@ -1730,6 +1734,16 @@ Bestilt av produkteier. Ligger på grenen `semesterplan`, ikke på `main`, og er
 | **Semesterplan i demoen** | Eksempelmenigheten har en åpen semesterplan, «2027», som nullstillingen legger inn (`demoSemesterPlanDocument`). Den flyttes med resten av datoene, så den er alltid åpen |
 | **Standardroller** | De 12 rollene fra menighetens ark, med instruksene: Baking, Barnekirke, Bilde, Forbønn, Kjøkken, Lovsang, Lyd, Møteleder, Møtevert, Pynting, Rigging og Taler. Oppvask, Markedsføring og Koordinator mannsgruppe er tatt ut. Rollene som er igjen, beholder id-ene (`DEFAULT_VOLUNTEER_ROLE_IDS`), så ingenting som er lagret hos en menighet, peker feil |
 | **Møteledere og talere** | Ny tjenestegruppe i demoen, som Møteleder og Taler hører til. Andreas Lind står som bekreftet møteleder på første gudstjeneste i semesterplanen, så kjøreplanen kan prøves som møteleder. Administrator Kari Nordmann er med i Møteledere og talere, Rigging og Bønnetjeneste & forbønn |
+
+### Lyst admin, startside på mobil og ny Bemanning (28. oktober 2026)
+
+Bestilt av produkteier. Ligger på grenen `semesterplan`, ikke på `main`, og er ikke sluppet.
+
+| Del | Hva som er levert |
+|---|---|
+| **Lyst som standard** | Admin åpnes i lys stil, til personen selv har valgt mørk. Valget huskes i nettleseren |
+| **Startside på mobil** | Oversikten under `md` viser neste gudstjeneste, valget mellom Planlegging og Nettside, menyen som rader og de kommende arrangementene under (kapittel 2) |
+| **Ny Bemanning, steg 1** | Rolig utseende: ett kort per team med tellere, roller med grått band, personer som rader, «Fyll plassen» i stedet for røde «Må ordnes»-kort, «N sa nei» og filteret «Vis bare det som må ordnes». Samme regler som før (kapittel 6), og kapittel 11.2 beskriver visningen |
 
 ---
 

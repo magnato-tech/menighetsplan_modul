@@ -279,42 +279,36 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
             type="button"
             id="gathering-staffing-barometer"
             onClick={() => showView("bemanning")}
-            className={`w-full p-2.5 rounded-xl border flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-bold text-left cursor-pointer print:hidden ${
-              toOrder > 0
-                ? "bg-red-50 border-red-200 text-red-900"
-                : summary.venter > 0
-                ? "bg-amber-50 border-amber-200 text-amber-900"
-                : "bg-emerald-50 border-emerald-200 text-emerald-900"
-            }`}
+            className="w-full p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium text-slate-700 text-left cursor-pointer print:hidden"
           >
             {toOrder === 0 && summary.venter === 0 ? (
               <span className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" aria-hidden />
+                <CheckCircle2 className="w-4 h-4 text-emerald-700" aria-hidden />
                 Fullt bemannet
               </span>
             ) : (
               <>
                 {summary.forfall > 0 && (
                   <span className="flex items-center gap-1">
-                    <AlertTriangle className="w-4 h-4 text-red-600" aria-hidden />
+                    <AlertTriangle className="w-4 h-4 text-red-700" aria-hidden />
                     {summary.forfall} forfall
                   </span>
                 )}
                 {summary.ubesatt > 0 && (
                   <span className="flex items-center gap-1">
-                    <AlertTriangle className="w-4 h-4 text-red-600" aria-hidden />
+                    <AlertTriangle className="w-4 h-4 text-red-700" aria-hidden />
                     {summary.ubesatt} ubesatt
                   </span>
                 )}
                 {summary.venter > 0 && (
                   <span className="flex items-center gap-1">
-                    <Clock className="w-4 h-4 text-amber-600" aria-hidden />
+                    <Clock className="w-4 h-4 text-amber-700" aria-hidden />
                     {summary.venter} venter på svar
                   </span>
                 )}
               </>
             )}
-            <span className="ml-auto font-semibold opacity-80">
+            <span className="ml-auto font-semibold">
               {limitToMyGroups ? "Dine grupper: " : ""}
               {summary.dekket} av {summary.total} dekket
             </span>

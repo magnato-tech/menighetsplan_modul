@@ -155,19 +155,10 @@ export function placeOf(row: RosterRow, held: ReadonlyMap<string, RosterPlace> =
   return held.get(row.task.id) ?? (needsAction(row.state) ? "attention" : "team");
 }
 
-/**
- * The order the staffing is shown in. A row someone has just changed is `held` where it was, so it
- * does not jump away from under the finger; it moves when the view is opened again.
- */
-export function orderStaffingRoster(rows: RosterRow[], held: ReadonlyMap<string, RosterPlace> = new Map()): OrderedRoster {
-  const attention = rows
-    .filter((row) => placeOf(row, held) === "attention")
-    .sort((a, b) => Number(a.state !== "forfall") - Number(b.state !== "forfall") || byTime(a, b));
-  const shown = new Set(attention.map((row) => row.task.id));
-
+/** The teams of some rows, each with its rows by time. The teams come in the order of the programme, those without a team last. */
+function teamsOf(rows: RosterRow[]): RosterTeam[] {
   const teams = new Map<string, RosterTeam>();
   for (const row of rows) {
-    if (shown.has(row.task.id)) continue;
     const key = row.groupId ?? "";
     const team = teams.get(key) ?? { groupId: row.groupId, name: row.groupName || (row.groupId ? "Team" : "Uten team"), rows: [] };
     team.rows.push(row);
@@ -178,7 +169,49 @@ export function orderStaffingRoster(rows: RosterRow[], held: ReadonlyMap<string,
     if (!a.groupId !== !b.groupId) return a.groupId ? -1 : 1;
     return timeOf(a.rows[0]).localeCompare(timeOf(b.rows[0])) || a.name.localeCompare(b.name, "nb");
   });
-  return { attention, teams: ordered };
+  return ordered;
+}
+
+/**
+ * The order the staffing is shown in. A row someone has just changed is `held` where it was, so it
+ * does not jump away from under the finger; it moves when the view is opened again.
+ */
+export function orderStaffingRoster(rows: RosterRow[], held: ReadonlyMap<string, RosterPlace> = new Map()): OrderedRoster {
+  const attention = rows
+    .filter((row) => placeOf(row, held) === "attention")
+    .sort((a, b) => Number(a.state !== "forfall") - Number(b.state !== "forfall") || byTime(a, b));
+  const shown = new Set(attention.map((row) => row.task.id));
+  return { attention, teams: teamsOf(rows.filter((row) => !shown.has(row.task.id))) };
+}
+
+/** One team's card in «Bemanning»: its rows and what they add up to. */
+export interface RosterTeamCard extends RosterTeam {
+  /** People confirmed on the team's roles. Cancelled roles are not counted. */
+  confirmed: number;
+  /** People asked on the team's roles, not yet answered. */
+  pending: number;
+  /** Free slots on the team's roles. */
+  free: number;
+}
+
+/**
+ * The teams of the rows, with their totals. Same team order as orderStaffingRoster. A cancelled
+ * role is shown as cancelled, so it adds nothing.
+ */
+export function rosterByTeam(rows: RosterRow[]): RosterTeamCard[] {
+  return teamsOf(rows).map((team) => {
+    const live = team.rows.filter((row) => row.state !== "avlyst");
+    const sum = (pick: (row: RosterRow) => number) => live.reduce((total, row) => total + pick(row), 0);
+    return { ...team, confirmed: sum((row) => row.confirmed), pending: sum((row) => row.pending), free: sum((row) => row.free) };
+  });
+}
+
+/**
+ * The rows the «Vis bare det som må ordnes» filter shows: what must be found someone for, and the
+ * rows changed while the view is open, so a row does not vanish under the finger.
+ */
+export function rowsNeedingAction(rows: RosterRow[], held: ReadonlyMap<string, RosterPlace> = new Map()): RosterRow[] {
+  return rows.filter((row) => needsAction(row.state) || held.has(row.task.id));
 }
 
 export interface RosterSummary {

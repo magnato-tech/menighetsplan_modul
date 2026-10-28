@@ -385,7 +385,7 @@ const oversikt: HelpArticle = {
     "Tallene viser arrangementer framover og det som må ordnes de neste fire ukene.",
     "Hurtighandlingene lager en ny samling eller åpner det som må følges opp.",
   ],
-  godt: "**Se nettsiden live** og **Min Side** står øverst, så du raskt ser det menigheten ser.",
+  godt: "**Åpne offentlig nettside** og **Gå til Min Side** står øverst i menyen, og på PC også øverst på Oversikt, så du raskt ser det menigheten ser.",
   seOgsa: ["bemanning", "oppgaver", "arrangementer"],
 };
 
@@ -411,12 +411,12 @@ const bemanning: HelpArticle = {
   hvor: "Planlegging → Kalender → et arrangement → Bemanning",
   intro: "Fyll ledige oppgaver og ordne forfall på et arrangement, også fra mobilen.",
   steg: [
-    "Øverst står **Må ordnes**: forfall og ubesatte roller. Resten står per team.",
-    "Trykk på en person for å sette **Bekreftet**, **Forespurt** eller **Forfall**.",
-    "Ved en ledig plass: **Tildel** setter personen på som avtalt, **Forespør** sender en forespørsel til Min Side.",
-    "Bytte: sett **Forfall** på den som ikke kan, og **Tildel** en ny på samme rolle.",
+    "Hvert team har sitt kort. Tallene i headeren viser bekreftet, venter og ledig. Trykk på teamet for å folde det ut på mobil.",
+    "Ved en ledig plass trykker du **Fyll plassen**, og velger **Tildel** (personen er avtalt) eller **Forespør** (den får en forespørsel på Min Side).",
+    "Trykk på en person for å sette **Bekreftet**, **Forespurt** eller **Forfall**. Den som sa nei, står bak «sa nei».",
+    "Vil du se bare det som må ordnes, trykk **Vis bare det som må ordnes**.",
   ],
-  godt: "Trykk på rollenavnet for å se instruksen. **Program** viser kjøreplanen; der endres ikke bemanningen. En gruppeleder ser bemanningen til sine egne grupper.",
+  godt: "Trykk på rollenavnet for å se instruksen. Bytte: sett **Forfall** på den som ikke kan, og **Fyll plassen** på samme rolle. **Program** viser kjøreplanen; der endres ikke bemanningen. En gruppeleder ser bemanningen til sine egne grupper.",
   seOgsa: ["oppgaver", "roller"],
 };
 
