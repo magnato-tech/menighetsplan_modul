@@ -135,7 +135,7 @@ export const ProgramSidePanel: React.FC<ProgramSidePanelProps> = ({
                       {line.open && (
                         <>
                           {line.text && " · "}
-                          <span className="inline-flex items-center gap-1 font-semibold text-red-700">
+                          <span className="inline-flex items-center gap-1 text-red-700">
                             <AlertTriangle className="w-3.5 h-3.5 shrink-0" aria-hidden />
                             {line.open}
                           </span>

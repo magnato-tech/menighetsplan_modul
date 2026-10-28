@@ -75,13 +75,13 @@ export const ProgramRowCard: React.FC<ProgramRowCardProps> = ({
         {row.task && (
           <div className="flex flex-wrap items-center gap-1.5">
             {row.roleTitle && row.roleTitle !== row.title && (
-              <span className="text-[10px] font-bold uppercase tracking-wide text-indigo-700 bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 rounded">
+              <span className="text-[10px] font-normal uppercase tracking-wide text-indigo-700 bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 rounded">
                 {row.roleTitle}
               </span>
             )}
             {row.groupName && (
               <span
-                className={`text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded border ${
+                className={`text-[10px] font-normal uppercase tracking-wide px-1.5 py-0.5 rounded border ${
                   row.isMyGroup ? "bg-emerald-50 text-emerald-800 border-emerald-200" : "bg-slate-50 text-slate-600 border-slate-200"
                 }`}
               >
@@ -91,21 +91,21 @@ export const ProgramRowCard: React.FC<ProgramRowCardProps> = ({
             {people.map((p) => (
               <span
                 key={p.assignment.id}
-                className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-lg border ${
+                className={`inline-flex items-center gap-1 text-xs font-normal px-2 py-0.5 rounded-lg border ${
                   p.response === "confirmed" ? "bg-white text-slate-800 border-slate-200" : "bg-amber-50 text-amber-900 border-amber-200"
                 }`}
               >
                 {p.response === "confirmed" ? (
                   <Check className="w-3 h-3 text-emerald-600" aria-hidden />
                 ) : (
-                  <Clock className="w-3 h-3 text-amber-600" aria-hidden />
+                  <Clock className="w-3 h-3 text-amber-500" aria-hidden />
                 )}
                 {nameOf(p)}
-                {p.response === "pending" && <span className="text-[10px] font-bold opacity-80">Forespurt</span>}
+                {p.response === "pending" && <span className="text-[10px] opacity-80">Forespurt</span>}
               </span>
             ))}
             {staffing === "full" && people.length === 0 && (
-              <span className="inline-flex items-center gap-1 text-xs font-bold text-red-700">
+              <span className="inline-flex items-center gap-1 text-xs font-normal text-red-700">
                 <AlertTriangle className="w-3.5 h-3.5" aria-hidden />
                 {row.hasForfall ? "Forfall" : "Ubesatt"}
               </span>
