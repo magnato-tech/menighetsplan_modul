@@ -91,17 +91,18 @@ const roleBlock = (id: string) => document.getElementById(`roster-${id}`)!;
 afterEach(cleanup);
 
 describe("Bemanning som team-kort", () => {
-  test("hvert team har ett kort, og headeren teller bekreftet, venter og ledig", () => {
+  test("hvert team har ett kort, og headeren teller bekreftet, venter og ledig, men viser ikke det som er null", () => {
     renderView(rowsOf(details));
 
     const lovsang = within(teamCard("Lovsang"));
     expect(lovsang.getByText("2 bekreftet")).toBeTruthy();
-    expect(lovsang.getByText("0 venter")).toBeTruthy();
     expect(lovsang.getByText("1 ledig")).toBeTruthy();
+    // Nothing waits, so neither the clock nor a 0 is shown
+    expect(lovsang.queryByText(/venter/)).toBeNull();
 
     const vert = within(teamCard("Møtevert"));
-    expect(vert.getByText("0 bekreftet")).toBeTruthy();
     expect(vert.getByText("2 ledige")).toBeTruthy();
+    expect(vert.queryByText(/bekreftet/)).toBeNull();
   });
 
   test("et team er foldet på mobil til headeren, og åpnes med et trykk", () => {

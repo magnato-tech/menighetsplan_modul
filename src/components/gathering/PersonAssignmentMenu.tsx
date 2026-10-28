@@ -41,7 +41,7 @@ function initialsOf(name: string): string {
 /** The status of one person, with an icon so it is not told by colour alone. */
 export const ResponseIcon: React.FC<{ response: PersonResponse; className?: string }> = ({ response, className = "w-3.5 h-3.5" }) => {
   if (response === "confirmed") return <Check className={`${className} text-emerald-600`} aria-hidden />;
-  if (response === "pending") return <Clock className={`${className} text-amber-600`} aria-hidden />;
+  if (response === "pending") return <Clock className={`${className} text-amber-500`} aria-hidden />;
   if (response === "withdrawn") return <AlertTriangle className={`${className} text-red-600`} aria-hidden />;
   return <X className={`${className} text-slate-500`} aria-hidden />;
 };
@@ -130,7 +130,7 @@ export const PersonAssignmentMenu: React.FC<PersonAssignmentMenuProps> = ({
           )}
           {response === "pending" && (
             <span className="shrink-0 inline-flex items-center gap-1 text-xs font-semibold text-amber-800">
-              <Clock className="w-3.5 h-3.5" aria-hidden />
+              <Clock className="w-3.5 h-3.5 text-amber-500" aria-hidden />
               Venter
             </span>
           )}

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Ban, Clock, Edit3, FileText, Send, UserPlus } from "lucide-react";
+import { Ban, Edit3, FileText, Send, UserPlus } from "lucide-react";
 import type { Task } from "../../types";
 import type { RosterRow } from "../../utils/staffingRoster";
 import { PersonAssignmentMenu, type PersonResponse } from "./PersonAssignmentMenu";
@@ -95,7 +95,6 @@ export const StaffingRosterRowCard: React.FC<StaffingRosterRowCardProps> = ({
             )}
             {!cancelled && when && (
               <span className="inline-flex items-center gap-1 font-mono font-semibold">
-                <Clock className="w-3 h-3" aria-hidden />
                 {when}
               </span>
             )}

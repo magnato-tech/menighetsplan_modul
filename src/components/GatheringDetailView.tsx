@@ -309,7 +309,7 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
                 )}
                 {summary.venter > 0 && (
                   <span className="flex items-center gap-1">
-                    <Clock className="w-4 h-4 text-amber-700" aria-hidden />
+                    <Clock className="w-4 h-4 text-amber-500" aria-hidden />
                     {summary.venter} venter på svar
                   </span>
                 )}
