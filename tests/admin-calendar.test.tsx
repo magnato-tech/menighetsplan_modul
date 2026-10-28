@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import type { AdminGatheringItem } from "../src/hooks/useAppHooks";
 import type { Gathering, Group } from "../src/types";
-import { calendarKindOf, filterByKinds, monthWeeks, weekDays, weekNumber } from "../src/utils/adminCalendar";
+import { calendarKindOf, defaultMonthDay, filterByKinds, monthWeeks, weekDays, weekNumber } from "../src/utils/adminCalendar";
 import { GatheringsCalendar } from "../src/pages/admin/tabs/gatherings/GatheringsCalendar";
 
 // «Kalender» in the planner: the filter buttons, and the events as a month or a week that are opened,
@@ -128,14 +128,113 @@ describe("Kalenderen på skjermen", () => {
     expect(view.onNewOnDay).not.toHaveBeenCalled();
   });
 
-  test("uken viser alle arrangementene, i sju kolonner på PC og sju rader på mobil, med liten skrift", () => {
-    let view = vis("week");
+  test("uken viser alle arrangementene i sju kolonner, med liten skrift", () => {
+    const view = vis("week");
     expect(view.container.querySelector("h3")!.textContent).toBe("Uke 45 · 2. nov. – 8. nov.");
     expect(view.container.querySelector('[data-calendar-view="week"] > div:last-child')!.className).toContain("grid-cols-7");
-    cleanup();
-    view = vis("week", true);
-    expect(view.container.querySelector('[data-calendar-view="week"] > div:last-child')!.className).not.toContain("grid-cols-7");
     expect(view.container.querySelectorAll("[data-calendar-day]")).toHaveLength(7);
     expect(view.container.querySelector("[data-calendar-event]")!.className).toContain("text-[10px]");
+  });
+});
+
+describe("Månedsvisningen på mobil", () => {
+  // Today is the 4th of November, which has an event, so the month opens on it
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 10, 4, 12));
+  });
+  afterEach(() => vi.useRealTimers());
+
+  const items = [
+    ...["a", "b", "c", "d"].map((id) => item(event(id, "2026-11-01"))),
+    item(event("mangler", "2026-11-04", { title: "Kjøkkenteam" }), "tjenestegruppe", 2),
+  ];
+  const phoneMonth = () => {
+    const handlers = { onAnchorChange: vi.fn(), onShowWeek: vi.fn(), onNewOnDay: vi.fn() };
+    const view = render(
+      <MemoryRouter>
+        <GatheringsCalendar items={items} mode="month" anchor={new Date(2026, 10, 4)} narrow {...handlers} />
+      </MemoryRouter>
+    );
+    return { ...view, ...handlers };
+  };
+  const dayCell = (container: HTMLElement, day: string) => container.querySelector(`[data-calendar-day="${day}"]`) as HTMLButtonElement;
+
+  test("hver dag er et trykk på 44 piksler, og viser en prikk for hvert arrangement, opptil tre", () => {
+    const view = phoneMonth();
+    expect(dayCell(view.container, "2026-11-01").className).toContain("h-11 w-11");
+    const dots = dayCell(view.container, "2026-11-01").querySelector('span[aria-hidden="true"]')!;
+    expect(dots.children).toHaveLength(3);
+    expect(dayCell(view.container, "2026-11-04").querySelector('span[aria-hidden="true"]')!.children).toHaveLength(1);
+    expect(screen.getByText("4 arrangementer")).toBeTruthy();
+    expect(screen.getByText("1 arrangement")).toBeTruthy();
+  });
+
+  test("ingen tekst om arrangementene står i rutene, ingen «+N til» og ingen knapp for nytt arrangement", () => {
+    const view = phoneMonth();
+    expect(screen.queryByText("+1 til")).toBeNull();
+    expect(screen.queryAllByRole("button", { name: /^Nytt arrangement/ })).toHaveLength(0);
+    expect(dayCell(view.container, "2026-11-01").textContent).not.toContain("Arrangement a");
+  });
+
+  test("dagen som er valgt, er merket, og lister arrangementene sine under kalenderen", () => {
+    const view = phoneMonth();
+    // Today has an event, so the list opens on it
+    expect(dayCell(view.container, "2026-11-04").getAttribute("aria-pressed")).toBe("true");
+    expect(view.container.querySelectorAll("[data-calendar-event]")).toHaveLength(1);
+
+    fireEvent.click(dayCell(view.container, "2026-11-01"));
+    expect(dayCell(view.container, "2026-11-01").getAttribute("aria-pressed")).toBe("true");
+    expect(dayCell(view.container, "2026-11-04").getAttribute("aria-pressed")).toBe("false");
+    expect(view.container.querySelectorAll("[data-calendar-event]")).toHaveLength(4);
+  });
+
+  test("en rad i listen åpner arrangementet, som kortet gjør, og starter ikke et nytt", () => {
+    const view = phoneMonth();
+    const row = view.container.querySelector('[data-calendar-event="mangler"]') as HTMLAnchorElement;
+    expect(row.getAttribute("href")).toBe("/admin/samling/mangler?vis=bemanning");
+    expect(row.textContent).toContain("Kjøkkenteam");
+    fireEvent.click(row);
+    expect(view.onNewOnDay).not.toHaveBeenCalled();
+  });
+
+  test("en dag uten arrangementer sier det, og viser ingen rader", () => {
+    const view = phoneMonth();
+    fireEvent.click(dayCell(view.container, "2026-11-02"));
+    expect(screen.getByText("Ingen arrangementer denne dagen.")).toBeTruthy();
+    expect(view.container.querySelectorAll("[data-calendar-event]")).toHaveLength(0);
+  });
+
+  test("«I dag» går tilbake til dagen i dag som valgt dag", () => {
+    const view = phoneMonth();
+    fireEvent.click(dayCell(view.container, "2026-11-02"));
+    fireEvent.click(screen.getByRole("button", { name: "I dag" }));
+    expect(view.onAnchorChange).toHaveBeenCalled();
+    expect(dayCell(view.container, "2026-11-04").getAttribute("aria-pressed")).toBe("true");
+    expect(dayCell(view.container, "2026-11-02").getAttribute("aria-pressed")).toBe("false");
+  });
+});
+
+describe("Hvilken dag månedsvisningen på mobil åpner på", () => {
+  const cells = (events: Gathering[]) => monthWeeks(2026, 10, events, new Date(2026, 10, 1)).flat();
+
+  test("i dag, når i dag har arrangementer", () => {
+    expect(defaultMonthDay(cells([event("a", "2026-11-04")]), new Date(2026, 10, 4))).toBe("2026-11-04");
+  });
+
+  test("ellers den neste dagen med arrangementer i måneden", () => {
+    const list = [event("a", "2026-11-02"), event("b", "2026-11-20")];
+    expect(defaultMonthDay(cells(list), new Date(2026, 10, 4))).toBe("2026-11-20");
+    expect(defaultMonthDay(cells(list), new Date(2026, 9, 28))).toBe("2026-11-02");
+  });
+
+  test("det som ligger foran, også en dag fra neste måned nederst i rutenettet, før en dag som er forbi", () => {
+    const october = monthWeeks(2026, 9, [event("a", "2026-10-21"), event("b", "2026-11-01")], new Date(2026, 9, 1)).flat();
+    expect(defaultMonthDay(october, new Date(2026, 9, 28))).toBe("2026-11-01");
+  });
+
+  test("uten arrangementer i måneden: i dag hvis den er i måneden, ellers første dag", () => {
+    expect(defaultMonthDay(cells([]), new Date(2026, 10, 4))).toBe("2026-11-04");
+    expect(defaultMonthDay(cells([]), new Date(2026, 9, 28))).toBe("2026-11-01");
   });
 });

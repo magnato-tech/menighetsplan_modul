@@ -395,7 +395,7 @@ const arrangementer: HelpArticle = {
   hvor: "Planlegging → Kalender",
   intro: "Kalenderen er der arrangementene lages. Det som legges inn her, viser nettsiden av seg selv.",
   steg: [
-    "Velg **Måned**, **Uke**, **Kort** eller **Tabell**. På mobil står Uke og Kort.",
+    "Velg **Måned**, **Uke**, **Kort** eller **Tabell**. På mobil står Måned og Kort; trykk på en dag i måneden for å se hva som er den dagen.",
     "Filterknappene **Alle**, **Gudstjenester**, **Husgrupper**, **Tjenestegrupper** og **Andre** velger hva som vises.",
     "Trykk på en ledig plass en dag, eller **+** øverst, for et nytt arrangement. Trykk **Opprett arrangement**.",
     "Trykk på et arrangement for å åpne bemanning og kjøreplan. **Rediger** endrer eller avlyser det.",

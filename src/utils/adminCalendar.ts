@@ -76,3 +76,17 @@ export function weekNumber(day: Date): number {
   const firstThursday = new Date(thursday.getFullYear(), 0, 4);
   return 1 + Math.round((thursday.getTime() - mondayOf(firstThursday).getTime() - 3 * 86400000) / (7 * 86400000));
 }
+
+/**
+ * The day a phone's month opens on: today or the next day with events in the grid, also one of the
+ * next month's days at its end, for what is ahead is what matters. Without that, the first day with
+ * events in the month. A month without events opens on today, or on its first day.
+ */
+export function defaultMonthDay(cells: CalendarMonthCell[], today: Date = new Date()): string {
+  const todayKey = dayKey(today);
+  const shown = cells.filter((cell) => cell.inMonth);
+  const ahead = cells.find((cell) => cell.events.length > 0 && dayKey(cell.date) >= todayKey);
+  const day = ahead ?? shown.find((cell) => cell.events.length > 0);
+  if (day) return dayKey(day.date);
+  return shown.some((cell) => dayKey(cell.date) === todayKey) || shown.length === 0 ? todayKey : dayKey(shown[0].date);
+}
