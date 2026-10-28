@@ -10,7 +10,7 @@ interface GroupRoleBarProps {
 }
 
 export const GroupRoleBar: React.FC<GroupRoleBarProps> = ({ detail }) => {
-  const { hasLeaderAccess, isLeader, isDeputy, isAdmin } = detail;
+  const { hasLeaderAccess } = detail;
 
   return (
     <div className="flex items-center justify-between">
@@ -33,19 +33,28 @@ export const GroupRoleBar: React.FC<GroupRoleBarProps> = ({ detail }) => {
           <span>Min side</span>
         </Link>
       )}
-      <span
-        className={`text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider ${
-          isLeader
-            ? "bg-emerald-100 text-emerald-800"
-            : isDeputy
-            ? "bg-blue-100 text-blue-800"
-            : isAdmin
-            ? "bg-indigo-100 text-indigo-800"
-            : "bg-slate-100 text-slate-700"
-        }`}
-      >
-        {isLeader ? "Gruppeleder" : isDeputy ? "Nestleder" : isAdmin ? "Admin" : "Deltaker"}
-      </span>
+      <GroupRoleBadge detail={detail} />
     </div>
+  );
+};
+
+/** The role of the reader in the group. Shown on its own in the popup, where there is no back link. */
+export const GroupRoleBadge: React.FC<GroupRoleBarProps> = ({ detail }) => {
+  const { isLeader, isDeputy, isAdmin } = detail;
+
+  return (
+    <span
+      className={`text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider ${
+        isLeader
+          ? "bg-emerald-100 text-emerald-800"
+          : isDeputy
+          ? "bg-blue-100 text-blue-800"
+          : isAdmin
+          ? "bg-indigo-100 text-indigo-800"
+          : "bg-slate-100 text-slate-700"
+      }`}
+    >
+      {isLeader ? "Gruppeleder" : isDeputy ? "Nestleder" : isAdmin ? "Admin" : "Deltaker"}
+    </span>
   );
 };
