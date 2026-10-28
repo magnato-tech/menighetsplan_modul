@@ -8,6 +8,6 @@ import type { StudioTab } from "./studio";
 // the website still needs to say who its people and administrators are.
 
 /** The tabs only Menighetsplan has: the planner beyond the calendar. */
-export const PLANNER_TABS: readonly StudioTab[] = ["planlegger-oppgaver", "planlegger-grupper", "planlegger-roller"];
+export const PLANNER_TABS: readonly StudioTab[] = ["planlegger-oppgaver", "planlegger-grupper", "planlegger-roller", "planlegger-semesterplan"];
 
 export const isTabInLevel = (tab: StudioTab, level: Level): boolean => hasPlanner(level) || !PLANNER_TABS.includes(tab);

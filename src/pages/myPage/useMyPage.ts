@@ -8,6 +8,7 @@ import { Task, GroupMessage, Gathering, Group } from "../../types";
 import { AttentionItem } from "./attention";
 import { asksForAnswerNow, nextGatheringOf } from "../../utils/meetingPlan";
 import { useTimedMessage } from "../../hooks/useTimedMessage";
+import { useMySemesterPlans } from "../../hooks/useSemesterPlans";
 
 /**
  * Everything Min side shows, worked out from the planning data: what needs the
@@ -35,6 +36,8 @@ export function useMyPage() {
   } = useFirebase();
 
   const navigate = useNavigate();
+  // The semester plans open for the user: one waiting is shown first, one gone through as a link
+  const { mine: semesterPlans } = useMySemesterPlans();
   const [feedbackMessage, showFeedbackMessage, clearFeedbackMessage] = useTimedMessage<{ text: string; type: "success" | "info" }>(4000);
 
   const showToast = (text: string, type: "success" | "info" = "success") => showFeedbackMessage({ text, type });
@@ -310,6 +313,7 @@ export function useMyPage() {
   return {
     currentUser,
     myTasks,
+    semesterPlans,
     feedbackMessage,
     clearFeedbackMessage,
     myGroups,

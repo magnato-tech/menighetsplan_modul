@@ -7,7 +7,7 @@ import { COLLECTIONS } from "../src/data/collections";
 import type { Task } from "../src/types";
 
 describe("Mock tjenesteroller", () => {
-  assert(buildInitialVolunteerRoles().length === 15, "Demo-settet har 15 tjenesteroller");
+  assert(buildInitialVolunteerRoles().length === 12, "Demo-settet har 12 tjenesteroller");
   assert(volunteerRoleIdForName("Lyd") === "volrole-8", "Lyd peker på volrole-8");
 
   const tasks = enrichTasksWithVolunteerRoles([
@@ -27,7 +27,7 @@ describe("Mock tjenesteroller", () => {
     .filter((d) => d.collection === COLLECTIONS.TASKS)
     .map((d) => d.data as Task);
 
-  assert(roles.length === 15, "Populering skriver 15 roller til Firestore");
+  assert(roles.length === 12, "Populering skriver 12 roller til Firestore");
   assert(
     mockTasks.every((task) => !MOCK_TASK_VOLUNTEER_ROLE[task.id] || Boolean(task.volunteerRoleId)),
     "Alle mappede oppgaver har volunteerRoleId"

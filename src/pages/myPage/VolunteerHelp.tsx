@@ -60,6 +60,10 @@ export const VolunteerHelp: React.FC = () => {
               <li>Er du spurt om en oppgave, står forespørselen øverst på Mine oppgaver. Svar Ja, jeg kan eller Kan ikke. Har du flere, kommer den neste når du har svart.</li>
               <li>Under står knappen Se ledige oppgaver. Der ser du alt samlet: forespørslene først, så de ledige oppgavene i gruppene dine.</li>
               <li>Står du allerede på en oppgave og ikke kan likevel, trykk Meld forfall og bekreft. Grunnen tas muntlig.</li>
+              <li>
+                Når semesterplanen er åpnet, står et flagg ved Min side og et gult kort øverst. Trykk Start og gå gjennom arrangementene ett om gangen:
+                Ta oppgave, Kan ikke eller Neste. Alt lagres med en gang, så du kan fortsette senere.
+              </li>
             </ol>
             <button type="button" onClick={() => setOpen(false)} className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-700 text-white text-sm font-bold cursor-pointer">
               Lukk

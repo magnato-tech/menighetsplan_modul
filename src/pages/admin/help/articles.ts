@@ -483,6 +483,25 @@ const maler: HelpArticle = {
   tabs: ["planlegger-maler"],
 };
 
+const semesterplan: HelpArticle = {
+  id: "semesterplan",
+  title: "Semesterplan",
+  hvor: "Planlegging → Kalender → Semesterplan",
+  intro: "Frigi planen for et semester, så går de frivillige i teamene gjennom arrangementene og tar oppgaver selv.",
+  steg: [
+    "Legg inn semesterets arrangementer og oppgaver i kalenderen først.",
+    "Trykk **Semesterplan** øverst i Kalender, og så **Ny semesterplan**.",
+    "Skriv navn, første og siste dag, svarfrist og når planen åpner. Under feltene ser du hvor mange arrangementer og personer planen gjelder.",
+    "Trykk **Frigi semesterplanen**. Ingen ser planen før den åpner.",
+    "**Kopier lenke** gir lenken til planen, som du kan sende på e-post eller i en gruppe. **Endre** flytter dagene eller åpningen.",
+    "Planen lukkes når svarfristen er ute. **Åpne på nytt** gir den ny åpning og ny frist, og alle får flagget igjen.",
+  ],
+  godt: "Planen tar med alle arrangementer i perioden som har oppgaver for et team, også de som legges inn etter at planen er frigitt. Den som er med i flere team, får oppgavene fra alle på samme kort. To planer kan ikke ha samme dag, men vårplanen og høstplanen kan være åpne samtidig.",
+  passPa: "Slettes planen, slettes svarene til de frivillige. Oppgavene de har tatt, blir stående.",
+  seOgsa: ["arrangementer", "oppgaver"],
+  tabs: ["planlegger-semesterplan"],
+};
+
 const arshjul: HelpArticle = {
   id: "arshjul",
   title: "Årshjul",
@@ -600,6 +619,7 @@ export const helpSections: HelpSection[] = [
       { kind: "article", article: grupper },
       { kind: "article", article: personer },
       { kind: "article", article: maler },
+      { kind: "article", article: semesterplan },
       { kind: "article", article: arshjul },
       { kind: "article", article: epost },
       { kind: "article", article: roller },

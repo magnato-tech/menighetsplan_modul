@@ -3,6 +3,7 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import { cleanup, render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { DatabaseTestdataTab } from "../components/admin/DatabaseTestdataTab";
 import * as testdataService from "../services/testdataService";
+import { FULL_DEMO_COUNTS } from "../data/mockDocuments";
 
 // Mock FirebaseDataContext
 vi.mock("../context/FirebaseDataContext", () => ({
@@ -69,21 +70,21 @@ describe("DatabaseTestdataTab Component med testdataService", () => {
     expect(personerSlider).toBeDefined();
     expect(personerSlider.min).toBe("0");
     expect(personerSlider.max).toBe("100");
-    expect(personerSlider.value).toBe("32");
+    expect(personerSlider.value).toBe(String(FULL_DEMO_COUNTS.personCount));
 
     // Kontroller 2: Grupper (0-100)
     const grupperSlider = document.getElementById("grupper-slider") as HTMLInputElement;
     expect(grupperSlider).toBeDefined();
     expect(grupperSlider.min).toBe("0");
     expect(grupperSlider.max).toBe("100");
-    expect(grupperSlider.value).toBe("14");
+    expect(grupperSlider.value).toBe(String(FULL_DEMO_COUNTS.groupCount));
 
     // Kontroller 3: Roller (0-100)
     const rollerSlider = document.getElementById("roller-slider") as HTMLInputElement;
     expect(rollerSlider).toBeDefined();
     expect(rollerSlider.min).toBe("0");
     expect(rollerSlider.max).toBe("100");
-    expect(rollerSlider.value).toBe("14");
+    expect(rollerSlider.value).toBe(String(FULL_DEMO_COUNTS.roleCount));
   });
 
   test("inneholder en avkrysningsboks for 'Tøm eksisterende testdata' som er standard valgt", () => {
@@ -94,7 +95,7 @@ describe("DatabaseTestdataTab Component med testdataService", () => {
     expect(checkbox.checked).toBe(true);
   });
 
-  test("inneholder en stor 'Populer database'-knapp som kaller testdataService for å generere 32 testpersoner", async () => {
+  test("inneholder en stor 'Populer database'-knapp som kaller testdataService for å generere hele eksempelmenigheten", async () => {
     const showFeedbackMock = vi.fn();
     render(<DatabaseTestdataTab showFeedback={showFeedbackMock} />);
 
@@ -105,20 +106,20 @@ describe("DatabaseTestdataTab Component med testdataService", () => {
     await waitFor(() => {
       // 1. Verifiser at eksisterende data nullstilles via testdataService
       expect(testdataService.clearPlannerTestData).toHaveBeenCalledTimes(1);
-      // 2. Verifiser at testdataService.generateTestdata kalles for å generere 32 testpersoner
+      // 2. Verifiser at testdataService.generateTestdata kalles med hele eksempelmenighetens tall
       expect(testdataService.generateTestdata).toHaveBeenCalledWith({
-        personCount: 32,
-        groupCount: 14,
-        roleCount: 14,
+        personCount: FULL_DEMO_COUNTS.personCount,
+        groupCount: FULL_DEMO_COUNTS.groupCount,
+        roleCount: FULL_DEMO_COUNTS.roleCount,
       });
     });
 
     await waitFor(() => {
       expect(
-        screen.getByText(/Testdata er lagt inn: personer, grupper og 15 tjenesteroller\. Nettsiden og de offentlige arrangementene er ikke rørt\./i)
+        screen.getByText(/Testdata er lagt inn: personer, grupper og 12 tjenesteroller\. Nettsiden og de offentlige arrangementene er ikke rørt\./i)
       ).toBeDefined();
       expect(showFeedbackMock).toHaveBeenCalledWith(
-        expect.stringContaining("15 tjenesteroller"),
+        expect.stringContaining("12 tjenesteroller"),
         "success"
       );
     });
@@ -134,15 +135,15 @@ describe("DatabaseTestdataTab Component med testdataService", () => {
 
     await waitFor(() => {
       expect(testdataService.generateTestdata).toHaveBeenCalledWith({
-        personCount: 32,
-        groupCount: 14,
-        roleCount: 14,
-        gatheringCount: 19,
-        taskCount: 24,
+        personCount: FULL_DEMO_COUNTS.personCount,
+        groupCount: FULL_DEMO_COUNTS.groupCount,
+        roleCount: FULL_DEMO_COUNTS.roleCount,
+        gatheringCount: FULL_DEMO_COUNTS.gatheringCount,
+        taskCount: FULL_DEMO_COUNTS.taskCount,
       });
     });
     await waitFor(() => {
-      expect(screen.getByText(/demo-samlinger med oppgaver og 15 tjenesteroller/i)).toBeDefined();
+      expect(screen.getByText(/demo-samlinger med oppgaver og 12 tjenesteroller/i)).toBeDefined();
     });
   });
 

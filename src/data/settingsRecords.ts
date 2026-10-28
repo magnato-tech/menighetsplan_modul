@@ -62,3 +62,9 @@ export const OPERATING_MODE_DOC_ID = "operating-mode";
 /** The mode a stored document says. A database without the document, or with anything else in it, is in demo. */
 export const operatingModeOf = (data: { recordType?: unknown; mode?: unknown } | undefined): OperatingMode =>
   data?.recordType === OPERATING_MODE_RECORD && data.mode === "production" ? "production" : "demo";
+
+/** A semester plan an administrator has released (see utils/semesterPlan.ts). */
+export const SEMESTER_PLAN_RECORD = "semesterPlan";
+
+/** One person's way through a semester plan. The person writes it, and only their own (see firestore.rules). */
+export const SEMESTER_ANSWER_RECORD = "semesterAnswer";

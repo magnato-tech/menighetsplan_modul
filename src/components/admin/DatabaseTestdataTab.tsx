@@ -9,6 +9,7 @@ import {
   type TestdataServiceResult,
 } from "../../services/testdataService";
 import { DEFAULT_VOLUNTEER_ROLE_NAMES } from "../../data/defaultVolunteerRoles";
+import { FULL_DEMO_COUNTS } from "../../data/mockDocuments";
 import { useFirebase } from "../../context/FirebaseDataContext";
 import {
   Database,
@@ -35,9 +36,9 @@ export const DatabaseTestdataTab: React.FC<DatabaseTestdataTabProps> = ({
   const { isFirestoreConnected, allPersons, groups } = useFirebase();
 
   // 1. Tre kontrollere med glidebrytere (0-100) for 'Personer', 'Grupper' og 'Roller'
-  const [personCount, setPersonCount] = useState<number>(32);
-  const [groupCount, setGroupCount] = useState<number>(14);
-  const [roleCount, setRoleCount] = useState<number>(14);
+  const [personCount, setPersonCount] = useState<number>(FULL_DEMO_COUNTS.personCount ?? 0);
+  const [groupCount, setGroupCount] = useState<number>(FULL_DEMO_COUNTS.groupCount ?? 0);
+  const [roleCount, setRoleCount] = useState<number>(FULL_DEMO_COUNTS.roleCount ?? 0);
 
   // 2. En avkrysningsboks for 'Tøm eksisterende testdata' (standard valgt)
   const [clearExistingData, setClearExistingData] = useState<boolean>(true);
@@ -67,12 +68,12 @@ export const DatabaseTestdataTab: React.FC<DatabaseTestdataTabProps> = ({
         await clearPlannerTestData();
       }
 
-      // Trigger Firebase Firestore-skriving: genererer 32 testpersoner med varierende tilhørighet og roller
+      // Trigger Firebase Firestore-skriving: genererer testpersoner med varierende tilhørighet og roller
       const result: TestdataServiceResult = await generateTestdata({
-        personCount: Math.max(32, personCount),
-        groupCount: groupCount > 0 ? groupCount : 14,
-        roleCount: roleCount > 0 ? roleCount : 14,
-        ...(withGatherings ? { gatheringCount: 19, taskCount: 24 } : {}),
+        personCount: Math.max(FULL_DEMO_COUNTS.personCount ?? 0, personCount),
+        groupCount: groupCount > 0 ? groupCount : FULL_DEMO_COUNTS.groupCount ?? 0,
+        roleCount: roleCount > 0 ? roleCount : FULL_DEMO_COUNTS.roleCount ?? 0,
+        ...(withGatherings ? { gatheringCount: FULL_DEMO_COUNTS.gatheringCount, taskCount: FULL_DEMO_COUNTS.taskCount } : {}),
       });
 
       if (result.failures.length > 0) {
@@ -214,7 +215,7 @@ export const DatabaseTestdataTab: React.FC<DatabaseTestdataTabProps> = ({
             />
             <div className="flex justify-between text-[10px] text-slate-400 font-mono">
               <span>0 (Ingen)</span>
-              <span className="text-indigo-400 font-semibold">32 (Fullt testsett)</span>
+              <span className="text-indigo-400 font-semibold">{FULL_DEMO_COUNTS.personCount} (Fullt testsett)</span>
               <span>50</span>
               <span>100 (Maks)</span>
             </div>
@@ -245,7 +246,7 @@ export const DatabaseTestdataTab: React.FC<DatabaseTestdataTabProps> = ({
             />
             <div className="flex justify-between text-[10px] text-slate-400 font-mono">
               <span>0 (Ingen)</span>
-              <span className="text-emerald-400 font-semibold">14 (Team & husfellesskap)</span>
+              <span className="text-emerald-400 font-semibold">{FULL_DEMO_COUNTS.groupCount} (Team & husfellesskap)</span>
               <span>50</span>
               <span>100 (Maks)</span>
             </div>
@@ -276,7 +277,7 @@ export const DatabaseTestdataTab: React.FC<DatabaseTestdataTabProps> = ({
             />
             <div className="flex justify-between text-[10px] text-slate-400 font-mono">
               <span>0 (Ingen)</span>
-              <span className="text-purple-400 font-semibold">14 (Pastorer, råd & stab)</span>
+              <span className="text-purple-400 font-semibold">{FULL_DEMO_COUNTS.roleCount} (Pastorer, råd & stab)</span>
               <span>50</span>
               <span>100 (Maks)</span>
             </div>
@@ -327,7 +328,7 @@ export const DatabaseTestdataTab: React.FC<DatabaseTestdataTabProps> = ({
         <label htmlFor="ta-med-demo-samlinger" className="text-xs space-y-0.5 cursor-pointer">
           <div className="font-bold text-slate-200">Ta med demo-samlinger og oppgaver</div>
           <p className="text-[11px] text-slate-400 leading-relaxed">
-            Legger også inn 19 demo-samlinger med oppgaver, tildelinger og oppmøte. Demo-gudstjenestene vises da i
+            Legger også inn {FULL_DEMO_COUNTS.gatheringCount} demo-samlinger med oppgaver, tildelinger og oppmøte, blant dem gudstjenester annenhver søndag med hele programmet fra malen. Demo-gudstjenestene vises da i
             kalenderen på nettsiden, sammen med arrangementene som ligger der fra før. La valget stå av når nettsiden har
             menighetens egne arrangementer.
           </p>
@@ -384,7 +385,7 @@ export const DatabaseTestdataTab: React.FC<DatabaseTestdataTabProps> = ({
             )}
           </span>
           <span className="text-slate-400">
-            Inkluderer {DEFAULT_VOLUNTEER_ROLE_NAMES.length} tjenesteroller{withGatherings ? " og 19 demo-samlinger" : ""}
+            Inkluderer {DEFAULT_VOLUNTEER_ROLE_NAMES.length} tjenesteroller{withGatherings ? ` og ${FULL_DEMO_COUNTS.gatheringCount} demo-samlinger` : ""}
           </span>
         </div>
       </div>

@@ -19,9 +19,9 @@ import {
 import { Person, Group, type GatheringHeadcount, type VolunteerRole } from "../types";
 import { buildInitialVolunteerRoles } from "./defaultVolunteerRoles";
 import { enrichTasksWithVolunteerRoles } from "./mockTaskVolunteerRoles";
-import { gatheringTemplateFields, headcountFields, volunteerRoleFields } from "./settingsRecords";
-import { standardServiceTemplate, type GatheringTemplate } from "../utils/gatheringTemplates";
+import { SEMESTER_PLAN_RECORD, gatheringTemplateFields, headcountFields, volunteerRoleFields } from "./settingsRecords";
 import { weeksBetween, withLiveDates } from "../utils/liveDates";
+import { demoServiceTemplate } from "./demoServices";
 
 export interface MockDocument {
   collection: string;
@@ -39,10 +39,11 @@ export interface CustomMockCounts {
 
 /** The whole example congregation: what the demo is filled with, and what «full demo» in admin writes. */
 export const FULL_DEMO_COUNTS: CustomMockCounts = {
-  personCount: 32,
-  groupCount: 14,
-  gatheringCount: 19,
-  taskCount: 24,
+  personCount: initialPersons.length,
+  groupCount: 15,
+  // Every gathering and task, with the services every other Sunday (see demoServices.ts)
+  gatheringCount: initialGatherings.length,
+  taskCount: initialTasks.length,
   roleCount: 14,
 };
 
@@ -229,11 +230,8 @@ export function getCustomMockDocuments(counts?: CustomMockCounts, now: number = 
   return documents.map((document) => ({ ...document, data: withLiveDates(document.data, weeks) }));
 }
 
-/** The standard template for a worship service, tied to the demo's roles, with the same places every time it is made. */
-export function demoServiceTemplate(): GatheringTemplate {
-  const template = standardServiceTemplate(buildInitialVolunteerRoles());
-  return { ...template, id: "mal-gudstjeneste", program: template.program.map((item, index) => ({ ...item, id: `punkt-${index + 1}` })) };
-}
+// The demo's template for a worship service is made where its services are (see demoServices.ts)
+export { demoServiceTemplate };
 
 /**
  * The template as a document of the demo, in the place and the form it is stored in. It is put
@@ -244,6 +242,26 @@ export function demoServiceTemplate(): GatheringTemplate {
 export function demoTemplateDocument(): MockDocument {
   const template = demoServiceTemplate();
   return { collection: CMS_COLLECTIONS.SETTINGS, id: template.id, data: gatheringTemplateFields(template) };
+}
+
+/**
+ * An open semester plan for the demo, stored the way the plans are (see services/semesterPlans.ts).
+ * It opens on the Monday of the content week, so it is open in the demo whatever day it is, and
+ * its dates are moved with the rest of the demo content.
+ */
+export function demoSemesterPlanDocument(now: number = Date.now()): MockDocument {
+  const plan = {
+    id: "semesterplan-demo",
+    recordType: SEMESTER_PLAN_RECORD,
+    // A year, as the product owner asked: «Semesterplanen for 2027 er klar». It holds while the plan's days are in that year
+    name: "2027",
+    firstDay: "2026-11-06",
+    lastDay: "2027-04-06",
+    answerBy: "2026-10-06",
+    opensAt: "2026-08-31T08:00:00+02:00",
+    createdAt: "2026-08-30T18:00:00.000Z",
+  };
+  return { collection: CMS_COLLECTIONS.SETTINGS, id: plan.id, data: withLiveDates(plan, weeksBetween(DEMO_CONTENT_WEEK, now)) };
 }
 
 /**

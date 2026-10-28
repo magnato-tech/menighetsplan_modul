@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import path from "node:path";
 import { readDemoSets, resetDemo, type DemoSet } from "../scripts/reset-demo";
-import { demoTemplateDocument } from "../src/data/mockDocuments";
+import { demoSemesterPlanDocument, demoTemplateDocument } from "../src/data/mockDocuments";
 import { CMS_COLLECTIONS, CMS_SETTINGS_DOC_ID, COLLECTIONS, PLAIN_COLLECTIONS } from "../src/data/collections";
 import { FULL_DEMO_COUNTS, getCustomMockDocuments, storedFormOf, type MockDocument } from "../src/data/mockDocuments";
 import { HEADCOUNT_RECORD, OPERATING_MODE_DOC_ID, OPERATING_MODE_RECORD, VOLUNTEER_ROLE_RECORD } from "../src/data/settingsRecords";
@@ -18,6 +18,7 @@ import {
   type SiteSet,
 } from "../src/utils/demoReset";
 import { upcomingPublicGatherings } from "../src/utils/gatherings";
+import { planStatus, type SemesterPlan } from "../src/utils/semesterPlan";
 import type { Gathering } from "../src/types";
 
 // The demo's database is reset from outside the app. Only the demo's: these are the rules for
@@ -340,9 +341,28 @@ function database(initial: Record<string, Fields> = {}, options: { pageSize?: nu
   return { stored, requests, fetchFn };
 }
 
+describe("Semesterplanen i demoen", () => {
+  // Eight weeks after the content week, and twenty: the plan's dates move with the calendar, and it stays open
+  const EIGHT_WEEKS_ON = Date.parse("2026-10-27T20:00:00+01:00");
+  const TWENTY_WEEKS_ON = Date.parse("2027-01-20T20:00:00+01:00");
+
+  test("datoene flyttes med kalenderen: vårsemesteret er neste vår", () => {
+    expect(demoSemesterPlanDocument(EIGHT_WEEKS_ON).data).toMatchObject({
+      firstDay: "2027-01-01",
+      lastDay: "2027-06-01",
+      answerBy: "2026-12-01",
+    });
+  });
+
+  test.each([EIGHT_WEEKS_ON, TWENTY_WEEKS_ON])("planen er åpen i demoen (fra %i)", (now) => {
+    const plan = demoSemesterPlanDocument(now).data as SemesterPlan;
+    expect(planStatus(plan, new Date(now))).toBe("apen");
+  });
+});
+
 describe("Nullstillingen av demoen", () => {
-  // The demo content, and the template for a worship service that the reset puts in beside it
-  const wanted = planReset([{ site: null, documents: [...getCustomMockDocuments(FULL_DEMO_COUNTS, NOW), demoTemplateDocument()] }], []).write;
+  // The demo content, and the template for a worship service and the semester plan that the reset puts in beside it
+  const wanted = planReset([{ site: null, documents: [...getCustomMockDocuments(FULL_DEMO_COUNTS, NOW), demoTemplateDocument(), demoSemesterPlanDocument(NOW)] }], []).write;
 
   test("en tom database fylles med hele demoinnholdet", async () => {
     const db = database();

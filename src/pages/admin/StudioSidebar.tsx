@@ -441,7 +441,8 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
               {...tabPrefetchHandlers("planlegger-samlinger")}
               onClick={() => onTabChange("planlegger-samlinger")}
               className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
-                activeTab === "planlegger-samlinger"
+                // The semester plan is opened from the calendar, and belongs to it
+                activeTab === "planlegger-samlinger" || activeTab === "planlegger-semesterplan"
                   ? "bg-indigo-600 text-white shadow-sm"
                   : "text-[var(--studio-muted)] hover:text-[var(--studio-text)] hover:bg-[var(--studio-bg)]"
               }`}

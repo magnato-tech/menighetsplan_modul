@@ -131,8 +131,8 @@ describe("Simulert menighetsliv", () => {
   assert(analytics.volunteers.highLoad.length > 0, "Noen står på så ofte at de løftes fram");
   assert(analytics.groups.groups.some((g) => g.responses.possible > 0), "Husfellesskapene har svar på samlingene");
   assert(
-    tasks.some((t) => t.title === "Møteleder" && !t.groupId) && tasks.some((t) => t.title === "Taler" && !t.groupId),
-    "Møteleder og taler bemannes uten team, av ledere, stab og pastorer"
+    tasks.some((t) => t.title === "Møteleder" && t.groupId === "group-moteledere") && tasks.some((t) => t.title === "Taler" && t.groupId === "group-moteledere"),
+    "Møteleder og taler hører til teamet Møteledere og talere"
   );
   assert(
     tasks.filter((t) => !t.groupId).every((t) => t.neededCount === 1),

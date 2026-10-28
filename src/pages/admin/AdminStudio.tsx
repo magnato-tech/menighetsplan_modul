@@ -67,6 +67,7 @@ import {
   LazyRolesTab,
 
   LazyTemplatesTab,
+  LazySemesterPlanTab,
 
   LazyYearWheelTab,
   LazyEmailTab,
@@ -611,6 +612,10 @@ function AdminStudioContent() {
 
           <LazyTemplatesTab studio={studio} showFeedback={showFeedback} />
 
+        </StudioTabPanel>
+
+        <StudioTabPanel tab="planlegger-semesterplan" activeTab={activeTab} visited={mayShow("planlegger-semesterplan")}>
+          <LazySemesterPlanTab studio={studio} showFeedback={showFeedback} />
         </StudioTabPanel>
 
         <StudioTabPanel tab="arshjul" activeTab={activeTab} visited={mayShow("arshjul")}>

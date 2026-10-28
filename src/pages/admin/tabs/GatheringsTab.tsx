@@ -24,8 +24,11 @@ import {
   ChevronRight,
   CalendarDays,
   CalendarRange,
+  Flag,
 } from "lucide-react";
-import { StudioData, ShowFeedback } from "../studio";
+import { StudioData, ShowFeedback, studioTabUrl } from "../studio";
+import { useLevel } from "../../../hooks/useLevel";
+import { hasPlanner } from "../../../utils/level";
 import { visibilityOf } from "../../../utils/visibility";
 import { DEFAULT_LOCATION, isWorshipService, locationOf } from "../../../utils/gatherings";
 import { NewGatheringDialog } from "../NewGatheringDialog";
@@ -76,6 +79,8 @@ function store(key: string, value: unknown) {
 
 export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedback, createRequested, onCreateHandled }) => {
   const { adminGatherings, adminGroups, createGathering, createTask } = studio;
+  // The semester plan asks the teams, so it is there where the congregation has the planner
+  const withPlanner = hasPlanner(useLevel());
 
   // "Lag neste arrangement" Modal State
   const [nextGatheringSource, setNextGatheringSource] = useState<AdminGatheringItem | null>(null);
@@ -247,6 +252,16 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
             <h2 className="text-xl sm:text-2xl font-black text-[var(--studio-text)]">Kalender</h2>
             <p className="text-xs text-[var(--studio-muted)] hidden sm:block">Gudstjenester, møter og samlinger.</p>
           </div>
+          <div className="flex items-center gap-2 shrink-0">
+          {withPlanner && (
+            <Link
+              to={studioTabUrl("planlegger-semesterplan")}
+              className="px-3 py-2 rounded-xl bg-[var(--studio-bg)] hover:bg-[var(--studio-hover)] border border-[var(--studio-border)] text-[var(--studio-text)] text-xs font-bold flex items-center gap-1.5"
+            >
+              <Flag className="w-4 h-4 text-[var(--studio-icon)]" aria-hidden />
+              <span>Semesterplan</span>
+            </Link>
+          )}
           <button
             type="button"
             onClick={() => openFullForm()}
@@ -255,6 +270,7 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
           >
             <Plus className="w-6 h-6" aria-hidden />
           </button>
+          </div>
         </div>
 
         {/* The filter buttons, as in many church calendars: none on shows all */}

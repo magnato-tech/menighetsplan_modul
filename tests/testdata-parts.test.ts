@@ -35,7 +35,7 @@ vi.mock("firebase/firestore", () => {
 
 import { CMS_COLLECTIONS, CMS_SETTINGS_DOC_ID, COLLECTIONS } from "../src/data/collections";
 import { initialCmsPages } from "../src/data/cmsData";
-import { initialGatherings } from "../src/data/mockData";
+import { initialGatherings, initialPersons } from "../src/data/mockData";
 import { populateDemoPersons, populateWithMockData, restoreFullMockDatabase } from "../src/services/databaseAdmin";
 import { clearTestdata, deleteGroupsTestdata, generateDemoWebsite, generateTestdata } from "../src/services/testdataService";
 
@@ -79,7 +79,7 @@ describe("Testdata fyller planleggeren og lar nettsiden være", () => {
     const pages = snapshotOf(WEBSITE);
     await generateTestdata({ personCount: 32, groupCount: 14, roleCount: 14, gatheringCount: 19, taskCount: 24 });
 
-    expect(count(COLLECTIONS.GATHERINGS)).toBe(19 + 1);
+    expect(count(COLLECTIONS.GATHERINGS)).toBe(14);
     expect(count(COLLECTIONS.TASKS)).toBeGreaterThan(0);
     expect(snapshotOf(WEBSITE)).toBe(pages);
     expect(store.get(CMS_COLLECTIONS.SETTINGS)!.get(CMS_SETTINGS_DOC_ID)).toEqual({ churchName: "Lillesand Misjonskirke" });
@@ -96,7 +96,7 @@ describe("Testdata fyller planleggeren og lar nettsiden være", () => {
   test("demo-planleggeren på nytt tar med samlingene, men ikke sidene", async () => {
     await restoreFullMockDatabase();
 
-    expect(count(COLLECTIONS.GATHERINGS)).toBe(19 + 1);
+    expect(count(COLLECTIONS.GATHERINGS)).toBe(30);
     expect(ids(CMS_COLLECTIONS.PAGES)).toEqual(["lmk-forside"]);
   });
 
@@ -118,8 +118,9 @@ describe("Testdata fyller planleggeren og lar nettsiden være", () => {
     const result = await populateWithMockData();
 
     expect(result.failures).toEqual([]);
-    expect(count(COLLECTIONS.PERSONS)).toBe(32);
-    expect(count(COLLECTIONS.GATHERINGS)).toBe(19);
+    // The full demo set: as many persons and gatherings as the mock data holds (FULL_DEMO_COUNTS uses the same lengths)
+    expect(count(COLLECTIONS.PERSONS)).toBe(initialPersons.length);
+    expect(count(COLLECTIONS.GATHERINGS)).toBe(initialGatherings.length);
     expect(count(CMS_COLLECTIONS.PAGES)).toBe(initialCmsPages.length);
     expect(result.total).toBe([...store.values()].reduce((sum, table) => sum + table.size, 0));
   });
@@ -147,7 +148,7 @@ describe("Tømming av testdata lar nettsidens arrangementer stå", () => {
       expect(count(name)).toBe(0);
     }
     // The result counts what was deleted, not what was read
-    expect(result.counts[COLLECTIONS.GATHERINGS]).toBe(19 + 2);
+    expect(result.counts[COLLECTIONS.GATHERINGS]).toBe(15);
     expect(result.counts[COLLECTIONS.GROUPS]).toBe(14);
   });
 

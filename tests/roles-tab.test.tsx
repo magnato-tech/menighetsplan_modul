@@ -124,8 +124,8 @@ describe("RolesTab", () => {
         }}
       />
     );
-    expect(screen.getByText(/Starter med 15 roller som Baking/i)).toBeTruthy();
-    expect(DEFAULT_VOLUNTEER_ROLE_NAMES.length).toBe(15);
+    expect(screen.getByText(/Starter med 12 roller som Baking/i)).toBeTruthy();
+    expect(DEFAULT_VOLUNTEER_ROLE_NAMES.length).toBe(12);
     expect(screen.getByRole("button", { name: /Legg inn standardroller/i })).toBeTruthy();
   });
 

@@ -7,19 +7,32 @@ export const DEFAULT_VOLUNTEER_ROLE_NAMES = [
   "Bilde",
   "Forbønn",
   "Kjøkken",
-  "Koordinator mannsgruppe",
   "Lovsang",
   "Lyd",
-  "Markedsføring",
   "Møteleder",
   "Møtevert",
   "Pynting",
   "Rigging",
   "Taler",
-  "Oppvask",
 ] as const;
 
 export type DefaultVolunteerRoleName = (typeof DEFAULT_VOLUNTEER_ROLE_NAMES)[number];
+
+/** The id of each standard role. Ids are kept when a role leaves the standard, so the ids stored in a congregation's database stay the same. */
+export const DEFAULT_VOLUNTEER_ROLE_IDS: Record<DefaultVolunteerRoleName, string> = {
+  Baking: "volrole-1",
+  Barnekirke: "volrole-2",
+  Bilde: "volrole-3",
+  Forbønn: "volrole-4",
+  Kjøkken: "volrole-5",
+  Lovsang: "volrole-7",
+  Lyd: "volrole-8",
+  Møteleder: "volrole-10",
+  Møtevert: "volrole-11",
+  Pynting: "volrole-12",
+  Rigging: "volrole-13",
+  Taler: "volrole-14",
+};
 
 /** Known team links for seeded standard roles. */
 export const DEFAULT_VOLUNTEER_ROLE_TEAMS: Partial<Record<DefaultVolunteerRoleName, string>> = {
@@ -29,11 +42,12 @@ export const DEFAULT_VOLUNTEER_ROLE_TEAMS: Partial<Record<DefaultVolunteerRoleNa
   Kjøkken: "group-kjokken",
   Baking: "group-kjokken",
   Pynting: "group-kjokken",
-  Oppvask: "group-kjokken",
   Møtevert: "group-motevert",
   Lovsang: "group-lovsang",
   Barnekirke: "group-barn",
   Forbønn: "group-bonn",
+  Møteleder: "group-moteledere",
+  Taler: "group-moteledere",
 };
 
 /** Role instructions used when seeding mock data. */
@@ -168,14 +182,6 @@ export const DEFAULT_VOLUNTEER_ROLE_INSTRUCTIONS: Partial<Record<DefaultVoluntee
   ]
     .map((line) => `• ${line}`)
     .join("\n"),
-  Oppvask: [
-    "Ta ansvar for oppvask i etterkant av kirkekaffen",
-    "Rydde brettene med nattverdsglass ut på kjøkkenet når nattverden er ferdig",
-  ]
-    .map((line) => `• ${line}`)
-    .join("\n"),
-  Markedsføring:
-    "Start opptak når talen begynner. Etter møtet eksporteres lydfilen og lastes opp til ukens preken.",
 };
 
 /**
@@ -274,15 +280,15 @@ export function rolesMissingStandardInstruction<T extends Pick<VolunteerRole, "n
 }
 
 export function volunteerRoleIdForName(name: DefaultVolunteerRoleName): string {
-  const index = DEFAULT_VOLUNTEER_ROLE_NAMES.indexOf(name);
-  if (index < 0) throw new Error(`Ukjent rolle: ${name}`);
-  return `volrole-${index + 1}`;
+  const id = DEFAULT_VOLUNTEER_ROLE_IDS[name];
+  if (!id) throw new Error(`Ukjent rolle: ${name}`);
+  return id;
 }
 
 export function buildInitialVolunteerRoles(maxCount?: number): VolunteerRole[] {
   const count = maxCount === undefined ? DEFAULT_VOLUNTEER_ROLE_NAMES.length : Math.max(0, maxCount);
   return DEFAULT_VOLUNTEER_ROLE_NAMES.slice(0, count).map((name, index) => ({
-    id: `volrole-${index + 1}`,
+    id: volunteerRoleIdForName(name),
     name,
     instruction: DEFAULT_VOLUNTEER_ROLE_INSTRUCTIONS[name] || "",
     groupId: DEFAULT_VOLUNTEER_ROLE_TEAMS[name],
