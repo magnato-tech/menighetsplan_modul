@@ -73,13 +73,19 @@ interface StudioSidebarProps {
   onToggleCompact?: () => void;
 }
 
-/** The count beside a tab, or «Ikke lagret» in its place while the tab's editor holds changes not saved. */
+/**
+ * The count beside a tab, or «Ikke lagret» in its place while the tab's editor holds changes not saved.
+ * Folded to icons, the count is gone and the unsaved changes show as a dot on the icon (the button is `relative`).
+ */
 const CountOrUnsaved: React.FC<{ count: number; unsaved: boolean }> = ({ count, unsaved }) =>
   unsaved ? (
-    <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800" title="Endringene er ikke lagret">
-      <span className="w-1.5 h-1.5 rounded-full bg-amber-500" aria-hidden="true" />
-      <span className="sidebar-text">Ikke lagret</span>
-    </span>
+    <>
+      <span className="sidebar-hide shrink-0 inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800" title="Endringene er ikke lagret">
+        <span className="w-1.5 h-1.5 rounded-full bg-amber-500" aria-hidden="true" />
+        <span className="sidebar-text">Ikke lagret</span>
+      </span>
+      <span className="sidebar-folded hidden absolute top-1 right-1 w-2 h-2 rounded-full bg-amber-500" title="Endringene er ikke lagret" aria-hidden="true" />
+    </>
   ) : (
     <span className="sidebar-hide text-[10px] px-1.5 py-0.5 rounded bg-[var(--studio-surface)] text-[var(--studio-muted)]">{count}</span>
   );
@@ -253,6 +259,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
             <div className="pt-2 pb-1 space-y-1.5 border-t border-[var(--studio-border)]">
               <Link
                 to="/minside"
+                title="Gå til Min Side"
                 onClick={(event) => {
                   event.preventDefault();
                   onLeaveStudio(() => navigate("/minside"));
@@ -270,6 +277,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
                 to="/"
                 target="_blank"
                 rel="noreferrer"
+                title="Åpne offentlig nettside"
                 className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-[var(--studio-muted)] hover:text-[var(--studio-text)] hover:bg-[var(--studio-bg)] transition-all cursor-pointer"
               >
                 <div className="flex items-center gap-2">
@@ -290,7 +298,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
               title="Sider & Innhold"
               {...tabPrefetchHandlers("cms-sider")}
               onClick={() => onTabChange("cms-sider")}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
+              className={`relative w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
                 activeTab === "cms-sider"
                   ? "bg-indigo-600 text-white shadow-sm"
                   : "text-[var(--studio-muted)] hover:text-[var(--studio-text)] hover:bg-[var(--studio-bg)]"
@@ -308,7 +316,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
               title="Aktuelt & Nyheter"
               {...tabPrefetchHandlers("cms-nyheter")}
               onClick={() => onTabChange("cms-nyheter")}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
+              className={`relative w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
                 activeTab === "cms-nyheter"
                   ? "bg-indigo-600 text-white shadow-sm"
                   : "text-[var(--studio-muted)] hover:text-[var(--studio-text)] hover:bg-[var(--studio-bg)]"
@@ -326,7 +334,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
               title="Taler & Prekener"
               {...tabPrefetchHandlers("cms-taler")}
               onClick={() => onTabChange("cms-taler")}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
+              className={`relative w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
                 activeTab === "cms-taler"
                   ? "bg-indigo-600 text-white shadow-sm"
                   : "text-[var(--studio-muted)] hover:text-[var(--studio-text)] hover:bg-[var(--studio-bg)]"
@@ -462,7 +470,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
               title="Trenger oppfølging"
               {...tabPrefetchHandlers("planlegger-oppgaver")}
               onClick={() => onTabChange("planlegger-oppgaver")}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
+              className={`relative w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
                 activeTab === "planlegger-oppgaver"
                   ? "bg-indigo-600 text-white shadow-sm"
                   : "text-[var(--studio-muted)] hover:text-[var(--studio-text)] hover:bg-[var(--studio-bg)]"
@@ -473,9 +481,12 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
                 <span className="sidebar-text">Trenger oppfølging</span>
               </div>
               {urgentTasksCount > 0 ? (
-                <span className="sidebar-hide text-[10px] px-1.5 py-0.5 rounded bg-red-900/60 border border-red-700 text-red-300 font-bold">
-                  {urgentTasksCount} må ordnes
-                </span>
+                <>
+                  <span className="sidebar-hide text-[10px] px-1.5 py-0.5 rounded bg-red-900/60 border border-red-700 text-red-300 font-bold">
+                    {urgentTasksCount} må ordnes
+                  </span>
+                  <span className="sidebar-folded hidden absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500" title={`${urgentTasksCount} må ordnes`} aria-hidden="true" />
+                </>
               ) : null}
             </button>
             )}
@@ -706,6 +717,14 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
             lightLabel="Lys meny"
             className="sidebar-hide"
           />
+          {/* Folded to icons, the same switch is a sun or a moon */}
+          <StudioThemeIconButton
+            theme={sidebarTheme}
+            onToggle={toggleSidebarTheme}
+            darkLabel="Mørk meny"
+            lightLabel="Lys meny"
+            className="sidebar-folded hidden w-full justify-center"
+          />
 
           <div className="sidebar-hide pt-2 border-t border-[var(--studio-border)] text-[11px] text-[var(--studio-muted)] flex items-center justify-between">
             <span>Innlogget som:</span>
@@ -715,6 +734,8 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
           <button
             type="button"
             onClick={() => onLeaveStudio(() => void studio.signOut())}
+            title="Logg ut"
+            aria-label="Logg ut"
             className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--studio-border)] text-[11px] font-bold text-[var(--studio-muted)] hover:text-[var(--studio-text)] hover:bg-[var(--studio-bg)] cursor-pointer"
           >
             <LogOut className="w-3.5 h-3.5" aria-hidden="true" />

@@ -15,7 +15,7 @@ import { useLevel } from "../../hooks/useLevel";
 import { useTimedMessage } from "../../hooks/useTimedMessage";
 
 import { StudioSidebar } from "./StudioSidebar";
-import { readStoredFlag, writeStoredFlag } from "../../utils/storedFlag";
+import { useStudioMenuFold } from "./studioMenuFold";
 import { UnsavedChangesContext, useUnsavedRegistry } from "../../hooks/useUnsavedChanges";
 import { UnsavedChangesDialog } from "./tabs/pages/UnsavedChangesDialog";
 import { helpArticleIdForTab } from "./help/articles";
@@ -241,14 +241,8 @@ function AdminStudioContent() {
 
   const [createRequest, setCreateRequest] = useState<StudioTab | null>(null);
 
-  // While a page is edited, the side menu can fold to icons so the editor gets room
+  // While a page is edited, the side menu folds to icons so the editor gets room (see useStudioMenuFold)
   const [pageEditorOpen, setPageEditorOpen] = useState(false);
-  const [menuExpanded, setMenuExpanded] = useState(() => readStoredFlag("menighetsplan:admin-meny-utvidet", false));
-  const toggleMenu = () => {
-    const next = !menuExpanded;
-    setMenuExpanded(next);
-    writeStoredFlag("menighetsplan:admin-meny-utvidet", next);
-  };
   const mayShow = (tab: StudioTab) => visitedTabs.includes(tab) && (!webEditor || webEditorMayOpen(tab));
 
 
@@ -315,6 +309,7 @@ function AdminStudioContent() {
   const shownTab = detailRoute?.backTab ?? activeTab;
   // The pages panel stays mounted on other tabs, so only fold the menu while it is the tab shown
   const editingPageShown = pageEditorOpen && shownTab === "cms-sider";
+  const { folded: menuFolded, toggle: toggleMenu } = useStudioMenuFold(editingPageShown);
 
   const area: StudioArea = webEditor ? "nettside" : areaToShow(shownTab, chosenArea, level);
 
@@ -413,9 +408,9 @@ function AdminStudioContent() {
 
         studio={studio}
 
-        compact={editingPageShown && !menuExpanded}
+        compact={menuFolded}
 
-        onToggleCompact={editingPageShown ? toggleMenu : undefined}
+        onToggleCompact={toggleMenu}
 
         activeTab={shownTab}
 

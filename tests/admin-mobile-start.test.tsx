@@ -126,8 +126,8 @@ describe("Startsiden på mobil", () => {
 });
 
 describe("Menyen på startsiden og i sidemenyen er den samme", () => {
-  // The titles the side menu gives its buttons that are not part of the parts (see StudioSidebar)
-  const SHARED = ["Oversikt", "Hjelp", "Database og Testdata", "Moduler", "Demo-oppsett"];
+  // The titles the side menu gives its buttons that are not part of the parts (see StudioSidebar). Logg ut signs out, and opens no tab
+  const SHARED = ["Oversikt", "Hjelp", "Database og Testdata", "Moduler", "Demo-oppsett", "Logg ut"];
 
   const HookList = ({ area, webEditor }: { area: StudioArea; webEditor: boolean }) => {
     const entries = useStudioMenuEntries(studio, area, { webEditor });
