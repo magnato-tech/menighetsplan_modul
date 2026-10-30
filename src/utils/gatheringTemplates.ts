@@ -84,8 +84,17 @@ export function clockOf(minutes: number): string {
 export const itemClock = (start: string, item: Pick<TemplateProgramItem, "offsetMinutes">): string => clockOf((minutesOf(start) ?? 0) + item.offsetMinutes);
 
 /** The time of day an event from the template ends, when it starts at `start`. Empty when the template gives no length. */
-export const endClockOf = (start: string, template: Pick<GatheringTemplate, "durationMinutes">): string =>
-  template.durationMinutes > 0 ? clockOf((minutesOf(start) ?? 0) + template.durationMinutes) : "";
+export const endClockOf = (
+  start: string,
+  template: Pick<GatheringTemplate, "durationMinutes" | "program">
+): string => {
+  const startMin = minutesOf(start) ?? 0;
+  let minutes = template.durationMinutes;
+  if (minutes <= 0 && template.program.length > 0) {
+    minutes = template.program.reduce((sum, item) => sum + Math.max(0, item.durationMinutes || 0), 0);
+  }
+  return minutes > 0 ? clockOf(startMin + minutes) : "";
+};
 
 // ---------- The programme's lengths ----------
 

@@ -414,9 +414,10 @@ const kirkensKalender: HelpArticle = {
   steg: [
     "Under **Database** slår du av **Vår nettside**, legger inn menighetens nettside og valgfritt iCal-adressen, og lagrer.",
     "Åpne **Kalender**. Panelet **Fra kirkens kalender** viser det som mangler hos dere eller er borte fra feeden.",
-    "For en ny rad: velg mal, trykk **Opprett**, eller **Flere valg** for hele skjemaet. **Ikke nå** skjuler raden til neste gang.",
+    "For en ny rad: velg mal, trykk **Opprett**, **Opprett alle**, eller **Flere valg**. **Ikke nå** skjuler raden til neste gang.",
+    "Kryss av **Opprett nye automatisk** under Database → Flater hvis forslagene er gode nok. Da opprettes nye ved oppdatering — ikke **Opprett** i tillegg. Etter **Flere valg** oppdateres bare køen.",
     "Forsvinner en knyttet hendelse fra feeden, velger dere **Slett** eller **Behold**.",
-    "Trykk **Oppdater fra kirkens kalender** når dere vil hente endringer. Tittel, tid, sted og avlyst på knyttede arrangementer følger feeden.",
+    "Trykk **Oppdater** for endringer i feeden. **Start import på nytt** fjerner importerte arrangementer og duplikater, nullstiller køen og henter feeden på nytt.",
   ],
   godt: "Gudstjenester foreslås med gudstjeneste-mal når tittelen eller tidspunktet tyder på det. Gruppemøter og interne arrangementer røres ikke.",
   seOgsa: ["arrangementer", "maler"],

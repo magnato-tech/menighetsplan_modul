@@ -1,6 +1,13 @@
 import { describe, expect, test } from "vitest";
 import { SURFACES_RECORD } from "../src/data/settingsRecords";
-import { defaultSurfaces, icalFeedUrl, icalImportOn, parseSurfaces, validHttpsUrl } from "../src/utils/surfaces";
+import {
+  defaultSurfaces,
+  icalFeedUrl,
+  icalImportOn,
+  normalizeExternalCalendarUrl,
+  parseSurfaces,
+  validHttpsUrl,
+} from "../src/utils/surfaces";
 
 describe("surfaces", () => {
   test("default er begge flater på", () => {
@@ -52,5 +59,20 @@ describe("surfaces", () => {
 
   test("icalFeedUrl returnerer null uten gyldig feed", () => {
     expect(icalFeedUrl({ ...defaultSurfaces(), externalCalendarUrl: "ikke-en-url" })).toBe(null);
+  });
+
+  test("normalizeExternalCalendarUrl gjør Google embed om til basic.ics", () => {
+    const embed =
+      "https://calendar.google.com/calendar/embed?src=bmn4covvsag4hdmt3qv9ekdah8hb3pdp%40import.calendar.google.com&ctz=Europe%2FOslo";
+    expect(normalizeExternalCalendarUrl(embed)).toBe(
+      "https://calendar.google.com/calendar/ical/bmn4covvsag4hdmt3qv9ekdah8hb3pdp%40import.calendar.google.com/public/basic.ics"
+    );
+    expect(
+      icalFeedUrl({
+        ...defaultSurfaces(),
+        ownWebsite: false,
+        externalCalendarUrl: embed,
+      })
+    ).toContain("/public/basic.ics");
   });
 });

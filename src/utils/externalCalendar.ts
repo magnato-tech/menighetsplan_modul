@@ -77,6 +77,14 @@ function fieldLine(block: string, name: string): { params: string; value: string
   };
 }
 
+function isDateOnlyIcalValue(value: string): boolean {
+  return /^\d{8}$/.test(String(value || "").trim().replace(/Z$/i, ""));
+}
+
+function isAllDayStart(params: string, value: string): boolean {
+  return /VALUE=DATE/i.test(params) && isDateOnlyIcalValue(value);
+}
+
 function fieldValue(block: string, name: string): string {
   return fieldLine(block, name).value;
 }
@@ -98,16 +106,22 @@ export function parseExternalCalendarFeed(ics: string): ExternalCalendarEvent[] 
     const start = icalDateTime(startField.value, startUtc);
     if (!start.date) continue;
 
+    const allDay = isAllDayStart(startField.params, startField.value);
+
     const endField = fieldLine(block, "DTEND");
     const endUtc = /TZID=UTC/i.test(endField.params) || endField.value.endsWith("Z");
     const end = endField.value ? icalDateTime(endField.value, endUtc) : { date: "", time: "" };
 
     const status = fieldValue(block, "STATUS").toUpperCase();
+    let endsAt: string | undefined;
+    if (!allDay && end.date) {
+      endsAt = toIso(end.date, end.time || start.time);
+    }
     out.push({
       uid: fieldValue(block, "UID"),
       title: fieldValue(block, "SUMMARY") || "Uten tittel",
-      startsAt: toIso(start.date, start.time || "00:00"),
-      endsAt: end.date ? toIso(end.date, end.time || start.time) : undefined,
+      startsAt: toIso(start.date, allDay ? "" : start.time || "00:00"),
+      endsAt,
       location: fieldValue(block, "LOCATION"),
       description: fieldValue(block, "DESCRIPTION"),
       cancelled: status === "CANCELLED",
@@ -135,6 +149,31 @@ export function proposeImport(event: ExternalCalendarEvent, templates: readonly 
   return { templateId: template?.id ?? null, isGudstjeneste: true };
 }
 
+/** True when the feed row carries a clock time, not just an all-day date from iCal. */
+export function feedHasClockTime(event: ExternalCalendarEvent): boolean {
+  const start = parseIsoToDateAndTime(event.startsAt);
+  if (!start.date) return false;
+  if (event.endsAt) return true;
+  return start.time !== "00:00";
+}
+
+/** Fields from the feed that may be written onto a linked gathering. */
+export function feedGatheringPatch(
+  _gathering: Gathering,
+  event: ExternalCalendarEvent
+): Partial<Gathering> {
+  const patch: Partial<Gathering> = {
+    title: event.title,
+    location: event.location || undefined,
+    cancelled: event.cancelled,
+  };
+  if (feedHasClockTime(event)) {
+    patch.startsAt = event.startsAt;
+    patch.endsAt = event.endsAt;
+  }
+  return patch;
+}
+
 function gatheringMatchesEvent(g: Gathering, event: ExternalCalendarEvent): boolean {
   if (event.uid && g.externalCalendarUid === event.uid) return true;
   if (event.uid && !g.externalCalendarUid) return false;
@@ -152,16 +191,29 @@ function importableGathering(g: Gathering): boolean {
   return g.type !== "gruppesamling" && g.visibility !== "intern";
 }
 
+/** Arrangements to remove when starting external calendar import over (linked rows and likely duplicates from a bad import). */
+export function gatheringsForImportReset(
+  feed: readonly ExternalCalendarEvent[],
+  gatherings: readonly Gathering[]
+): Gathering[] {
+  const feedDayTitle = new Set(feed.map((e) => `${e.startsAt.slice(0, 10)}|${e.title.trim()}`));
+
+  return gatherings.filter((g) => {
+    if (!importableGathering(g)) return false;
+    if (g.externalCalendarUid) return true;
+    const key = `${g.startsAt.slice(0, 10)}|${g.title.trim()}`;
+    return feedDayTitle.has(key);
+  });
+}
+
 function fieldsDiffer(g: Gathering, event: ExternalCalendarEvent): boolean {
-  const loc = (g.location || "").trim();
-  const eloc = (event.location || "").trim();
-  return (
-    g.title !== event.title ||
-    g.startsAt !== event.startsAt ||
-    (g.endsAt || "") !== (event.endsAt || "") ||
-    loc !== eloc ||
-    Boolean(g.cancelled) !== event.cancelled
-  );
+  const patch = feedGatheringPatch(g, event);
+  if (g.title !== patch.title) return true;
+  if ((g.location || "").trim() !== (patch.location || "").trim()) return true;
+  if (Boolean(g.cancelled) !== patch.cancelled) return true;
+  if (patch.startsAt !== undefined && g.startsAt !== patch.startsAt) return true;
+  if (patch.endsAt !== undefined && (g.endsAt || "") !== (patch.endsAt || "")) return true;
+  return false;
 }
 
 export function diffCalendar(
@@ -211,12 +263,13 @@ export function formValuesFromExternalEvent(
 ): GatheringFormValues {
   const start = parseIsoToDateAndTime(event.startsAt);
   const end = event.endsAt ? parseIsoToDateAndTime(event.endsAt) : null;
+  const midnightOnly = start.time === "00:00" && !event.endsAt;
   return newGatheringForm({
     title: event.title,
     date: start.date,
-    time: start.time,
+    time: midnightOnly ? "" : start.time,
     endDate: end && end.date !== start.date ? end.date : "",
-    endTime: end ? end.time : "",
+    endTime: end && end.time && end.time !== "00:00" ? end.time : "",
     location: event.location,
     groupId,
     isGudstjeneste: proposal.isGudstjeneste,

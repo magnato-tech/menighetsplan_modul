@@ -1,6 +1,6 @@
 import { readInstallationConfig, type InstallationEnv } from "../src/installation";
 import { SURFACES_RECORD } from "../src/data/settingsRecords";
-import { parseSurfaces, validHttpsUrl } from "../src/utils/surfaces";
+import { parseSurfaces, icalFeedUrl } from "../src/utils/surfaces";
 import { readDocument, type Fetch } from "./firestoreRest";
 
 const SURFACES_PATH = "cms_settings/surfaces";
@@ -37,7 +37,7 @@ export async function externalCalendarIcs({
   const surfaces = parseSurfaces(doc && doc.recordType === SURFACES_RECORD ? (doc as Record<string, unknown>) : undefined);
 
   if (surfaces.ownWebsite) return plain(404, "Kalenderimport er bare når vår nettside er av.");
-  const feedUrl = validHttpsUrl(surfaces.externalCalendarUrl);
+  const feedUrl = icalFeedUrl(surfaces);
   if (!feedUrl) return plain(404, "Ingen iCal-adresse er lagret.");
 
   let response: Response;
@@ -50,6 +50,14 @@ export async function externalCalendarIcs({
 
   const text = await response.text();
   if (!response.ok) return plain(502, `Kirkens kalender svarte ${response.status}.`);
-  if (!text.includes("BEGIN:VCALENDAR")) return plain(502, "Svaret var ikke en gyldig kalenderfil.");
+  if (!text.includes("BEGIN:VCALENDAR")) {
+    if (/^\s*<!doctype html/i.test(text) || /CalendarEmbed/i.test(text)) {
+      return plain(
+        502,
+        "Adressen peker på innbygging (HTML), ikke iCal. Lim inn iCal-adressen (…/basic.ics), ikke embed-lenken."
+      );
+    }
+    return plain(502, "Svaret var ikke en gyldig kalenderfil.");
+  }
   return plain(200, text);
 }

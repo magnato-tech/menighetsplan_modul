@@ -18,7 +18,10 @@ export function subscribeSurfaces(onChange: (surfaces: InstallationSurfaces) => 
 }
 
 export type SurfacesPatch = Partial<
-  Pick<InstallationSurfaces, "minSide" | "ownWebsite" | "externalSiteUrl" | "externalCalendarUrl">
+  Pick<
+    InstallationSurfaces,
+    "minSide" | "ownWebsite" | "externalSiteUrl" | "externalCalendarUrl" | "importNewAutomatically"
+  >
 >;
 
 export async function saveSurfaces(patch: SurfacesPatch): Promise<void> {
@@ -31,6 +34,14 @@ export async function dismissExternalUid(uid: string): Promise<void> {
 
 export async function keepExternalUid(uid: string): Promise<void> {
   await setDoc(surfacesRef(), { recordType: SURFACES_RECORD, keptUids: arrayUnion(uid) }, { merge: true });
+}
+
+export async function clearExternalCalendarImportQueue(): Promise<void> {
+  await setDoc(
+    surfacesRef(),
+    { recordType: SURFACES_RECORD, dismissedUids: [], keptUids: [] },
+    { merge: true }
+  );
 }
 
 export async function unkeepExternalUid(uid: string): Promise<void> {

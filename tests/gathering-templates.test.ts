@@ -67,8 +67,14 @@ describe("Klokka i et program", () => {
   test("et punkt står så mange minutter fra starten som malen sier, også før start", () => {
     expect(itemClock("11:00", { offsetMinutes: -15 })).toBe("10:45");
     expect(itemClock("17:00", { offsetMinutes: 37 })).toBe("17:37");
-    expect(endClockOf("11:00", { durationMinutes: 90 })).toBe("12:30");
-    expect(endClockOf("11:00", { durationMinutes: 0 })).toBe("");
+    expect(endClockOf("11:00", { durationMinutes: 90, program: [] })).toBe("12:30");
+    expect(endClockOf("11:00", { durationMinutes: 0, program: [] })).toBe("");
+    expect(
+      endClockOf("11:00", {
+        durationMinutes: 0,
+        program: [{ id: "a", offsetMinutes: 0, durationMinutes: 90, title: "Tale" }],
+      })
+    ).toBe("12:30");
   });
 });
 
