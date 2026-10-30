@@ -70,6 +70,7 @@ export interface NewGatheringInput {
   /** The template the event is made from, and the series it is part of. */
   templateId?: string;
   seriesId?: string;
+  externalCalendarUid?: string;
 }
 
 export interface NewTaskInput {
@@ -167,6 +168,7 @@ export function buildGathering(data: NewGatheringInput): Gathering {
     linkLabel: data.linkLabel,
     templateId: data.templateId,
     seriesId: data.seriesId,
+    externalCalendarUid: data.externalCalendarUid,
   };
 }
 

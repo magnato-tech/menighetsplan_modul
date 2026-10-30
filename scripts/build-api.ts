@@ -8,7 +8,12 @@ import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
 
 /** The functions: the name in api/, and where the source is. */
-export const API_FUNCTIONS = { kalender: "server/vercel/kalender.ts", epost: "server/vercel/epost.ts", nyhetsbrevbilde: "server/vercel/nyhetsbrevbilde.ts" } as const;
+export const API_FUNCTIONS = {
+  kalender: "server/vercel/kalender.ts",
+  "kalender-innhold": "server/vercel/kalender-innhold.ts",
+  epost: "server/vercel/epost.ts",
+  nyhetsbrevbilde: "server/vercel/nyhetsbrevbilde.ts",
+} as const;
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 

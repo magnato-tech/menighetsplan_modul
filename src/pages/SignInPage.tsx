@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Link, Navigate, useSearchParams } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router-dom";
+import { ChurchSiteLink } from "../components/ChurchSiteLink";
 import { LogIn, Mail } from "lucide-react";
 import { useCms } from "../context/CmsContext";
 import { useFirebase } from "../context/FirebaseDataContext";
@@ -219,9 +220,9 @@ export const SignInPage: React.FC = () => {
         )}
 
         <p className="pt-1 text-center">
-          <Link to="/" className="text-xs font-bold text-slate-600 hover:text-slate-900">
+          <ChurchSiteLink className="text-xs font-bold text-slate-600 hover:text-slate-900">
             Tilbake til nettsiden
-          </Link>
+          </ChurchSiteLink>
         </p>
       </div>
     </main>

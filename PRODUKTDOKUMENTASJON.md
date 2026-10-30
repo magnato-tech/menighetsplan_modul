@@ -24,6 +24,8 @@ Menighetsplan er **ett adminpanel som styrer to ting i samme format**:
 
 «Samme format» betyr at webappen og nettsiden er én løsning: samme kodebase, samme database, samme designspråk og samme responsive oppførsel på mobil og PC. En samling som opprettes i planleggeren og settes til offentlig, står i kalenderen på nettsiden i samme øyeblikk. Ingenting kopieres mellom systemer.
 
+**Flater.** Min side og nettsiden kan slås av under Database uten å slette innhold. Når nettsiden er av, peker forsiden til menighetens egen adresse, og planleggeren kan hente arrangementer fra kirkens iCal inn i en godkjenningskø på Kalender-fanen.
+
 ```
               ┌───────────────────────────────────────────────┐
               │             ADMINPANELET   /admin             │
@@ -167,6 +169,7 @@ Adminpanelet ligger på `/admin` og heter **Admin**. Øverst i menyen velges **P
 * **Planlegging eller Nettside.** Åpnes en fane fra den andre delen (fra en lenke, eller en detaljside, som hører til Planlegging), følger menyen etter. Ved et bytte åpnes fanen man sist var på i den delen, ellers Oversikt. Admin husker valget i nettleseren. Første gang åpnes Planlegging med Menighetsplan og Nettside med Menighetsplattform. Hjelp åpner på artiklene for delen som er valgt. Et arrangement i planleggingen har «Vis på nettsiden», og Arrangementer på nettsiden har «Åpne i planleggingen».
 * En handling bekreftes med en melding som forsvinner av seg selv. En lagring som feiler, vises i et rødt banner og blir ikke stående som om den var lagret.
 * **Moduler** (under System & Database) viser hvilke moduler produktet har, og slår delene av dem av og på for hele menigheten (kapittel 2.6).
+* **Flater i løsningen** (under Database) slår Min side og vår nettside av og på, lagrer menighetens nettside og valgfri iCal-adresse, og styrer omdirigering av forsiden og importkøen på Kalender.
 * **Innlogging.** `/admin` er bare for administratorer. Den som ikke er logget inn, sendes til innloggingssiden, og en frivillig får beskjed om at det kreves administrator (kapittel 10.1). Nederst i menyen står hvem som er logget inn, og «Logg ut».
 * **Menyen kan foldes.** Fra `md` har menyen en knapp, ‹‹ / ››, på alle faner og detaljsider. Foldet står menyen som en smal rad med ikoner, med tooltip og skjermleserens navn på hvert punkt; tellere og lister skjules, og en uløst «må ordnes» eller en ulagret endring vises som en prikk på ikonet. Standard er foldet under 1280 px og åpen fra 1280 px, og følger vinduet når det endres størrelse. Mens en side redigeres, er menyen foldet, med mindre brukeren har åpnet den. Et trykk på knappen huskes i nettleseren (`menighetsplan:admin-meny`, «open» eller «folded») og vinner over bredden. Under `md` er det uendret: menyen glir inn fra ☰.
 

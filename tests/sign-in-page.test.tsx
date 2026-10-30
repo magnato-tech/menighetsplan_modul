@@ -27,7 +27,11 @@ const { app, auth } = vi.hoisted(() => ({
 }));
 vi.mock("../src/context/FirebaseDataContext", () => ({ useFirebase: () => app }));
 const CONTACT = "post@sentrumskirken.example";
-const cms = vi.hoisted(() => ({ settings: { churchName: "Sentrumskirken", email: "post@sentrumskirken.example" } }));
+const cms = vi.hoisted(() => ({
+  settings: { churchName: "Sentrumskirken", email: "post@sentrumskirken.example" },
+  surfaces: { minSide: true, ownWebsite: true, externalSiteUrl: "", externalCalendarUrl: "", dismissedUids: [] as string[], keptUids: [] as string[] },
+  surfacesState: "ready" as const,
+}));
 vi.mock("../src/context/CmsContext", () => ({ useCms: () => cms }));
 vi.mock("../src/services/auth", () => auth);
 

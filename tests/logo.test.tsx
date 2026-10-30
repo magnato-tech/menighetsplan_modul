@@ -13,6 +13,8 @@ const { cms, app, auth } = vi.hoisted(() => ({
     settings: { churchName: "Sentrumskirken", appName: "Menighetsplan", tagline: "Et sted å høre til" } as Record<string, unknown>,
     pages: [],
     saveSettings: vi.fn(async (_settings: Record<string, unknown>) => true),
+    surfaces: { minSide: true, ownWebsite: true, externalSiteUrl: "", externalCalendarUrl: "", dismissedUids: [] as string[], keptUids: [] as string[] },
+    surfacesState: "ready" as const,
   },
   app: { session: { status: "signedOut" }, signOut: vi.fn(async () => {}), standInAs: undefined, allPersons: [], currentUser: { id: "", name: "", globalRole: "member" } },
   auth: {

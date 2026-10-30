@@ -12,7 +12,9 @@ import {
 } from "../services/firestore";
 import { reportWriteError } from "../services/writeErrors";
 import { saveAddonChoice, subscribeAddons } from "../services/addons";
+import { saveSurfaces, subscribeSurfaces, type SurfacesPatch } from "../services/surfaces";
 import type { AddonChoices, AddonId } from "../utils/addons";
+import { defaultSurfaces, type InstallationSurfaces } from "../utils/surfaces";
 import { newId } from "../utils/id";
 import { buildPageRecord } from "../utils/pageRecord";
 import { contentChanged, versionOf } from "../utils/contentVersions";
@@ -52,6 +54,9 @@ interface CmsContextValue {
    */
   addons: AddonChoices;
   addonsState: AddonsState;
+  surfaces: InstallationSurfaces;
+  surfacesState: AddonsState;
+  saveSurfaces: (patch: SurfacesPatch) => Promise<boolean>;
   setAddon: (id: AddonId, on: boolean) => Promise<boolean>;
   // Every write resolves to whether it reached Firestore. A failure is already shown to the user.
   savePage: (page: Partial<CmsPage> & { id?: string }) => Promise<boolean>;
@@ -209,6 +214,27 @@ function useCmsAddons(): { addons: AddonChoices; addonsState: AddonsState } {
   return state;
 }
 
+function useCmsSurfaces(): { surfaces: InstallationSurfaces; surfacesState: AddonsState } {
+  const [state, setState] = useState<{ surfaces: InstallationSurfaces; surfacesState: AddonsState }>({
+    surfaces: defaultSurfaces(),
+    surfacesState: "loading",
+  });
+
+  useEffect(
+    () =>
+      subscribeSurfaces(
+        (surfaces) => setState({ surfaces, surfacesState: "ready" }),
+        (error) => {
+          onListenerError("surfaces")(error);
+          setState({ surfaces: defaultSurfaces(), surfacesState: "failed" });
+        }
+      ),
+    []
+  );
+
+  return state;
+}
+
 /** Waits for the server's answer, so an editor can stay open with what was typed if the save fails. */
 async function attempt(action: string, write: () => Promise<unknown>): Promise<boolean> {
   try {
@@ -306,6 +332,7 @@ export const CmsProvider: React.FC<{ children: React.ReactNode; publicPagesOnly?
   );
   const settings = useCmsSettings();
   const { addons, addonsState } = useCmsAddons();
+  const { surfaces, surfacesState } = useCmsSurfaces();
   const contentReady = pagesAnswered && newsAnswered;
 
   const value: CmsContextValue = useMemo(
@@ -319,6 +346,9 @@ export const CmsProvider: React.FC<{ children: React.ReactNode; publicPagesOnly?
       contentReady,
       addons,
       addonsState,
+      surfaces,
+      surfacesState,
+      saveSurfaces: (patch) => attempt("lagre flatene", () => saveSurfaces(patch)),
       ...writes,
       // A save that changes a page or an article keeps the version it replaces (see utils/contentVersions.ts)
       savePage: async (pageData) => {
@@ -420,7 +450,7 @@ export const CmsProvider: React.FC<{ children: React.ReactNode; publicPagesOnly?
       getNewsById: (id: string) => news.find((n) => n.id === id),
       getNewsBySlug: (slug: string) => news.find((n) => n.slug.toLowerCase() === slug.toLowerCase()),
     }),
-    [pages, news, sermons, staff, media, settings, contentReady, addons, addonsState]
+    [pages, news, sermons, staff, media, settings, contentReady, addons, addonsState, surfaces, surfacesState]
   );
 
   return <CmsContext.Provider value={value}>{children}</CmsContext.Provider>;

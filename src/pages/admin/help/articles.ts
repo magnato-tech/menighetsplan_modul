@@ -401,8 +401,26 @@ const arrangementer: HelpArticle = {
     "Trykk på et arrangement for å åpne bemanning og kjøreplan. **Rediger** endrer eller avlyser det.",
   ],
   godt: "Start fra en mal, så får arrangementet malens program og oppgaver. **Gjenta som serie** lager mange på en gang. Rød prikk betyr at frivillige mangler.",
-  seOgsa: ["bemanning", "maler", "forside"],
+  seOgsa: ["bemanning", "maler", "forside", "kirkens-kalender"],
   tabs: ["planlegger-samlinger"],
+};
+
+const kirkensKalender: HelpArticle = {
+  id: "kirkens-kalender",
+  title: "Kirkens kalender",
+  hvor: "Planlegging → Kalender og Database → Flater i løsningen",
+  intro:
+    "Når menigheten beholder sin egen nettside, kan dere hente arrangementer fra kirkens iCal-feed inn i planleggeren. Nye hendelser godkjennes én og én; knyttede arrangementer oppdateres når dere trykker oppdater.",
+  steg: [
+    "Under **Database** slår du av **Vår nettside**, legger inn menighetens nettside og valgfritt iCal-adressen, og lagrer.",
+    "Åpne **Kalender**. Panelet **Fra kirkens kalender** viser det som mangler hos dere eller er borte fra feeden.",
+    "For en ny rad: velg mal, trykk **Opprett**, eller **Flere valg** for hele skjemaet. **Ikke nå** skjuler raden til neste gang.",
+    "Forsvinner en knyttet hendelse fra feeden, velger dere **Slett** eller **Behold**.",
+    "Trykk **Oppdater fra kirkens kalender** når dere vil hente endringer. Tittel, tid, sted og avlyst på knyttede arrangementer følger feeden.",
+  ],
+  godt: "Gudstjenester foreslås med gudstjeneste-mal når tittelen eller tidspunktet tyder på det. Gruppemøter og interne arrangementer røres ikke.",
+  seOgsa: ["arrangementer", "maler"],
+  tabs: ["planlegger-samlinger", "database-admin"],
 };
 
 const bemanning: HelpArticle = {
@@ -615,6 +633,7 @@ export const helpSections: HelpSection[] = [
     items: [
       { kind: "article", article: oversikt },
       { kind: "article", article: arrangementer },
+      { kind: "article", article: kirkensKalender },
       { kind: "article", article: bemanning },
       { kind: "article", article: oppgaver },
       { kind: "article", article: grupper },

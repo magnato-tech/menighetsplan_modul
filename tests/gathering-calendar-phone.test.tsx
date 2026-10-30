@@ -25,6 +25,30 @@ vi.mock("../src/demo", () => ({
 }));
 vi.mock("../src/context/FirebaseDataContext", () => ({ useFirebase: () => planner }));
 vi.mock("../src/hooks/useGatheringTemplates", () => ({ useGatheringTemplates: () => ({ templates: [], ready: true }) }));
+vi.mock("../src/context/CmsContext", () => ({
+  useCms: () => ({
+    surfaces: { minSide: true, ownWebsite: true, externalSiteUrl: "", externalCalendarUrl: "", dismissedUids: [], keptUids: [] },
+    surfacesState: "ready",
+  }),
+}));
+vi.mock("../src/hooks/useExternalCalendarQueue", () => ({
+  useExternalCalendarQueue: () => ({
+    importOn: false,
+    diff: null,
+    pending: 0,
+    syncing: false,
+    sync: async () => {},
+    createFromEvent: () => {},
+    dismiss: async () => {},
+    keep: async () => {},
+    formInitialFor: () => ({}),
+    templateIdFor: () => undefined,
+    setTemplateFor: () => {},
+    groupReady: true,
+  }),
+  useExternalCalendarPending: () => 0,
+}));
+global.fetch = vi.fn(async () => ({ ok: false, text: async () => "" })) as unknown as typeof fetch;
 
 import { GatheringsTab } from "../src/pages/admin/tabs/GatheringsTab";
 import type { StudioData } from "../src/pages/admin/studio";

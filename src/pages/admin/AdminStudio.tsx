@@ -5,6 +5,7 @@ import { Navigate, useLocation, useNavigate, useSearchParams } from "react-route
 import { CheckCircle2 } from "lucide-react";
 
 import { useAdminDashboard } from "../../hooks/useAppHooks";
+import { useCms } from "../../context/CmsContext";
 
 import { StudioTab, ShowFeedback, studioTabUrl, toStudioTab } from "./studio";
 
@@ -23,6 +24,8 @@ import { isWebEditor } from "../../utils/session";
 import { webEditorMayOpen } from "./webEditor";
 
 import { AddonGate } from "./AddonGate";
+
+import { OwnWebsiteGate } from "./OwnWebsiteGate";
 
 import { LevelGate } from "./LevelGate";
 
@@ -156,7 +159,11 @@ function StudioTabPanel({ tab, activeTab, visited, children }: StudioTabPanelPro
 
             <LevelGate tab={tab}>
 
-              <AddonGate tab={tab}>{children}</AddonGate>
+              <AddonGate tab={tab}>
+
+                <OwnWebsiteGate tab={tab}>{children}</OwnWebsiteGate>
+
+              </AddonGate>
 
             </LevelGate>
 
@@ -301,6 +308,7 @@ function AdminStudioContent() {
   // The part of the admin the menu shows (see studioAreas.ts): the part of the open tab, or the one last chosen
 
   const level = useLevel();
+  const { surfaces } = useCms();
 
   const [chosenArea, setChosenArea] = useState<StudioArea | null>(readStoredArea);
 
@@ -311,7 +319,12 @@ function AdminStudioContent() {
   const editingPageShown = pageEditorOpen && shownTab === "cms-sider";
   const { folded: menuFolded, toggle: toggleMenu } = useStudioMenuFold(editingPageShown);
 
-  const area: StudioArea = webEditor ? "nettside" : areaToShow(shownTab, chosenArea, level);
+  const area: StudioArea =
+    webEditor && surfaces.ownWebsite
+      ? "nettside"
+      : surfaces.ownWebsite
+        ? areaToShow(shownTab, chosenArea, level)
+        : "planlegging";
 
   // Any other tab, or a page of the register or the planning, sends a web editor to the overview
   const outsideWebEditor = webEditor && (Boolean(detailRoute) || !webEditorMayOpen(activeTab));

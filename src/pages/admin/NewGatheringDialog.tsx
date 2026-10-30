@@ -17,6 +17,7 @@ interface NewGatheringDialogProps {
   initial: GatheringFormValues;
   initialTemplateId?: string;
   initialRepeat?: boolean;
+  externalCalendarUid?: string;
   onCreated?: () => void;
   onClose: () => void;
 }
@@ -26,7 +27,7 @@ interface NewGatheringDialogProps {
  * from, and with what already stands in the calendar. It stores what the form asks for: one
  * event or a whole series, each with the programme and the tasks of the template.
  */
-export const NewGatheringDialog: React.FC<NewGatheringDialogProps> = ({ studio, showFeedback, initial, initialTemplateId, initialRepeat, onCreated, onClose }) => {
+export const NewGatheringDialog: React.FC<NewGatheringDialogProps> = ({ studio, showFeedback, initial, initialTemplateId, initialRepeat, externalCalendarUid, onCreated, onClose }) => {
   const { adminGatherings, adminGroups, adminVolunteerRoles } = studio;
   const { templates } = useGatheringTemplates();
   const withPlanner = hasPlanner(useLevel());
@@ -44,7 +45,16 @@ export const NewGatheringDialog: React.FC<NewGatheringDialogProps> = ({ studio, 
 
     let made = 0;
     for (const day of series) {
-      const result = createPlannedGathering(studio, planGathering(onDay(values, day), { template, roles: adminVolunteerRoles, withPlanner, seriesId }));
+      const result = createPlannedGathering(
+        studio,
+        planGathering(onDay(values, day), {
+          template,
+          roles: adminVolunteerRoles,
+          withPlanner,
+          seriesId,
+          externalCalendarUid,
+        })
+      );
       if (!result.success) {
         return made === 0 ? result : { success: false, error: `${made} av ${series.length} arrangementer ble opprettet. ${result.error || "Resten kunne ikke lagres."}` };
       }

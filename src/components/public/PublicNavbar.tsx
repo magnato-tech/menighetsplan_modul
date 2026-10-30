@@ -22,7 +22,7 @@ export const PublicNavbar: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openMobileSubmenus, setOpenMobileSubmenus] = useState<Record<string, boolean>>({});
   const location = useLocation();
-  const { settings, pages } = useCms();
+  const { settings, pages, surfaces } = useCms();
   const { currentUser } = useFirebase();
 
   // The way into the admin: for administrators, and for web editors, who get its website part
@@ -215,7 +215,7 @@ export const PublicNavbar: React.FC = () => {
             )}
             
 
-            {/* Min Side Link */}
+            {surfaces.minSide && (
             <Link
               to="/minside"
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-xs hover:shadow transition-all"
@@ -224,6 +224,7 @@ export const PublicNavbar: React.FC = () => {
               <LayoutDashboard className="w-3.5 h-3.5 text-accent-300" />
               <span>Min Side</span>
             </Link>
+            )}
 
             {/* The way into the admin, for administrators: a small symbol, not a button that competes with the menu */}
             {isAdmin && (
@@ -242,12 +243,14 @@ export const PublicNavbar: React.FC = () => {
 
           {/* Mobile menu trigger */}
           <div className="flex items-center gap-2 lg:hidden">
+            {surfaces.minSide && (
             <Link
               to="/minside"
               className="px-2.5 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-bold"
             >
               Min Side
             </Link>
+            )}
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -338,6 +341,7 @@ export const PublicNavbar: React.FC = () => {
           </div>
 
           <div className="pt-3 border-t border-stone-100 space-y-2">
+            {surfaces.minSide && (
             <Link
               to="/minside"
               onClick={() => setMobileMenuOpen(false)}
@@ -349,6 +353,7 @@ export const PublicNavbar: React.FC = () => {
               </div>
               <ChevronRight className="w-4 h-4 text-stone-400" />
             </Link>
+            )}
 
             {isAdmin && (
               <Link

@@ -210,6 +210,8 @@ export interface PlanOptions {
   withPlanner?: boolean;
   /** Set on every event of a series, so they can be told from other events, and from other series. */
   seriesId?: string;
+  /** When the event is created from the congregation's iCal feed. */
+  externalCalendarUid?: string;
 }
 
 /**
@@ -217,8 +219,16 @@ export interface PlanOptions {
  * programme and tasks. The programme stands at the times of day that follow from the event's
  * own start.
  */
-export function planGathering(values: GatheringFormValues, { template, roles = [], withPlanner = true, seriesId }: PlanOptions = {}): PlannedGathering {
-  const gathering: NewGatheringInput = { ...newGatheringOf(values), ...(template ? { templateId: template.id } : {}), ...(seriesId ? { seriesId } : {}) };
+export function planGathering(
+  values: GatheringFormValues,
+  { template, roles = [], withPlanner = true, seriesId, externalCalendarUid }: PlanOptions = {}
+): PlannedGathering {
+  const gathering: NewGatheringInput = {
+    ...newGatheringOf(values),
+    ...(template ? { templateId: template.id } : {}),
+    ...(seriesId ? { seriesId } : {}),
+    ...(externalCalendarUid ? { externalCalendarUid } : {}),
+  };
   if (!template || !withPlanner) return { gathering, tasks: [], program: [] };
 
   const tasks = tasksOfTemplate(template, roles);

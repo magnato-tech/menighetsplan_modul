@@ -117,6 +117,7 @@ beforeEach(async () => {
       put("cms_settings/global", { siteName: "Fjordvik menighet" }),
       put("cms_settings/addons", { recordType: "addons", on: { visits: true } }),
       put("cms_settings/operating-mode", { recordType: "operatingMode", mode: "production" }),
+      put("cms_settings/surfaces", { recordType: "surfaces", minSide: true, ownWebsite: true }),
       put("cms_settings/role-1", { recordType: "volunteerRole", name: "Møtevert" }),
       put("cms_settings/template-1", { recordType: "gatheringTemplate", name: "Gudstjeneste" }),
       put("cms_settings/headcount-g-apen", { recordType: "gatheringHeadcount", gatheringId: "g-apen", adults: 80, children: 20 }),
@@ -144,6 +145,7 @@ describe("En besøkende som ikke er logget inn", () => {
     await assertSucceeds(getDoc(doc(db, "cms_settings/global")));
     await assertSucceeds(getDoc(doc(db, "cms_settings/addons")));
     await assertSucceeds(getDoc(doc(db, "cms_settings/operating-mode")));
+    await assertSucceeds(getDoc(doc(db, "cms_settings/surfaces")));
     await assertSucceeds(getDocs(query(collection(db, "cms_pages"), where("isPublished", "==", true))));
     await assertSucceeds(getDoc(doc(db, "cms_pages/p-pub")));
     for (const name of ["cms_news", "cms_sermons", "cms_staff", "cms_media", "publicProfiles"]) await assertSucceeds(all(db, name));
@@ -187,7 +189,7 @@ describe("En besøkende som ikke er logget inn", () => {
       "persons/ny", "persons/kari", "groups/ny", "groups/group-lyd", "gatherings/ny", "gatherings/g-apen", "tasks/ny", "tasks/task-1",
       "assignments/ny", "assignments/a1", "groupMessages/ny", "memberProposals/ny", "gatheringAttendances/ny", "gatheringHeadcounts/ny", "volunteer_roles/ny",
       "cms_pages/ny", "cms_pages/p-pub", "cms_news/ny", "cms_sermons/ny", "cms_staff/ny", "cms_media/ny",
-      "cms_settings/global", "cms_settings/addons", "cms_settings/operating-mode", "cms_settings/role-1", "cms_settings/ny",
+      "cms_settings/global", "cms_settings/addons", "cms_settings/operating-mode", "cms_settings/surfaces", "cms_settings/role-1", "cms_settings/ny",
       "logins/fremmed@eksempel.no", "logins/kari@menigheten.no", "publicProfiles/liv", "test/connection", "annet/ny",
       "groupDirectory/group-lyd_hakon", "groupLeaderEmails/group-lyd_ola", "publicGroupCards/group-lyd", "gatheringReaders/g-apen_hakon",
     ];
@@ -436,7 +438,7 @@ describe("Et medlem", () => {
     await assertFails(updateDoc(doc(db, "tasks/task-1"), { title: "Endret" }));
     await assertFails(updateDoc(doc(db, "tasks/task-1"), { status: "confirmed", neededCount: 5 }));
     await assertFails(deleteDoc(doc(db, "tasks/task-1")));
-    for (const place of ["cms_pages/p-pub", "cms_news/n1", "cms_sermons/s1", "cms_staff/st1", "cms_media/md1", "cms_settings/global", "cms_settings/addons", "cms_settings/operating-mode", "cms_settings/role-1", "cms_settings/template-1"]) {
+    for (const place of ["cms_pages/p-pub", "cms_news/n1", "cms_sermons/s1", "cms_staff/st1", "cms_media/md1", "cms_settings/global", "cms_settings/addons", "cms_settings/operating-mode", "cms_settings/surfaces", "cms_settings/role-1", "cms_settings/template-1"]) {
       await assertFails(setDoc(doc(db, place), { title: "Endret" }));
       await assertFails(deleteDoc(doc(db, place)));
     }
@@ -533,7 +535,7 @@ describe("En administrator", () => {
     await assertSucceeds(setDoc(doc(db, "tasks/t-ny"), { gatheringId: "g-ny", title: "Vert", status: "open" }));
     await assertSucceeds(updateDoc(doc(db, "groupMessages/m1"), { content: "Rettet" }));
     await assertSucceeds(setDoc(doc(db, "gatheringAttendances/att-g-apen-ola"), { gatheringId: "g-apen", personId: "ola", status: "attending" }));
-    for (const place of ["cms_pages/ny", "cms_news/ny", "cms_sermons/ny", "cms_staff/ny", "cms_media/ny", "cms_settings/global", "cms_settings/addons", "cms_settings/operating-mode", "cms_settings/role-ny", "cms_settings/template-ny"]) {
+    for (const place of ["cms_pages/ny", "cms_news/ny", "cms_sermons/ny", "cms_staff/ny", "cms_media/ny", "cms_settings/global", "cms_settings/addons", "cms_settings/operating-mode", "cms_settings/surfaces", "cms_settings/role-ny", "cms_settings/template-ny"]) {
       await assertSucceeds(setDoc(doc(db, place), { title: "Endret", recordType: "volunteerRole" }));
     }
     await assertSucceeds(deleteDoc(doc(db, "cms_pages/p-kladd")));
