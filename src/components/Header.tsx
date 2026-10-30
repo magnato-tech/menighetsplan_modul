@@ -1,13 +1,14 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { AccountMenu } from "./AccountMenu";
+import { ChurchSiteLink } from "./ChurchSiteLink";
 import { useCms } from "../context/CmsContext";
 import { useLeaderDashboard } from "../hooks/useAppHooks";
 import { Flag, Shield } from "lucide-react";
 import { useMySemesterPlans } from "../hooks/useSemesterPlans";
 
 export const Header: React.FC = () => {
-  const { settings } = useCms();
+  const { settings, surfaces } = useCms();
   const location = useLocation();
   const { isLeader, urgentGatherings, currentUser } = useLeaderDashboard();
 
@@ -26,8 +27,7 @@ export const Header: React.FC = () => {
       <div className="max-w-md mx-auto px-4 pt-3 pb-2">
         <div className="flex items-center justify-between gap-3">
           {/* The congregation's own name, which leads to its website. The name of the product is not written here. */}
-          <Link
-            to="/"
+          <ChurchSiteLink
             id="app-logo-link"
             title="Til nettsiden"
             className="min-w-0 group transition-opacity hover:opacity-90"
@@ -35,7 +35,7 @@ export const Header: React.FC = () => {
             <p className="text-lg font-bold text-slate-800 tracking-tight leading-tight truncate group-hover:underline underline-offset-2">
               {settings.churchName || "Menighetsplan"}
             </p>
-          </Link>
+          </ChurchSiteLink>
 
           {/* Who is signed in, and the way out: behind the round mark with the initials */}
           <AccountMenu />
@@ -43,6 +43,7 @@ export const Header: React.FC = () => {
 
         {/* Navigation Tabs (Min side / Gruppeleder / Admin Studio) */}
         <nav className="flex items-center gap-1.5 mt-3 pt-2 border-t border-slate-100/80 overflow-x-auto pb-0.5 scrollbar-none">
+          {surfaces.minSide && (
           <Link
             to="/minside"
             id="nav-tab-min-side"
@@ -60,8 +61,9 @@ export const Header: React.FC = () => {
               />
             )}
           </Link>
+          )}
 
-          {isLeader && (
+          {surfaces.minSide && isLeader && (
             <Link
               to="/leder"
               id="nav-tab-leder"

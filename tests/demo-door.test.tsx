@@ -45,7 +45,7 @@ const { app, installation } = vi.hoisted(() => ({
   installation: { demo: null as null | Record<string, string> },
 }));
 vi.mock("../src/context/FirebaseDataContext", () => ({ useFirebase: () => app }));
-vi.mock("../src/context/CmsContext", () => ({ useCms: () => ({ settings: { churchName: "Sentrumskirken" } }) }));
+vi.mock("../src/context/CmsContext", () => ({ useCms: () => ({ settings: { churchName: "Sentrumskirken" }, surfaces: { minSide: true, ownWebsite: true, externalSiteUrl: "", externalCalendarUrl: "", dismissedUids: [], keptUids: [] }, surfacesState: "ready" }) }));
 vi.mock("../src/services/auth", () => ({
   signInWithGoogle: vi.fn(),
   sendSignInLink: vi.fn(),

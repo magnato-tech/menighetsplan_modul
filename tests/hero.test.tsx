@@ -37,6 +37,8 @@ vi.mock("../src/context/CmsContext", () => ({
     staff: [],
     savePage: vi.fn(),
     getPageBySlug: (slug: string) => (slug === "" || slug === "forside" ? home : slug === "om-oss" ? omOss : undefined),
+    surfaces: { minSide: true, ownWebsite: true, externalSiteUrl: "", externalCalendarUrl: "", dismissedUids: [] as string[], keptUids: [] as string[] },
+    surfacesState: "ready" as const,
   }),
 }));
 vi.mock("../src/context/FirebaseDataContext", () => ({

@@ -43,6 +43,8 @@ interface GatheringFormDialogProps {
   existing?: { day: string; title: string }[];
   /** When set, each mal can be opened and changed before the event is created. */
   templateEditor?: GatheringTemplateEditor;
+  /** Title, time, place and cancelled follow the congregation's external calendar. */
+  calendarLinked?: boolean;
   /** Stores the event, or the events of the series. The form closes itself when it went well. */
   onSave: (values: GatheringFormValues, choices: GatheringFormChoices) => { success: boolean; error?: string };
   onClose: () => void;
@@ -85,10 +87,12 @@ export const GatheringFormDialog: React.FC<GatheringFormDialogProps> = ({
   initialRepeat = false,
   existing = [],
   templateEditor,
+  calendarLinked = false,
   onSave,
   onClose,
 }) => {
   const [values, setValues] = useState<GatheringFormValues>(initial);
+  const locked = calendarLinked;
   const [error, setError] = useState<string | null>(null);
   const set = (changes: Partial<GatheringFormValues>) => setValues((current) => ({ ...current, ...changes }));
 
@@ -227,6 +231,11 @@ export const GatheringFormDialog: React.FC<GatheringFormDialogProps> = ({
               <h3 id="gathering-form-when" className={sectionTitle}>
                 Hva og når
               </h3>
+              {locked && (
+                <p className="text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
+                  Tittel, tid, sted og avlyst følger kirkens kalender. Endre dem i kirkens system, og oppdater derfra.
+                </p>
+              )}
               <div>
                 <label htmlFor="gathering-title" className={label}>
                   Tittel
@@ -236,6 +245,7 @@ export const GatheringFormDialog: React.FC<GatheringFormDialogProps> = ({
                   type="text"
                   value={values.title}
                   onChange={(e) => set({ title: e.target.value })}
+                  disabled={locked}
                   placeholder="f.eks. Søndagsgudstjeneste & dåp"
                   className={field}
                 />
@@ -245,19 +255,19 @@ export const GatheringFormDialog: React.FC<GatheringFormDialogProps> = ({
                   <label htmlFor="gathering-date" className={label}>
                     Dato
                   </label>
-                  <input id="gathering-date" type="date" value={values.date} onChange={(e) => set({ date: e.target.value })} className={field} />
+                  <input id="gathering-date" type="date" value={values.date} onChange={(e) => set({ date: e.target.value })} disabled={locked} className={field} />
                 </div>
                 <div>
                   <label htmlFor="gathering-time" className={label}>
                     Starter kl.
                   </label>
-                  <input id="gathering-time" type="time" value={values.time} onChange={(e) => set({ time: e.target.value })} className={field} />
+                  <input id="gathering-time" type="time" value={values.time} onChange={(e) => set({ time: e.target.value })} disabled={locked} className={field} />
                 </div>
                 <div>
                   <label htmlFor="gathering-end-time" className={label}>
                     Slutter kl. (valgfritt)
                   </label>
-                  <input id="gathering-end-time" type="time" value={values.endTime} onChange={(e) => set({ endTime: e.target.value })} className={field} />
+                  <input id="gathering-end-time" type="time" value={values.endTime} onChange={(e) => set({ endTime: e.target.value })} disabled={locked} className={field} />
                 </div>
                 <div>
                   <label htmlFor="gathering-end-date" className={label}>
@@ -269,6 +279,7 @@ export const GatheringFormDialog: React.FC<GatheringFormDialogProps> = ({
                     value={values.endDate}
                     min={values.date || undefined}
                     onChange={(e) => set({ endDate: e.target.value })}
+                    disabled={locked}
                     className={field}
                   />
                 </div>
@@ -282,6 +293,7 @@ export const GatheringFormDialog: React.FC<GatheringFormDialogProps> = ({
                   type="text"
                   value={values.location}
                   onChange={(e) => set({ location: e.target.value })}
+                  disabled={locked}
                   placeholder={`Tomt felt vises som «${DEFAULT_LOCATION}»`}
                   className={field}
                 />
@@ -370,7 +382,7 @@ export const GatheringFormDialog: React.FC<GatheringFormDialogProps> = ({
               </div>
               {!isNew && (
                 <label className="flex items-center gap-2.5 text-sm text-slate-800 cursor-pointer pt-1">
-                  <input type="checkbox" checked={values.cancelled} onChange={(e) => set({ cancelled: e.target.checked })} className="w-4 h-4 rounded border-slate-300" />
+                  <input type="checkbox" checked={values.cancelled} onChange={(e) => set({ cancelled: e.target.checked })} disabled={locked} className="w-4 h-4 rounded border-slate-300" />
                   Arrangementet er avlyst
                 </label>
               )}

@@ -14,8 +14,11 @@ const { cms } = vi.hoisted(() => ({
     media: [],
     settings: { churchName: "Lillesand Misjonskirke" },
     addons: {} as Record<string, boolean>,
+    surfaces: { minSide: true, ownWebsite: true, externalSiteUrl: "", externalCalendarUrl: "", dismissedUids: [] as string[], keptUids: [] as string[] },
+    surfacesState: "ready" as const,
   },
 }));
+vi.mock("../src/hooks/useExternalCalendarQueue", () => ({ useExternalCalendarPending: () => 0 }));
 vi.mock("../src/context/CmsContext", () => ({ useCms: () => cms }));
 vi.mock("../src/demo", () => ({ DEMO: null }));
 vi.mock("../src/hooks/useDemoOwner", () => ({ useDemoOwner: () => "locked" }));

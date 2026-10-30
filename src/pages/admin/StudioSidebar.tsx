@@ -1,6 +1,7 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCms } from "../../context/CmsContext";
+import { ChurchSiteLink } from "../../components/ChurchSiteLink";
 import { useStockImageCount } from "../../hooks/useStockImageCount";
 import {
   Calendar,
@@ -41,6 +42,7 @@ import { StudioData, StudioTab, NEAR_WEEKS, isUrgentTask, withinWeeks } from "./
 import { prefetchStudioTab } from "./studioTabLoaders";
 import { STUDIO_AREAS, STUDIO_AREA_NAMES, areaOfTab, type StudioArea } from "./studioAreas";
 import { usePendingProposalCounts } from "../../hooks/useMemberProposals";
+import { useExternalCalendarPending } from "../../hooks/useExternalCalendarQueue";
 import { useStudioAppearance } from "./studioAppearance";
 import { StudioThemeIconButton, StudioThemeToggle } from "./StudioThemeToggle";
 
@@ -106,7 +108,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
 }) => {
   const navigate = useNavigate();
   const { currentUser, adminPersons, adminGroups, adminGatherings, adminTasks } = studio;
-  const { pages, media, news, sermons, staff, settings, addons } = useCms();
+  const { pages, media, news, sermons, staff, settings, addons, surfaces } = useCms();
   // What must be ordered in the nearest weeks; further out, an empty slot is planning, not an emergency
   const urgentTasksCount = withinWeeks(adminTasks, NEAR_WEEKS).filter(isUrgentTask).length;
   // The planner beyond the calendar is only in the menu at the level that has it (see levelTabs.ts)
@@ -126,6 +128,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
     .flatMap((section) => section.entries)
     .filter((entry) => areaOfTab(entry.tab) === area && (!webEditor || webEditorMayOpen(entry.tab)));
   const waitingProposals = [...usePendingProposalCounts(hasPlanner(level)).values()].reduce((sum, count) => sum + count, 0);
+  const importPending = useExternalCalendarPending();
 
   // The add-ons that are on (see addons.ts), at the end of the part they belong to
   const addonButtons = (
@@ -217,7 +220,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
           </div>
 
           {/* The two parts of the admin. Only this menu and the overview follow the choice. */}
-          {!webEditor && (
+          {!webEditor && surfaces.ownWebsite && (
           <div role="tablist" aria-label="Del av admin" className="sidebar-hide grid grid-cols-2 gap-1 p-1 rounded-xl bg-[var(--studio-surface)]">
             {STUDIO_AREAS.map((choice) => (
               <button
@@ -257,6 +260,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
 
             {/* The two ways out of the studio. Each is listed here only. */}
             <div className="pt-2 pb-1 space-y-1.5 border-t border-[var(--studio-border)]">
+              {surfaces.minSide && (
               <Link
                 to="/minside"
                 title="Gå til Min Side"
@@ -272,20 +276,19 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
                 </div>
                 <span className="sidebar-hide text-[10px] text-[var(--studio-muted)]">Min profil</span>
               </Link>
+              )}
 
-              <Link
-                to="/"
-                target="_blank"
-                rel="noreferrer"
+              <ChurchSiteLink
+                newTab
                 title="Åpne offentlig nettside"
                 className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-[var(--studio-muted)] hover:text-[var(--studio-text)] hover:bg-[var(--studio-bg)] transition-all cursor-pointer"
               >
                 <div className="flex items-center gap-2">
                   <ExternalLink className="w-3.5 h-3.5 text-emerald-400" />
-                  <span className="sidebar-text">Åpne offentlig nettside</span>
+                  <span className="sidebar-text">{surfaces.ownWebsite ? "Åpne offentlig nettside" : "Åpne menighetens nettside"}</span>
                 </div>
                 <span className="sidebar-hide text-[10px] text-[var(--studio-muted)]">Forside ↗</span>
-              </Link>
+              </ChurchSiteLink>
             </div>
           </div>
 
@@ -459,9 +462,16 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
                 <Calendar className="w-4 h-4 text-[var(--studio-icon)]" />
                 <span className="sidebar-text">Kalender</span>
               </div>
-              <span className="sidebar-hide text-[10px] px-1.5 py-0.5 rounded bg-[var(--studio-surface)] text-[var(--studio-muted)]">
-                {adminGatherings.length}
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="sidebar-hide text-[10px] px-1.5 py-0.5 rounded bg-[var(--studio-surface)] text-[var(--studio-muted)]">
+                  {adminGatherings.length}
+                </span>
+                {importPending > 0 && (
+                  <span className="sidebar-hide text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-900/60 text-red-300" title="Fra kirkens kalender">
+                    {importPending} må ordnes
+                  </span>
+                )}
+              </div>
             </button>
 
             {hasPlanner(level) && (

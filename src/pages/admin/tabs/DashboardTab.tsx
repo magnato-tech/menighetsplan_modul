@@ -29,6 +29,7 @@ import {
 } from "../studio";
 import { UpcomingGatheringCard, UpcomingGatheringsPanel } from "./dashboard/UpcomingGatheringsPanel";
 import { SiteCheckCard } from "../../../components/admin/SiteCheckCard";
+import { ChurchSiteLink } from "../../../components/ChurchSiteLink";
 import { STUDIO_AREAS, STUDIO_AREA_NAMES, type StudioArea } from "../studioAreas";
 import { useStudioMenuEntries } from "../studioMenu";
 import { useLevel } from "../../../hooks/useLevel";
@@ -56,7 +57,7 @@ const ALERT_AMBER = "text-[11px] px-2 py-0.5 rounded-md bg-amber-100 text-amber-
 
 export const DashboardTab: React.FC<DashboardTabProps> = ({ studio, area, webEditor = false, onTabChange, onAreaChange, onCreateIn }) => {
   const { adminGatherings, adminTasks } = studio;
-  const { pages, news, sermons, staff, settings, media } = useCms();
+  const { pages, news, sermons, staff, settings, media, surfaces } = useCms();
   // The moment the overview was opened, for what «Sjekk nettsiden» counts as ahead and as old
   const [now] = React.useState(() => Date.now());
   const gatherings = React.useMemo(() => adminGatherings.map((item) => item.gathering), [adminGatherings]);
@@ -92,14 +93,14 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ studio, area, webEdi
 
         {/* On a phone these two are rows in the menu below */}
         <div className="hidden md:flex items-center gap-2">
-          <Link
-            to="/"
-            target="_blank"
+          <ChurchSiteLink
+            newTab
             className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all"
           >
             <Globe className="w-3.5 h-3.5" />
-            <span>Se nettsiden live</span>
-          </Link>
+            <span>{surfaces.ownWebsite ? "Se nettsiden live" : "Åpne menighetens nettside"}</span>
+          </ChurchSiteLink>
+          {surfaces.minSide && (
           <Link
             to="/minside"
             className="px-4 py-2 rounded-xl bg-[var(--studio-surface)] hover:bg-[var(--studio-hover)] text-slate-200 font-bold text-xs flex items-center gap-1.5 transition-all"
@@ -107,6 +108,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ studio, area, webEdi
             <LayoutDashboard className="w-3.5 h-3.5 text-amber-300" />
             <span>Min Side</span>
           </Link>
+          )}
         </div>
       </div>
 
@@ -117,7 +119,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ studio, area, webEdi
         </div>
       )}
 
-      {!webEditor && (
+      {!webEditor && surfaces.ownWebsite && (
         <div role="tablist" aria-label="Del av admin" className="md:hidden grid grid-cols-2 gap-1 p-1 rounded-xl bg-[var(--studio-surface)]">
           {STUDIO_AREAS.map((choice) => (
             <button
@@ -159,16 +161,18 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ studio, area, webEdi
           <span className="flex-1 min-w-0 truncate">Hjelp</span>
           <ChevronRight className="w-4 h-4 shrink-0 text-[var(--studio-muted)]" aria-hidden="true" />
         </button>
+        {surfaces.minSide && (
         <Link to="/minside" className={MENU_ROW}>
           <User className="w-5 h-5 shrink-0" aria-hidden="true" />
           <span className="flex-1 min-w-0 truncate">Gå til Min Side</span>
           <ChevronRight className="w-4 h-4 shrink-0 text-[var(--studio-muted)]" aria-hidden="true" />
         </Link>
-        <Link to="/" target="_blank" rel="noreferrer" className={MENU_ROW}>
+        )}
+        <ChurchSiteLink newTab className={MENU_ROW}>
           <ExternalLink className="w-5 h-5 shrink-0 text-emerald-400" aria-hidden="true" />
-          <span className="flex-1 min-w-0 truncate">Åpne offentlig nettside</span>
+          <span className="flex-1 min-w-0 truncate">{surfaces.ownWebsite ? "Åpne offentlig nettside" : "Åpne menighetens nettside"}</span>
           <ChevronRight className="w-4 h-4 shrink-0 text-[var(--studio-muted)]" aria-hidden="true" />
-        </Link>
+        </ChurchSiteLink>
       </nav>
 
       {planning && (

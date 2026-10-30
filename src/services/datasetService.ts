@@ -9,6 +9,7 @@ import { ADDONS_RECORD } from "../utils/addons";
 import { TRAFFIC_RECORD } from "../utils/siteTraffic";
 import { HEADCOUNT_RECORD } from "./headcounts";
 import { OPERATING_MODE_RECORD, ensureDeletionAllowed } from "./operatingMode";
+import { SURFACES_RECORD } from "../data/settingsRecords";
 import type { TestdataServiceResult } from "./testdataService";
 import { VOLUNTEER_ROLE_RECORD } from "./volunteerRoles";
 
@@ -21,7 +22,7 @@ const BATCH_SIZE = 400;
  * still fits the day they get collections of their own.
  */
 /** Marked documents in cms_settings that say how the app is set up or used, not what it contains. */
-const NOT_CONTENT = new Set<unknown>([OPERATING_MODE_RECORD, TRAFFIC_RECORD, ADDONS_RECORD]);
+const NOT_CONTENT = new Set<unknown>([OPERATING_MODE_RECORD, TRAFFIC_RECORD, ADDONS_RECORD, SURFACES_RECORD]);
 
 const KEPT_IN_SETTINGS: Record<string, string> = {
   [COLLECTIONS.VOLUNTEER_ROLES]: VOLUNTEER_ROLE_RECORD,

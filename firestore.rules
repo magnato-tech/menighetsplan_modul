@@ -433,7 +433,7 @@ service cloud.firestore {
 
       // The website reads the settings, which add-ons are on and the operating mode, and the
       // inbox of everyone a newsletter goes to fetches its banner (server/newsletterBanner.ts)
-      allow get: if docId in ['global', 'addons', 'operating-mode', 'newsletter-banner'] || isMember();
+      allow get: if docId in ['global', 'addons', 'operating-mode', 'surfaces', 'newsletter-banner'] || isMember();
       allow list: if isMember();
 
       allow create: if isAdmin()

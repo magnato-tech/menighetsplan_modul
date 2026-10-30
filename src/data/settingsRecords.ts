@@ -75,3 +75,7 @@ export const SEMESTER_ANSWER_RECORD = "semesterAnswer";
  */
 export const GATHERING_NOTE_RECORD = "gatheringNote";
 export const GATHERING_NOTE_DOC_PREFIX = "gathering-note-";
+
+/** Which product surfaces are in use, and where the congregation's own website and calendar live (see utils/surfaces.ts). */
+export const SURFACES_RECORD = "surfaces";
+export const SURFACES_DOC_ID = "surfaces";

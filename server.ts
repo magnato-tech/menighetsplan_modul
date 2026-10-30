@@ -25,6 +25,8 @@ import { isInGroup } from './src/utils/groups';
 import { personalCalendarGatheringsForFeed } from './src/utils/personalCalendar';
 import { validateEvent } from './src/utils/validation';
 import type { Gathering, GatheringAttendance, Group, Person } from './src/types';
+import { externalCalendarIcs } from './server/icalImport';
+import type { Fetch } from './server/firestoreRest';
 
 const app = express();
 // 3000 unless PORT says otherwise, so two projects can run side by side on one machine
@@ -172,6 +174,22 @@ app.get('/api/offentlig/kalender.ics', async (req: Request, res: Response) => {
   } catch (err: any) {
     console.error('Error fetching /api/offentlig/kalender.ics:', err);
     res.status(500).json({ error: 'Kunne ikke hente kalenderabonnement', message: err.message });
+  }
+});
+
+/** iCal feed for import when our website is off (URL from cms_settings/surfaces, not from the query). */
+app.get('/api/kalender-innhold', async (_req: Request, res: Response) => {
+  try {
+    const feed = await externalCalendarIcs({
+      env: installationEnv,
+      ask: fetch as unknown as Fetch,
+      httpFetch: fetch,
+    });
+    for (const [name, value] of Object.entries(feed.headers)) res.set(name, value);
+    res.status(feed.status).send(feed.body);
+  } catch (err: unknown) {
+    console.error('Error fetching /api/kalender-innhold:', err);
+    res.status(500).send('Kunne ikke hente kalenderen.');
   }
 });
 

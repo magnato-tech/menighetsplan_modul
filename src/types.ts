@@ -145,6 +145,8 @@ export interface Gathering {
   /** The template the event was made from, and the series it was made as part of (see utils/gatheringTemplates.ts and utils/series.ts). */
   templateId?: string;
   seriesId?: string;
+  /** iCal UID when the event is linked to the congregation's external calendar. */
+  externalCalendarUid?: string;
   updatedBy?: string;
   updatedAt?: string;
 }

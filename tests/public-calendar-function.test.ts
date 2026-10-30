@@ -156,7 +156,7 @@ describe("Funksjonen slik Vercel leser den", () => {
   });
 
   test("det samme gjelder alle funksjonene, også e-postutsendingen i api/epost.js", async () => {
-    expect(Object.keys(API_FUNCTIONS)).toEqual(["kalender", "epost", "nyhetsbrevbilde"]);
+    expect(Object.keys(API_FUNCTIONS)).toEqual(["kalender", "kalender-innhold", "epost", "nyhetsbrevbilde"]);
     for (const name of Object.keys(API_FUNCTIONS) as (keyof typeof API_FUNCTIONS)[]) {
       expect(normal(readFileSync(packedPathOf(name), "utf8")), `api/${name}.js`).toBe(normal(await packFunction(name)));
     }
@@ -190,8 +190,9 @@ describe("Funksjonen slik Vercel leser den", () => {
   test("adressen knappene bruker, fører til funksjonen, og resten av /api er ikke nettsiden", () => {
     const { rewrites } = JSON.parse(readFileSync(new URL("../vercel.json", import.meta.url), "utf8")) as { rewrites: { source: string; destination: string }[] };
     expect(rewrites[0]).toEqual({ source: PUBLIC_CALENDAR_FEED_PATH, destination: "/api/kalender" });
-    const site = new RegExp(`^${rewrites[1].source}$`);
-    expect(rewrites[1].destination).toBe("/index.html");
+    expect(rewrites[1]).toEqual({ source: "/api/kalender-innhold", destination: "/api/kalender-innhold" });
+    const site = new RegExp(`^${rewrites[2].source}$`);
+    expect(rewrites[2].destination).toBe("/index.html");
     expect(site.test("/kalender")).toBe(true);
     expect(site.test("/arrangement/abc")).toBe(true);
     expect(site.test("/api/offentlig/arrangementer")).toBe(false);

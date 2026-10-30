@@ -17,6 +17,7 @@ import { DatasetPanel } from "../../../components/admin/DatasetPanel";
 import { ChatResetPanel } from "../../../components/admin/ChatResetPanel";
 import { ChurchPickerPanel } from "../../../components/admin/ChurchPickerPanel";
 import { OperatingModePanel } from "../../../components/admin/OperatingModePanel";
+import { InstallationSurfacesPanel } from "../../../components/admin/InstallationSurfacesPanel";
 import { useOperatingMode } from "../../../hooks/useOperatingMode";
 import { isAddonOn } from "../../../utils/addons";
 import {
@@ -370,6 +371,8 @@ export const DatabaseTab: React.FC<DatabaseTabProps> = ({ showFeedback }) => {
 
       {/* Demo eller produksjon: i produksjon kan ingenting tømmes herfra */}
       <OperatingModePanel mode={operatingMode} showFeedback={showFeedback} />
+
+      <InstallationSurfacesPanel showFeedback={showFeedback} />
 
       {/* Velg menighet: bytt nettsiden til en annen menighets, for demonstrasjon */}
       <ChurchPickerPanel mode={operatingMode} showFeedback={showFeedback} />

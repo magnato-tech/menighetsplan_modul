@@ -525,6 +525,7 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
           initial={formOfGathering(gathering)}
           groups={allGroups}
           showGroup={withPlanner}
+          calendarLinked={Boolean(gathering.externalCalendarUid)}
           onSave={(values) => {
             const result = detail.updateGathering(gathering.id, gatheringUpdatesOf(values, withPlanner));
             if (result.success) showToast("Arrangementet ble oppdatert!");

@@ -14,8 +14,11 @@ const { cms } = vi.hoisted(() => ({
     settings: { churchName: "Lillesand Misjonskirke" },
     // No module is on until a test turns one on
     addons: {} as { analysebord?: boolean; nettsidebesok?: boolean },
+    surfaces: { minSide: true, ownWebsite: true, externalSiteUrl: "", externalCalendarUrl: "", dismissedUids: [] as string[], keptUids: [] as string[] },
+    surfacesState: "ready" as const,
   },
 }));
+vi.mock("../src/hooks/useExternalCalendarQueue", () => ({ useExternalCalendarPending: () => 0 }));
 vi.mock("../src/context/CmsContext", () => ({ useCms: () => cms }));
 // A congregation's own installation until a test says demo, and nobody is the owner of a demo
 const { installation } = vi.hoisted(() => ({

@@ -3,6 +3,7 @@ import { useCms } from "../../context/CmsContext";
 import { useLevel } from "../../hooks/useLevel";
 import { useStockImageCount } from "../../hooks/useStockImageCount";
 import { usePendingProposalCounts } from "../../hooks/useMemberProposals";
+import { useExternalCalendarPending } from "../../hooks/useExternalCalendarQueue";
 import { hasPlanner } from "../../utils/level";
 import { NEAR_WEEKS, isUrgentTask, withinWeeks, type StudioData, type StudioTab } from "./studio";
 import type { StudioArea } from "./studioAreas";
@@ -34,9 +35,17 @@ export function useStudioMenuEntries(studio: StudioData, area: StudioArea, optio
   const mediaCount = media.filter((item) => item.status === "ready").length + useStockImageCount();
   const waitingProposals = [...usePendingProposalCounts(withPlanner).values()].reduce((sum, count) => sum + count, 0);
   const urgentTasksCount = withinWeeks(adminTasks, NEAR_WEEKS).filter(isUrgentTask).length;
+  const importPending = useExternalCalendarPending();
 
   const planning: StudioMenuEntry[] = [
-    { tab: "planlegger-samlinger", label: "Kalender", icon: Calendar, iconClass: "text-[var(--studio-icon)]", count: adminGatherings.length },
+    {
+      tab: "planlegger-samlinger",
+      label: "Kalender",
+      icon: Calendar,
+      iconClass: "text-[var(--studio-icon)]",
+      count: adminGatherings.length,
+      alerts: importPending > 0 ? [{ text: `${importPending} må ordnes`, tone: "red" as const, title: "Fra kirkens kalender" }] : [],
+    },
     ...(withPlanner
       ? [
           {

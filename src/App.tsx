@@ -4,6 +4,9 @@ import { FirebaseDataProvider } from "./context/FirebaseDataContext";
 import { CmsProvider, useCms } from "./context/CmsContext";
 import { SITE_THEME_CLASS, getThemeCssVariables } from "./utils/themeUtils";
 import { isAdminStudioPath, isMinSidePath, isPublicPath, isSignInPath, isUnsubscribePath } from "./utils/routes";
+import { churchSiteUrl } from "./utils/surfaces";
+import { ExternalSiteFallbackPage } from "./pages/ExternalSiteFallbackPage";
+import { MinSideUnavailablePage } from "./pages/MinSideUnavailablePage";
 import { PreviewQueryPersist } from "./components/public/PreviewQueryPersist";
 import { useSiteTraffic } from "./hooks/useSiteTraffic";
 import { EmbeddedPreviewGuard } from "./components/public/EmbeddedPreviewGuard";
@@ -61,6 +64,27 @@ function LazyRouteFallback() {
   return <p className="p-6 text-sm text-slate-500">Laster…</p>;
 }
 
+/** When our website is off, public addresses go to the congregation's site or a neutral fallback. */
+function PublicSurfaceGate({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+  const { surfaces, surfacesState } = useCms();
+
+  const external = !surfaces.ownWebsite && isPublicPath(location.pathname) ? churchSiteUrl(surfaces) : null;
+
+  useEffect(() => {
+    if (!external || surfacesState !== "ready") return;
+    window.location.replace(external);
+  }, [external, surfacesState]);
+
+  if (!surfaces.ownWebsite && isPublicPath(location.pathname)) {
+    if (surfacesState === "loading") return <LazyRouteFallback />;
+    if (external) return <p className="p-6 text-sm text-stone-600">Sender deg videre til menighetens nettside…</p>;
+    return <ExternalSiteFallbackPage />;
+  }
+
+  return <>{children}</>;
+}
+
 /**
  * Keeps the tab title, the description and the share card in step with the page being shown.
  * The server writes the same into the HTML it sends (server.ts), from the same rules.
@@ -79,7 +103,8 @@ function useSiteSeo(pathname: string) {
 
 function AppContent() {
   const location = useLocation();
-  const { settings } = useCms();
+  const { settings, surfaces, surfacesState } = useCms();
+  const { session, currentUser } = useFirebase();
   const themeVariables = useMemo(() => getThemeCssVariables(settings?.theme), [settings?.theme]);
   useSiteSeo(location.pathname);
   // Visits to the public website are counted, anonymously. Min side and admin are not counted.
@@ -131,6 +156,15 @@ function AppContent() {
     );
   }
   if (isMinSideRoute) {
+    if (!surfaces.minSide && surfacesState === "ready") {
+      if (session.status === "member" && currentUser.globalRole === "admin") {
+        return <Navigate to="/admin" replace />;
+      }
+      return <MinSideUnavailablePage />;
+    }
+    if (!surfaces.minSide && surfacesState === "loading") {
+      return <LazyRouteFallback />;
+    }
     return (
       <SessionGate>
       <div className="min-h-[calc(100vh-var(--demo-strip,0px))] flex flex-col bg-slate-100 text-slate-800">
@@ -169,6 +203,7 @@ function AppContent() {
   }
 
   return (
+    <PublicSurfaceGate>
     <div style={themeVariables} className={`${SITE_THEME_CLASS} min-h-[calc(100vh-var(--demo-strip,0px))] flex flex-col bg-page text-stone-900`}>
       <PreviewQueryPersist />
       <EmbeddedPreviewGuard />
@@ -204,6 +239,7 @@ function AppContent() {
       </main>
       <PublicFooter />
     </div>
+    </PublicSurfaceGate>
   );
 }
 

@@ -24,6 +24,29 @@ vi.mock("../src/demo", () => ({
 }));
 vi.mock("../src/context/FirebaseDataContext", () => ({ useFirebase: () => planner }));
 vi.mock("../src/hooks/useGatheringTemplates", () => ({ useGatheringTemplates: () => ({ templates: library.templates, ready: true }) }));
+vi.mock("../src/context/CmsContext", () => ({
+  useCms: () => ({
+    surfaces: { minSide: true, ownWebsite: true, externalSiteUrl: "", externalCalendarUrl: "", dismissedUids: [], keptUids: [] },
+    surfacesState: "ready",
+  }),
+}));
+vi.mock("../src/hooks/useExternalCalendarQueue", () => ({
+  useExternalCalendarQueue: () => ({
+    importOn: false,
+    diff: null,
+    pending: 0,
+    syncing: false,
+    sync: async () => {},
+    createFromEvent: () => {},
+    dismiss: async () => {},
+    keep: async () => {},
+    formInitialFor: () => ({}),
+    templateIdFor: () => undefined,
+    setTemplateFor: () => {},
+    groupReady: true,
+  }),
+  useExternalCalendarPending: () => 0,
+}));
 
 import { GatheringFormDialog, type GatheringFormChoices } from "../src/components/gathering/GatheringFormDialog";
 import { buildGathering, buildTask, type NewGatheringInput, type NewTaskInput } from "../src/data/newDocuments";

@@ -8,6 +8,10 @@
       "destination": "/api/kalender"
     },
     {
+      "source": "/api/kalender-innhold",
+      "destination": "/api/kalender-innhold"
+    },
+    {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
