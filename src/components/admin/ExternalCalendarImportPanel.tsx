@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { formatNorwegianDateTime } from "../../hooks/useAppHooks";
-import { RefreshCw, Plus, X, Trash2, Check } from "lucide-react";
+import { RefreshCw, Plus, X, Trash2, Check, ListChecks, RotateCcw } from "lucide-react";
 import { useExternalCalendarQueue } from "../../hooks/useExternalCalendarQueue";
 import type { ExternalCalendarEvent } from "../../utils/externalCalendar";
 import type { ShowFeedback, StudioData } from "../../pages/admin/studio";
@@ -10,6 +10,7 @@ import { useFirebase } from "../../context/FirebaseDataContext";
 import type { AdminGatheringItem } from "../../hooks/useAppHooks";
 import { useGatheringTemplates } from "../../hooks/useGatheringTemplates";
 import { studioCard } from "../../pages/admin/studioTheme";
+import { ConfirmDialog } from "../ConfirmDialog";
 
 interface ExternalCalendarImportPanelProps {
   studio: StudioData;
@@ -22,6 +23,7 @@ export const ExternalCalendarImportPanel: React.FC<ExternalCalendarImportPanelPr
   const { assignments, getPersonById, deleteGatheringWithStaffing } = useFirebase();
   const [moreOptions, setMoreOptions] = useState<ExternalCalendarEvent | null>(null);
   const [deleting, setDeleting] = useState<AdminGatheringItem | null>(null);
+  const [confirmReset, setConfirmReset] = useState(false);
 
   const staffedTasksOf = (item: AdminGatheringItem): StaffedTask[] =>
     item.tasks.flatMap((task) => {
@@ -50,22 +52,95 @@ export const ExternalCalendarImportPanel: React.FC<ExternalCalendarImportPanelPr
 
   const dismissKey = (event: ExternalCalendarEvent) => event.uid || `${event.startsAt}|${event.title}`;
 
-  if (!queue.importOn || !queue.diff) return null;
+  const resetImportActions = (
+    <button
+      type="button"
+      onClick={() => setConfirmReset(true)}
+      disabled={queue.syncing || queue.resetWorking || queue.batchWorking}
+      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-red-800/80 text-xs font-bold text-red-200 hover:bg-red-950 hover:text-red-400"
+    >
+      <RotateCcw className={`w-3.5 h-3.5 ${queue.resetWorking ? "animate-spin" : ""}`} aria-hidden="true" />
+      Start import på nytt
+    </button>
+  );
+
+  if (!queue.importOn) return null;
+
+  if (!queue.diff) {
+    return (
+      <>
+        <div className={`${studioCard} p-4 flex flex-wrap items-center justify-between gap-3`}>
+          <p className="text-xs text-[var(--studio-muted)]">Henter kirkens kalender …</p>
+          {resetImportActions}
+        </div>
+        {confirmReset && (
+          <ConfirmDialog
+            title="Start kalenderimport på nytt?"
+            tone="danger"
+            confirmLabel="Ja, nullstill import"
+            busy={queue.resetWorking}
+            onCancel={() => setConfirmReset(false)}
+            onConfirm={() => {
+              void queue.resetImport(deleteGatheringWithStaffing).then(() => setConfirmReset(false));
+            }}
+          >
+            <p>
+              Alle arrangementer som er knyttet til kirkens kalender fjernes, sammen med sannsynlige duplikater (samme
+              tittel og dag som i feeden). Valg i importkøen («Ikke nå» og «Behold») nullstilles. Deretter hentes
+              feeden på nytt
+              {queue.importNewAutomatically ? " og nye rader opprettes automatisk." : "."}
+            </p>
+          </ConfirmDialog>
+        )}
+      </>
+    );
+  }
+
   const { newEvents, gone } = queue.diff;
   if (newEvents.length === 0 && gone.length === 0) {
     return (
-      <div className={`${studioCard} p-4 flex flex-wrap items-center justify-between gap-3`}>
-        <p className="text-xs text-[var(--studio-muted)]">Kirkens kalender er synkronisert. Ingen nye rader i køen.</p>
-        <button
-          type="button"
-          onClick={() => void queue.sync()}
-          disabled={queue.syncing}
-          className="inline-flex items-center gap-2 text-xs font-bold text-indigo-300 hover:text-indigo-300"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${queue.syncing ? "animate-spin" : ""}`} aria-hidden="true" />
-          Oppdater fra kirkens kalender
-        </button>
-      </div>
+      <>
+        <div className={`${studioCard} p-4 flex flex-wrap items-center justify-between gap-3`}>
+          <p className="text-xs text-[var(--studio-muted)]">Kirkens kalender er synkronisert. Ingen nye rader i køen.</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => void queue.sync({ runImport: queue.importNewAutomatically })}
+              disabled={queue.syncing}
+              className="inline-flex items-center gap-2 text-xs font-bold text-indigo-300 hover:text-indigo-300"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${queue.syncing ? "animate-spin" : ""}`} aria-hidden="true" />
+              Oppdater fra kirkens kalender
+            </button>
+            {resetImportActions}
+          </div>
+        </div>
+        {confirmReset && (
+          <ConfirmDialog
+            title="Start kalenderimport på nytt?"
+            tone="danger"
+            confirmLabel="Ja, nullstill import"
+            busy={queue.resetWorking}
+            onCancel={() => setConfirmReset(false)}
+            onConfirm={() => {
+              void queue.resetImport(deleteGatheringWithStaffing).then(() => setConfirmReset(false));
+            }}
+          >
+            <p>
+              {queue.importResetCandidateCount > 0 ? (
+                <>
+                  Ca. <span className="font-bold text-[var(--studio-text)]">{queue.importResetCandidateCount}</span>{" "}
+                  arrangementer i planleggeren matcher importen og fjernes.
+                </>
+              ) : (
+                <>Ingen importerte arrangementer er funnet ut fra siste feed — importkøen nullstilles likevel.</>
+              )}{" "}
+              Deretter hentes kirkens kalender på nytt
+              {queue.importNewAutomatically ? " og nye rader opprettes automatisk." : ", og du kan opprette på nytt fra køen."}
+            </p>
+          </ConfirmDialog>
+        )}
+      </>
     );
   }
 
@@ -80,16 +155,42 @@ export const ExternalCalendarImportPanel: React.FC<ExternalCalendarImportPanelPr
         </div>
         <button
           type="button"
-          onClick={() => void queue.sync()}
+          onClick={() => void queue.sync({ runImport: queue.importNewAutomatically })}
           disabled={queue.syncing}
           className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--studio-surface)] border border-[var(--studio-border)] text-xs font-bold text-[var(--studio-text)]"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${queue.syncing ? "animate-spin" : ""}`} aria-hidden="true" />
           Oppdater
         </button>
+        {resetImportActions}
       </div>
 
       {newEvents.length > 0 && (
+        <>
+          <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-[var(--studio-bg)] border border-[var(--studio-border)]">
+            {queue.importNewAutomatically ? (
+              <p className="text-xs text-[var(--studio-muted)] max-w-lg">
+                <span className="font-bold text-[var(--studio-text)]">Opprett nye automatisk</span> er på (Database → Flater).
+                Nye rader opprettes ved oppdatering — ikke bruk «Opprett» i tillegg. «Flere valg» er for unntak.
+              </p>
+            ) : (
+              <>
+                <p className="text-xs text-[var(--studio-muted)] max-w-md">
+                  Gå gjennom lista og trykk <span className="font-bold text-[var(--studio-text)]">Opprett alle</span>, eller opprett én og én.
+                  Automatisk oppretting slår du på under Database → Flater.
+                </p>
+                <button
+                  type="button"
+                  disabled={!queue.groupReady || queue.batchWorking || queue.syncing}
+                  onClick={() => void queue.createAllNew()}
+                  className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-bold shrink-0"
+                >
+                  <ListChecks className="w-4 h-4" aria-hidden="true" />
+                  Opprett alle ({newEvents.length})
+                </button>
+              </>
+            )}
+          </div>
         <ul className="space-y-2">
           {newEvents.map((event) => {
             const uid = event.uid || event.startsAt;
@@ -116,6 +217,7 @@ export const ExternalCalendarImportPanel: React.FC<ExternalCalendarImportPanelPr
                   </select>
                 </label>
                 <div className="flex flex-wrap gap-2">
+                  {!queue.importNewAutomatically && (
                   <button
                     type="button"
                     disabled={!queue.groupReady}
@@ -125,6 +227,7 @@ export const ExternalCalendarImportPanel: React.FC<ExternalCalendarImportPanelPr
                     <Plus className="w-3.5 h-3.5" aria-hidden="true" />
                     Opprett
                   </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => setMoreOptions(event)}
@@ -145,6 +248,7 @@ export const ExternalCalendarImportPanel: React.FC<ExternalCalendarImportPanelPr
             );
           })}
         </ul>
+        </>
       )}
 
       {gone.length > 0 && (
@@ -192,9 +296,9 @@ export const ExternalCalendarImportPanel: React.FC<ExternalCalendarImportPanelPr
           initial={queue.formInitialFor(moreOptions)}
           initialTemplateId={queue.templateIdFor(moreOptions)}
           externalCalendarUid={moreOptions.uid || undefined}
-          onCreated={() => {
+          onCreated={(gathering) => {
             setMoreOptions(null);
-            void queue.sync();
+            queue.afterFormCreate(gathering);
           }}
           onClose={() => setMoreOptions(null)}
         />
@@ -208,6 +312,32 @@ export const ExternalCalendarImportPanel: React.FC<ExternalCalendarImportPanelPr
           onConfirm={() => confirmDelete(deleting)}
           onClose={() => setDeleting(null)}
         />
+      )}
+
+      {confirmReset && (
+        <ConfirmDialog
+          title="Start kalenderimport på nytt?"
+          tone="danger"
+          confirmLabel="Ja, nullstill import"
+          busy={queue.resetWorking}
+          onCancel={() => setConfirmReset(false)}
+          onConfirm={() => {
+            void queue.resetImport(deleteGatheringWithStaffing).then(() => setConfirmReset(false));
+          }}
+        >
+          <p>
+            {queue.importResetCandidateCount > 0 ? (
+              <>
+                Ca. <span className="font-bold text-[var(--studio-text)]">{queue.importResetCandidateCount}</span>{" "}
+                arrangementer i planleggeren fjernes (importerte rader og sannsynlige duplikater).
+              </>
+            ) : (
+              <>Importerte arrangementer fjernes ut fra siste feed, og importkøen nullstilles.</>
+            )}{" "}
+            Oppgaver og tildelinger på disse arrangementene slettes også. Deretter hentes kirkens kalender på nytt
+            {queue.importNewAutomatically ? " og nye rader opprettes automatisk." : "."}
+          </p>
+        </ConfirmDialog>
       )}
     </section>
   );

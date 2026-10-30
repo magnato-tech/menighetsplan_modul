@@ -8,6 +8,7 @@ import { onDay, type GatheringFormValues } from "../../utils/gatheringForm";
 import { createPlannedGathering, planGathering } from "../../utils/gatheringTemplates";
 import { newId } from "../../utils/id";
 import { hasPlanner } from "../../utils/level";
+import type { Gathering } from "../../types";
 import type { ShowFeedback, StudioData } from "./studio";
 
 interface NewGatheringDialogProps {
@@ -18,7 +19,7 @@ interface NewGatheringDialogProps {
   initialTemplateId?: string;
   initialRepeat?: boolean;
   externalCalendarUid?: string;
-  onCreated?: () => void;
+  onCreated?: (gathering: Gathering) => void;
   onClose: () => void;
 }
 
@@ -44,6 +45,7 @@ export const NewGatheringDialog: React.FC<NewGatheringDialogProps> = ({ studio, 
     const seriesId = series.length > 1 ? newId("serie") : undefined;
 
     let made = 0;
+    let firstCreated: Gathering | undefined;
     for (const day of series) {
       const result = createPlannedGathering(
         studio,
@@ -58,12 +60,13 @@ export const NewGatheringDialog: React.FC<NewGatheringDialogProps> = ({ studio, 
       if (!result.success) {
         return made === 0 ? result : { success: false, error: `${made} av ${series.length} arrangementer ble opprettet. ${result.error || "Resten kunne ikke lagres."}` };
       }
+      if (!firstCreated && result.gathering) firstCreated = result.gathering;
       made++;
     }
 
     const from = template ? ` fra malen «${template.name}»` : "";
     showFeedback(made === 1 ? `Nytt arrangement opprettet${from} og lagt i kalenderen!` : `${made} arrangementer opprettet${from} og lagt i kalenderen!`);
-    onCreated?.();
+    if (firstCreated) onCreated?.(firstCreated);
     return { success: true };
   };
 

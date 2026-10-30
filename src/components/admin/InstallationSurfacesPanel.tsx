@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Globe, LayoutDashboard, Loader2 } from "lucide-react";
 import { useCms } from "../../context/CmsContext";
-import { icalImportOn } from "../../utils/surfaces";
+import { icalImportOn, normalizeExternalCalendarUrl } from "../../utils/surfaces";
 import type { ShowFeedback } from "../../pages/admin/studio";
 import { studioSecondaryButton } from "../../pages/admin/studioTheme";
 
@@ -19,6 +19,7 @@ export const InstallationSurfacesPanel: React.FC<InstallationSurfacesPanelProps>
   const [ownWebsite, setOwnWebsite] = useState(surfaces.ownWebsite);
   const [externalSiteUrl, setExternalSiteUrl] = useState(surfaces.externalSiteUrl);
   const [externalCalendarUrl, setExternalCalendarUrl] = useState(surfaces.externalCalendarUrl);
+  const [importNewAutomatically, setImportNewAutomatically] = useState(surfaces.importNewAutomatically);
   const [working, setWorking] = useState(false);
 
   useEffect(() => {
@@ -26,6 +27,7 @@ export const InstallationSurfacesPanel: React.FC<InstallationSurfacesPanelProps>
     setOwnWebsite(surfaces.ownWebsite);
     setExternalSiteUrl(surfaces.externalSiteUrl);
     setExternalCalendarUrl(surfaces.externalCalendarUrl);
+    setImportNewAutomatically(surfaces.importNewAutomatically);
   }, [surfaces]);
 
   const submit = async (event: React.FormEvent) => {
@@ -34,12 +36,14 @@ export const InstallationSurfacesPanel: React.FC<InstallationSurfacesPanelProps>
       showFeedback("Legg inn menighetens nettside når vår nettside er av.", "error");
       return;
     }
+    const calendarUrl = normalizeExternalCalendarUrl(externalCalendarUrl);
     setWorking(true);
     const ok = await saveSurfaces({
       minSide,
       ownWebsite,
       externalSiteUrl: externalSiteUrl.trim(),
-      externalCalendarUrl: externalCalendarUrl.trim(),
+      externalCalendarUrl: calendarUrl,
+      importNewAutomatically,
     });
     setWorking(false);
     if (ok) showFeedback("Flatene er lagret.");
@@ -124,13 +128,26 @@ export const InstallationSurfacesPanel: React.FC<InstallationSurfacesPanelProps>
                   type="url"
                   value={externalCalendarUrl}
                   onChange={(e) => setExternalCalendarUrl(e.target.value)}
-                  placeholder="https://… eller webcal://…"
+                  placeholder="https://…/basic.ics (ikke Google embed)"
                   className="w-full px-3 py-2 rounded-xl border border-[var(--studio-border)] bg-[var(--studio-bg)] text-sm text-[var(--studio-text)]"
                 />
                 {importHint && (
                   <span className="block text-[11px] text-[var(--studio-muted)]">
                     Med iCal kan dere hente arrangementer fra kirkens kalender inn i planleggeren (Kalender-fanen).
                   </span>
+                )}
+                {importHint && (
+                  <label className="flex items-start gap-2 cursor-pointer pt-1">
+                    <input
+                      type="checkbox"
+                      checked={importNewAutomatically}
+                      onChange={(e) => setImportNewAutomatically(e.target.checked)}
+                      className="mt-0.5 rounded border-[var(--studio-border)]"
+                    />
+                    <span className="text-[11px] text-[var(--studio-muted)]">
+                      Opprett nye hendelser automatisk ved oppdatering (samme valg som «Opprett alle» på Kalender).
+                    </span>
+                  </label>
                 )}
               </label>
             </div>

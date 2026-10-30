@@ -68,6 +68,7 @@ var defaultSurfaces = () => ({
   ownWebsite: true,
   externalSiteUrl: "",
   externalCalendarUrl: "",
+  importNewAutomatically: false,
   dismissedUids: [],
   keptUids: []
 });
@@ -76,6 +77,31 @@ function validHttpsUrl(value) {
   const trimmed = String(value || "").trim().replace(/^webcal:\/\//i, "https://");
   if (!/^https?:\/\//i.test(trimmed)) return "";
   return trimmed;
+}
+function normalizeExternalCalendarUrl(value) {
+  let raw = String(value || "").trim();
+  if (!raw) return "";
+  const iframeSrc = /src=["']([^"']+)["']/i.exec(raw);
+  if (iframeSrc) raw = iframeSrc[1].trim();
+  if (!/^https?:\/\//i.test(raw) && !/^webcal:\/\//i.test(raw)) {
+    raw = raw.startsWith("calendar.google.com") ? `https://${raw}` : raw;
+  }
+  raw = raw.replace(/^webcal:\/\//i, "https://");
+  if (/calendar\.google\.com\/calendar\/embed/i.test(raw)) {
+    try {
+      const url = new URL(raw);
+      const src = url.searchParams.get("src");
+      if (src) {
+        return `https://calendar.google.com/calendar/ical/${encodeURIComponent(src)}/public/basic.ics`;
+      }
+    } catch {
+    }
+  }
+  return raw;
+}
+function icalFeedUrl(surfaces) {
+  const url = validHttpsUrl(normalizeExternalCalendarUrl(surfaces.externalCalendarUrl));
+  return url || null;
 }
 function parseSurfaces(data) {
   const base = defaultSurfaces();
@@ -94,6 +120,7 @@ function parseSurfaces(data) {
     ownWebsite: data.ownWebsite === false ? false : true,
     externalSiteUrl: typeof data.externalSiteUrl === "string" ? data.externalSiteUrl : "",
     externalCalendarUrl: typeof data.externalCalendarUrl === "string" ? data.externalCalendarUrl : "",
+    importNewAutomatically: data.importNewAutomatically === true,
     dismissedUids: strings(data.dismissedUids),
     keptUids: strings(data.keptUids)
   };
@@ -147,7 +174,7 @@ async function externalCalendarIcs({
   const doc = await readDocument(database, SURFACES_PATH, ask);
   const surfaces = parseSurfaces(doc && doc.recordType === SURFACES_RECORD ? doc : void 0);
   if (surfaces.ownWebsite) return plain(404, "Kalenderimport er bare når vår nettside er av.");
-  const feedUrl = validHttpsUrl(surfaces.externalCalendarUrl);
+  const feedUrl = icalFeedUrl(surfaces);
   if (!feedUrl) return plain(404, "Ingen iCal-adresse er lagret.");
   let response;
   try {
@@ -158,7 +185,15 @@ async function externalCalendarIcs({
   }
   const text = await response.text();
   if (!response.ok) return plain(502, `Kirkens kalender svarte ${response.status}.`);
-  if (!text.includes("BEGIN:VCALENDAR")) return plain(502, "Svaret var ikke en gyldig kalenderfil.");
+  if (!text.includes("BEGIN:VCALENDAR")) {
+    if (/^\s*<!doctype html/i.test(text) || /CalendarEmbed/i.test(text)) {
+      return plain(
+        502,
+        "Adressen peker på innbygging (HTML), ikke iCal. Lim inn iCal-adressen (…/basic.ics), ikke embed-lenken."
+      );
+    }
+    return plain(502, "Svaret var ikke en gyldig kalenderfil.");
+  }
   return plain(200, text);
 }
 
