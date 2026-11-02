@@ -10,6 +10,6 @@ Når knappetekst, fanenavn eller en arbeidsflyt endres i Admin Studio, oppdater 
 
 - Menynavn i hjelpen skal være de samme ordene som i sidemenyen.
 - Teksten beskriver det brukeren ser: formål, hvor, steg, knapper og felt, og hva som skjer etter lagring.
-- Ikke legg filstier, rolleavvik eller skjermbildeplassholdere inn i artiklene. Det hører hjemme i `docs/BrukerveilProdDoc.md`.
+- Ikke legg filstier, rolleavvik eller skjermbildeplassholdere inn i artiklene. Det hører hjemme i `PRODUKTDOKUMENTASJON.md`.
 - Hvert artikkel-anker har et bilde i `public/help/hjelp-<id>.png`. Ved store UI-endringer: kjør `node scripts/capture-help-screenshots.mjs`.
 - Nytt menypunkt under Sider & Innhold får både en artikkel og en plass i undermenyen i `helpSections`.

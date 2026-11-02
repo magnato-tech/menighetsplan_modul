@@ -1774,6 +1774,19 @@ Bestilt av produkteier. Ligger på grenen `semesterplan`, ikke på `main`, og er
 ---
 
 
+### Hjelp for høsten: Nytt i høst, Flater og veiledningen på Min side (2. november 2026)
+
+Bestilt av produkteier. Ikke sluppet.
+
+| Del | Hva som er levert |
+|---|---|
+| **Hjelp i admin** | Artiklene er gått gjennom mot koden og dagens skjermer. **Kom i gang**: admin er lys som standard, menyen kan brettes sammen, startsiden på mobil, og Min side og Vår nettside kan slås av. **Nytt i høst** (før «Nytt i oktober») dekker Nettside og Planlegging. Ny artikkel **Flater i løsningen** under Innsikt og moduler, med bildet `hjelp-flater.png`. Det er nå 35 artikler |
+| **Rettet etter koden** | Knappenavn og trinn som ikke stemte: Kirkens kalender (Opprett nye hendelser automatisk ved oppdatering, og at Start import på nytt også sletter oppgaver og tildelinger), Grupper (kategori), Oppgaver (Fullfør tildeling og Send forespørsel), Lederskap & Stab (samtykket under Offentlig profil på nettsiden), E-post (Send til), Oversikt (hurtighandlingene), Kalender (Bemanning og Program) og Roller (programmet endres for arrangementet) |
+| **Veiledningen på Min side** | Åtte punkter, to nye: semesterplanen tar en oppgave tilbake uten forfall, og Møteleder og Gudstjenesteleder endrer programmet fra oppgaven sin. `VolunteerHelp.tsx` |
+| **Dokumentasjonen** | `docs/BrukerveilProdDoc.md` er erstattet med en henvisning til artiklene i appen og til denne filen. Ingen lenker til den i koden eller her |
+
+---
+
 ## 13. Kjente mangler
 
 Sortert etter hvor mye de betyr for en menighet som skal ta løsningen i bruk.

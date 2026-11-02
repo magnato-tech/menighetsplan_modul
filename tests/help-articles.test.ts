@@ -37,13 +37,33 @@ describe("Artiklene", () => {
     expect(findHelpArticle("finnes-ikke").id).toBe(defaultHelpArticleId);
   });
 
-  test("hver har vei dit, en innledning og høyst seks korte steg", () => {
+  test("hver har vei dit, en innledning og høyst seks korte steg (Nytt i høst har tolv: seks gamle og seks nye)", () => {
     for (const article of articles) {
       expect(article.hvor, article.id).toBeTruthy();
       expect(article.intro, article.id).toBeTruthy();
       expect(article.steg.length, article.id).toBeGreaterThan(0);
-      expect(article.steg.length, article.id).toBeLessThanOrEqual(6);
+      expect(article.steg.length, article.id).toBeLessThanOrEqual(article.id === "nytt" ? 12 : 6);
     }
+  });
+
+  test("Nytt i høst har tittelen, og de seks nye punktene om planleggingen", () => {
+    const nytt = findHelpArticle("nytt");
+    expect(nytt.title).toBe("Nytt i høst");
+    expect(nytt.steg.length).toBe(12);
+    expect(nytt.steg.some((step) => step.includes("**Semesterplan**"))).toBe(true);
+    expect(nytt.steg.some((step) => step.includes("**Flater i løsningen**"))).toBe(true);
+  });
+
+  test("Flater i løsningen har skjermbilde, og åpnes fra Database og Testdata", () => {
+    const flater = findHelpArticle("flater");
+    expect(flater.id).toBe("flater");
+    expect(flater.title).toBe("Flater i løsningen");
+    // The picture is taken outside the demo, which does not show the Database page; until then, none
+    expect(flater.utenBilde).toBe(true);
+    expect(helpArticleImageSrc(flater.id)).toBe("/help/hjelp-flater.png");
+    expect(flater.hvor).toContain("Flater i løsningen");
+    expect(helpArticleIdForTab("database-admin", "planlegging")).toBe("flater");
+    expect(findHelpArticle("kirkens-kalender").seOgsa).toContain("flater");
   });
 
   test("hver med bilde har et skjermbilde", () => {
