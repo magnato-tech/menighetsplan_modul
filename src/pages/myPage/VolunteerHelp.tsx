@@ -64,6 +64,14 @@ export const VolunteerHelp: React.FC = () => {
                 Når semesterplanen er åpnet, står et flagg ved Min side og et gult kort øverst. Trykk Start og gå gjennom arrangementene ett om gangen:
                 Ta oppgave, Kan ikke eller Neste. Alt lagres med en gang, så du kan fortsette senere.
               </li>
+              <li>
+                I semesterplanen: står du allerede på en oppgave, trykk på den grønne linjen «Du står på …». Oppgaven blir ledig igjen, og lederen får ingen forfallsmelding.
+                «Kan ikke» betyr at du ikke kan hele arrangementet, og tar deg ikke av oppgaven. Meld forfall gjelder fortsatt alle andre steder.
+              </li>
+              <li>
+                Har du sagt ja til Møteleder eller Gudstjenesteleder, kan du endre programmet for arrangementet. Åpne oppgaven og trykk Se og endre programmet.
+                Dra postene i rekkefølge, endre tittel og varighet, og legg til nye med Ny programpost.
+              </li>
             </ol>
             <button type="button" onClick={() => setOpen(false)} className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-700 text-white text-sm font-bold cursor-pointer">
               Lukk

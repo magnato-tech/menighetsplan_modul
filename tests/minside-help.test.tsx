@@ -12,9 +12,12 @@ describe("Hjelp på Min side", () => {
     expect(screen.queryByText(/Meld forfall/)).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Slik bruker du Min side" }));
     const help = screen.getByRole("dialog", { name: "Slik bruker du Min side" });
-    expect(within(help).getByText(/Meld forfall/)).toBeTruthy();
-    expect(within(help).getAllByRole("listitem")).toHaveLength(6);
+    expect(within(help).getAllByText(/Meld forfall/).length).toBeGreaterThan(0);
+    expect(within(help).getAllByRole("listitem")).toHaveLength(8);
     expect(within(help).getByText(/semesterplanen er åpnet/)).toBeTruthy();
+    // Two points more: the semester plan takes a task back quietly, and the programme of a gathering
+    expect(within(help).getByText(/«Du står på …»/)).toBeTruthy();
+    expect(within(help).getByText(/Se og endre programmet/)).toBeTruthy();
 
     // Three ways out: the cross, «Lukk», and a press outside
     fireEvent.click(within(help).getByRole("button", { name: "Lukk" }));
