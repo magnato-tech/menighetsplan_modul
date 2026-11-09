@@ -55,8 +55,14 @@ export const VolunteerHelp: React.FC = () => {
               </button>
             </div>
             <ol className="space-y-2 list-decimal pl-4 leading-relaxed text-sm text-slate-700">
-              <li>Logg inn med Google eller en lenke på e-post. Adressen må stå på deg i registeret.</li>
-              <li>Gruppene dine står under Mine grupper. Der ser du hvem som er med, og beskjedene.</li>
+              <li>
+                Min side er en del av menighetens nettside, ikke en app som må lastes ned. Trykk Logg inn på nettsiden, med Google eller en lenke på e-post. Adressen må stå på deg i registeret.
+                Vil du ha et ikon på telefonen, velg «Legg til på startskjermen» i nettleseren.
+              </li>
+              <li>
+                Gruppene dine står under Mine grupper. Der ser du hvem som er med, og beskjedene. Under Gudstjenester ser du hvem som gjør hva de neste søndagene.
+                Leder du en gruppe, står den øverst med bemanningen, forfall står som Må fylles på Mine oppgaver, og Jeg leder i Kalender viser gruppens arrangementer.
+              </li>
               <li>Er du spurt om en oppgave, står forespørselen øverst på Mine oppgaver. Svar Ja, jeg kan eller Kan ikke. Har du flere, kommer den neste når du har svart.</li>
               <li>Under står knappen Se ledige oppgaver. Der ser du alt samlet: forespørslene først, så de ledige oppgavene i gruppene dine.</li>
               <li>Står du allerede på en oppgave og ikke kan likevel, trykk Meld forfall og bekreft. Grunnen tas muntlig.</li>
