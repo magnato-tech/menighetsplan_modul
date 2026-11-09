@@ -10,6 +10,7 @@ import { DEMO } from "../demo";
 import { DemoDoor } from "./DemoDoor";
 import { whereDoorLeads } from "../utils/demoDoor";
 import { logoOf } from "../utils/logo";
+import { churchSiteUrl, hasChurchSite } from "../utils/surfaces";
 
 const card = "w-full max-w-sm mx-auto bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-5";
 const primaryButton =
@@ -33,7 +34,7 @@ export const helpToSignInLink = (address: string): string => `mailto:${address}?
 export const SignInPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const { session, signOut, standInAs, allPersons } = useFirebase();
-  const { settings } = useCms();
+  const { settings, surfaces } = useCms();
   const destination = destinationAfterSignIn(searchParams.get("neste"));
 
   const [email, setEmail] = useState("");
@@ -219,11 +220,13 @@ export const SignInPage: React.FC = () => {
           </label>
         )}
 
-        <p className="pt-1 text-center">
-          <ChurchSiteLink className="text-xs font-bold text-slate-600 hover:text-slate-900">
-            Tilbake til nettsiden
-          </ChurchSiteLink>
-        </p>
+        {hasChurchSite(surfaces) && (
+          <p className="pt-1 text-center">
+            <ChurchSiteLink className="text-xs font-bold text-slate-600 hover:text-slate-900">
+              {!surfaces.ownWebsite && churchSiteUrl(surfaces) ? "Til kirkens nettside" : "Tilbake til nettsiden"}
+            </ChurchSiteLink>
+          </p>
+        )}
       </div>
     </main>
   );

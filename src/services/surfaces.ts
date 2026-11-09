@@ -20,7 +20,11 @@ export function subscribeSurfaces(onChange: (surfaces: InstallationSurfaces) => 
 export type SurfacesPatch = Partial<
   Pick<
     InstallationSurfaces,
-    "minSide" | "ownWebsite" | "externalSiteUrl" | "externalCalendarUrl" | "importNewAutomatically"
+    | "minSide"
+    | "ownWebsite"
+    | "externalSiteUrl"
+    | "externalCalendarUrl"
+    | "importNewAutomatically"
   >
 >;
 

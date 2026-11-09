@@ -30,6 +30,7 @@ export const Header: React.FC = () => {
           <ChurchSiteLink
             id="app-logo-link"
             title="Til nettsiden"
+            textWithoutSite
             className="min-w-0 group transition-opacity hover:opacity-90"
           >
             <p className="text-lg font-bold text-slate-800 tracking-tight leading-tight truncate group-hover:underline underline-offset-2">

@@ -4,8 +4,7 @@ import { FirebaseDataProvider } from "./context/FirebaseDataContext";
 import { CmsProvider, useCms } from "./context/CmsContext";
 import { SITE_THEME_CLASS, getThemeCssVariables } from "./utils/themeUtils";
 import { isAdminStudioPath, isMinSidePath, isPublicPath, isSignInPath, isUnsubscribePath } from "./utils/routes";
-import { churchSiteUrl } from "./utils/surfaces";
-import { ExternalSiteFallbackPage } from "./pages/ExternalSiteFallbackPage";
+import { decidePublicEntry } from "./utils/surfaces";
 import { MinSideUnavailablePage } from "./pages/MinSideUnavailablePage";
 import { PreviewQueryPersist } from "./components/public/PreviewQueryPersist";
 import { useSiteTraffic } from "./hooks/useSiteTraffic";
@@ -64,25 +63,18 @@ function LazyRouteFallback() {
   return <p className="p-6 text-sm text-slate-500">Laster…</p>;
 }
 
-/** When our website is off, public addresses go to the congregation's site or a neutral fallback. */
+/**
+ * When our website is off, public addresses go into the app: to Min side, or to admin when Min side is off.
+ * Sign-in in front of them is SessionGate's job (see decidePublicEntry in utils/surfaces.ts).
+ */
 function PublicSurfaceGate({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const { surfaces, surfacesState } = useCms();
 
-  const external = !surfaces.ownWebsite && isPublicPath(location.pathname) ? churchSiteUrl(surfaces) : null;
-
-  useEffect(() => {
-    if (!external || surfacesState !== "ready") return;
-    window.location.replace(external);
-  }, [external, surfacesState]);
-
-  if (!surfaces.ownWebsite && isPublicPath(location.pathname)) {
-    if (surfacesState === "loading") return <LazyRouteFallback />;
-    if (external) return <p className="p-6 text-sm text-stone-600">Sender deg videre til menighetens nettside…</p>;
-    return <ExternalSiteFallbackPage />;
-  }
-
-  return <>{children}</>;
+  const entry = decidePublicEntry(surfaces, location.pathname);
+  if (entry === "render") return <>{children}</>;
+  if (surfacesState === "loading") return <LazyRouteFallback />;
+  return <Navigate to={entry === "admin" ? "/admin" : "/minside"} replace />;
 }
 
 /**

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Globe, LayoutDashboard, Loader2 } from "lucide-react";
+import { Copy, Globe, LayoutDashboard, Loader2 } from "lucide-react";
 import { useCms } from "../../context/CmsContext";
 import { icalImportOn, normalizeExternalCalendarUrl } from "../../utils/surfaces";
 import type { ShowFeedback } from "../../pages/admin/studio";
@@ -30,12 +30,19 @@ export const InstallationSurfacesPanel: React.FC<InstallationSurfacesPanelProps>
     setImportNewAutomatically(surfaces.importNewAutomatically);
   }, [surfaces]);
 
+  const minSideLink = `${window.location.origin}/minside`;
+
+  const copyMinSideLink = async () => {
+    try {
+      await navigator.clipboard.writeText(minSideLink);
+      showFeedback("Lenken er kopiert.");
+    } catch {
+      showFeedback("Lenken ble ikke kopiert.", "error");
+    }
+  };
+
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!ownWebsite && !externalSiteUrl.trim()) {
-      showFeedback("Legg inn menighetens nettside når vår nettside er av.", "error");
-      return;
-    }
     const calendarUrl = normalizeExternalCalendarUrl(externalCalendarUrl);
     setWorking(true);
     const ok = await saveSurfaces({
@@ -104,7 +111,7 @@ export const InstallationSurfacesPanel: React.FC<InstallationSurfacesPanelProps>
             <span>
               <span className="block text-sm font-bold text-[var(--studio-text)]">Vår nettside</span>
               <span className="block text-xs text-[var(--studio-muted)] mt-0.5">
-                Når den er av, vises ikke sidene dere lager her på menighetens egen nettside. Forsiden peker til adressen under.
+                Når den er av, vises ikke nettsiden. Adressen går rett til Min side, med innlogging foran.
               </span>
             </span>
           </label>
@@ -112,16 +119,37 @@ export const InstallationSurfacesPanel: React.FC<InstallationSurfacesPanelProps>
           {!ownWebsite && (
             <div className="space-y-3 pl-7 border-l-2 border-[var(--studio-border)]">
               <label className="block space-y-1">
-                <span className="text-xs font-bold text-[var(--studio-text)]">Menighetens nettside (https)</span>
+                <span className="text-xs font-bold text-[var(--studio-text)]">Kirkens egen nettside (valgfritt, https)</span>
                 <input
                   type="url"
                   value={externalSiteUrl}
                   onChange={(e) => setExternalSiteUrl(e.target.value)}
                   placeholder="https://…"
                   className="w-full px-3 py-2 rounded-xl border border-[var(--studio-border)] bg-[var(--studio-bg)] text-sm text-[var(--studio-text)]"
-                  required
                 />
+                <span className="block text-[11px] text-[var(--studio-muted)]">
+                  Brukes bare til lenken «Til kirkens nettside». Ingen sendes dit automatisk.
+                </span>
               </label>
+              <div className="space-y-2">
+                <span className="block text-xs font-bold text-[var(--studio-text)]">Direkte lenke til Min side</span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={minSideLink}
+                    onFocus={(e) => e.target.select()}
+                    className="flex-1 min-w-0 px-3 py-2 rounded-xl border border-[var(--studio-border)] bg-[var(--studio-bg)] text-sm text-[var(--studio-text)]"
+                  />
+                  <button type="button" onClick={() => void copyMinSideLink()} className={`${studioSecondaryButton} inline-flex items-center gap-2 text-xs`}>
+                    <Copy className="w-4 h-4" aria-hidden="true" />
+                    Kopier
+                  </button>
+                </div>
+                <p className="text-[11px] text-[var(--studio-muted)]">
+                  Har menigheten en annen nettside i tillegg, kan denne lenken legges der, f.eks. som «Min side» eller «Logg inn» i menyen.
+                </p>
+              </div>
               <label className="block space-y-1">
                 <span className="text-xs font-bold text-[var(--studio-text)]">iCal-adresse (valgfritt)</span>
                 <input

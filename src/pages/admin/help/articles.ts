@@ -420,7 +420,7 @@ const kirkensKalender: HelpArticle = {
   intro:
     "Når menigheten har sin egen nettside (Vår nettside er av), kan dere hente arrangementer fra kirkens iCal-feed inn i planleggeren. Nye hendelser godkjennes én og én; knyttede arrangementer oppdateres når dere trykker oppdater.",
   steg: [
-    "Under **Database og Testdata**, i **Flater i løsningen**: slå av **Vår nettside**, legg inn **Menighetens nettside (https)** og **iCal-adresse (valgfritt)**, og trykk **Lagre flater**.",
+    "Under **Database og Testdata**, i **Flater i løsningen**: slå av **Vår nettside**, legg inn **Kirkens egen nettside (valgfritt, https)** og **iCal-adresse (valgfritt)**, og trykk **Lagre flater**.",
     "Åpne **Kalender**. Panelet **Fra kirkens kalender** viser det som mangler hos dere eller er borte fra feeden.",
     "For en ny rad: velg mal, trykk **Opprett**, **Opprett alle**, eller **Flere valg**. **Ikke nå** skjuler raden til neste gang.",
     "Kryss av **Opprett nye hendelser automatisk ved oppdatering** under Flater i løsningen, hvis forslagene er gode nok. Da opprettes nye rader når dere trykker **Oppdater**, og du trenger ikke trykke **Opprett** i tillegg. **Flere valg** er til unntakene.",
@@ -622,12 +622,12 @@ const flater: HelpArticle = {
   steg: [
     "Gå til **Database og Testdata** i menyen under System & Database. **Flater i løsningen** står under driftsmodus.",
     "Slå av **Min side** hvis menigheten ikke skal bruke den. Frivillige får da beskjed om at Min side ikke er i bruk, og administratorer sendes rett til admin.",
-    "Slå av **Vår nettside** hvis menigheten har sin egen nettside. Skriv inn adressen under **Menighetens nettside (https)**, så peker forsiden dit.",
+    "Slå av **Vår nettside** hvis menigheten ikke skal bruke nettsiden. Besøkende som åpner nettsidene, sendes da til Min side med innlogging foran. Skriv inn **Kirkens egen nettside (valgfritt, https)** hvis dere vil ha en lenke «Til kirkens nettside».",
     "Vil dere hente arrangementer fra kirkens kalender, legg inn **iCal-adresse (valgfritt)**. Se Kirkens kalender for resten.",
     "Trykk **Lagre flater**.",
   ],
   godt: "Innholdet i databasen slettes ikke. Slår du flaten på igjen, er alt som det var.",
-  passPa: "Er **Vår nettside** av, står bare Planlegging i admin. Adressen til menighetens nettside må være fylt ut før du kan lagre.",
+  passPa: "Er **Vår nettside** av, står bare Planlegging i admin. Adressen til menighetens egen nettside er valgfri: den brukes bare til lenker.",
   seOgsa: ["kirkens-kalender", "moduler", "kom-i-gang"],
   tabs: ["database-admin"],
   // No picture yet: the demo does not show the Database page. Take it outside the demo, then remove this line.
