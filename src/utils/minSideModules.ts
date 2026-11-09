@@ -7,7 +7,7 @@ import { ADDONS_RECORD } from "./addons";
 //
 // Off means hidden and not read, never deleted: what is stored stays where it is.
 
-export const MIN_SIDE_MODULE_IDS = ["grupper", "gruppechat", "husfellesskap", "tjeneste", "semesterplan", "kalender"] as const;
+export const MIN_SIDE_MODULE_IDS = ["grupper", "gruppechat", "husfellesskap", "tjeneste", "gudstjenesteplan", "semesterplan", "kalender"] as const;
 
 export type MinSideModuleId = (typeof MIN_SIDE_MODULE_IDS)[number];
 
@@ -18,6 +18,7 @@ export type MinSideModuleChoices = Partial<Record<MinSideModuleId, boolean>>;
 export const MIN_SIDE_MODULE_REQUIRES: Partial<Record<MinSideModuleId, MinSideModuleId>> = {
   gruppechat: "grupper",
   husfellesskap: "grupper",
+  gudstjenesteplan: "tjeneste",
 };
 
 /** On unless it is switched off, and the module it needs is on. */

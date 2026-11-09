@@ -33,6 +33,11 @@ export const MIN_SIDE_MODULE_TEXT: Record<MinSideModuleId, MinSideModuleText> = 
     summary: "Egne oppgaver, forespørsler, ledige oppgaver og vikarbehov på Min side.",
     whenOff: "Av: fanen Mine oppgaver viser bare innkallinger. Bemanningen i admin er som før.",
   },
+  gudstjenesteplan: {
+    name: "Gudstjenesteplan",
+    summary: "Hvem som gjør hva på de neste gudstjenestene, med dine egne oppgaver uthevet.",
+    whenOff: "Av: fanen Gudstjenester vises ikke på Min side.",
+  },
   semesterplan: {
     name: "Semesterplan",
     summary: "Gjennomgangen av et semester, ett arrangement om gangen.",

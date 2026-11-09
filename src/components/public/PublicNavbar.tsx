@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useCms } from "../../context/CmsContext";
 import { useFirebase } from "../../context/FirebaseDataContext";
 import { buildPublicMenu, pageUrl } from "../../utils/menu";
+import { signInUrl } from "../../utils/session";
 import { menuLogoOf, overlayLogoOf } from "../../utils/logo";
 import { heroMenuStyleOf } from "../../utils/heroLayout";
 import { usePreviewPageDraft } from "../../hooks/usePreviewPageDraft";
@@ -16,6 +17,7 @@ import {
   Shield,
   Settings,
   ChevronRight,
+  LogIn,
 } from "lucide-react";
 
 export const PublicNavbar: React.FC = () => {
@@ -23,7 +25,14 @@ export const PublicNavbar: React.FC = () => {
   const [openMobileSubmenus, setOpenMobileSubmenus] = useState<Record<string, boolean>>({});
   const location = useLocation();
   const { settings, pages, surfaces } = useCms();
-  const { currentUser } = useFirebase();
+  const { currentUser, session } = useFirebase();
+
+  // Min side is behind sign-in: a visitor is sent to sign in, and a member goes straight there
+  const signedIn = session.status === "member";
+  const minSideHref = signedIn ? "/minside" : signInUrl("/minside");
+  const minSideLabel = signedIn ? "Min side" : "Logg inn";
+  const minSideTitle = signedIn ? "Gå til Min side for planlegging og oppgaver" : "Logg inn for å komme til Min side";
+  const MinSideIcon = signedIn ? LayoutDashboard : LogIn;
 
   // The way into the admin: for administrators, and for web editors, who get its website part
   const isAdmin = currentUser?.globalRole === "admin" || currentUser?.globalRole === "nettredaktor";
@@ -217,12 +226,12 @@ export const PublicNavbar: React.FC = () => {
 
             {surfaces.minSide && (
             <Link
-              to="/minside"
+              to={minSideHref}
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-xs hover:shadow transition-all"
-              title="Gå til Min Side for planlegging og oppgaver"
+              title={minSideTitle}
             >
-              <LayoutDashboard className="w-3.5 h-3.5 text-accent-300" />
-              <span>Min Side</span>
+              <MinSideIcon className="w-3.5 h-3.5 text-accent-300" />
+              <span>{minSideLabel}</span>
             </Link>
             )}
 
@@ -245,10 +254,10 @@ export const PublicNavbar: React.FC = () => {
           <div className="flex items-center gap-2 lg:hidden">
             {surfaces.minSide && (
             <Link
-              to="/minside"
+              to={minSideHref}
               className="px-2.5 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-bold"
             >
-              Min Side
+              {minSideLabel}
             </Link>
             )}
             <button
@@ -343,13 +352,13 @@ export const PublicNavbar: React.FC = () => {
           <div className="pt-3 border-t border-stone-100 space-y-2">
             {surfaces.minSide && (
             <Link
-              to="/minside"
+              to={minSideHref}
               onClick={() => setMobileMenuOpen(false)}
               className="flex items-center justify-between w-full px-4 py-3 rounded-xl bg-slate-900 text-white text-sm font-bold shadow-sm"
             >
               <div className="flex items-center gap-2">
-                <LayoutDashboard className="w-4 h-4 text-accent-300" />
-                <span>Gå til Min Side (Planlegger)</span>
+                <MinSideIcon className="w-4 h-4 text-accent-300" />
+                <span>{minSideLabel}</span>
               </div>
               <ChevronRight className="w-4 h-4 text-stone-400" />
             </Link>

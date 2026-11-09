@@ -2000,7 +2000,7 @@ Administrator er det samme som den som skal se registeret. En redaktør som endr
 
 **Oppdater også kapittel 3.** Tabellen og avsnittet «Mulig funksjon: Min kalender» sier at kalenderen ikke er bygget, men den finnes som fane på Min side. Beskriv Min side slik den blir etter dette.
 
-### Én Min side for medlem og leder, og moduler *(bestemt av produkteier 9. november 2026, pågår)*
+### Én Min side for medlem og leder, og moduler *(bestemt av produkteier 9. november 2026, bygget 10. november, ikke sluppet til menighetene)*
 
 **Retningen.** Nettsiden er lik for alle. Medlemmer og gruppeledere har i tillegg én egen side, Min side, der innholdet følger rollen. En leder får ikke en egen side ved siden av: det en leder trenger, står på de samme fanene, der gruppen vises. Så mye som mulig er moduler som admin slår av og på, så løsningen kan tilpasses hver menighet. Målet er en Min side som er så enkel som mulig, og som likevel dekker det menigheten trenger. Prinsippet fra «Min side, forenklet» gjelder fortsatt.
 
@@ -2039,7 +2039,7 @@ Knappen «Gruppeleder» tas bort. `/leder` sender videre til `/minside?view=grup
 | Gruppechat | Chatten i alle gruppene, og siste melding på kortene | Chatten er skjult. Meldingene blir liggende |
 | Husfellesskap | Egen visning for husgrupper, med plan og verter | Husgrupper vises som vanlige grupper |
 | Semesterplan | Gjennomgangen per semester | Min side viser ingen semesterplan, og fanen er borte fra admin. Planer og svar blir liggende |
-| Gudstjenesteplan | Den nye fanen (trinn 7) | Fanen vises ikke |
+| Gudstjenesteplan | Fanen «Gudstjenester» (trinn 7). Krever Tjeneste og bemanning | Fanen vises ikke |
 | Kalender | Fanen Kalender på Min side | Fanen vises ikke. Kalenderen i admin og på nettsiden er som før |
 
 Bryterne virker på Min side, ikke på nettsiden. Om «Grupper» av også skal ta bort «Fellesskap» på nettsiden, avgjøres senere.
@@ -2059,20 +2059,16 @@ Bryterne virker på Min side, ikke på nettsiden. Om «Grupper» av også skal t
 | 3 | **Leder i Oppgaver.** Det som haster i egne grupper, inn i «Trenger oppmerksomhet» | **Levert 9. november.** Ett kort «Må fylles» per kommende samling der gruppen har forfall (noen sa ja og trakk seg), med «Finn noen» til planleggingen. En oppgave som aldri er fylt, regnes ikke: den står som ledig oppgave. De ledige oppgavene på samme samling og gruppe vises ikke i tillegg |
 | 4 | **Leder i Kalender.** Fargeprikkene og filteret. Etter dette er alt fra `/leder` flyttet | **Levert 9. november.** Filteret «Jeg leder» vises bare for ledere og nestledere: gruppenes egne samlinger, og menighetens samlinger der gruppen har oppgaver. Prikkene fantes fra før, og vises nå bare med Tjeneste og bemanning på. Et trykk åpner kjøreplanen, som har «Åpne planlegging». Fargefiltrene fra Semesteroversikt er ikke tatt med |
 | 5 | **Gruppeleder tas bort.** Knappen fjernes, og adressene sender videre | **Levert 9. november.** Planleggingen (`/leder/samling/:id`) står. Lenker i e-post, demoen og hjelpen går til Min side |
-| 6 | **Min side i nettsidens drakt.** Logo og farger fra designet. «Logg inn» for gjester og «Min side» for innloggede i nettsidens meny (`PublicNavbar.tsx`). Hjemskjermikonet åpner `/minside` (`start_url` i `public/manifest.webmanifest`) | |
-| 7 | **Gudstjenesteplan.** Ny fane, som modul. Trolig med en endring i reglene, se spørsmål 2 | |
-
-**Foreslått, ikke avgjort**
-
-* **Min side beholder fanene nederst på mobil**, og får ikke hele nettsidens meny. Øverst står logo og «Til nettsiden». Uten vår nettside er det heller ingen meny å vise.
+| 6 | **Min side i nettsidens drakt.** Logo og farger fra designet. «Logg inn» for gjester og «Min side» for innloggede i nettsidens meny (`PublicNavbar.tsx`). Hjemskjermikonet åpner `/minside` (`start_url` i `public/manifest.webmanifest`) | **Levert 10. november.** Logoen står ved navnet øverst. Temaets hovedfarge (`primary-*`) brukes på aktiv fane og «Min side»-knappen; resten av fargene er som før. Temaets avrunding gjelder også kortene på Min side. Fanene står fortsatt nederst på mobil |
+| 7 | **Gudstjenesteplan.** Ny fane, som modul. Trolig med en endring i reglene, se spørsmål 2 | **Levert 10. november.** Fanen «Gudstjenester»: de seks neste åpne gudstjenestene, hver rolle med navnene på dem som har sagt ja, egne oppgaver uthevet med «Du». Et trykk åpner kjøreplanen. Modulen krever Tjeneste og bemanning. Ingen regelendring |
 
 **Spørsmål produkteier svarer på før trinnet de gjelder**
 
 1. ~~Skal nestleder se alt en leder ser?~~ **Lagt til grunn 9. november 2026:** ja, som i dag. Produkteier startet trinn 2 uten å si imot. *(trinn 2)*
-2. Gudstjenesteplanen: skal alle i registeret se hvem som gjør hva, eller bare de som har oppgaver i perioden? I en menighets egen installasjon leser en frivillig i dag bare navnene i egne grupper og på menighetens åpne arrangementer. Svaret avgjør om `firestore.rules` og speilet (`src/utils/mirror.ts`) må endres. *(trinn 7)*
+2. ~~Gudstjenesteplanen: skal alle i registeret se hvem som gjør hva, eller bare de som har oppgaver i perioden?~~ **Avgjort 10. november 2026** (produkteier ba om at trinnet ble bygget): alle i registeret ser det samme som kjøreplanen viser alle i dag, altså bare dem som har sagt ja, på menighetens åpne gudstjenester. Da trengs ingen regelendring. Opprinnelig spørsmål: I en menighets egen installasjon leser en frivillig i dag bare navnene i egne grupper og på menighetens åpne arrangementer. Svaret avgjør om `firestore.rules` og speilet (`src/utils/mirror.ts`) må endres. *(trinn 7)*
 3. ~~Ser admin bare egne grupper på Min side?~~ **Lagt til grunn 9. november 2026:** ja. Min side viste allerede bare egne grupper. *(trinn 2)*
 4. ~~Er Gruppechat en egen modul, eller følger den alltid Grupper?~~ **Avgjort 9. november 2026:** begge deler. Gruppechat er en egen modul som krever Grupper. Er den på, har alle gruppene chat. Er Grupper av, er også chatten borte. *(trinn 1)*
-5. Beholder Min side fanene nederst, uten nettsidens meny? *(trinn 6)*
+5. ~~Beholder Min side fanene nederst, uten nettsidens meny?~~ **Avgjort 10. november 2026:** ja, som anbefalt. *(trinn 6)*
 
 ### Fase 1 – Trygg i drift *(trinn 2 og 4 over)*
 1. Innlogging med Google-konto. Første administrator er produkteierens konto.

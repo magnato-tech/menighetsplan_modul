@@ -174,7 +174,8 @@ function AppContent() {
     }
     return (
       <SessionGate>
-      <div className="min-h-[calc(100vh-var(--demo-strip,0px))] flex flex-col bg-slate-100 text-slate-800">
+      {/* The website's theme colours (primary-*, accent-*), without its fonts and page background */}
+      <div style={themeVariables} className="min-h-[calc(100vh-var(--demo-strip,0px))] flex flex-col bg-slate-100 text-slate-800">
         <Header />
         <main className="flex-1 pb-12">
           <ChunkErrorBoundary>

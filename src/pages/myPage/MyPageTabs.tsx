@@ -1,10 +1,10 @@
 import React from "react";
-import { Calendar, ListTodo, Users } from "lucide-react";
+import { Calendar, Church, ListTodo, Users } from "lucide-react";
 import type { MinSideModuleId } from "../../utils/minSideModules";
 
-// The three parts of Min side. The name of the one that is open, is the heading of the page.
+// The parts of Min side. The name of the one that is open, is the heading of the page.
 
-export type MyPageTab = "oppgaver" | "grupper" | "kalender";
+export type MyPageTab = "oppgaver" | "grupper" | "kalender" | "gudstjenester";
 
 export interface MyPageTabDef {
   id: MyPageTab;
@@ -18,6 +18,7 @@ export const MY_PAGE_TABS: MyPageTabDef[] = [
   { id: "oppgaver", label: "Mine oppgaver", icon: ListTodo },
   { id: "grupper", label: "Mine grupper", icon: Users, module: "grupper" },
   { id: "kalender", label: "Kalender", icon: Calendar, module: "kalender" },
+  { id: "gudstjenester", label: "Gudstjenester", icon: Church, module: "gudstjenesteplan" },
 ];
 
 /** The tabs that are on (see utils/minSideModules.ts). A tab whose module is off is not in the list. */
@@ -54,7 +55,7 @@ export const MyPageTabs: React.FC<MyPageTabsProps> = ({ active, onChange, tabs =
             aria-selected={active === id}
             onClick={() => onChange(id)}
             className={`flex-1 inline-flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl text-xs font-bold cursor-pointer transition-colors ${
-              active === id ? "bg-emerald-700 text-white shadow-xs" : "text-slate-600 hover:bg-slate-100"
+              active === id ? "bg-primary-700 text-white shadow-xs" : "text-slate-600 hover:bg-slate-100"
             }`}
           >
             <Icon className="w-4 h-4" />
@@ -76,11 +77,11 @@ export const MyPageTabs: React.FC<MyPageTabsProps> = ({ active, onChange, tabs =
             aria-current={active === id ? "page" : undefined}
             onClick={() => onChange(id)}
             className={`relative flex-1 flex flex-col items-center gap-0.5 py-1.5 rounded-xl cursor-pointer transition-colors ${
-              active === id ? "text-emerald-800 font-bold bg-emerald-50" : "text-slate-600 font-medium"
+              active === id ? "text-primary-800 font-bold bg-primary-50" : "text-slate-600 font-medium"
             }`}
           >
-            <Icon className={`w-5 h-5 ${active === id ? "text-emerald-700" : "text-slate-500"}`} />
-            <span className="text-[11px] tracking-tight">{label}</span>
+            <Icon className={`w-5 h-5 ${active === id ? "text-primary-700" : "text-slate-500"}`} />
+            <span className="block max-w-full truncate text-[11px] tracking-tight">{label}</span>
           </button>
         ))}
       </nav>

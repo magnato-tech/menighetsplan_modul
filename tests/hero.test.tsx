@@ -44,6 +44,7 @@ vi.mock("../src/context/CmsContext", () => ({
 vi.mock("../src/context/FirebaseDataContext", () => ({
   useFirebase: () => ({
     currentUser: { id: "p1", name: "Kari Nordmann", globalRole: "member" },
+    session: { status: "member", person: { id: "p1", name: "Kari Nordmann", globalRole: "member" } },
     setCurrentUserId: vi.fn(),
     getUserGroups: () => [],
     getTasksForPerson: () => [],

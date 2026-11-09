@@ -7,6 +7,7 @@ import { MyTasksTab } from "./myPage/MyTasksTab";
 import { MyPageTabs, shownMyPageTabs, toMyPageTab, type MyPageTab } from "./myPage/MyPageTabs";
 import { useMinSideModules } from "../hooks/useMinSideModules";
 import { MyCalendarPanel } from "./myPage/MyCalendarPanel";
+import { WorshipPlanPanel } from "./myPage/WorshipPlanPanel";
 import { AttentionModal } from "./myPage/AttentionModal";
 import { VolunteerHelp } from "./myPage/VolunteerHelp";
 import { SemesterPlanDone, SemesterPlanWaiting } from "./myPage/SemesterPlanSection";
@@ -100,6 +101,8 @@ export const MyPage: React.FC = () => {
         {tab === "grupper" && <MyGroupsSection page={page} />}
 
         {tab === "kalender" && <MyCalendarPanel />}
+
+        {tab === "gudstjenester" && <WorshipPlanPanel />}
       </div>
 
       {showAttentionModal && <AttentionModal page={page} onClose={() => setShowAttentionModal(false)} />}

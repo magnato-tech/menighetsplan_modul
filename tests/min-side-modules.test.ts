@@ -31,6 +31,13 @@ describe("Hvilke deler av Min side som er på", () => {
     expect(isMinSideModuleOn({ gruppechat: false }, "gruppechat")).toBe(false);
   });
 
+  test("gudstjenesteplan krever tjeneste og bemanning", () => {
+    expect(isMinSideModuleOn({ tjeneste: false }, "gudstjenesteplan")).toBe(false);
+    expect(isMinSideModuleOn({ gudstjenesteplan: false }, "gudstjenesteplan")).toBe(false);
+    expect(isMinSideModuleOn({ gudstjenesteplan: false }, "tjeneste")).toBe(true);
+    expect(isMinSideModuleOn({}, "gudstjenesteplan")).toBe(true);
+  });
+
   test("det lagrede feltet leses forsiktig: bare kjente moduler som står av, tas med", () => {
     expect(parseMinSideModules(undefined)).toEqual({});
     expect(parseMinSideModules({})).toEqual({});
@@ -43,7 +50,7 @@ describe("Hvilke deler av Min side som er på", () => {
     expect(
       parseMinSideModules({
         recordType: ADDONS_RECORD,
-        minSide: { kalender: false, grupper: true, tjeneste: "nei", gudstjenesteplan: false, semesterplan: 0 },
+        minSide: { kalender: false, grupper: true, tjeneste: "nei", ukjent: false, semesterplan: 0 },
       })
     ).toEqual({ kalender: false });
 
@@ -63,6 +70,8 @@ describe("Teksten til modulene", () => {
     expect(requiresText("gruppechat")).toBe("Krever Grupper");
     expect(requiresText("husfellesskap")).toBe("Krever Grupper");
     expect(requiresText("grupper")).toBeUndefined();
+    expect(requiresText("gudstjenesteplan")).toBe("Krever Tjeneste og bemanning");
+    expect(MIN_SIDE_MODULE_TEXT.gudstjenesteplan.name).toBe("Gudstjenesteplan");
   });
 
   test("semesterplanfanen i admin hører til modulen Semesterplan, og fanen finnes", () => {

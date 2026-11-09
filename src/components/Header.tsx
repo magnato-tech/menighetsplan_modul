@@ -7,6 +7,7 @@ import { useFirebase } from "../context/FirebaseDataContext";
 import { Flag, Shield } from "lucide-react";
 import { useMySemesterPlans } from "../hooks/useSemesterPlans";
 import { useMinSideModules } from "../hooks/useMinSideModules";
+import { logoOf } from "../utils/logo";
 
 export const Header: React.FC = () => {
   const { settings, surfaces } = useCms();
@@ -22,6 +23,8 @@ export const Header: React.FC = () => {
   const { isOn } = useMinSideModules();
   const { mine: semesterPlans } = useMySemesterPlans(isOn("semesterplan"));
   const planWaits = semesterPlans.some((item) => item.waiting);
+  // The congregation's logo stands before its name, when there is one
+  const logo = logoOf(settings);
 
   return (
     <header className="sticky top-[var(--demo-strip,0px)] z-40 bg-white border-b border-slate-200/80 shadow-xs">
@@ -34,9 +37,12 @@ export const Header: React.FC = () => {
             textWithoutSite
             className="min-w-0 group transition-opacity hover:opacity-90"
           >
-            <p className="text-lg font-bold text-slate-800 tracking-tight leading-tight truncate group-hover:underline underline-offset-2">
-              {settings.churchName || "Menighetsplan"}
-            </p>
+            <div className="flex items-center gap-2.5 min-w-0">
+              {logo && <img src={logo} alt={settings.churchName} className="h-8 w-auto max-w-[9rem] object-contain shrink-0" />}
+              <p className="text-lg font-bold text-slate-800 tracking-tight leading-tight truncate group-hover:underline underline-offset-2">
+                {settings.churchName || "Menighetsplan"}
+              </p>
+            </div>
           </ChurchSiteLink>
 
           {/* Who is signed in, and the way out: behind the round mark with the initials */}
@@ -51,7 +57,7 @@ export const Header: React.FC = () => {
             id="nav-tab-min-side"
             className={`text-xs font-bold px-2.5 py-1.5 rounded-xl whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
               isMyPagePath
-                ? "bg-slate-900 text-white shadow-xs"
+                ? "bg-primary-700 text-white shadow-xs"
                 : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
             }`}
           >
