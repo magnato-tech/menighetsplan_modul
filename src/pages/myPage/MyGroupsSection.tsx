@@ -1,5 +1,5 @@
 import React from "react";
-import { formatChatMessageTime } from "../../utils/dates";
+import { formatChatMessageTime, formatNorwegianDateTime } from "../../utils/dates";
 import { MyPageModel } from "./useMyPage";
 import { allGroupPersonIds } from "../../utils/groups";
 import { useMinSideModules } from "../../hooks/useMinSideModules";
@@ -10,12 +10,28 @@ import {
   Users,
 } from "lucide-react";
 
+// The colour of the staffing pill on a card, by the staffing colour
+const STAFFING_PILL: Record<"red" | "yellow" | "green", string> = {
+  red: "bg-red-100 text-red-700",
+  yellow: "bg-amber-100 text-amber-800",
+  green: "bg-emerald-100 text-emerald-800",
+};
+
 interface MyGroupsSectionProps {
   page: MyPageModel;
 }
 
 export const MyGroupsSection: React.FC<MyGroupsSectionProps> = ({ page }) => {
-  const { currentUser, myGroups, getGroupNextActivity, getGroupLatestMessage, handleOpenGroupChat, handleOpenGroupRoom } = page;
+  const {
+    currentUser,
+    myGroups,
+    getGroupNextActivity,
+    getLedActivity,
+    handleOpenGatheringPlanning,
+    getGroupLatestMessage,
+    handleOpenGroupChat,
+    handleOpenGroupRoom,
+  } = page;
   const { isOn } = useMinSideModules();
   const chatOn = isOn("gruppechat");
   const husfellesskapOn = isOn("husfellesskap");
@@ -28,6 +44,7 @@ export const MyGroupsSection: React.FC<MyGroupsSectionProps> = ({ page }) => {
             const isGroupLeader = group.leaderIds.includes(currentUser.id);
             const isGroupDeputy = group.deputyLeaderIds?.includes(currentUser.id);
             const nextActivity = getGroupNextActivity(group);
+            const ledActivity = getLedActivity(group);
             const latestMsg = getGroupLatestMessage(group.id);
 
             return (
@@ -76,7 +93,26 @@ export const MyGroupsSection: React.FC<MyGroupsSectionProps> = ({ page }) => {
                       {allGroupPersonIds(group).length === 1 ? "deltaker" : "deltakere"}
                     </span>
                   </span>
-                  {nextActivity && (
+                  {ledActivity ? (
+                    <>
+                      <span className="text-slate-300">·</span>
+                      <button
+                        type="button"
+                        aria-label={`Planlegg ${ledActivity.gathering.title}`}
+                        onClick={() => handleOpenGatheringPlanning(ledActivity.gathering.id)}
+                        className="flex items-center gap-1.5 flex-wrap text-left hover:text-slate-800 transition-colors cursor-pointer"
+                      >
+                        <Clock className="w-3.5 h-3.5 text-slate-400" />
+                        <span>{ledActivity.gathering.title}</span>
+                        <span className="text-slate-400">{formatNorwegianDateTime(ledActivity.gathering.startsAt)}</span>
+                        {ledActivity.hasTasks && (
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${STAFFING_PILL[ledActivity.staffing.color]}`}>
+                            {ledActivity.staffing.badgeText}
+                          </span>
+                        )}
+                      </button>
+                    </>
+                  ) : nextActivity && (
                     <>
                       <span className="text-slate-300">·</span>
                       <span className="flex items-center gap-1">

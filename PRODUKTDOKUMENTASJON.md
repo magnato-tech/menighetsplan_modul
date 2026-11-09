@@ -2055,7 +2055,7 @@ Bryterne virker på Min side, ikke på nettsiden. Om «Grupper» av også skal t
 | Trinn | Hva | Status |
 |:---|:---|:---|
 | 1 | **Modulregisteret.** Min side-modulene i registeret og på siden «Moduler», alle på som standard. Ingenting endres for menighetene | **Levert 9. november.** De to bryterne som bare ble lagret i nettleseren (kalender, meldinger), er fjernet, og `/meldinger` går til Min side. Gruppeleder følger Grupper |
-| 2 | **Leder i Grupper.** Gruppene en leder, øverst, med status og neste aktivitet | |
+| 2 | **Leder i Grupper.** Gruppene en leder, øverst, med status og neste aktivitet | **Levert 9. november.** Neste aktivitet viser bemanningen og åpner planleggingen. Avlyste arrangementer og oppgaver telles ikke |
 | 3 | **Leder i Oppgaver.** Det som haster i egne grupper, inn i «Trenger oppmerksomhet» | |
 | 4 | **Leder i Kalender.** Fargeprikkene og filteret. Etter dette er alt fra `/leder` flyttet | |
 | 5 | **Gruppeleder tas bort.** Knappen fjernes, og adressene sender videre | |
@@ -2065,13 +2065,12 @@ Bryterne virker på Min side, ikke på nettsiden. Om «Grupper» av også skal t
 **Foreslått, ikke avgjort**
 
 * **Min side beholder fanene nederst på mobil**, og får ikke hele nettsidens meny. Øverst står logo og «Til nettsiden». Uten vår nettside er det heller ingen meny å vise.
-* **Admin ser bare egne grupper på Min side.** Administrator har ledertilgang til alle grupper. Det hører hjemme i admin, ikke i en lang liste på Min side.
 
 **Spørsmål produkteier svarer på før trinnet de gjelder**
 
-1. Skal nestleder se alt en leder ser? Det gjør nestleder i dag. *(trinn 2)*
+1. ~~Skal nestleder se alt en leder ser?~~ **Lagt til grunn 9. november 2026:** ja, som i dag. Produkteier startet trinn 2 uten å si imot. *(trinn 2)*
 2. Gudstjenesteplanen: skal alle i registeret se hvem som gjør hva, eller bare de som har oppgaver i perioden? I en menighets egen installasjon leser en frivillig i dag bare navnene i egne grupper og på menighetens åpne arrangementer. Svaret avgjør om `firestore.rules` og speilet (`src/utils/mirror.ts`) må endres. *(trinn 7)*
-3. Ser admin bare egne grupper på Min side? *(trinn 2)*
+3. ~~Ser admin bare egne grupper på Min side?~~ **Lagt til grunn 9. november 2026:** ja. Min side viste allerede bare egne grupper. *(trinn 2)*
 4. ~~Er Gruppechat en egen modul, eller følger den alltid Grupper?~~ **Avgjort 9. november 2026:** begge deler. Gruppechat er en egen modul som krever Grupper. Er den på, har alle gruppene chat. Er Grupper av, er også chatten borte. *(trinn 1)*
 5. Beholder Min side fanene nederst, uten nettsidens meny? *(trinn 6)*
 

@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useCurrentUser, useMyTasks } from "../../hooks/memberHooks";
 import { formatNorwegianDateTime } from "../../utils/dates";
 import { countSlots } from "../../utils/staffing";
+import { leadsGroup } from "../../utils/groups";
+import { nextLedActivity, withLedGroupsFirst } from "../../utils/leadGroups";
 import { useFirebase } from "../../context/FirebaseDataContext";
 import { Task, GroupMessage, Gathering, Group } from "../../types";
 import { AttentionItem } from "./attention";
@@ -53,8 +55,9 @@ export function useMyPage() {
   const isUpcoming = (startsAt: string | undefined) => startsAt !== undefined && new Date(startsAt).getTime() >= now;
 
   // 1. User's groups
+  // The groups the user leads come first
   const myGroups = useMemo(
-    () => getUserGroups(currentUser.id),
+    () => withLedGroupsFirst(getUserGroups(currentUser.id), currentUser.id),
     [getUserGroups, currentUser.id]
   );
 
@@ -295,6 +298,15 @@ export function useMyPage() {
     return null;
   };
 
+  // The next activity of a group the user leads, with its staffing (only when the tasks module is on)
+  const getLedActivity = (group: Group) => {
+    if (!tasksOn || !leadsGroup(group, currentUser.id)) return null;
+    return nextLedActivity({ groupId: group.id, gatherings, tasks, assignments, now });
+  };
+
+  // Opens the planning of one gathering
+  const handleOpenGatheringPlanning = (gatheringId: string) => navigate(`/leder/samling/${gatheringId}`);
+
   // Helper to get the latest chat message for a group
   const getGroupLatestMessage = (groupId: string): GroupMessage | null => {
     if (!chatOn) return null;
@@ -335,6 +347,8 @@ export function useMyPage() {
     myTaskInChurchEvent,
     nextPersonalGatheringData,
     getGroupNextActivity,
+    getLedActivity,
+    handleOpenGatheringPlanning,
     getGroupLatestMessage,
     handleOpenGroupChat,
     handleOpenGroupRoom,
