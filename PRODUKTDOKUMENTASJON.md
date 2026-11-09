@@ -2000,6 +2000,79 @@ Administrator er det samme som den som skal se registeret. En redaktør som endr
 
 **Oppdater også kapittel 3.** Tabellen og avsnittet «Mulig funksjon: Min kalender» sier at kalenderen ikke er bygget, men den finnes som fane på Min side. Beskriv Min side slik den blir etter dette.
 
+### Én Min side for medlem og leder, og moduler *(bestemt av produkteier 9. november 2026, ikke påbegynt)*
+
+**Retningen.** Nettsiden er lik for alle. Medlemmer og gruppeledere har i tillegg én egen side, Min side, der innholdet følger rollen. En leder får ikke en egen side ved siden av: det en leder trenger, står på de samme fanene, der gruppen vises. Så mye som mulig er moduler som admin slår av og på, så løsningen kan tilpasses hver menighet. Målet er en Min side som er så enkel som mulig, og som likevel dekker det menigheten trenger. Prinsippet fra «Min side, forenklet» gjelder fortsatt.
+
+**Hvorfor.** Lederskap gjelder én gruppe, ikke hele personen. Den som leder et husfellesskap og står på lydteamet, må i dag veksle mellom «Min side» og «Gruppeleder» for å se sitt eget. Gruppesiden (`/gruppe/:id`) er allerede felles og viser mer for leder og nestleder. Det som står igjen, er siden «Gruppeleder» (`/leder`, `LeaderPage.tsx`) og knappen til den i toppen (`Header.tsx`).
+
+**Hva som finnes i dag**
+
+| Flate | Innhold |
+|:---|:---|
+| Min side, Mine oppgaver | Semesterplan som venter, «Trenger oppmerksomhet» (forespørsler, innkallinger, ledige oppgaver, trenger vikar), egne oppgaver |
+| Min side, Mine grupper | Kort per gruppe med rolle, siste melding, «Gå til grupperommet» og «Chat» |
+| Min side, Kalender | Menighetens og gruppenes arrangementer med filter. Et trykk åpner kjøreplanen |
+| Gruppeleder, statuslinje | «N oppgaver med forfall må fylles», eller «Alt er i rute» |
+| Gruppeleder, Mine ledergrupper | Kort for gruppene en leder: neste aktivitet, bemanning, fast møteplan |
+| Gruppeleder, Semesteroversikt | Gruppenes arrangementer med fargefilter (rødt, gult, grønt). Et trykk åpner planleggingen (`/leder/samling/:id`) |
+| Gruppesiden | Aktiviteter, Gruppechat og Medlemmer, med mer for leder og nestleder. Husfellesskap har egen visning |
+
+**Slik blir Min side.** Medlem og leder har de samme fanene. Det som skiller, er innholdet.
+
+| Fane | Medlem | Leder og nestleder får i tillegg |
+|:---|:---|:---|
+| Oppgaver | Som i dag | Det som haster i egne grupper, i «Trenger oppmerksomhet»: «Må fylles: 2 oppgaver i Lovsang søndag». Erstatter statuslinjen |
+| Grupper | Som i dag | Gruppene en leder, øverst, med bemanningsstatus og neste aktivitet. Erstatter «Mine ledergrupper» |
+| Kalender | Som i dag | Fargeprikk for bemanningen på gruppenes arrangementer, og filteret «Grupper jeg leder». Et trykk åpner planleggingen. Erstatter Semesteroversikt |
+| Gudstjenesteplan (ny) | Hvem som gjør hva de neste gudstjenestene, med egne oppgaver uthevet | Det samme |
+
+Knappen «Gruppeleder» tas bort. `/leder` sender videre til `/minside?view=grupper`, og `/leder/gruppe/:id` til `/gruppe/:id`, så gamle lenker virker. Planleggingen av et arrangement blir der den er.
+
+**Modulene på Min side**
+
+| Modul | Hva den styrer | Av betyr |
+|:---|:---|:---|
+| Min side | Hele flaten (i dag `surfaces.minSide`) | Som i dag |
+| Grupper | Fanen Grupper, gruppesidene, «Fellesskap» på nettsiden | Ingen grupper vises noe sted |
+| Tjeneste og bemanning | Oppgaver, forespørsler, vikarer, ledige oppgaver | Fanen Oppgaver viser bare innkallinger |
+| Gruppechat | Chat-fanen og siste melding på kortene | Chatten er skjult. Meldingene blir liggende |
+| Husfellesskap | Egen visning for husgrupper, med plan og verter | Husgrupper vises som vanlige grupper |
+| Semesterplan | Gjennomgangen per semester | Admin kan ikke frigi planer |
+| Gudstjenesteplan | Den nye fanen | Fanen vises ikke |
+| Kalender | Fanen Kalender | Fanen vises ikke |
+
+* **Av betyr skjult og ikke lest, aldri slettet.** Slås modulen på igjen, er alt som før.
+* **En modul kan kreve en annen.** Gudstjenesteplan krever Tjeneste og bemanning. Gruppechat og Husfellesskap krever Grupper.
+* **Få store moduler.** Hver bryter dobler kombinasjonene som må prøves. Modulene deles ikke mer enn over.
+* **Ett register.** Modulene står sammen med tilleggene i `src/utils/addons.ts` og på siden «Moduler». De to bryterne som bare lagres i nettleseren (kalender og meldinger, `useModuleConfig`), flyttes inn. Nivåene blir ferdige pakker av moduler. Tildeling per menighet fra leverandøren er trinn 4 i «Klar for flere menigheter», og er ikke del av dette.
+* **De planlagte modulene får fortsatt ikke innhold** (beskjed 7. oktober 2026). Gruppechat finnes alt, og blir bare en bryter.
+
+**Trinnene.** Hvert trinn prøves og slippes for seg.
+
+| Trinn | Hva | Status |
+|:---|:---|:---|
+| 1 | **Modulregisteret.** Min side-modulene i registeret og på siden «Moduler», alle på som standard. Ingenting endres for menighetene | |
+| 2 | **Leder i Grupper.** Gruppene en leder, øverst, med status og neste aktivitet | |
+| 3 | **Leder i Oppgaver.** Det som haster i egne grupper, inn i «Trenger oppmerksomhet» | |
+| 4 | **Leder i Kalender.** Fargeprikkene og filteret. Etter dette er alt fra `/leder` flyttet | |
+| 5 | **Gruppeleder tas bort.** Knappen fjernes, og adressene sender videre | |
+| 6 | **Min side i nettsidens drakt.** Logo og farger fra designet. «Logg inn» for gjester og «Min side» for innloggede i nettsidens meny (`PublicNavbar.tsx`). Hjemskjermikonet åpner `/minside` (`start_url` i `public/manifest.webmanifest`) | |
+| 7 | **Gudstjenesteplan.** Ny fane, som modul. Trolig med en endring i reglene, se spørsmål 2 | |
+
+**Foreslått, ikke avgjort**
+
+* **Min side beholder fanene nederst på mobil**, og får ikke hele nettsidens meny. Øverst står logo og «Til nettsiden». Uten vår nettside er det heller ingen meny å vise.
+* **Admin ser bare egne grupper på Min side.** Administrator har ledertilgang til alle grupper. Det hører hjemme i admin, ikke i en lang liste på Min side.
+
+**Spørsmål produkteier svarer på før trinnet de gjelder**
+
+1. Skal nestleder se alt en leder ser? Det gjør nestleder i dag. *(trinn 2)*
+2. Gudstjenesteplanen: skal alle i registeret se hvem som gjør hva, eller bare de som har oppgaver i perioden? I en menighets egen installasjon leser en frivillig i dag bare navnene i egne grupper og på menighetens åpne arrangementer. Svaret avgjør om `firestore.rules` og speilet (`src/utils/mirror.ts`) må endres. *(trinn 7)*
+3. Ser admin bare egne grupper på Min side? *(trinn 2)*
+4. Er Gruppechat en egen modul, eller følger den alltid Grupper? *(trinn 1)*
+5. Beholder Min side fanene nederst, uten nettsidens meny? *(trinn 6)*
+
 ### Fase 1 – Trygg i drift *(trinn 2 og 4 over)*
 1. Innlogging med Google-konto. Første administrator er produkteierens konto.
 2. Roller: administrator, gruppeleder (avledet av gruppene) og frivillig.
