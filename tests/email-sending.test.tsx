@@ -101,9 +101,9 @@ describe("E-posten slik den sendes", () => {
     const mail = renderEmail({ draft, churchName: "Fjellbygda menighet", siteUrl: "https://menigheten.example/", firstName: "Lars" });
     expect(mail.subject).toBe("Nytt semester");
     expect(mail.text.split("\n\n")[0]).toBe("Hei Lars!");
-    expect(mail.text).toContain("Åpne gruppene mine: https://menigheten.example/leder");
+    expect(mail.text).toContain("Åpne gruppene mine: https://menigheten.example/minside?view=grupper");
     expect(mail.text).toContain("Hilsen Fjellbygda menighet");
-    expect(mail.html).toContain('href="https://menigheten.example/leder"');
+    expect(mail.html).toContain('href="https://menigheten.example/minside?view=grupper"');
     expect(mail.html).toContain("Andre &lt;b&gt;avsnitt&lt;/b&gt; &amp; mer<br>med linjeskift.");
     expect(mail.html).not.toContain("<b>avsnitt");
     expect(renderEmail({ draft: { ...draft, link: "minside" }, churchName: "M", siteUrl: "https://m.example", firstName: null }).text).toMatch(/^Hei!\n\n[\s\S]*Åpne Min side: https:\/\/m\.example\/minside/);
@@ -206,7 +206,7 @@ describe("Utsendingen der installasjonen kjører", () => {
     expect(first.reply_to).toBe("post@example.org");
     expect(first.to).toEqual(["lars@example.org"]);
     expect(first.text).toContain("Hei Lars!");
-    expect(first.html).toContain('href="https://menigheten.example/leder"');
+    expect(first.html).toContain('href="https://menigheten.example/minside?view=grupper"');
 
     // The register is read as the one who asks, and the key goes only to the e-mail service
     const database = place.asked.filter((question) => question.url.includes("firestore.googleapis.com"));

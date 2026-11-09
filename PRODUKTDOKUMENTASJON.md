@@ -273,14 +273,14 @@ Regnskap er ikke en egen modul. Givertjeneste og Utleie skal registrere inntekte
 
 | Skjerm | Adresse | Innhold | Status |
 |---|---|---|---|
-| **Min side** | `/minside` | Tre faner: «Mine oppgaver» (knappen «Ta oppgave» og oppgavene en har sagt ja til), «Mine grupper» og «Kalender» | Levert |
+| **Min side** | `/minside` | Tre faner: «Mine oppgaver» (knappen «Ta oppgave» og oppgavene en har sagt ja til), «Mine grupper» og «Kalender». En leder eller nestleder får i tillegg forfall i egne grupper («Må fylles»), gruppene sine øverst med bemanningen, og filteret «Jeg leder» i kalenderen. Fanene er moduler (kapittel 14) | Levert |
 | **Oppgave** | `/oppgave/:id` | Tid, sted, instruks og hvem andre som står på. Ta oppgaven, svar på forespørsel, meld forfall | Levert. En grunn for forfallet lagres ikke: den kan være privat, og tas muntlig |
-| **Gruppeleder** | `/leder` | Gruppene jeg leder, med bemanningsstatus | Levert |
+| ~~Gruppeleder~~ | `/leder` | Tatt bort 9. november 2026: innholdet står på Min side. Adressen går til «Mine grupper» | Tatt bort |
 | **Gruppe** | `/gruppe/:id` | Deltakere, møteplan, aktiviteter og beskjeder til gruppen, med bilde | Levert |
 | **Samling** | `/samling/:id` | Kjøreplan: programmet og oppgavene på én tidslinje, med hvem som har sagt ja. Åpnes fra kalenderen på Min side, og er lik for alle. Ledere og administrator går videre med «Åpne planlegging» | Delvis: programmet kan ikke redigeres i løsningen ennå |
 | **Husfellesskap** | `/husfellesskap` | Neste møte med vert, tema og bibeltekst. «Kommer» / «Kommer ikke». Deltakerliste | Levert |
-| Meldinger | `/meldinger` | Valgfri modul for meldinger på tvers av grupper | Planlagt: i dag en plassholderside |
-| Kalender | – | Valgfri modul med felles kalender | Planlagt: modulen kan slås på, men har ingen side |
+| Meldinger | `/meldinger` | Går til Min side. Meldingene står i gruppene (modulen Gruppechat) | Plassholderen er tatt bort |
+| Kalender | – | Fanen «Kalender» på Min side, en modul som kan slås av | Levert |
 | **Kalender** | `/minside?view=kalender` | Fanen «Kalender» på Min side: det som kommer i menigheten og i egne grupper | Levert |
 
 Min side ligger bak innlogging (kapittel 10.1). Øverst til høyre står et rundt merke med initialene til den som er logget inn. Et trykk viser navnet, rollen og «Logg ut». En frivillig ser bare det som gjelder egne grupper. Løsningen kan installeres på mobilen som app (PWA).
@@ -2058,7 +2058,7 @@ Bryterne virker på Min side, ikke på nettsiden. Om «Grupper» av også skal t
 | 2 | **Leder i Grupper.** Gruppene en leder, øverst, med status og neste aktivitet | **Levert 9. november.** Neste aktivitet viser bemanningen og åpner planleggingen. Avlyste arrangementer og oppgaver telles ikke |
 | 3 | **Leder i Oppgaver.** Det som haster i egne grupper, inn i «Trenger oppmerksomhet» | **Levert 9. november.** Ett kort «Må fylles» per kommende samling der gruppen har forfall (noen sa ja og trakk seg), med «Finn noen» til planleggingen. En oppgave som aldri er fylt, regnes ikke: den står som ledig oppgave. De ledige oppgavene på samme samling og gruppe vises ikke i tillegg |
 | 4 | **Leder i Kalender.** Fargeprikkene og filteret. Etter dette er alt fra `/leder` flyttet | **Levert 9. november.** Filteret «Jeg leder» vises bare for ledere og nestledere: gruppenes egne samlinger, og menighetens samlinger der gruppen har oppgaver. Prikkene fantes fra før, og vises nå bare med Tjeneste og bemanning på. Et trykk åpner kjøreplanen, som har «Åpne planlegging». Fargefiltrene fra Semesteroversikt er ikke tatt med |
-| 5 | **Gruppeleder tas bort.** Knappen fjernes, og adressene sender videre | |
+| 5 | **Gruppeleder tas bort.** Knappen fjernes, og adressene sender videre | **Levert 9. november.** Planleggingen (`/leder/samling/:id`) står. Lenker i e-post, demoen og hjelpen går til Min side |
 | 6 | **Min side i nettsidens drakt.** Logo og farger fra designet. «Logg inn» for gjester og «Min side» for innloggede i nettsidens meny (`PublicNavbar.tsx`). Hjemskjermikonet åpner `/minside` (`start_url` i `public/manifest.webmanifest`) | |
 | 7 | **Gudstjenesteplan.** Ny fane, som modul. Trolig med en endring i reglene, se spørsmål 2 | |
 

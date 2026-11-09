@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { AccountMenu } from "./AccountMenu";
 import { ChurchSiteLink } from "./ChurchSiteLink";
 import { useCms } from "../context/CmsContext";
-import { useLeaderDashboard } from "../hooks/useAppHooks";
+import { useFirebase } from "../context/FirebaseDataContext";
 import { Flag, Shield } from "lucide-react";
 import { useMySemesterPlans } from "../hooks/useSemesterPlans";
 import { useMinSideModules } from "../hooks/useMinSideModules";
@@ -11,12 +11,11 @@ import { useMinSideModules } from "../hooks/useMinSideModules";
 export const Header: React.FC = () => {
   const { settings, surfaces } = useCms();
   const location = useLocation();
-  const { isLeader, urgentGatherings, currentUser } = useLeaderDashboard();
+  const { currentUser } = useFirebase();
 
   // The way into the admin: for administrators, and for web editors, who get its website part
   const isAdmin = currentUser.globalRole === "admin" || currentUser.globalRole === "nettredaktor";
 
-  const isLeaderPath = location.pathname.startsWith("/leder");
   const isAdminPath = location.pathname.startsWith("/admin");
   const isMyPagePath = location.pathname === "/minside" || location.pathname.startsWith("/minside/") || location.pathname === "/";
   // A semester plan waiting for the person: the flag by Min side stays until they have gone through it
@@ -44,7 +43,7 @@ export const Header: React.FC = () => {
           <AccountMenu />
         </div>
 
-        {/* Navigation Tabs (Min side / Gruppeleder / Admin Studio) */}
+        {/* Navigation Tabs (Min side / Admin Studio). The groups are on Min side, under Mine grupper */}
         <nav className="flex items-center gap-1.5 mt-3 pt-2 border-t border-slate-100/80 overflow-x-auto pb-0.5 scrollbar-none">
           {surfaces.minSide && (
           <Link
@@ -64,28 +63,6 @@ export const Header: React.FC = () => {
               />
             )}
           </Link>
-          )}
-
-          {surfaces.minSide && isLeader && isOn("grupper") && (
-            <Link
-              to="/leder"
-              id="nav-tab-leder"
-              className={`text-xs font-bold px-2.5 py-1.5 rounded-xl whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
-                isLeaderPath
-                  ? "bg-emerald-700 text-white shadow-xs"
-                  : "text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/60"
-              }`}
-            >
-              <span>Gruppeleder</span>
-              {urgentGatherings.length > 0 && (
-                <span
-                  className={`w-2 h-2 rounded-full ${
-                    isLeaderPath ? "bg-amber-300" : "bg-red-500"
-                  } animate-pulse`}
-                  title="Trenger vikar"
-                />
-              )}
-            </Link>
           )}
 
           {isAdmin && (

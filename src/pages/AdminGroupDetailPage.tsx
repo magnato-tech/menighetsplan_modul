@@ -360,7 +360,7 @@ export const AdminGroupDetailPage: React.FC = () => {
                   ))}
                 </select>
                 <p className="text-[10px] text-[var(--studio-muted)]">
-                  Styrer hvem som har lederadgang på /leder
+                  Styrer hvem som har lederadgang til gruppen under Mine grupper på Min side
                 </p>
               </div>
 

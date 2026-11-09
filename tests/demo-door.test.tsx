@@ -122,8 +122,8 @@ describe("Hvem man går inn som i demoen", () => {
     const starts = Object.fromEntries(demoDoors(everyone, groups).map((door) => [door.way, door.start]));
     expect(starts).toEqual({
       administrator: "/admin",
-      tjenestegruppeleder: "/leder",
-      husgruppeleder: "/leder",
+      tjenestegruppeleder: "/minside?view=grupper",
+      husgruppeleder: "/minside?view=grupper",
       tjenestegruppemedlem: "/minside",
       medlemUtenTjeneste: "/minside",
     });
@@ -137,7 +137,10 @@ describe("Hvem man går inn som i demoen", () => {
     expect(whereDoorLeads(administrator, "/minside")).toBe("/admin");
     expect(whereDoorLeads(administrator, "/administrasjon")).toBe("/admin");
     expect(whereDoorLeads({ start: "/minside" }, "/admin?tab=demo-oppsett")).toBe("/minside");
-    expect(whereDoorLeads({ start: "/leder" }, "/lederskap")).toBe("/leder");
+    // A leader's way in starts on Min side, and an address outside Min side is not kept
+    expect(whereDoorLeads({ start: "/minside?view=grupper" }, "/lederskap")).toBe("/minside?view=grupper");
+    expect(whereDoorLeads({ start: "/minside?view=grupper" }, "/minside/semesterplan/p1")).toBe("/minside/semesterplan/p1");
+    expect(whereDoorLeads({ start: "/minside?view=grupper" }, "/minside")).toBe("/minside?view=grupper");
   });
 
   test("registeret velger forventede personer i små datasettet", () => {
@@ -208,7 +211,7 @@ describe("Veien inn i demoen", () => {
     for (const [button, start] of [
       [/Håkon Tveit/, "/minside"],
       [/Silje Moen/, "/minside"],
-      [/Ola Hansen/, "/leder"],
+      [/Ola Hansen/, "/minside?view=grupper"],
       [/Anne Aas/, "/admin"],
     ] as const) {
       app.session = { status: "signedOut" };

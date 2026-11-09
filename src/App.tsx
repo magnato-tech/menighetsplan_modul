@@ -42,7 +42,6 @@ const SemesterPlanPage = lazy(() => import("./pages/SemesterPlanPage").then((m) 
 const TaskDetailPage = lazy(() =>
   import("./pages/TaskDetailPage").then((m) => ({ default: m.TaskDetailPage }))
 );
-const LeaderPage = lazy(() => import("./pages/LeaderPage").then((m) => ({ default: m.LeaderPage })));
 const LeaderGroupDetailPage = lazy(() =>
   import("./pages/LeaderGroupDetailPage").then((m) => ({ default: m.LeaderGroupDetailPage }))
 );
@@ -67,6 +66,14 @@ function HusfellesskapGroupRoute() {
   const { isOn } = useMinSideModules();
   if (isOn("husfellesskap")) return <HusfellesskapPage />;
   return <Navigate to={isOn("grupper") ? `/gruppe/${groupId}` : "/minside"} replace />;
+}
+
+/** The old address of a group's page. It now lives at /gruppe/:groupId, and the query (?tab=) comes along. */
+function OldLeaderGroupRoute() {
+  const { groupId } = useParams<{ groupId: string }>();
+  const { search } = useLocation();
+  const { isOn } = useMinSideModules();
+  return <Navigate to={isOn("grupper") ? `/gruppe/${groupId}${search}` : "/minside"} replace />;
 }
 
 /**
@@ -175,8 +182,9 @@ function AppContent() {
               <Routes>
                 <Route path="/minside" element={<MyPage />} />
                 <Route path="/minside/semesterplan/:planId" element={isOn("semesterplan") ? <SemesterPlanPage /> : <Navigate to="/minside" replace />} />
-                <Route path="/leder" element={isOn("grupper") ? <LeaderPage /> : <Navigate to="/minside" replace />} />
-                <Route path="/leder/gruppe/:groupId" element={isOn("grupper") ? <LeaderGroupDetailPage /> : <Navigate to="/minside" replace />} />
+                {/* The old Gruppeleder page is gone: its addresses go on to the groups on Min side */}
+                <Route path="/leder" element={<Navigate to={isOn("grupper") ? "/minside?view=grupper" : "/minside"} replace />} />
+                <Route path="/leder/gruppe/:groupId" element={<OldLeaderGroupRoute />} />
                 <Route path="/leder/samling/:gatheringId" element={<LeaderGatheringDetailPage />} />
                 <Route path="/oppgave/:taskId" element={isOn("tjeneste") ? <TaskDetailPage /> : <Navigate to="/minside" replace />} />
                 <Route path="/gruppe/:groupId" element={isOn("grupper") ? <LeaderGroupDetailPage /> : <Navigate to="/minside" replace />} />

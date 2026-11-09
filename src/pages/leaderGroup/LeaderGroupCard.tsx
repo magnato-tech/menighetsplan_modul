@@ -30,7 +30,7 @@ interface LeaderGroupCardProps {
 }
 
 /**
- * The group card a leader sees at /leder/gruppe/:groupId: activities, group chat and members. The
+ * The group card a leader sees at /gruppe/:groupId: activities, group chat and members. The
  * page and the popup from «Bemanning» both show this.
  */
 export const LeaderGroupCard: React.FC<LeaderGroupCardProps> = ({ groupId, inPopup = false, initialTab }) => {

@@ -9,7 +9,7 @@
 Ett adminpanel som styrer en webapp og en nettside i samme format. Det er én React-app med tre flater som deler samme Firestore-database:
 
 1. **Adminpanelet (Admin Studio)** på `/admin`: planlegging (samlinger, oppgaver, grupper, personer) og CMS (sider, nyheter, taler, stab, design, innstillinger).
-2. **Webappen (Min side)** for frivillige og gruppeledere (`/minside`, `/leder`, `/husfellesskap`, `/oppgave/:id` …).
+2. **Webappen (Min side)** for frivillige og gruppeledere (`/minside`, `/gruppe/:id`, `/husfellesskap`, `/oppgave/:id` …). Ledere har ingen egen side: rollen bestemmer hva Min side viser.
 3. **Nettsiden** til menigheten (`/`, `/hva-skjer`, `/taler`, `/fellesskap`, `/om-oss` …).
 
 I tillegg serverer `server.ts` et offentlig JSON-API (`/api/offentlig/arrangementer` og `/api/public/*`) som eksterne nettsider kan lese. Kontrakten står i `INTEGRASJON-MENIGHETSPLAN.md`.

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * The group card at /leder/gruppe/:groupId: the group from the address, and the tab from `?tab=`.
+ * The group card at /gruppe/:groupId: the group from the address, and the tab from `?tab=`.
  * The page and the popup from «Bemanning» show the same card.
  */
 import { afterEach, describe, expect, test, vi } from "vitest";
@@ -37,7 +37,7 @@ function renderAt(url: string) {
   return render(
     <MemoryRouter initialEntries={[url]}>
       <Routes>
-        <Route path="/leder/gruppe/:groupId" element={<LeaderGroupDetailPage />} />
+        <Route path="/gruppe/:groupId" element={<LeaderGroupDetailPage />} />
       </Routes>
     </MemoryRouter>
   );
@@ -49,7 +49,7 @@ afterEach(cleanup);
 
 describe("Gruppekortet på siden", () => {
   test("viser gruppen fra adressen, med aktiviteter som første fane", () => {
-    renderAt("/leder/gruppe/lovsang");
+    renderAt("/gruppe/lovsang");
 
     expect(screen.getByRole("heading", { name: "Lovsang" })).toBeTruthy();
     expect(shown("section-group-aktiviteter-tab")).toBe(true);
@@ -57,14 +57,14 @@ describe("Gruppekortet på siden", () => {
   });
 
   test("?tab=chat åpner gruppechatten for den gruppen", () => {
-    renderAt("/leder/gruppe/lovsang?tab=chat");
+    renderAt("/gruppe/lovsang?tab=chat");
 
     expect(screen.getByTestId("group-chat").textContent).toBe("lovsang");
     expect(shown("section-group-aktiviteter-tab")).toBe(false);
   });
 
   test("fanene bytter på siden som før", () => {
-    renderAt("/leder/gruppe/lovsang");
+    renderAt("/gruppe/lovsang");
 
     fireEvent.click(document.getElementById("tab-btn-group-medlemmer")!);
     expect(shown("section-group-medlemmer-tab")).toBe(true);
@@ -75,7 +75,7 @@ describe("Gruppekortet på siden", () => {
   });
 
   test("siden har tilbakelenken og rammen som før", () => {
-    renderAt("/leder/gruppe/lovsang");
+    renderAt("/gruppe/lovsang");
 
     expect(document.getElementById("btn-back-to-leader-nav")).not.toBeNull();
     expect(document.querySelector(".min-h-screen")).not.toBeNull();

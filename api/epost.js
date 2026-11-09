@@ -58,7 +58,7 @@ function readDemoInstallation(env) {
 
 // src/utils/emailMessage.ts
 var EMAIL_LINKS = {
-  leder: { path: "/leder", button: "Åpne gruppene mine", label: "Gruppelederens side" },
+  leder: { path: "/minside?view=grupper", button: "Åpne gruppene mine", label: "Mine grupper" },
   minside: { path: "/minside", button: "Åpne Min side", label: "Min side" },
   ingen: { path: null, button: "", label: "Ingen knapp" }
 };
