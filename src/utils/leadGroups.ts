@@ -1,4 +1,4 @@
-import type { Assignment, Gathering, Task } from "../types";
+import type { Assignment, Gathering, Group, Task } from "../types";
 import { leadsGroup, type GroupRoles } from "./groups";
 import { getStaffingStatus, type StaffingStatusResult } from "./staffing";
 
@@ -33,4 +33,37 @@ export function nextLedActivity(input: {
   const taskIds = new Set(onGathering.map((task) => task.id));
   const staffing = getStaffingStatus(onGathering, assignments.filter((a) => taskIds.has(a.taskId)));
   return { gathering: next, staffing, hasTasks: onGathering.length > 0 };
+}
+
+// The gatherings ahead where a group the person leads has a dropout to fill (someone said yes and pulled out): one entry per gathering and group,
+// counting only that group's tasks on it. Cancelled gatherings and tasks are left out, as in nextLedActivity.
+export function ledGroupDropouts(input: {
+  groups: readonly Group[];
+  personId: string;
+  gatherings: readonly Gathering[];
+  tasks: readonly Task[];
+  assignments: readonly Assignment[];
+  now: number;
+}): { gathering: Gathering; group: Group; staffing: StaffingStatusResult }[] {
+  const { groups, personId, gatherings, tasks, assignments, now } = input;
+  const gatheringById = new Map(gatherings.map((g) => [g.id, g]));
+  const result: { gathering: Gathering; group: Group; staffing: StaffingStatusResult }[] = [];
+
+  for (const group of groups.filter((g) => leadsGroup(g, personId))) {
+    const groupTasks = tasks.filter((task) => task.groupId === group.id && task.status !== "cancelled");
+    const gatheringIds = [...new Set(groupTasks.map((task) => task.gatheringId))];
+    for (const gatheringId of gatheringIds) {
+      const gathering = gatheringById.get(gatheringId);
+      if (!gathering || gathering.cancelled) continue;
+      if (new Date(gathering.startsAt).getTime() < now) continue;
+
+      const onGathering = groupTasks.filter((task) => task.gatheringId === gatheringId);
+      const taskIds = new Set(onGathering.map((task) => task.id));
+      const staffing = getStaffingStatus(onGathering, assignments.filter((a) => taskIds.has(a.taskId)));
+      // A dropout, not a task that has never been filled: those are many, and are shown as free tasks
+      if (staffing.vacantCount > 0) result.push({ gathering, group, staffing });
+    }
+  }
+
+  return result.sort((a, b) => new Date(a.gathering.startsAt).getTime() - new Date(b.gathering.startsAt).getTime());
 }

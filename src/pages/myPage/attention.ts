@@ -17,7 +17,9 @@ export type AttentionItem =
   /** A gathering in one of the user's groups that they have not answered. */
   | (AttentionBase & { type: "unanswered_invitation"; gatheringId: string; theme?: string })
   /** A task in one of the user's groups with a free slot. */
-  | (AttentionBase & { type: "open_task"; taskId: string; taskDescription?: string; needsSubstitute: boolean });
+  | (AttentionBase & { type: "open_task"; taskId: string; taskDescription?: string; needsSubstitute: boolean })
+  /** A gathering of a group the user leads, with a dropout to fill. Answered on the planning view, not here. */
+  | (AttentionBase & { type: "lead_dropout"; gatheringId: string; dropouts: number });
 
 /**
  * What the window on Min side holds: the requests to the user first, then the free tasks. A call to a
@@ -49,6 +51,12 @@ export function attentionText(item: AttentionItem): AttentionText {
         note: item.taskDescription,
         yes: "Ta oppgave",
       };
+    case "lead_dropout":
+      return {
+        label: "Må fylles",
+        note: item.dropouts === 1 ? "1 oppgave med forfall" : `${item.dropouts} oppgaver med forfall`,
+        yes: "Finn noen",
+      };
   }
 }
 
@@ -61,9 +69,14 @@ export function attentionText(item: AttentionItem): AttentionText {
 /** The tag for the gatherings one is called to, which have no role. */
 export const INVITATION_TAG = "Innkalling";
 
+/** The tag for a gathering of a group the user leads that needs a dropout filled. */
+export const LEAD_DROPOUT_TAG = "Må fylles";
+
 /** The tag an item is found by: the role the task is for, or the task's own title when it has no role. */
 export function attentionTagOf(item: AttentionItem): string {
-  return item.type === "unanswered_invitation" ? INVITATION_TAG : (item.role || item.title).trim();
+  if (item.type === "unanswered_invitation") return INVITATION_TAG;
+  if (item.type === "lead_dropout") return LEAD_DROPOUT_TAG;
+  return (item.role || item.title).trim();
 }
 
 /** The tags of a list, by name, each with how many items it has. */

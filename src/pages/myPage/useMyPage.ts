@@ -4,7 +4,7 @@ import { useCurrentUser, useMyTasks } from "../../hooks/memberHooks";
 import { formatNorwegianDateTime } from "../../utils/dates";
 import { countSlots } from "../../utils/staffing";
 import { leadsGroup } from "../../utils/groups";
-import { nextLedActivity, withLedGroupsFirst } from "../../utils/leadGroups";
+import { ledGroupDropouts, nextLedActivity, withLedGroupsFirst } from "../../utils/leadGroups";
 import { useFirebase } from "../../context/FirebaseDataContext";
 import { Task, GroupMessage, Gathering, Group } from "../../types";
 import { AttentionItem } from "./attention";
@@ -128,11 +128,32 @@ export function useMyPage() {
       });
     });
 
-    // C) Oppgaver med ledig plass i gruppene brukeren er med i
+    // C) Samlinger i en gruppe brukeren leder, med forfall som må fylles (bare når tjenesteoppgaver er på)
+    const leadDropouts = tasksOn
+      ? ledGroupDropouts({ groups: myGroups, personId: currentUser.id, gatherings, tasks, assignments, now })
+      : [];
+    leadDropouts.forEach(({ gathering, group, staffing }) => {
+      items.push({
+        type: "lead_dropout",
+        id: `lead-${gathering.id}-${group.id}`,
+        gatheringId: gathering.id,
+        title: gathering.title,
+        startsAt: gathering.startsAt,
+        location: gathering.location,
+        groupName: group.name,
+        dropouts: staffing.vacantCount,
+      });
+    });
+    // The leader fills these from the planning view, so the free tasks of that group and gathering are left out
+    const leadDropoutKeys = new Set(leadDropouts.map(({ gathering, group }) => `${gathering.id}-${group.id}`));
+
+    // D) Oppgaver med ledig plass i gruppene brukeren er med i
     const myGroupSet = new Set(myGroupIds);
     tasks
       .filter((task) => task.groupId && myGroupSet.has(task.groupId) && task.status !== "cancelled")
       .forEach((task) => {
+        // Only a group the user leads can be in leadDropoutKeys
+        if (leadDropoutKeys.has(`${task.gatheringId}-${task.groupId}`)) return;
         const taskAssignments = getAllAssignmentsForTask(task.id);
         // Leave out a task the user is already on, has been asked about (shown above) or has said no to
         if (taskAssignments.some((a) => a.personId === currentUser.id)) return;
@@ -156,7 +177,7 @@ export function useMyPage() {
       });
 
     // What was asked of the user personally comes first; within each kind, the nearest date first
-    const kindOrder = { task_request: 0, unanswered_invitation: 1, open_task: 2 };
+    const kindOrder = { task_request: 0, unanswered_invitation: 1, lead_dropout: 2, open_task: 3 };
     const startOf = (item: AttentionItem) => (item.startsAt ? new Date(item.startsAt).getTime() : Infinity);
     const sorted = items.sort((a, b) => kindOrder[a.type] - kindOrder[b.type] || startOf(a) - startOf(b));
     // With tasks off, only the invitations to gatherings are asked about
@@ -167,6 +188,7 @@ export function useMyPage() {
     myGroupIds,
     tasks,
     assignments,
+    gatherings,
     getGatheringsForGroup,
     getPersonAttendance,
     getGatheringById,
@@ -182,6 +204,10 @@ export function useMyPage() {
   const handleAttentionAnswer = (item: AttentionItem, yes: boolean) => {
     const answer = () => {
       switch (item.type) {
+        case "lead_dropout":
+          // Nothing is written here: the planning view is where a dropout is filled
+          if (yes) navigate(`/leder/samling/${item.gatheringId}`);
+          return null;
         case "task_request":
           return {
             result: updateAssignmentStatus(item.assignmentId, yes ? "confirmed" : "declined"),
@@ -202,7 +228,9 @@ export function useMyPage() {
           };
       }
     };
-    const { result, thanks } = answer();
+    const outcome = answer();
+    if (!outcome) return;
+    const { result, thanks } = outcome;
     if (result.success) showToast(thanks, "success");
     else showToast(result.error || "Kunne ikke lagre svaret.", "info");
   };

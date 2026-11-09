@@ -27,6 +27,8 @@ export const AttentionSection: React.FC<AttentionSectionProps> = ({ page, onShow
   // A call to a gathering is always shown. Of the requests, one stands on top at a time (the nearest);
   // when it is answered, the next takes its place. Everything else is behind one button.
   const invitations = attentionItems.filter((item) => item.type === "unanswered_invitation");
+  // Gatherings of groups the user leads with a dropout: always shown, not counted in the button
+  const leadDropouts = attentionItems.filter((item) => item.type === "lead_dropout");
   const requests = attentionItems.filter((item) => item.type === "task_request");
   const openTasks = attentionItems.filter((item) => item.type === "open_task");
   const firstRequest = requests[0];
@@ -114,6 +116,8 @@ export const AttentionSection: React.FC<AttentionSectionProps> = ({ page, onShow
       className="space-y-2.5 animate-in fade-in duration-200"
     >
       {invitations.length > 0 && <div className="space-y-3">{invitations.map((item) => renderCard(item))}</div>}
+
+      {leadDropouts.length > 0 && <div className="space-y-3">{leadDropouts.map((item) => renderCard(item))}</div>}
 
       {/* One request at a time, so it has the user's attention; the count says that more will come */}
       {firstRequest && renderCard(firstRequest, requests.length > 1 ? `1 av ${requests.length}` : undefined)}

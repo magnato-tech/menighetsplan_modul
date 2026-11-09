@@ -2056,7 +2056,7 @@ Bryterne virker på Min side, ikke på nettsiden. Om «Grupper» av også skal t
 |:---|:---|:---|
 | 1 | **Modulregisteret.** Min side-modulene i registeret og på siden «Moduler», alle på som standard. Ingenting endres for menighetene | **Levert 9. november.** De to bryterne som bare ble lagret i nettleseren (kalender, meldinger), er fjernet, og `/meldinger` går til Min side. Gruppeleder følger Grupper |
 | 2 | **Leder i Grupper.** Gruppene en leder, øverst, med status og neste aktivitet | **Levert 9. november.** Neste aktivitet viser bemanningen og åpner planleggingen. Avlyste arrangementer og oppgaver telles ikke |
-| 3 | **Leder i Oppgaver.** Det som haster i egne grupper, inn i «Trenger oppmerksomhet» | |
+| 3 | **Leder i Oppgaver.** Det som haster i egne grupper, inn i «Trenger oppmerksomhet» | **Levert 9. november.** Ett kort «Må fylles» per kommende samling der gruppen har forfall (noen sa ja og trakk seg), med «Finn noen» til planleggingen. En oppgave som aldri er fylt, regnes ikke: den står som ledig oppgave. De ledige oppgavene på samme samling og gruppe vises ikke i tillegg |
 | 4 | **Leder i Kalender.** Fargeprikkene og filteret. Etter dette er alt fra `/leder` flyttet | |
 | 5 | **Gruppeleder tas bort.** Knappen fjernes, og adressene sender videre | |
 | 6 | **Min side i nettsidens drakt.** Logo og farger fra designet. «Logg inn» for gjester og «Min side» for innloggede i nettsidens meny (`PublicNavbar.tsx`). Hjemskjermikonet åpner `/minside` (`start_url` i `public/manifest.webmanifest`) | |
