@@ -33,6 +33,7 @@ import { visibilityOf } from "../../../utils/visibility";
 import { DEFAULT_LOCATION, isWorshipService, locationOf, speakerNamesOf } from "../../../utils/gatherings";
 import { NewGatheringDialog } from "../NewGatheringDialog";
 import { useFirebase } from "../../../context/FirebaseDataContext";
+import { useMinSideModules } from "../../../hooks/useMinSideModules";
 import { useMediaQuery } from "../../../hooks/useMediaQuery";
 import { movedRestOfSeries } from "../../../utils/series";
 import { DeleteGatheringDialog, type StaffedTask } from "../DeleteGatheringDialog";
@@ -82,6 +83,8 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
   const { adminGatherings, adminGroups, createGathering, createTask } = studio;
   // The semester plan asks the teams, so it is there where the congregation has the planner
   const withPlanner = hasPlanner(useLevel());
+  // The semester plan is opened from here, so it is not offered while its module is off
+  const semesterOn = useMinSideModules().isOn("semesterplan");
 
   // "Lag neste arrangement" Modal State
   const [nextGatheringSource, setNextGatheringSource] = useState<AdminGatheringItem | null>(null);
@@ -255,7 +258,7 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
             <p className="text-xs text-[var(--studio-muted)] hidden sm:block">Gudstjenester, møter og samlinger.</p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-          {withPlanner && (
+          {withPlanner && semesterOn && (
             <Link
               to={studioTabUrl("planlegger-semesterplan")}
               className="px-3 py-2 rounded-xl bg-[var(--studio-bg)] hover:bg-[var(--studio-hover)] border border-[var(--studio-border)] text-[var(--studio-text)] text-xs font-bold flex items-center gap-1.5"

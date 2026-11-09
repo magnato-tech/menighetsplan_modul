@@ -2,16 +2,16 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 
-const { cms, modules } = vi.hoisted(() => ({
+const { cms } = vi.hoisted(() => ({
   cms: {
     addons: {} as { analysebord?: boolean; nettsidebesok?: boolean },
     addonsState: "ready" as "loading" | "ready" | "failed",
     setAddon: vi.fn(async (_id: string, _on: boolean) => true),
+    minSideModules: {} as Record<string, boolean>,
+    setMinSideModule: vi.fn(async (_id: string, _on: boolean) => true),
   },
-  modules: { isKalenderOn: true, isMeldingerOn: false, setModuleStatus: vi.fn() },
 }));
 vi.mock("../src/context/CmsContext", () => ({ useCms: () => cms }));
-vi.mock("../src/hooks/useAppHooks", () => ({ useModuleConfig: () => modules }));
 
 import { AddonsTab } from "../src/pages/admin/tabs/AddonsTab";
 
@@ -26,7 +26,9 @@ afterEach(() => {
   vi.clearAllMocks();
   cms.addons = {};
   cms.addonsState = "ready";
+  cms.minSideModules = {};
   cms.setAddon.mockImplementation(async () => true);
+  cms.setMinSideModule.mockImplementation(async () => true);
 });
 
 describe("Siden Moduler", () => {
@@ -124,19 +126,39 @@ describe("Siden Moduler", () => {
     expect(screen.queryByText(/Regnskap/)).toBeNull();
   });
 
-  test("Kalender og Meldinger står for seg som uferdige, med bryterne de hadde", () => {
+  test("Min side-modulene er alle på til de slås av, og står ikke under arbeid lenger", () => {
     renderTab();
 
-    const unfinished = within(screen.getByRole("region", { name: "Moduler under arbeid" }));
-    expect(unfinished.getByText(/ikke ferdige/)).toBeTruthy();
-    expect(unfinished.getByRole("switch", { name: "Kalender" }).getAttribute("aria-checked")).toBe("true");
-    expect(unfinished.getByRole("switch", { name: "Meldinger" }).getAttribute("aria-checked")).toBe("false");
+    expect(screen.queryByRole("region", { name: "Moduler under arbeid" })).toBeNull();
+    const minSide = within(screen.getByRole("region", { name: "Min side" }));
+    for (const name of ["Grupper", "Gruppechat", "Husfellesskap", "Tjeneste og bemanning", "Semesterplan", "Kalender"]) {
+      expect(minSide.getByRole("switch", { name }).getAttribute("aria-checked")).toBe("true");
+    }
+    // The count of add-ons is not changed by them
+    expect(screen.getByText("0 av 2 er på")).toBeTruthy();
+  });
 
-    fireEvent.click(unfinished.getByRole("switch", { name: "Kalender" }));
-    expect(modules.setModuleStatus).toHaveBeenCalledWith("kalender", "off");
-    fireEvent.click(unfinished.getByRole("switch", { name: "Meldinger" }));
-    expect(modules.setModuleStatus).toHaveBeenCalledWith("meldinger", "on");
-    // They are not among the modules stored for the congregation
-    expect(cms.setAddon).not.toHaveBeenCalled();
+  test("slår en Min side-modul av, og en modul som krever Grupper er låst mens Grupper er av", async () => {
+    cms.minSideModules = { grupper: false };
+    renderTab();
+
+    const minSide = within(screen.getByRole("region", { name: "Min side" }));
+    // Gruppechat and Husfellesskap are off with their group, and cannot be switched while it is
+    const chat = minSide.getByRole("switch", { name: "Gruppechat" }) as HTMLButtonElement;
+    expect(chat.disabled).toBe(true);
+    expect(chat.getAttribute("aria-checked")).toBe("false");
+    expect(minSide.getAllByText("Krever Grupper")).toHaveLength(2);
+
+    fireEvent.click(minSide.getByRole("switch", { name: "Grupper" }));
+    expect(cms.setMinSideModule).toHaveBeenCalledWith("grupper", true);
+    await waitFor(() => expect(showFeedback).toHaveBeenCalledWith("«Grupper» er slått på."));
+  });
+
+  test("en Min side-modul som slås av, sier at ingenting er slettet", async () => {
+    renderTab();
+    fireEvent.click(within(screen.getByRole("region", { name: "Min side" })).getByRole("switch", { name: "Kalender" }));
+
+    expect(cms.setMinSideModule).toHaveBeenCalledWith("kalender", false);
+    await waitFor(() => expect(showFeedback).toHaveBeenCalledWith("«Kalender» er slått av. Ingenting er slettet."));
   });
 });

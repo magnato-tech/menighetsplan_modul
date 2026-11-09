@@ -6,6 +6,7 @@ import { useCms } from "../context/CmsContext";
 import { useLeaderDashboard } from "../hooks/useAppHooks";
 import { Flag, Shield } from "lucide-react";
 import { useMySemesterPlans } from "../hooks/useSemesterPlans";
+import { useMinSideModules } from "../hooks/useMinSideModules";
 
 export const Header: React.FC = () => {
   const { settings, surfaces } = useCms();
@@ -19,7 +20,8 @@ export const Header: React.FC = () => {
   const isAdminPath = location.pathname.startsWith("/admin");
   const isMyPagePath = location.pathname === "/minside" || location.pathname.startsWith("/minside/") || location.pathname === "/";
   // A semester plan waiting for the person: the flag by Min side stays until they have gone through it
-  const { mine: semesterPlans } = useMySemesterPlans();
+  const { isOn } = useMinSideModules();
+  const { mine: semesterPlans } = useMySemesterPlans(isOn("semesterplan"));
   const planWaits = semesterPlans.some((item) => item.waiting);
 
   return (
@@ -64,7 +66,7 @@ export const Header: React.FC = () => {
           </Link>
           )}
 
-          {surfaces.minSide && isLeader && (
+          {surfaces.minSide && isLeader && isOn("grupper") && (
             <Link
               to="/leder"
               id="nav-tab-leder"

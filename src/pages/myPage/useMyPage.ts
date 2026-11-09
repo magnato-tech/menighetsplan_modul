@@ -9,6 +9,7 @@ import { AttentionItem } from "./attention";
 import { asksForAnswerNow, nextGatheringOf } from "../../utils/meetingPlan";
 import { useTimedMessage } from "../../hooks/useTimedMessage";
 import { useMySemesterPlans } from "../../hooks/useSemesterPlans";
+import { useMinSideModules } from "../../hooks/useMinSideModules";
 
 /**
  * Everything Min side shows, worked out from the planning data: what needs the
@@ -36,8 +37,13 @@ export function useMyPage() {
   } = useFirebase();
 
   const navigate = useNavigate();
+  // Which parts of Min side are on (see utils/minSideModules.ts). A part that is off is neither shown nor read.
+  const { isOn } = useMinSideModules();
+  const tasksOn = isOn("tjeneste");
+  const chatOn = isOn("gruppechat");
+  const husfellesskapOn = isOn("husfellesskap");
   // The semester plans open for the user: one waiting is shown first, one gone through as a link
-  const { mine: semesterPlans } = useMySemesterPlans();
+  const { mine: semesterPlans } = useMySemesterPlans(isOn("semesterplan"));
   const [feedbackMessage, showFeedbackMessage, clearFeedbackMessage] = useTimedMessage<{ text: string; type: "success" | "info" }>(4000);
 
   const showToast = (text: string, type: "success" | "info" = "success") => showFeedbackMessage({ text, type });
@@ -149,8 +155,11 @@ export function useMyPage() {
     // What was asked of the user personally comes first; within each kind, the nearest date first
     const kindOrder = { task_request: 0, unanswered_invitation: 1, open_task: 2 };
     const startOf = (item: AttentionItem) => (item.startsAt ? new Date(item.startsAt).getTime() : Infinity);
-    return items.sort((a, b) => kindOrder[a.type] - kindOrder[b.type] || startOf(a) - startOf(b));
+    const sorted = items.sort((a, b) => kindOrder[a.type] - kindOrder[b.type] || startOf(a) - startOf(b));
+    // With tasks off, only the invitations to gatherings are asked about
+    return tasksOn ? sorted : sorted.filter((item) => item.type === "unanswered_invitation");
   }, [
+    tasksOn,
     myGroups,
     myGroupIds,
     tasks,
@@ -288,13 +297,15 @@ export function useMyPage() {
 
   // Helper to get the latest chat message for a group
   const getGroupLatestMessage = (groupId: string): GroupMessage | null => {
+    if (!chatOn) return null;
     const msgs = getGroupMessages(groupId);
     return msgs.length > 0 ? msgs[msgs.length - 1] : null;
   };
 
   // Navigation helper to open specific group chat
   const handleOpenGroupChat = (group: Group) => {
-    if (group.category === "husgruppe") {
+    if (!chatOn) return;
+    if (group.category === "husgruppe" && husfellesskapOn) {
       navigate(`/husfellesskap/${group.id}?tab=chat`);
     } else {
       navigate(`/gruppe/${group.id}?tab=chat`);
@@ -303,7 +314,7 @@ export function useMyPage() {
 
   // Navigation helper to open group room
   const handleOpenGroupRoom = (group: Group) => {
-    if (group.category === "husgruppe") {
+    if (group.category === "husgruppe" && husfellesskapOn) {
       navigate(`/husfellesskap/${group.id}`);
     } else {
       navigate(`/gruppe/${group.id}`);

@@ -6,3 +6,4 @@ export * from "./memberHooks";
 export * from "./leaderHooks";
 export * from "./adminHooks";
 export * from "./useHusfellesskap";
+export * from "./useMinSideModules";

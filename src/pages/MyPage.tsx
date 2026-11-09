@@ -4,7 +4,8 @@ import { useMyPage } from "./myPage/useMyPage";
 import { AttentionSection } from "./myPage/AttentionSection";
 import { MyGroupsSection } from "./myPage/MyGroupsSection";
 import { MyTasksTab } from "./myPage/MyTasksTab";
-import { MY_PAGE_TABS, MyPageTabs, toMyPageTab, type MyPageTab } from "./myPage/MyPageTabs";
+import { MyPageTabs, shownMyPageTabs, toMyPageTab, type MyPageTab } from "./myPage/MyPageTabs";
+import { useMinSideModules } from "../hooks/useMinSideModules";
 import { MyCalendarPanel } from "./myPage/MyCalendarPanel";
 import { AttentionModal } from "./myPage/AttentionModal";
 import { VolunteerHelp } from "./myPage/VolunteerHelp";
@@ -21,12 +22,17 @@ export const MyPage: React.FC = () => {
   const plansDone = semesterPlans.filter((item) => !item.waiting);
 
   const [searchParams] = useSearchParams();
+  const { isOn } = useMinSideModules();
+  const tasksOn = isOn("tjeneste");
 
   // The page has three parts: one's tasks, one's groups and the calendar. An address can ask for
   // one of them (?view=); otherwise it opens on the tasks, which is what a volunteer comes for.
-  const [tab, setTab] = useState<MyPageTab>(toMyPageTab(searchParams.get("view")));
+  const [requested, setTab] = useState<MyPageTab>(toMyPageTab(searchParams.get("view")));
   const [showAttentionModal, setShowAttentionModal] = useState(false);
-  const heading = MY_PAGE_TABS.find((candidate) => candidate.id === tab)!.label;
+  // A part that is switched off is not shown: the tasks open instead
+  const tabs = shownMyPageTabs(isOn);
+  const tab: MyPageTab = tabs.some((candidate) => candidate.id === requested) ? requested : "oppgaver";
+  const heading = (tabs.find((candidate) => candidate.id === tab) ?? tabs[0]).label;
 
   return (
     // The room at the bottom is for the menu that is fixed there on a phone: the last card can be scrolled clear of it
@@ -66,7 +72,7 @@ export const MyPage: React.FC = () => {
           <VolunteerHelp />
         </div>
 
-        <MyPageTabs active={tab} onChange={setTab} />
+        <MyPageTabs active={tab} onChange={setTab} tabs={tabs} />
 
         {tab === "oppgaver" && (
           <>
@@ -80,14 +86,14 @@ export const MyPage: React.FC = () => {
 
             {plansDone.length > 0 && <SemesterPlanDone plans={plansDone} />}
 
-            {!hasServiceGroupMembership && attentionItems.length === 0 && (
+            {tasksOn && !hasServiceGroupMembership && attentionItems.length === 0 && (
               <p className="text-xs text-slate-600 bg-slate-100 border border-slate-200/80 rounded-xl px-3.5 py-2.5 leading-relaxed">
                 Ledige tjenesteoppgaver vises her når du er med i en tjenestegruppe (for eksempel lovsang, lyd eller kjøkken). Du er med i{" "}
                 {myGroups.length === 0 ? "ingen grupper ennå" : myGroups.map((g) => g.name).join(", ")}.
               </p>
             )}
 
-            <MyTasksTab page={page} />
+            {tasksOn && <MyTasksTab page={page} />}
           </>
         )}
 

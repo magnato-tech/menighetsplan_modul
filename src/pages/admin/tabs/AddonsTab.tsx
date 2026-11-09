@@ -6,7 +6,7 @@ import { BUILT_MODULES, PLANNED_MODULES, STUDIO_ADDONS, moduleName, type StudioA
 import type { ShowFeedback, StudioTab } from "../studio";
 import { studioCard } from "../studioTheme";
 import { AddonCard } from "./addons/AddonCard";
-import { UnfinishedModules } from "./addons/UnfinishedModules";
+import { MinSideModules } from "./addons/MinSideModules";
 
 interface AddonsTabProps {
   showFeedback: ShowFeedback;
@@ -81,6 +81,8 @@ export const AddonsTab: React.FC<AddonsTabProps> = ({ showFeedback, onTabChange 
           </section>
         ))}
 
+      <MinSideModules showFeedback={showFeedback} />
+
       <section aria-label="Planlagte moduler" className="space-y-3">
         <h2 className={sectionHeading}>Planlagt</h2>
         <div className={`${studioCard} p-4 space-y-3`}>
@@ -97,8 +99,6 @@ export const AddonsTab: React.FC<AddonsTabProps> = ({ showFeedback, onTabChange 
           <p className="text-[11px] text-[var(--studio-muted)]">Ikke laget ennå. Hver av dem får sin egen bryter her når den er klar.</p>
         </div>
       </section>
-
-      <UnfinishedModules />
     </div>
   );
 };

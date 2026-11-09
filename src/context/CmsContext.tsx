@@ -11,7 +11,9 @@ import {
   reorderPages as reorderPagesInFirestore,
 } from "../services/firestore";
 import { reportWriteError } from "../services/writeErrors";
-import { saveAddonChoice, subscribeAddons } from "../services/addons";
+import { saveAddonChoice, saveMinSideModule, subscribeAddons, subscribeMinSideModules } from "../services/addons";
+import { DEMO } from "../demo";
+import { ALL_MIN_SIDE_MODULES_ON, type MinSideModuleChoices, type MinSideModuleId } from "../utils/minSideModules";
 import { saveSurfaces, subscribeSurfaces, type SurfacesPatch } from "../services/surfaces";
 import type { AddonChoices, AddonId } from "../utils/addons";
 import { defaultSurfaces, type InstallationSurfaces } from "../utils/surfaces";
@@ -54,10 +56,13 @@ interface CmsContextValue {
    */
   addons: AddonChoices;
   addonsState: AddonsState;
+  /** The Min side modules that are switched off (see utils/minSideModules.ts). Everything is on until stored otherwise. */
+  minSideModules: MinSideModuleChoices;
   surfaces: InstallationSurfaces;
   surfacesState: AddonsState;
   saveSurfaces: (patch: SurfacesPatch) => Promise<boolean>;
   setAddon: (id: AddonId, on: boolean) => Promise<boolean>;
+  setMinSideModule: (id: MinSideModuleId, on: boolean) => Promise<boolean>;
   // Every write resolves to whether it reached Firestore. A failure is already shown to the user.
   savePage: (page: Partial<CmsPage> & { id?: string }) => Promise<boolean>;
   deletePage: (pageId: string) => Promise<boolean>;
@@ -214,6 +219,22 @@ function useCmsAddons(): { addons: AddonChoices; addonsState: AddonsState } {
   return state;
 }
 
+/** Which Min side modules are switched off. Nothing is switched off until the database says so, and in the demo nothing is. */
+function useCmsMinSideModules(): MinSideModuleChoices {
+  const [modules, setModules] = useState<MinSideModuleChoices>(ALL_MIN_SIDE_MODULES_ON);
+
+  useEffect(
+    () =>
+      subscribeMinSideModules(setModules, (error) => {
+        onListenerError("minSideModules")(error);
+        setModules(ALL_MIN_SIDE_MODULES_ON);
+      }),
+    []
+  );
+
+  return modules;
+}
+
 function useCmsSurfaces(): { surfaces: InstallationSurfaces; surfacesState: AddonsState } {
   const [state, setState] = useState<{ surfaces: InstallationSurfaces; surfacesState: AddonsState }>({
     surfaces: defaultSurfaces(),
@@ -250,6 +271,8 @@ async function attempt(action: string, write: () => Promise<unknown>): Promise<b
 const writes = {
   setAddon: (id: AddonId, on: boolean) =>
     attempt(on ? "slå på modulen" : "slå av modulen", () => saveAddonChoice(id, on)),
+  setMinSideModule: (id: MinSideModuleId, on: boolean) =>
+    attempt(on ? "slå på modulen" : "slå av modulen", () => saveMinSideModule(id, on)),
   savePage: (pageData: Partial<CmsPage> & { id?: string }) => {
     const page = buildPageRecord(pageData, new Date(), () => newId("page"));
     return attempt("lagre siden", () => createDocument(CMS_COLLECTIONS.PAGES, page));
@@ -332,6 +355,9 @@ export const CmsProvider: React.FC<{ children: React.ReactNode; publicPagesOnly?
   );
   const settings = useCmsSettings();
   const { addons, addonsState } = useCmsAddons();
+  const storedMinSideModules = useCmsMinSideModules();
+  // The demo is one database shared by everyone who looks at it, and its Min side is whole
+  const minSideModules = DEMO ? ALL_MIN_SIDE_MODULES_ON : storedMinSideModules;
   const { surfaces, surfacesState } = useCmsSurfaces();
   const contentReady = pagesAnswered && newsAnswered;
 
@@ -346,6 +372,7 @@ export const CmsProvider: React.FC<{ children: React.ReactNode; publicPagesOnly?
       contentReady,
       addons,
       addonsState,
+      minSideModules,
       surfaces,
       surfacesState,
       saveSurfaces: (patch) => attempt("lagre flatene", () => saveSurfaces(patch)),
@@ -450,7 +477,7 @@ export const CmsProvider: React.FC<{ children: React.ReactNode; publicPagesOnly?
       getNewsById: (id: string) => news.find((n) => n.id === id),
       getNewsBySlug: (slug: string) => news.find((n) => n.slug.toLowerCase() === slug.toLowerCase()),
     }),
-    [pages, news, sermons, staff, media, settings, contentReady, addons, addonsState, surfaces, surfacesState]
+    [pages, news, sermons, staff, media, settings, contentReady, addons, addonsState, minSideModules, surfaces, surfacesState]
   );
 
   return <CmsContext.Provider value={value}>{children}</CmsContext.Provider>;

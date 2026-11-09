@@ -24,6 +24,7 @@ vi.mock("../src/components/gathering/InstructionDialog", () => ({ InstructionDia
 vi.mock("../src/components/gathering/EditTaskDialog", () => ({ EditTaskDialog: () => null }));
 
 // The team's card in the popup: its tabs and name are real, what is inside the tabs is not needed here
+vi.mock("../src/hooks/useMinSideModules", () => ({ useMinSideModules: () => ({ isOn: () => true }) }));
 vi.mock("../src/hooks/useAppHooks", () => ({
   useLeaderGroupDetail: (groupId: string) => ({
     hasAccess: true,

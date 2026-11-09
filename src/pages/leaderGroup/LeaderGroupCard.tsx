@@ -9,6 +9,7 @@ import { GroupMetaForm } from "./GroupMetaForm";
 import { GroupScheduleCard } from "./GroupScheduleCard";
 import { GroupActivities } from "./GroupActivities";
 import { GroupMembers } from "./GroupMembers";
+import { useMinSideModules } from "../../hooks/useMinSideModules";
 import {
   ArrowLeft,
   Users,
@@ -39,8 +40,14 @@ export const LeaderGroupCard: React.FC<LeaderGroupCardProps> = ({ groupId, inPop
   // Editing state for group basic metadata
   const [isEditingMeta, setIsEditingMeta] = useState(false);
 
-  // Room Tab for non-husgruppe: 'aktiviteter' | 'chat' | 'medlemmer'
-  const [activeRoomTab, setActiveRoomTab] = useState<LeaderGroupTab>(initialTab || "aktiviteter");
+  // Which parts of Min side are on (see utils/minSideModules.ts)
+  const { isOn } = useMinSideModules();
+  const chatOn = isOn("gruppechat");
+  const husfellesskapOn = isOn("husfellesskap");
+
+  // Room Tab for non-husgruppe: 'aktiviteter' | 'chat' | 'medlemmer'. Chat that is off opens activities instead.
+  const [chosenRoomTab, setActiveRoomTab] = useState<LeaderGroupTab>(initialTab || "aktiviteter");
+  const activeRoomTab: LeaderGroupTab = !chatOn && chosenRoomTab === "chat" ? "aktiviteter" : chosenRoomTab;
 
   useEffect(() => {
     if (initialTab) {
@@ -98,7 +105,8 @@ export const LeaderGroupCard: React.FC<LeaderGroupCardProps> = ({ groupId, inPop
     );
   }
 
-  if (group.category === "husgruppe") {
+  // A house group is shown as a house group only while Husfellesskap is on; otherwise as any group
+  if (group.category === "husgruppe" && husfellesskapOn) {
     return (
       <div className={frame}>
         {/* Header & Breadcrumb */}
@@ -161,24 +169,26 @@ export const LeaderGroupCard: React.FC<LeaderGroupCardProps> = ({ groupId, inPop
           <span>Aktiviteter</span>
         </button>
 
-        <button
-          type="button"
-          id="tab-btn-group-chat"
-          onClick={() => setActiveRoomTab("chat")}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer relative ${
-            activeRoomTab === "chat"
-              ? "bg-white text-emerald-800 shadow-2xs border border-slate-200"
-              : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-          }`}
-        >
-          <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
-          <span>Gruppechat</span>
-          {messages.length > 0 && (
-            <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200/60">
-              {messages.length}
-            </span>
-          )}
-        </button>
+        {chatOn && (
+          <button
+            type="button"
+            id="tab-btn-group-chat"
+            onClick={() => setActiveRoomTab("chat")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer relative ${
+              activeRoomTab === "chat"
+                ? "bg-white text-emerald-800 shadow-2xs border border-slate-200"
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+            }`}
+          >
+            <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Gruppechat</span>
+            {messages.length > 0 && (
+              <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200/60">
+                {messages.length}
+              </span>
+            )}
+          </button>
+        )}
 
         <button
           type="button"

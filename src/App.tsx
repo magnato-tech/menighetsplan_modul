@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useEffect, useMemo } from "react";
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from "react-router-dom";
 import { FirebaseDataProvider } from "./context/FirebaseDataContext";
 import { CmsProvider, useCms } from "./context/CmsContext";
 import { SITE_THEME_CLASS, getThemeCssVariables } from "./utils/themeUtils";
@@ -32,6 +32,7 @@ import { PublicSermonsPage } from "./pages/public/PublicSermonsPage";
 import { PublicLeadershipPage } from "./pages/public/PublicLeadershipPage";
 import { PublicEventPage } from "./pages/public/PublicEventPage";
 import { useFirebase } from "./context/FirebaseDataContext";
+import { useMinSideModules } from "./hooks/useMinSideModules";
 
 const AdminStudio = lazy(() =>
   import("./pages/admin/AdminStudio").then((m) => ({ default: m.AdminStudio }))
@@ -54,13 +55,18 @@ const GatheringRunSheetPage = lazy(() =>
 const HusfellesskapPage = lazy(() =>
   import("./pages/HusfellesskapPage").then((m) => ({ default: m.HusfellesskapPage }))
 );
-const ModulePlaceholderPage = lazy(() =>
-  import("./pages/ModulePlaceholderPage").then((m) => ({ default: m.ModulePlaceholderPage }))
-);
 const SignInPage = lazy(() => import("./pages/SignInPage").then((m) => ({ default: m.SignInPage })));
 const UnsubscribePage = lazy(() => import("./pages/UnsubscribePage").then((m) => ({ default: m.UnsubscribePage })));
 function LazyRouteFallback() {
   return <p className="p-6 text-sm text-slate-500">Laster…</p>;
+}
+
+/** A house group's page: the house group view while Husfellesskap is on, else the group's page. */
+function HusfellesskapGroupRoute() {
+  const { groupId } = useParams<{ groupId: string }>();
+  const { isOn } = useMinSideModules();
+  if (isOn("husfellesskap")) return <HusfellesskapPage />;
+  return <Navigate to={isOn("grupper") ? `/gruppe/${groupId}` : "/minside"} replace />;
 }
 
 /**
@@ -97,6 +103,8 @@ function AppContent() {
   const location = useLocation();
   const { settings, surfaces, surfacesState } = useCms();
   const { session, currentUser } = useFirebase();
+  // Parts of Min side that an admin can switch off (see utils/minSideModules.ts). Off, their addresses go to Min side.
+  const { isOn } = useMinSideModules();
   const themeVariables = useMemo(() => getThemeCssVariables(settings?.theme), [settings?.theme]);
   useSiteSeo(location.pathname);
   // Visits to the public website are counted, anonymously. Min side and admin are not counted.
@@ -166,16 +174,21 @@ function AppContent() {
             <Suspense fallback={<LazyRouteFallback />}>
               <Routes>
                 <Route path="/minside" element={<MyPage />} />
-                <Route path="/minside/semesterplan/:planId" element={<SemesterPlanPage />} />
-                <Route path="/leder" element={<LeaderPage />} />
-                <Route path="/leder/gruppe/:groupId" element={<LeaderGroupDetailPage />} />
+                <Route path="/minside/semesterplan/:planId" element={isOn("semesterplan") ? <SemesterPlanPage /> : <Navigate to="/minside" replace />} />
+                <Route path="/leder" element={isOn("grupper") ? <LeaderPage /> : <Navigate to="/minside" replace />} />
+                <Route path="/leder/gruppe/:groupId" element={isOn("grupper") ? <LeaderGroupDetailPage /> : <Navigate to="/minside" replace />} />
                 <Route path="/leder/samling/:gatheringId" element={<LeaderGatheringDetailPage />} />
-                <Route path="/oppgave/:taskId" element={<TaskDetailPage />} />
-                <Route path="/gruppe/:groupId" element={<LeaderGroupDetailPage />} />
+                <Route path="/oppgave/:taskId" element={isOn("tjeneste") ? <TaskDetailPage /> : <Navigate to="/minside" replace />} />
+                <Route path="/gruppe/:groupId" element={isOn("grupper") ? <LeaderGroupDetailPage /> : <Navigate to="/minside" replace />} />
                 <Route path="/samling/:gatheringId" element={<GatheringRunSheetPage />} />
-                <Route path="/husfellesskap" element={<HusfellesskapPage />} />
-                <Route path="/husfellesskap/:groupId" element={<HusfellesskapPage />} />
-                <Route path="/meldinger" element={<ModulePlaceholderPage module="meldinger" />} />
+                {/* Without a group, the house groups are in the groups tab */}
+                <Route
+                  path="/husfellesskap"
+                  element={isOn("husfellesskap") ? <HusfellesskapPage /> : <Navigate to="/minside?view=grupper" replace />}
+                />
+                <Route path="/husfellesskap/:groupId" element={<HusfellesskapGroupRoute />} />
+                {/* The address stays in Min side: the messages it used to show are in the groups */}
+                <Route path="/meldinger" element={<Navigate to="/minside" replace />} />
                 <Route path="*" element={<Navigate to="/minside" replace />} />
               </Routes>
             </Suspense>

@@ -2,6 +2,7 @@ import React from "react";
 import { formatChatMessageTime } from "../../utils/dates";
 import { MyPageModel } from "./useMyPage";
 import { allGroupPersonIds } from "../../utils/groups";
+import { useMinSideModules } from "../../hooks/useMinSideModules";
 import {
   ChevronRight,
   Clock,
@@ -15,6 +16,9 @@ interface MyGroupsSectionProps {
 
 export const MyGroupsSection: React.FC<MyGroupsSectionProps> = ({ page }) => {
   const { currentUser, myGroups, getGroupNextActivity, getGroupLatestMessage, handleOpenGroupChat, handleOpenGroupRoom } = page;
+  const { isOn } = useMinSideModules();
+  const chatOn = isOn("gruppechat");
+  const husfellesskapOn = isOn("husfellesskap");
 
   return (
     <section id="section-mine-grupper" className="space-y-2">
@@ -36,8 +40,10 @@ export const MyGroupsSection: React.FC<MyGroupsSectionProps> = ({ page }) => {
                 <div className="space-y-1">
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
-                      {group.category === "husgruppe"
+                      {group.category === "husgruppe" && husfellesskapOn
                         ? "Husfellesskap"
+                        : group.category === "husgruppe"
+                        ? "Gruppe"
                         : group.category === "tjenestegruppe"
                         ? "Tjenestegruppe"
                         : group.category}
@@ -113,16 +119,18 @@ export const MyGroupsSection: React.FC<MyGroupsSectionProps> = ({ page }) => {
                     <span>Gå til grupperommet</span>
                     <ChevronRight className="w-4 h-4 stroke-[2.5]" />
                   </button>
-                  <button
-                    type="button"
-                    id={`btn-open-group-chat-${group.id}`}
-                    onClick={() => handleOpenGroupChat(group)}
-                    className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors cursor-pointer px-2.5 py-1 rounded-lg hover:bg-blue-50"
-                    title="Åpne gruppechat"
-                  >
-                    <MessageSquare className="w-3.5 h-3.5" />
-                    <span>Chat</span>
-                  </button>
+                  {chatOn && (
+                    <button
+                      type="button"
+                      id={`btn-open-group-chat-${group.id}`}
+                      onClick={() => handleOpenGroupChat(group)}
+                      className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors cursor-pointer px-2.5 py-1 rounded-lg hover:bg-blue-50"
+                      title="Åpne gruppechat"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5" />
+                      <span>Chat</span>
+                    </button>
+                  )}
                 </div>
               </div>
             );

@@ -14,6 +14,7 @@ vi.mock("../src/firebase", async () => (await import("./support/offlineFirestore
 vi.mock("../src/services/auth", async () => (await import("./support/session")).authModuleMock);
 
 import { FirebaseDataProvider, useFirebase } from "../src/context/FirebaseDataContext";
+import { CmsProvider } from "../src/context/CmsContext";
 import { useTaskDetail } from "../src/hooks/memberHooks";
 import { useMyPage } from "../src/pages/myPage/useMyPage";
 
@@ -73,7 +74,9 @@ afterEach(cleanup);
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
   <MemoryRouter>
-    <FirebaseDataProvider>{children}</FirebaseDataProvider>
+    <FirebaseDataProvider>
+      <CmsProvider>{children}</CmsProvider>
+    </FirebaseDataProvider>
   </MemoryRouter>
 );
 

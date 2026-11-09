@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useHusfellesskap } from "../hooks/useAppHooks";
+import { useMinSideModules } from "../hooks/useMinSideModules";
 import { HusfellesskapChat } from "./HusfellesskapChat";
 import { MeetingTab } from "./husfellesskap/MeetingTab";
 import { MembersTab } from "./husfellesskap/MembersTab";
@@ -24,7 +25,10 @@ export const HusfellesskapView: React.FC<{
 
   const [searchParams] = useSearchParams();
   const urlTab = searchParams.get("tab") as "meeting" | "chat" | "members" | null;
-  const [activeTab, setActiveTab] = useState<"meeting" | "chat" | "members">(urlTab || defaultTab);
+  const [chosenTab, setActiveTab] = useState<"meeting" | "chat" | "members">(urlTab || defaultTab);
+  // Chat that is off opens the meeting tab instead
+  const chatOn = useMinSideModules().isOn("gruppechat");
+  const activeTab = !chatOn && chosenTab === "chat" ? "meeting" : chosenTab;
 
   useEffect(() => {
     if (urlTab) {
@@ -99,24 +103,26 @@ export const HusfellesskapView: React.FC<{
           <span>Samling & Innkalling</span>
         </button>
 
-        <button
-          type="button"
-          id="tab-btn-chat"
-          onClick={() => setActiveTab("chat")}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer relative ${
-            activeTab === "chat"
-              ? "bg-white text-emerald-800 shadow-2xs border border-slate-200"
-              : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/80"
-          }`}
-        >
-          <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
-          <span>Gruppechat</span>
-          {messages.length > 0 && (
-            <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200/60">
-              {messages.length}
-            </span>
-          )}
-        </button>
+        {chatOn && (
+          <button
+            type="button"
+            id="tab-btn-chat"
+            onClick={() => setActiveTab("chat")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer relative ${
+              activeTab === "chat"
+                ? "bg-white text-emerald-800 shadow-2xs border border-slate-200"
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/80"
+            }`}
+          >
+            <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Gruppechat</span>
+            {messages.length > 0 && (
+              <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200/60">
+                {messages.length}
+              </span>
+            )}
+          </button>
+        )}
 
         <button
           type="button"

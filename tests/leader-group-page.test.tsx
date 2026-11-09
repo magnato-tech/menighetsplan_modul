@@ -24,6 +24,7 @@ vi.mock("../src/components/GroupChat", async () => {
   const { createElement } = await import("react");
   return { GroupChat: (props: { groupId: string }) => createElement("div", { "data-testid": "group-chat" }, props.groupId) };
 });
+vi.mock("../src/hooks/useMinSideModules", () => ({ useMinSideModules: () => ({ isOn: () => true }) }));
 vi.mock("../src/components/HusfellesskapView", () => ({ HusfellesskapView: () => null }));
 vi.mock("../src/pages/leaderGroup/GroupScheduleCard", () => ({ GroupScheduleCard: () => null }));
 vi.mock("../src/pages/leaderGroup/GroupActivities", () => ({ GroupActivities: () => null }));
