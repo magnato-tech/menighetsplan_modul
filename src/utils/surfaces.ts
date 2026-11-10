@@ -123,3 +123,13 @@ export function decidePublicEntry(surfaces: Pick<InstallationSurfaces, "ownWebsi
 export function hasChurchSite(surfaces: InstallationSurfaces): boolean {
   return surfaces.ownWebsite || churchSiteUrl(surfaces) !== null;
 }
+
+/**
+ * Why the choice of homepage cannot be saved, or null when it can. When the homepage is another website, its
+ * address must be a valid https (or http) address: the links «Til nettsiden» go there.
+ */
+export function homepageError(surfaces: Pick<InstallationSurfaces, "ownWebsite" | "externalSiteUrl">): string | null {
+  if (surfaces.ownWebsite) return null;
+  if (validHttpsUrl(surfaces.externalSiteUrl) !== "") return null;
+  return "Skriv inn adressen til hjemmesiden, som begynner med https://";
+}

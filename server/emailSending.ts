@@ -76,11 +76,14 @@ const settingOf = (env: InstallationEnv, name: string): string | undefined => {
 
 /**
  * The address a token is for. The token is not checked here: it is handed to the database, which
- * checks it and refuses a false one, before anything is read or sent.
+ * checks it and refuses a false one, before anything is read or sent. An address that is not
+ * confirmed is nobody's: anyone can make an account with someone else's address and a password,
+ * and the database's rules let no such account in either (signedIn in firestore.rules).
  */
 export function emailOfToken(idToken: string): string | null {
   try {
-    const payload = JSON.parse(Buffer.from(idToken.split(".")[1] ?? "", "base64url").toString("utf8")) as { email?: unknown };
+    const payload = JSON.parse(Buffer.from(idToken.split(".")[1] ?? "", "base64url").toString("utf8")) as { email?: unknown; email_verified?: unknown };
+    if (payload.email_verified !== true) return null;
     return usableEmail(payload.email);
   } catch {
     return null;

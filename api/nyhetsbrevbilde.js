@@ -78,13 +78,14 @@ async function readDocument(database, path, ask, headers) {
 
 // server/newsletterBanner.ts
 var NEWSLETTER_BANNER_DOCUMENT = "cms_settings/newsletter-banner";
+var NEWSLETTER_BANNER_RECORD = "newsletterBanner";
 var missing = { status: 404, headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" }, body: "Nyhetsbrevet har ikke noe toppbilde." };
 async function newsletterBanner({ env, siteUrl, ask }) {
   const installation = readInstallationConfig(env);
   if (!installation) return missing;
   const database = { projectId: installation.projectId, databaseId: installation.firestoreDatabaseId };
   const record = await readDocument(database, NEWSLETTER_BANNER_DOCUMENT, ask).catch(() => null);
-  const banner = newsletterBannerOf(record?.imageUrl);
+  const banner = record?.recordType === NEWSLETTER_BANNER_RECORD ? newsletterBannerOf(record.imageUrl) : null;
   if (!banner) return missing;
   const kept = "public, max-age=86400";
   if (banner.kind === "stored") return { status: 200, headers: { "Content-Type": banner.contentType, "Cache-Control": kept }, body: Buffer.from(banner.base64, "base64") };

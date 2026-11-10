@@ -5,8 +5,8 @@ import { useMediaMap } from "../../../hooks/useMediaMap";
 import { resolveMediaUrl } from "../../../utils/media";
 import { useFirebase } from "../../../context/FirebaseDataContext";
 import { useCms } from "../../../context/CmsContext";
-import { isWorshipService, locationOf, upcomingPublicGatherings } from "../../../utils/gatherings";
-import { buildMonthGrid, monthLabel } from "../../../utils/calendarMonth";
+import { isOpenCommunityGathering, isWorshipService, locationOf, upcomingPublicGatherings } from "../../../utils/gatherings";
+import { buildMonthGrid, dayBounds, isContinuationDay, monthLabel } from "../../../utils/calendarMonth";
 import {
   MODULE_PRESENTATION_DEFAULTS,
   ModulePresentationConfig,
@@ -52,18 +52,15 @@ export const KalenderModule: React.FC<KalenderModuleProps> = ({
     [gatherings, startOfToday]
   );
 
-  const monthEvents = useMemo(() => {
-    const start = new Date(monthOffset.year, monthOffset.month, 1).getTime();
-    const end = new Date(monthOffset.year, monthOffset.month + 1, 0, 23, 59, 59, 999).getTime();
-    return allEvents.filter((g) => {
-      const t = new Date(g.startsAt).getTime();
-      return t >= start && t <= end;
-    });
-  }, [allEvents, monthOffset]);
+  // The grid also shows a public event that began before today and is still going on, on the days it lasts
+  const gridEvents = useMemo(
+    () => [...allEvents, ...gatherings.filter((g) => isOpenCommunityGathering(g) && isContinuationDay(g, startOfToday))],
+    [allEvents, gatherings, startOfToday]
+  );
 
   const grid = useMemo(
-    () => buildMonthGrid(monthOffset.year, monthOffset.month, monthEvents),
-    [monthOffset, monthEvents]
+    () => buildMonthGrid(monthOffset.year, monthOffset.month, gridEvents),
+    [monthOffset, gridEvents]
   );
 
   const badge = presentationText(config, "badge", defaults.badge);
@@ -274,6 +271,7 @@ export const KalenderModule: React.FC<KalenderModuleProps> = ({
                       className={`block px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-semibold truncate border hover:underline ${eventPillClass(event)}`}
                       title={event.title}
                     >
+                      {isContinuationDay(event, dayBounds(cell.date).start) && "forts. "}
                       {event.title}
                     </Link>
                   ))}

@@ -307,11 +307,11 @@ describe("Utsendingen av nyhetsbrevet", () => {
 });
 
 describe("Toppbildet der installasjonen kjører", () => {
-  const banner = (imageUrl: string | null) => {
+  const banner = (imageUrl: string | null, recordType = "newsletterBanner") => {
     const ask: Fetch = async (url, init) => {
       expect(init?.headers?.Authorization).toBeUndefined();
       expect(url.endsWith(`/${NEWSLETTER_BANNER_DOCUMENT}`)).toBe(true);
-      return imageUrl ? { ok: true, status: 200, json: async () => ({ name: url, fields: fieldsOf({ recordType: "newsletterBanner", imageUrl }) }) } : { ok: false, status: 404, json: async () => ({}) };
+      return imageUrl ? { ok: true, status: 200, json: async () => ({ name: url, fields: fieldsOf({ recordType, imageUrl }) }) } : { ok: false, status: 404, json: async () => ({}) };
     };
     return newsletterBanner({ env, siteUrl: "https://menigheten.example", ask });
   };
@@ -327,6 +327,11 @@ describe("Toppbildet der installasjonen kjører", () => {
 
     expect((await banner(null)).status).toBe(404);
     expect((await banner("data:text/html;base64,AAAA")).status).toBe(404);
+  });
+
+  test("et dokument med samme navn og et annet merke er ikke toppbildet, og sender ingen videre", async () => {
+    expect((await banner("https://fremmed.example/lokkemat", "gatheringHeadcount")).status).toBe(404);
+    expect((await banner(`data:image/png;base64,${Buffer.from("bildet").toString("base64")}`, "gatheringHeadcount")).status).toBe(404);
   });
 });
 

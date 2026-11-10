@@ -353,6 +353,8 @@ describe("Et medlem", () => {
     await assertSucceeds(setDoc(doc(db, "gatheringAttendances/att-g-apen-hakon"), { gatheringId: "g-apen", personId: "hakon", status: "declined" }));
     // Not for someone else
     await assertFails(setDoc(doc(db, "gatheringAttendances/att-g-apen-ola"), { gatheringId: "g-apen", personId: "ola", status: "attending" }));
+    // And not by taking over someone else's answer
+    await assertFails(setDoc(doc(ola(), "gatheringAttendances/att-g-apen-hakon"), { gatheringId: "g-apen", personId: "ola", status: "attending" }));
   });
 
   test("tar en oppgave til på et arrangement de alt står på, eller der gruppen deres har ansvaret", async () => {
@@ -390,6 +392,8 @@ describe("Et medlem", () => {
     await assertFails(updateDoc(doc(db, "groupMessages/m2"), { content: "Endret" }));
     await assertFails(deleteDoc(doc(db, "groupMessages/m2")));
     await assertSucceeds(deleteDoc(doc(db, "groupMessages/m1")));
+    // Not into a group he is not in
+    await assertFails(setDoc(doc(db, "groupMessages/m-utenfor"), { groupId: "group-intern", senderPersonId: "hakon", senderName: "Håkon Tveit", content: "Hei" }));
     await assertFails(setDoc(doc(db, "assignments/a-falsk"), {
       taskId: "task-1", personId: "ola", personName: "Noen andre", response: "pending",
       gatheringId: "g-apen", gatheringGroupId: "group-lyd", gatheringPublic: true,
@@ -450,6 +454,8 @@ describe("Et medlem", () => {
     await assertSucceeds(setDoc(doc(db, "cms_settings/headcount-g-apen"), { recordType: "gatheringHeadcount", gatheringId: "g-apen", adults: 85, children: 22 }));
     await assertFails(setDoc(doc(db, "cms_settings/global"), { recordType: "gatheringHeadcount", gatheringId: "x", adults: 1, children: 1 }));
     await assertFails(setDoc(doc(db, "cms_settings/operating-mode"), { recordType: "gatheringHeadcount", adults: 1, children: 1 }));
+    // Nor take a setting that is not there yet, such as the banner of the newsletter
+    await assertFails(setDoc(doc(db, "cms_settings/newsletter-banner"), { recordType: "gatheringHeadcount", imageUrl: "https://eksempel.no/x.png" }));
     await assertFails(deleteDoc(doc(db, "cms_settings/headcount-g-apen")));
   });
 });

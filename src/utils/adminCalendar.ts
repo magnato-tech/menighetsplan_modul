@@ -1,7 +1,7 @@
 import type { Gathering, Group } from "../types";
 import { isGroupGathering, isWorshipService } from "./gatherings";
 import { visibilityOf } from "./visibility";
-import { buildMonthGrid, type CalendarMonthCell } from "./calendarMonth";
+import { buildMonthGrid, dayBounds, isContinuationDay, occursOnDay, type CalendarMonthCell } from "./calendarMonth";
 
 // The calendar in the planner («Kalender»): which filter button an event falls under, and the days of
 // a month or a week to draw. Only for the admin; the website has its own calendar module.
@@ -48,19 +48,27 @@ export function mondayOf(day: Date): Date {
   return new Date(day.getFullYear(), day.getMonth(), day.getDate() - ((day.getDay() + 6) % 7));
 }
 
-/** The seven days of the week a day lies in, Monday to Sunday, each with its events. */
+/**
+ * The seven days of the week a day lies in, Monday to Sunday, each with its events. An event lasting
+ * several days is on each of them; the ones that started on an earlier day come first.
+ */
 export function weekDays(day: Date, events: Gathering[], today: Date = new Date()): CalendarMonthCell[] {
   const monday = mondayOf(day);
   const todayKey = dayKey(today);
   return Array.from({ length: 7 }, (_, i) => {
     // Counted in calendar days, so the week is right when the clocks change
     const date = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i);
-    const key = dayKey(date);
+    const { start, end } = dayBounds(date);
+    // Events that began on an earlier day first, then by the time they start
+    const startedEarlier = (g: Gathering) => (isContinuationDay(g, start) ? 0 : 1);
+    const dayEvents = events
+      .filter((g) => occursOnDay(g, start, end))
+      .sort((a, b) => startedEarlier(a) - startedEarlier(b) || Date.parse(a.startsAt) - Date.parse(b.startsAt));
     return {
       date,
       inMonth: true,
-      isToday: key === todayKey,
-      events: events.filter((g) => dayKey(new Date(g.startsAt)) === key).sort((a, b) => a.startsAt.localeCompare(b.startsAt)),
+      isToday: dayKey(date) === todayKey,
+      events: dayEvents,
     };
   });
 }

@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { spotifyEmbedUrl } from "../../../utils/spotify";
 import { CmsResolvedLink } from "../CmsResolvedLink";
 import { useCms } from "../../../context/CmsContext";
 import { useMediaMap } from "../../../hooks/useMediaMap";
@@ -11,15 +12,6 @@ import {
 import { PresentationSection } from "../PresentationSection";
 import { Headphones, Play, Music2, ExternalLink, Volume2 } from "lucide-react";
 
-function getSpotifyEmbedUrl(url: string | undefined): string | null {
-  if (!url) return null;
-  if (url.includes("/embed/")) return url;
-  const match = url.match(/open\.spotify\.com\/(episode|show|track)\/([a-zA-Z0-9]+)/);
-  if (match) {
-    return `https://open.spotify.com/embed/${match[1]}/${match[2]}`;
-  }
-  return null;
-}
 
 export interface SermonModuleProps {
   variant?: "player" | "minimal";
@@ -99,9 +91,9 @@ export const SermonModule: React.FC<SermonModuleProps> = ({
           <div className="mt-3 p-4 bg-white rounded-xl border border-stone-200 shadow-sm">
             {latestSermon.audioUrl ? (
               <audio controls autoPlay src={latestSermon.audioUrl} className="w-full h-10" />
-            ) : latestSermon.spotifyUrl && getSpotifyEmbedUrl(latestSermon.spotifyUrl) ? (
+            ) : latestSermon.spotifyUrl && spotifyEmbedUrl(latestSermon.spotifyUrl) ? (
               <iframe
-                src={getSpotifyEmbedUrl(latestSermon.spotifyUrl)!}
+                src={spotifyEmbedUrl(latestSermon.spotifyUrl)!}
                 width="100%"
                 height="152"
                 frameBorder="0"
@@ -210,9 +202,9 @@ export const SermonModule: React.FC<SermonModuleProps> = ({
 
             {latestSermon.audioUrl ? (
               <audio controls autoPlay src={latestSermon.audioUrl} className="w-full h-11 rounded-xl" />
-            ) : latestSermon.spotifyUrl && getSpotifyEmbedUrl(latestSermon.spotifyUrl) ? (
+            ) : latestSermon.spotifyUrl && spotifyEmbedUrl(latestSermon.spotifyUrl) ? (
               <iframe
-                src={getSpotifyEmbedUrl(latestSermon.spotifyUrl)!}
+                src={spotifyEmbedUrl(latestSermon.spotifyUrl)!}
                 width="100%"
                 height="152"
                 frameBorder="0"

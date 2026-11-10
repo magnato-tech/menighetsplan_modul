@@ -309,6 +309,10 @@ describe("Utsendingen der installasjonen kjører", () => {
   test("adressen leses av tokenet, og avsenderen tåler et navn med tegn som ikke hører hjemme der", () => {
     expect(emailOfToken(tokenFor("Astrid@Example.org"))).toBe("astrid@example.org");
     expect(emailOfToken("tull")).toBeNull();
+    // An account made with someone else's address, never confirmed, is nobody
+    const unconfirmed = `hode.${Buffer.from(JSON.stringify({ email: "astrid@example.org", email_verified: false })).toString("base64url")}.signatur`;
+    expect(emailOfToken(unconfirmed)).toBeNull();
+    expect(emailOfToken(`hode.${Buffer.from(JSON.stringify({ email: "astrid@example.org" })).toString("base64url")}.signatur`)).toBeNull();
     expect(senderOf('Kirken "på" <haugen>', "ikke-svar@example.org")).toBe('"Kirken på haugen" <ikke-svar@example.org>');
     expect(senderOf("", "ikke-svar@example.org")).toBe("ikke-svar@example.org");
   });

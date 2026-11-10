@@ -353,7 +353,10 @@ service cloud.firestore {
 
     match /groupMessages/{messageId} {
       allow read: if isAdmin() || (isMember() && memberOf(resource.data.groupId));
-      allow create: if isMember() && request.resource.data.senderPersonId == me();
+      // Only into a group the sender is in (an administrator writes to any group)
+      allow create: if isMember()
+        && request.resource.data.senderPersonId == me()
+        && (isAdmin() || memberOf(request.resource.data.groupId));
       allow update: if isAdmin();
       allow delete: if isAdmin()
         || (isMember() && resource.data.senderPersonId == me())
@@ -366,7 +369,10 @@ service cloud.firestore {
       allow read: if isAdmin()
         || (isMember() && resource.data.personId == me())
         || (isMember() && memberOf(get(/databases/$(database)/documents/gatherings/$(resource.data.gatheringId)).data.groupId));
-      allow create, update: if isAdmin() || (isMember() && request.resource.data.personId == me());
+      allow create: if isAdmin() || (isMember() && request.resource.data.personId == me());
+      // Someone else's answer cannot be taken over by writing one's own id into it
+      allow update: if isAdmin()
+        || (isMember() && resource.data.personId == me() && request.resource.data.personId == me());
       allow delete: if isAdmin() || (isMember() && resource.data.personId == me());
     }
 
@@ -439,7 +445,8 @@ service cloud.firestore {
       allow create: if isAdmin()
         // A web editor writes the website's settings, and the versions kept of pages and news
         || (isWebEditor() && (docId == 'global' || request.resource.data.recordType == 'contentVersion'))
-        || (isMember() && request.resource.data.recordType == 'gatheringHeadcount')
+        // A headcount, under the name a headcount has, so no other setting can be taken by it
+        || (isMember() && request.resource.data.recordType == 'gatheringHeadcount' && docId.matches('^headcount-.+'))
         || isOwnSemesterAnswer(request.resource.data)
         // A visit to the website adds to the sums of the day
         || isTrafficDay(request.resource.data);

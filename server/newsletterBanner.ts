@@ -11,6 +11,7 @@ import { readDocument, type Fetch } from "./firestoreRest";
 // The name in src/data/settingsRecords.ts, written out: that file is the browser's
 // (tests/newsletter.test.ts holds the two together)
 export const NEWSLETTER_BANNER_DOCUMENT = "cms_settings/newsletter-banner";
+export const NEWSLETTER_BANNER_RECORD = "newsletterBanner";
 
 export interface BannerRequest {
   env: InstallationEnv;
@@ -32,7 +33,8 @@ export async function newsletterBanner({ env, siteUrl, ask }: BannerRequest): Pr
   if (!installation) return missing;
   const database = { projectId: installation.projectId, databaseId: installation.firestoreDatabaseId };
   const record = await readDocument(database, NEWSLETTER_BANNER_DOCUMENT, ask).catch(() => null);
-  const banner = newsletterBannerOf(record?.imageUrl);
+  // Only the banner admin saved: a document under the same name with another mark is not it
+  const banner = record?.recordType === NEWSLETTER_BANNER_RECORD ? newsletterBannerOf(record.imageUrl) : null;
   if (!banner) return missing;
 
   // The address changes when the banner does (newsletterBannerUrlOf), so the inbox may keep it long
