@@ -29,7 +29,7 @@ export const OwnWebsiteGate: React.FC<OwnWebsiteGateProps> = ({ tab, children })
       </span>
       <h1 className="text-lg font-black text-[var(--studio-text)]">Nettsiden ligger hos menigheten</h1>
       <p className="text-xs text-[var(--studio-muted)]">
-        Vår nettside er slått av. Rediger innhold på menighetens egen side, og bruk planleggingen her i admin.
+        Menighetens hjemmeside er en annen nettside. Rediger innholdet der, og bruk planleggingen her i admin.
       </p>
       <div className="flex flex-col sm:flex-row gap-2 justify-center">
         <Link to={studioTabUrl("dashboard")} className={`${studioPrimaryButton} inline-flex items-center px-4 py-2 text-xs`}>

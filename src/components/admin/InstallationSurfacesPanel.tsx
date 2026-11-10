@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Copy, Globe, LayoutDashboard, Loader2 } from "lucide-react";
 import { useCms } from "../../context/CmsContext";
-import { icalImportOn, normalizeExternalCalendarUrl } from "../../utils/surfaces";
+import { homepageError, icalImportOn, normalizeExternalCalendarUrl } from "../../utils/surfaces";
 import type { ShowFeedback } from "../../pages/admin/studio";
 import { studioSecondaryButton } from "../../pages/admin/studioTheme";
 
@@ -10,8 +10,10 @@ interface InstallationSurfacesPanelProps {
 }
 
 /**
- * Which flat surfaces are on: Min side and our public website. When our website is off, the congregation's
- * own address is used for links and optional iCal import (see utils/surfaces.ts).
+ * Which flat surfaces are on: Min side, and the congregation's homepage. The homepage is either the website in
+ * this app («Nettsiden her», ownWebsite) or another website at its own address («En annen nettside»,
+ * externalSiteUrl). When another website is the homepage, the address is required and the optional iCal import
+ * is shown (see utils/surfaces.ts).
  */
 export const InstallationSurfacesPanel: React.FC<InstallationSurfacesPanelProps> = ({ showFeedback }) => {
   const { surfaces, surfacesState, saveSurfaces } = useCms();
@@ -43,12 +45,18 @@ export const InstallationSurfacesPanel: React.FC<InstallationSurfacesPanelProps>
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
+    const siteUrl = externalSiteUrl.trim();
+    const problem = homepageError({ ownWebsite, externalSiteUrl: siteUrl });
+    if (problem) {
+      showFeedback(problem, "error");
+      return;
+    }
     const calendarUrl = normalizeExternalCalendarUrl(externalCalendarUrl);
     setWorking(true);
     const ok = await saveSurfaces({
       minSide,
       ownWebsite,
-      externalSiteUrl: externalSiteUrl.trim(),
+      externalSiteUrl: siteUrl,
       externalCalendarUrl: calendarUrl,
       importNewAutomatically,
     });
@@ -101,34 +109,58 @@ export const InstallationSurfacesPanel: React.FC<InstallationSurfacesPanelProps>
             </span>
           </label>
 
-          <label className="flex items-start gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={ownWebsite}
-              onChange={(e) => setOwnWebsite(e.target.checked)}
-              className="mt-1 rounded border-[var(--studio-border)]"
-            />
-            <span>
-              <span className="block text-sm font-bold text-[var(--studio-text)]">Vår nettside</span>
-              <span className="block text-xs text-[var(--studio-muted)] mt-0.5">
-                Når den er av, vises ikke nettsiden. Adressen går rett til Min side, med innlogging foran.
+          <fieldset className="space-y-3">
+            <legend className="text-sm font-bold text-[var(--studio-text)] mb-2">Menighetens hjemmeside</legend>
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="radio"
+                name="homepage"
+                checked={ownWebsite}
+                onChange={() => setOwnWebsite(true)}
+                className="mt-1 border-[var(--studio-border)]"
+              />
+              <span>
+                <span className="block text-sm font-bold text-[var(--studio-text)]">
+                  Nettsiden her <span className="font-black">{window.location.host}</span>
+                </span>
+                <span className="block text-xs text-[var(--studio-muted)] mt-0.5">
+                  Nettsiden lages og redigeres her i admin. Adressen viser nettsiden.
+                </span>
               </span>
-            </span>
-          </label>
+            </label>
+
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="radio"
+                name="homepage"
+                checked={!ownWebsite}
+                onChange={() => setOwnWebsite(false)}
+                className="mt-1 border-[var(--studio-border)]"
+              />
+              <span>
+                <span className="block text-sm font-bold text-[var(--studio-text)]">En annen nettside</span>
+                <span className="block text-xs text-[var(--studio-muted)] mt-0.5">
+                  Adressen her går rett til Min side, med innlogging foran. Lenkene til nettsiden går til adressen under.
+                </span>
+              </span>
+            </label>
+          </fieldset>
 
           {!ownWebsite && (
             <div className="space-y-3 pl-7 border-l-2 border-[var(--studio-border)]">
               <label className="block space-y-1">
-                <span className="text-xs font-bold text-[var(--studio-text)]">Kirkens egen nettside (valgfritt, https)</span>
+                <span className="text-xs font-bold text-[var(--studio-text)]">Adressen til hjemmesiden (https)</span>
                 <input
-                  type="url"
+                  type="text"
+                  inputMode="url"
+                  autoComplete="url"
                   value={externalSiteUrl}
                   onChange={(e) => setExternalSiteUrl(e.target.value)}
                   placeholder="https://…"
                   className="w-full px-3 py-2 rounded-xl border border-[var(--studio-border)] bg-[var(--studio-bg)] text-sm text-[var(--studio-text)]"
                 />
                 <span className="block text-[11px] text-[var(--studio-muted)]">
-                  Brukes bare til lenken «Til kirkens nettside». Ingen sendes dit automatisk.
+                  Lenkene «Til nettsiden» og «Åpne menighetens nettside» går hit.
                 </span>
               </label>
               <div className="space-y-2">

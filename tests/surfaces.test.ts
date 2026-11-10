@@ -4,6 +4,7 @@ import {
   decidePublicEntry,
   defaultSurfaces,
   hasChurchSite,
+  homepageError,
   icalFeedUrl,
   icalImportOn,
   normalizeExternalCalendarUrl,
@@ -114,5 +115,26 @@ describe("Når vår nettside er av: hvor en offentlig adresse fører", () => {
     expect(hasChurchSite({ ...defaultSurfaces(), ownWebsite: true })).toBe(true);
     expect(hasChurchSite({ ...defaultSurfaces(), ownWebsite: false, externalSiteUrl: "" })).toBe(false);
     expect(hasChurchSite({ ...defaultSurfaces(), ownWebsite: false, externalSiteUrl: "https://kirken.example.org/" })).toBe(true);
+  });
+});
+
+describe("Menighetens hjemmeside: kan valget lagres", () => {
+  test("nettsiden her er alltid gyldig, også uten adresse", () => {
+    expect(homepageError({ ownWebsite: true, externalSiteUrl: "" })).toBe(null);
+    expect(homepageError({ ownWebsite: true, externalSiteUrl: "ikke-en-url" })).toBe(null);
+  });
+
+  test("en annen nettside uten adresse eller med ugyldig adresse kan ikke lagres", () => {
+    const message = "Skriv inn adressen til hjemmesiden, som begynner med https://";
+    expect(homepageError({ ownWebsite: false, externalSiteUrl: "" })).toBe(message);
+    expect(homepageError({ ownWebsite: false, externalSiteUrl: "   " })).toBe(message);
+    expect(homepageError({ ownWebsite: false, externalSiteUrl: "ftp://kirken.example.org" })).toBe(message);
+    expect(homepageError({ ownWebsite: false, externalSiteUrl: "kirken.example.org" })).toBe(message);
+  });
+
+  test("en annen nettside med https-adresse kan lagres, også webcal", () => {
+    expect(homepageError({ ownWebsite: false, externalSiteUrl: "https://lillesandmisjonskirke.no" })).toBe(null);
+    expect(homepageError({ ownWebsite: false, externalSiteUrl: "http://kirken.example.org/" })).toBe(null);
+    expect(homepageError({ ownWebsite: false, externalSiteUrl: "webcal://kirken.example.org/cal.ics" })).toBe(null);
   });
 });

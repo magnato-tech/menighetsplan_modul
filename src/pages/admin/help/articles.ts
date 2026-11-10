@@ -51,7 +51,7 @@ const losningen: HelpArticle = {
     "For gruppene: en leder eller nestleder ser mer på Min side, men bare for sine egne grupper: bemanningen under **Mine grupper**, forfall som **Må fylles** og filteret **Jeg leder** i kalenderen.",
     "Admin er ikke en fjerde visning, men stedet der alt legges inn. Et arrangement legges inn én gang i **Kalender**, og vises på nettsiden, på Min side og i bemanningen.",
     "Alt er moduler. Under **Moduler** slår dere av det menigheten ikke bruker, så blir siden enklere, og på igjen når det trengs. Ingenting slettes.",
-    "Adressen virker også uten nettsiden: er **Vår nettside** slått av, går adressen rett til Min side, med innlogging foran.",
+    "Adressen virker også uten nettsiden: velger menigheten **En annen nettside** under **Menighetens hjemmeside**, går adressen rett til Min side, med innlogging foran.",
   ],
   godt:
     "Admin har to brukernivåer. En administrator ser alt, også personregisteret og planleggingen. En nettredaktør ser bare nettsidedelen: sider, nyheter, taler, bilder, design og innstillinger. Nivået settes på personen under Personer.",
@@ -91,7 +91,7 @@ const komIGang: HelpArticle = {
     "**Åpne offentlig nettside** viser nettsiden i en ny fane. **Gå til Min Side** viser din egen side som frivillig.",
   ],
   godt: "Admin er lys som standard. Solen ved Admin-overskriften bytter innholdet mellom lyst og mørkt, og knappen nederst i menyen, **Lys meny** eller **Mørk meny**, bytter selve menyen. Arrangementene legges inn én gang, i kalenderen under Planlegging, og vises på nettsiden av seg selv.",
-  passPa: "Er **Vår nettside** slått av under **Flater i løsningen** (Database og Testdata), står bare Planlegging i admin. Er **Min side** slått av, får frivillige beskjed om at den ikke er i bruk.",
+  passPa: "Er **Menighetens hjemmeside** satt til **En annen nettside** under **Flater i løsningen** (Database og Testdata), står bare Planlegging i admin. Er **Min side** slått av, får frivillige beskjed om at den ikke er i bruk.",
   seOgsa: ["losningen", "nytt", "tips", "flater"],
   tabs: ["dashboard"],
 };
@@ -113,7 +113,7 @@ const nytt: HelpArticle = {
     "**Moduler** har fått en del for Min side: Grupper, Gruppechat, Husfellesskap, Tjeneste og bemanning, Semesterplan, Gudstjenesteplan og Kalender kan slås av hver for seg.",
     "**Notater** på et arrangement, **E-post til alle som er med** og **Melding til teamene** ligger øverst på arrangementet.",
     "**Fra kirkens kalender** i Kalender: arrangementer kan hentes inn fra kirkens iCal-feed.",
-    "**Flater i løsningen** under Database og Testdata: slå av **Min side** eller **Vår nettside** uten å slette noe. Uten nettsiden går adressen rett til Min side.",
+    "**Flater i løsningen** under Database og Testdata: slå av **Min side**, og velg under **Menighetens hjemmeside** om den er **Nettsiden her** eller **En annen nettside**. Ingenting slettes. Velger dere en annen nettside, går adressen rett til Min side.",
   ],
   seOgsa: ["losningen", "min-side", "moduler", "semesterplan", "bemanning", "flater"],
   utenBilde: true,
@@ -457,9 +457,9 @@ const kirkensKalender: HelpArticle = {
   title: "Kirkens kalender",
   hvor: "Planlegging → Kalender, og Database og Testdata → Flater i løsningen",
   intro:
-    "Når menigheten har sin egen nettside (Vår nettside er av), kan dere hente arrangementer fra kirkens iCal-feed inn i planleggeren. Nye hendelser godkjennes én og én; knyttede arrangementer oppdateres når dere trykker oppdater.",
+    "Når menighetens hjemmeside er en annen nettside (**Menighetens hjemmeside** er **En annen nettside**), kan dere hente arrangementer fra kirkens iCal-feed inn i planleggeren. Nye hendelser godkjennes én og én; knyttede arrangementer oppdateres når dere trykker oppdater.",
   steg: [
-    "Under **Database og Testdata**, i **Flater i løsningen**: slå av **Vår nettside**, legg inn **Kirkens egen nettside (valgfritt, https)** og **iCal-adresse (valgfritt)**, og trykk **Lagre flater**.",
+    "Under **Database og Testdata**, i **Flater i løsningen**: velg **Menighetens hjemmeside** → **En annen nettside**, legg inn **Adressen til hjemmesiden (https)** og **iCal-adresse (valgfritt)**, og trykk **Lagre flater**.",
     "Åpne **Kalender**. Panelet **Fra kirkens kalender** viser det som mangler hos dere eller er borte fra feeden.",
     "For en ny rad: velg mal, trykk **Opprett**, **Opprett alle**, eller **Flere valg**. **Ikke nå** skjuler raden til neste gang.",
     "Kryss av **Opprett nye hendelser automatisk ved oppdatering** under Flater i løsningen, hvis forslagene er gode nok. Da opprettes nye rader når dere trykker **Oppdater**, og du trenger ikke trykke **Opprett** i tillegg. **Flere valg** er til unntakene.",
@@ -470,7 +470,7 @@ const kirkensKalender: HelpArticle = {
   passPa: "**Start import på nytt** fjerner importerte arrangementer, og oppgaver og tildelinger på dem, og sannsynlige duplikater. Du må bekrefte med **Ja, nullstill import** først.",
   seOgsa: ["arrangementer", "maler", "flater"],
   tabs: ["planlegger-samlinger"],
-  // No picture yet: the panel shows only with «Vår nettside» off, which the demo cannot show. Take it at a
+  // No picture yet: the panel shows only with «En annen nettside» chosen, which the demo cannot show. Take it at a
   // congregation with its own website (scripts/capture-help-screenshots.mjs), then remove this line.
   utenBilde: true,
 };
@@ -650,7 +650,7 @@ const moduler: HelpArticle = {
     "Tilleggene i admin, Analysebord og Besøk på nettsiden, slås på med bryteren. Fanen dukker opp i menyen.",
     "Slå av igjen når noe ikke trengs. Ingenting slettes, og alt er der når det slås på igjen.",
   ],
-  godt: "Det som står under Planlagt, er ikke laget ennå. Min side og nettsiden i sin helhet slås av og på under Flater i løsningen.",
+  godt: "Det som står under Planlagt, er ikke laget ennå. Min side slås av og på under Flater i løsningen, der også menighetens hjemmeside velges.",
   seOgsa: ["losningen", "min-side", "analysebord", "besok", "flater"],
   tabs: ["moduler"],
   utenBilde: true,
@@ -660,16 +660,16 @@ const flater: HelpArticle = {
   id: "flater",
   title: "Flater i løsningen",
   hvor: "Database og Testdata → Flater i løsningen",
-  intro: "Slå av Min side eller Vår nettside, hvis menigheten ikke skal bruke dem.",
+  intro: "Slå av Min side hvis menigheten ikke skal bruke den, og velg hvor menighetens hjemmeside er.",
   steg: [
     "Gå til **Database og Testdata** i menyen under System & Database. **Flater i løsningen** står under driftsmodus.",
     "Slå av **Min side** hvis menigheten ikke skal bruke den. Frivillige får da beskjed om at Min side ikke er i bruk, og administratorer sendes rett til admin.",
-    "Slå av **Vår nettside** hvis menigheten ikke skal bruke nettsiden. Besøkende som åpner nettsidene, sendes da til Min side med innlogging foran. Skriv inn **Kirkens egen nettside (valgfritt, https)** hvis dere vil ha en lenke «Til kirkens nettside».",
+    "Under **Menighetens hjemmeside** velger dere **Nettsiden her** hvis nettsiden lages og redigeres i admin, eller **En annen nettside** hvis menigheten har en side et annet sted. Velger dere den andre, sendes besøkende som åpner nettsidene, til Min side med innlogging foran. Skriv inn **Adressen til hjemmesiden (https)**: lenkene «Til nettsiden» går dit.",
     "Vil dere hente arrangementer fra kirkens kalender, legg inn **iCal-adresse (valgfritt)**. Se Kirkens kalender for resten.",
     "Trykk **Lagre flater**.",
   ],
   godt: "Innholdet i databasen slettes ikke. Slår du flaten på igjen, er alt som det var.",
-  passPa: "Er **Vår nettside** av, står bare Planlegging i admin. Adressen til menighetens egen nettside er valgfri: den brukes bare til lenker.",
+  passPa: "Er **Menighetens hjemmeside** satt til **En annen nettside**, står bare Planlegging i admin. Adressen til hjemmesiden brukes til lenkene, og må være en https-adresse før valget kan lagres.",
   seOgsa: ["kirkens-kalender", "moduler", "kom-i-gang"],
   tabs: ["database-admin"],
   // No picture yet: the demo does not show the Database page. Take it outside the demo, then remove this line.
