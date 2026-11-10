@@ -4,7 +4,7 @@ import { isGroupGathering, upcomingPublicGatherings } from "./gatherings";
 
 export type PersonalCalendarSource = "menigheten" | "mine_grupper";
 
-export type PersonalCalendarFilter = "alle" | "menigheten" | "mine_grupper";
+export type PersonalCalendarFilter = "alle" | "menigheten" | "mine_grupper" | "jeg_leder";
 
 export interface PersonalCalendarEvent {
   gathering: Gathering;
@@ -69,12 +69,31 @@ export function personalCalendarEvents(
   );
 }
 
+/**
+ * The events for the groups one leads: the group's own gatherings, and church gatherings where a
+ * group one leads has a task that is not cancelled. `led` is needed for «jeg_leder».
+ */
 export function filterPersonalCalendarEvents(
   events: PersonalCalendarEvent[],
-  filter: PersonalCalendarFilter
+  filter: PersonalCalendarFilter,
+  led?: { ledGroupIds: ReadonlySet<string>; tasks: readonly Task[] }
 ): PersonalCalendarEvent[] {
   if (filter === "alle") return events;
   if (filter === "menigheten") return events.filter((event) => event.source === "menigheten");
+  if (filter === "jeg_leder") {
+    if (!led) return [];
+    const { ledGroupIds, tasks } = led;
+    const ledTaskGatheringIds = new Set(
+      tasks
+        .filter((t) => t.groupId && ledGroupIds.has(t.groupId) && t.status !== "cancelled")
+        .map((t) => t.gatheringId)
+    );
+    return events.filter(
+      (event) =>
+        (event.gathering.groupId !== undefined && ledGroupIds.has(event.gathering.groupId)) ||
+        ledTaskGatheringIds.has(event.gathering.id)
+    );
+  }
   return events.filter((event) => event.source === "mine_grupper");
 }
 

@@ -63,7 +63,7 @@ export const StaffingRosterRowCard: React.FC<StaffingRosterRowCardProps> = ({
     <div
       id={`roster-${row.task.id}`}
       aria-current={highlighted ? "true" : undefined}
-      className={`break-inside-avoid ${highlighted ? "bg-indigo-50/60 shadow-[inset_3px_0_0_#6366F1]" : ""}`}
+      className={`break-inside-avoid ${highlighted ? "bg-indigo-50/60 shadow-[inset_3px_0_0_var(--color-indigo-500)]" : ""}`}
     >
       <div
         className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-2 border-y border-slate-200 ${

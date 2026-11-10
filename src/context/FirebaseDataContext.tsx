@@ -63,11 +63,6 @@ import { DEMO } from "../demo";
 import type { HeadcountInput } from "../utils/headcount";
 import { absenceFields, AssignmentChange, applyAssignmentChange, holdsSlot, isAcuteForfall, taskStatusFor } from "../utils/staffing";
 
-export interface ModuleConfig {
-  kalender: "on" | "off";
-  meldinger: "on" | "off";
-}
-
 /**
  * What an action answers. `success` means the change was accepted and is on its way to
  * the database, not that the server has stored it. See `save` below.
@@ -112,12 +107,6 @@ export interface FirebaseDataContextType {
   /** Oppmøtetall: how many were actually there. Internal, like the responses. */
   headcounts: GatheringHeadcount[];
   volunteerRoles: VolunteerRole[];
-
-  // Module configuration
-  moduleConfig: ModuleConfig;
-  setModuleStatus: (moduleName: keyof ModuleConfig, status: "on" | "off") => void;
-  toggleKalender: () => void;
-  toggleMeldinger: () => void;
 
   // Lookups in the data above
   /** The tasks the person has said yes to. */
@@ -265,16 +254,6 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
   const [standInId, setStandInId] = useState<string | null>(storedStandIn);
 
   useEffect(() => subscribeAccount(setAccountState), []);
-
-  const [moduleConfig, setModuleConfig] = useState<ModuleConfig>(() => {
-    try {
-      const saved = localStorage.getItem("menighetsplan_modules");
-      if (saved) return JSON.parse(saved);
-    } catch {
-      // fallback
-    }
-    return { kalender: "on", meldinger: "on" };
-  });
 
   // Check connection on mount
   useEffect(() => {
@@ -614,26 +593,6 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
     []
   );
 
-  const setModuleStatus = useCallback((moduleName: keyof ModuleConfig, status: "on" | "off") => {
-    setModuleConfig((prev) => {
-      const next = { ...prev, [moduleName]: status };
-      try {
-        localStorage.setItem("menighetsplan_modules", JSON.stringify(next));
-      } catch {
-        // ignore
-      }
-      return next;
-    });
-  }, []);
-
-  const toggleKalender = useCallback(() => {
-    setModuleStatus("kalender", moduleConfig.kalender === "on" ? "off" : "on");
-  }, [moduleConfig.kalender, setModuleStatus]);
-
-  const toggleMeldinger = useCallback(() => {
-    setModuleStatus("meldinger", moduleConfig.meldinger === "on" ? "off" : "on");
-  }, [moduleConfig.meldinger, setModuleStatus]);
-
   // Lookups, grouped by the lists they read so each group is only rebuilt when its lists change
   const personLookups = useMemo(
     () => ({
@@ -946,10 +905,6 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
       attendances,
       headcounts,
       volunteerRoles,
-      moduleConfig,
-      setModuleStatus,
-      toggleKalender,
-      toggleMeldinger,
       ...personLookups,
       ...groupLookups,
       ...gatheringLookups,
@@ -982,10 +937,6 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
       attendances,
       headcounts,
       volunteerRoles,
-      moduleConfig,
-      setModuleStatus,
-      toggleKalender,
-      toggleMeldinger,
       personLookups,
       groupLookups,
       gatheringLookups,

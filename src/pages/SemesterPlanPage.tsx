@@ -232,7 +232,7 @@ export const SemesterPlanPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => take(choice)}
-                    className="shrink-0 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold cursor-pointer"
+                    className="shrink-0 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold cursor-pointer"
                   >
                     Ta oppgave
                   </button>

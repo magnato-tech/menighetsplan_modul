@@ -127,7 +127,7 @@ export const AttentionModal: React.FC<AttentionModalProps> = ({ page, onClose })
                     <button
                       type="button"
                       onClick={() => handleAttentionAnswer(item, true)}
-                      className="flex-1 py-1.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1 cursor-pointer transition-colors"
+                      className="flex-1 py-1.5 px-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1 cursor-pointer transition-colors"
                     >
                       <Check className="w-3.5 h-3.5 stroke-[2.5]" />
                       <span>{text.yes}</span>

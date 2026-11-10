@@ -1,11 +1,10 @@
 import React, { Suspense, lazy, useEffect, useMemo } from "react";
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from "react-router-dom";
 import { FirebaseDataProvider } from "./context/FirebaseDataContext";
 import { CmsProvider, useCms } from "./context/CmsContext";
 import { SITE_THEME_CLASS, getThemeCssVariables } from "./utils/themeUtils";
 import { isAdminStudioPath, isMinSidePath, isPublicPath, isSignInPath, isUnsubscribePath } from "./utils/routes";
-import { churchSiteUrl } from "./utils/surfaces";
-import { ExternalSiteFallbackPage } from "./pages/ExternalSiteFallbackPage";
+import { decidePublicEntry } from "./utils/surfaces";
 import { MinSideUnavailablePage } from "./pages/MinSideUnavailablePage";
 import { PreviewQueryPersist } from "./components/public/PreviewQueryPersist";
 import { useSiteTraffic } from "./hooks/useSiteTraffic";
@@ -33,6 +32,7 @@ import { PublicSermonsPage } from "./pages/public/PublicSermonsPage";
 import { PublicLeadershipPage } from "./pages/public/PublicLeadershipPage";
 import { PublicEventPage } from "./pages/public/PublicEventPage";
 import { useFirebase } from "./context/FirebaseDataContext";
+import { useMinSideModules } from "./hooks/useMinSideModules";
 
 const AdminStudio = lazy(() =>
   import("./pages/admin/AdminStudio").then((m) => ({ default: m.AdminStudio }))
@@ -42,7 +42,6 @@ const SemesterPlanPage = lazy(() => import("./pages/SemesterPlanPage").then((m) 
 const TaskDetailPage = lazy(() =>
   import("./pages/TaskDetailPage").then((m) => ({ default: m.TaskDetailPage }))
 );
-const LeaderPage = lazy(() => import("./pages/LeaderPage").then((m) => ({ default: m.LeaderPage })));
 const LeaderGroupDetailPage = lazy(() =>
   import("./pages/LeaderGroupDetailPage").then((m) => ({ default: m.LeaderGroupDetailPage }))
 );
@@ -55,34 +54,40 @@ const GatheringRunSheetPage = lazy(() =>
 const HusfellesskapPage = lazy(() =>
   import("./pages/HusfellesskapPage").then((m) => ({ default: m.HusfellesskapPage }))
 );
-const ModulePlaceholderPage = lazy(() =>
-  import("./pages/ModulePlaceholderPage").then((m) => ({ default: m.ModulePlaceholderPage }))
-);
 const SignInPage = lazy(() => import("./pages/SignInPage").then((m) => ({ default: m.SignInPage })));
 const UnsubscribePage = lazy(() => import("./pages/UnsubscribePage").then((m) => ({ default: m.UnsubscribePage })));
 function LazyRouteFallback() {
   return <p className="p-6 text-sm text-slate-500">Laster…</p>;
 }
 
-/** When our website is off, public addresses go to the congregation's site or a neutral fallback. */
+/** A house group's page: the house group view while Husfellesskap is on, else the group's page. */
+function HusfellesskapGroupRoute() {
+  const { groupId } = useParams<{ groupId: string }>();
+  const { isOn } = useMinSideModules();
+  if (isOn("husfellesskap")) return <HusfellesskapPage />;
+  return <Navigate to={isOn("grupper") ? `/gruppe/${groupId}` : "/minside"} replace />;
+}
+
+/** The old address of a group's page. It now lives at /gruppe/:groupId, and the query (?tab=) comes along. */
+function OldLeaderGroupRoute() {
+  const { groupId } = useParams<{ groupId: string }>();
+  const { search } = useLocation();
+  const { isOn } = useMinSideModules();
+  return <Navigate to={isOn("grupper") ? `/gruppe/${groupId}${search}` : "/minside"} replace />;
+}
+
+/**
+ * When our website is off, public addresses go into the app: to Min side, or to admin when Min side is off.
+ * Sign-in in front of them is SessionGate's job (see decidePublicEntry in utils/surfaces.ts).
+ */
 function PublicSurfaceGate({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const { surfaces, surfacesState } = useCms();
 
-  const external = !surfaces.ownWebsite && isPublicPath(location.pathname) ? churchSiteUrl(surfaces) : null;
-
-  useEffect(() => {
-    if (!external || surfacesState !== "ready") return;
-    window.location.replace(external);
-  }, [external, surfacesState]);
-
-  if (!surfaces.ownWebsite && isPublicPath(location.pathname)) {
-    if (surfacesState === "loading") return <LazyRouteFallback />;
-    if (external) return <p className="p-6 text-sm text-stone-600">Sender deg videre til menighetens nettside…</p>;
-    return <ExternalSiteFallbackPage />;
-  }
-
-  return <>{children}</>;
+  const entry = decidePublicEntry(surfaces, location.pathname);
+  if (entry === "render") return <>{children}</>;
+  if (surfacesState === "loading") return <LazyRouteFallback />;
+  return <Navigate to={entry === "admin" ? "/admin" : "/minside"} replace />;
 }
 
 /**
@@ -105,6 +110,8 @@ function AppContent() {
   const location = useLocation();
   const { settings, surfaces, surfacesState } = useCms();
   const { session, currentUser } = useFirebase();
+  // Parts of Min side that an admin can switch off (see utils/minSideModules.ts). Off, their addresses go to Min side.
+  const { isOn } = useMinSideModules();
   const themeVariables = useMemo(() => getThemeCssVariables(settings?.theme), [settings?.theme]);
   useSiteSeo(location.pathname);
   // Visits to the public website are counted, anonymously. Min side and admin are not counted.
@@ -167,23 +174,30 @@ function AppContent() {
     }
     return (
       <SessionGate>
-      <div className="min-h-[calc(100vh-var(--demo-strip,0px))] flex flex-col bg-slate-100 text-slate-800">
+      {/* The website's theme colours (primary-*, accent-*), without its fonts and page background */}
+      <div style={themeVariables} className="min-h-[calc(100vh-var(--demo-strip,0px))] flex flex-col bg-slate-100 text-slate-800">
         <Header />
         <main className="flex-1 pb-12">
           <ChunkErrorBoundary>
             <Suspense fallback={<LazyRouteFallback />}>
               <Routes>
                 <Route path="/minside" element={<MyPage />} />
-                <Route path="/minside/semesterplan/:planId" element={<SemesterPlanPage />} />
-                <Route path="/leder" element={<LeaderPage />} />
-                <Route path="/leder/gruppe/:groupId" element={<LeaderGroupDetailPage />} />
+                <Route path="/minside/semesterplan/:planId" element={isOn("semesterplan") ? <SemesterPlanPage /> : <Navigate to="/minside" replace />} />
+                {/* The old Gruppeleder page is gone: its addresses go on to the groups on Min side */}
+                <Route path="/leder" element={<Navigate to={isOn("grupper") ? "/minside?view=grupper" : "/minside"} replace />} />
+                <Route path="/leder/gruppe/:groupId" element={<OldLeaderGroupRoute />} />
                 <Route path="/leder/samling/:gatheringId" element={<LeaderGatheringDetailPage />} />
-                <Route path="/oppgave/:taskId" element={<TaskDetailPage />} />
-                <Route path="/gruppe/:groupId" element={<LeaderGroupDetailPage />} />
+                <Route path="/oppgave/:taskId" element={isOn("tjeneste") ? <TaskDetailPage /> : <Navigate to="/minside" replace />} />
+                <Route path="/gruppe/:groupId" element={isOn("grupper") ? <LeaderGroupDetailPage /> : <Navigate to="/minside" replace />} />
                 <Route path="/samling/:gatheringId" element={<GatheringRunSheetPage />} />
-                <Route path="/husfellesskap" element={<HusfellesskapPage />} />
-                <Route path="/husfellesskap/:groupId" element={<HusfellesskapPage />} />
-                <Route path="/meldinger" element={<ModulePlaceholderPage module="meldinger" />} />
+                {/* Without a group, the house groups are in the groups tab */}
+                <Route
+                  path="/husfellesskap"
+                  element={isOn("husfellesskap") ? <HusfellesskapPage /> : <Navigate to="/minside?view=grupper" replace />}
+                />
+                <Route path="/husfellesskap/:groupId" element={<HusfellesskapGroupRoute />} />
+                {/* The address stays in Min side: the messages it used to show are in the groups */}
+                <Route path="/meldinger" element={<Navigate to="/minside" replace />} />
                 <Route path="*" element={<Navigate to="/minside" replace />} />
               </Routes>
             </Suspense>

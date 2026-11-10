@@ -19,6 +19,7 @@ vi.mock("../src/firebase", async () => (await import("./support/offlineFirestore
 vi.mock("../src/services/auth", async () => (await import("./support/session")).authModuleMock);
 
 import { FirebaseDataProvider, useFirebase } from "../src/context/FirebaseDataContext";
+import { CmsProvider } from "../src/context/CmsContext";
 import { useLeaderGatheringDetail } from "../src/hooks/leaderHooks";
 import { useTaskDetail } from "../src/hooks/memberHooks";
 import { useMyPage } from "../src/pages/myPage/useMyPage";
@@ -28,7 +29,9 @@ const inHours = (hours: number) => new Date(Date.now() + hours * 60 * 60 * 1000)
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
   <MemoryRouter>
-    <FirebaseDataProvider>{children}</FirebaseDataProvider>
+    <FirebaseDataProvider>
+      <CmsProvider>{children}</CmsProvider>
+    </FirebaseDataProvider>
   </MemoryRouter>
 );
 

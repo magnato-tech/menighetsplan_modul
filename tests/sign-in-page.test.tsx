@@ -78,6 +78,30 @@ describe("Innloggingssiden", () => {
     expect(screen.getByRole("link", { name: "Tilbake til nettsiden" }).getAttribute("href")).toBe("/");
   });
 
+  test("når vår nettside er av, lenker tilbake-lenken til kirkens nettside", () => {
+    const before = cms.surfaces;
+    cms.surfaces = { ...before, ownWebsite: false, externalSiteUrl: "https://kirken.example.org/" };
+    try {
+      open();
+      const link = screen.getByRole("link", { name: "Til kirkens nettside" });
+      expect(link.getAttribute("href")).toBe("https://kirken.example.org/");
+    } finally {
+      cms.surfaces = before;
+    }
+  });
+
+  test("uten noen nettside å lenke til vises ingen tilbake-lenke", () => {
+    const before = cms.surfaces;
+    cms.surfaces = { ...before, ownWebsite: false, externalSiteUrl: "" };
+    try {
+      open();
+      expect(screen.queryByRole("link", { name: "Til kirkens nettside" })).toBeNull();
+      expect(screen.queryByRole("link", { name: "Tilbake til nettsiden" })).toBeNull();
+    } finally {
+      cms.surfaces = before;
+    }
+  });
+
   test("Google-knappen logger inn med Google, og en feil sies under knappene", async () => {
     auth.signInWithGoogle.mockRejectedValueOnce(new Error("vinduet ble lukket"));
     open();

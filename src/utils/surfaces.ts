@@ -1,5 +1,6 @@
 import { DEMO } from "../demo";
 import { SURFACES_RECORD } from "../data/settingsRecords";
+import { isPublicPath } from "./routes";
 
 /** Which flat surfaces are on, and URLs for the congregation's own site and iCal feed. */
 export interface InstallationSurfaces {
@@ -102,4 +103,23 @@ export function parseSurfaces(data: Record<string, unknown> | undefined): Instal
     dismissedUids: strings(data.dismissedUids),
     keptUids: strings(data.keptUids),
   };
+}
+
+/** Where a public address leads: our website, or into the app when our website is off. */
+export type PublicEntry = "render" | "minside" | "admin";
+
+/**
+ * Our website is the congregation's only website as far as the app is concerned. When it is off, a
+ * public address leads into the app: to Min side, or to admin when Min side is off too. Sign-in in
+ * front of both is the gate's job (SessionGate). Admin, Min side, sign-in, unsubscribe and /api are
+ * never asked about.
+ */
+export function decidePublicEntry(surfaces: Pick<InstallationSurfaces, "ownWebsite" | "minSide">, pathname: string): PublicEntry {
+  if (!isPublicPath(pathname) || surfaces.ownWebsite) return "render";
+  return surfaces.minSide ? "minside" : "admin";
+}
+
+/** Whether there is a website to link to: ours, or the congregation's own address. */
+export function hasChurchSite(surfaces: InstallationSurfaces): boolean {
+  return surfaces.ownWebsite || churchSiteUrl(surfaces) !== null;
 }

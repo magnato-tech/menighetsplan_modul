@@ -3,18 +3,17 @@ import { useFirebase } from "../context/FirebaseDataContext";
 import { subscribeMySemesterAnswers, subscribeSemesterPlans } from "../services/semesterPlans";
 import { answerInRound, cardsFor, planStatus, waitsForAnswer, type PlanCard, type SemesterAnswer, type SemesterPlan } from "../utils/semesterPlan";
 
-/** The semester plans, the newest first, and whether they have arrived. */
-export function useSemesterPlans(): { plans: SemesterPlan[]; ready: boolean } {
+/** The semester plans, the newest first, and whether they have arrived. Nothing is read while `enabled` is false. */
+export function useSemesterPlans(enabled = true): { plans: SemesterPlan[]; ready: boolean } {
   const [plans, setPlans] = useState<SemesterPlan[]>([]);
   const [ready, setReady] = useState(false);
-  useEffect(
-    () =>
-      subscribeSemesterPlans((list) => {
-        setPlans(list);
-        setReady(true);
-      }),
-    []
-  );
+  useEffect(() => {
+    if (!enabled) return undefined;
+    return subscribeSemesterPlans((list) => {
+      setPlans(list);
+      setReady(true);
+    });
+  }, [enabled]);
   return { plans, ready };
 }
 
@@ -33,19 +32,19 @@ export interface MySemesterPlan {
  * The plans that are open for the person signed in, with the cards they go through and how far
  * they have come. A plan that has not opened yet, or has nothing for them, is left out.
  */
-export function useMySemesterPlans(): { mine: MySemesterPlan[]; ready: boolean } {
+export function useMySemesterPlans(enabled = true): { mine: MySemesterPlan[]; ready: boolean } {
   const { currentUser, gatherings, tasks, groups, assignments, volunteerRoles } = useFirebase();
-  const { plans, ready: plansReady } = useSemesterPlans();
+  const { plans, ready: plansReady } = useSemesterPlans(enabled);
   const [answers, setAnswers] = useState<SemesterAnswer[]>([]);
   const [answersReady, setAnswersReady] = useState(false);
 
   useEffect(() => {
-    if (!currentUser.id) return;
+    if (!enabled || !currentUser.id) return;
     return subscribeMySemesterAnswers(currentUser.id, (list) => {
       setAnswers(list);
       setAnswersReady(true);
     });
-  }, [currentUser.id]);
+  }, [enabled, currentUser.id]);
 
   const mine = useMemo(() => {
     const now = new Date();

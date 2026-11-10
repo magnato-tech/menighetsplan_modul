@@ -7,7 +7,7 @@ import {
   PERSONAL_FEED_FUTURE_MS,
   PERSONAL_FEED_PAST_MS,
 } from "../src/utils/personalCalendar";
-import type { Gathering, Group } from "../src/types";
+import type { Gathering, Group, Task } from "../src/types";
 
 describe("Min kalender", () => {
   const from = new Date("2026-10-02T12:00:00.000Z").getTime();
@@ -123,6 +123,34 @@ describe("Min kalender", () => {
   assert(
     filtered.every((event) => event.source === "mine_grupper"),
     "Filteret Mine grupper viser bare gruppesamlinger"
+  );
+
+  // Jeg leder: the groups one leads, by their own gatherings or by a task on a church gathering
+  const led = new Set(["tjeneste-1"]);
+  const openTask = (status: Task["status"]): Task => ({
+    id: `task-${status}`,
+    gatheringId: "gudstjeneste",
+    groupId: "tjeneste-1",
+    title: "Lyd",
+    status,
+    neededCount: 1,
+  });
+  const jegLeder = (tasks: Task[], ledGroupIds = led) =>
+    filterPersonalCalendarEvents(events, "jeg_leder", { ledGroupIds, tasks }).map((event) => event.gathering.id).join();
+
+  assert(jegLeder([]) === "gruppe-mote", "Jeg leder viser arrangementer for gruppene man leder");
+  assert(jegLeder([openTask("open")]) === "gruppe-mote,gudstjeneste", "Jeg leder viser også kirkearrangement der en gruppe man leder har en oppgave");
+  assert(jegLeder([openTask("cancelled")]) === "gruppe-mote", "En avlyst oppgave teller ikke i Jeg leder");
+  assert(jegLeder([openTask("open")], new Set(["annen"])) === "", "Gruppe man bare er med i, eller leder andre, gir ingenting i Jeg leder");
+  assert(
+    filterPersonalCalendarEvents(events, "jeg_leder").length === 0,
+    "Jeg leder uten led gir ingen arrangementer"
+  );
+
+  const memberOnly = personalCalendarEvents([{ ...husGathering, invitationSent: true }], [husGroup], from, () => undefined);
+  assert(
+    filterPersonalCalendarEvents(memberOnly, "jeg_leder", { ledGroupIds: led, tasks: [] }).length === 0,
+    "En husgruppe man bare er medlem av, er ikke med i Jeg leder"
   );
 
   const now = new Date(from);

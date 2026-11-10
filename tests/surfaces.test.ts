@@ -1,7 +1,9 @@
 import { describe, expect, test } from "vitest";
 import { SURFACES_RECORD } from "../src/data/settingsRecords";
 import {
+  decidePublicEntry,
   defaultSurfaces,
+  hasChurchSite,
   icalFeedUrl,
   icalImportOn,
   normalizeExternalCalendarUrl,
@@ -74,5 +76,43 @@ describe("surfaces", () => {
         externalCalendarUrl: embed,
       })
     ).toContain("/public/basic.ics");
+  });
+});
+
+describe("Når vår nettside er av: hvor en offentlig adresse fører", () => {
+  const combos = [true, false].flatMap((ownWebsite) => [true, false].map((minSide) => ({ ownWebsite, minSide })));
+
+  test("vår nettside på: alltid den vanlige nettsiden", () => {
+    for (const minSide of [true, false]) {
+      expect(decidePublicEntry({ ownWebsite: true, minSide }, "/")).toBe("render");
+      expect(decidePublicEntry({ ownWebsite: true, minSide }, "/hva-skjer")).toBe("render");
+    }
+  });
+
+  test("vår nettside av og Min side på: offentlige adresser går til Min side", () => {
+    for (const pathname of ["/", "/hva-skjer", "/arrangement/x"]) {
+      expect(decidePublicEntry({ ownWebsite: false, minSide: true }, pathname)).toBe("minside");
+    }
+  });
+
+  test("vår nettside av og Min side av: offentlige adresser går til admin", () => {
+    for (const pathname of ["/", "/hva-skjer", "/arrangement/x"]) {
+      expect(decidePublicEntry({ ownWebsite: false, minSide: false }, pathname)).toBe("admin");
+    }
+  });
+
+  test("interne adresser, innlogging, avmelding og /api blir aldri sendt videre", () => {
+    const paths = ["/admin", "/admin/x", "/minside", "/leder", "/logg-inn", "/avmelding/abc", "/api/offentlig/arrangementer"];
+    for (const { ownWebsite, minSide } of combos) {
+      for (const pathname of paths) {
+        expect(decidePublicEntry({ ownWebsite, minSide }, pathname)).toBe("render");
+      }
+    }
+  });
+
+  test("hasChurchSite: en nettside finnes når vår er på, eller når adressen er lagt inn", () => {
+    expect(hasChurchSite({ ...defaultSurfaces(), ownWebsite: true })).toBe(true);
+    expect(hasChurchSite({ ...defaultSurfaces(), ownWebsite: false, externalSiteUrl: "" })).toBe(false);
+    expect(hasChurchSite({ ...defaultSurfaces(), ownWebsite: false, externalSiteUrl: "https://kirken.example.org/" })).toBe(true);
   });
 });

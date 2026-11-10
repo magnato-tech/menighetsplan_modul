@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { AttentionModal } from "../src/pages/myPage/AttentionModal";
-import { attentionTagOf, attentionTags, withAttentionTags, type AttentionItem } from "../src/pages/myPage/attention";
+import { attentionListItems, attentionTagOf, attentionTags, attentionText, withAttentionTags, type AttentionItem } from "../src/pages/myPage/attention";
 import type { MyPageModel } from "../src/pages/myPage/useMyPage";
 
 // A long list of what needs one's action, narrowed with tags: one for each role.
@@ -89,5 +89,32 @@ describe("Listen med tagger", () => {
     show([items[0], items[3]]);
     expect(screen.queryByRole("group", { name: "Vis bare disse" })).toBeNull();
     expect(cards()).toHaveLength(2);
+  });
+});
+
+describe("Samlinger med forfall i grupper man leder", () => {
+  const dropout = (dropouts: number): AttentionItem => ({
+    id: "lead-s-g1",
+    type: "lead_dropout",
+    gatheringId: "s",
+    title: "Gudstjeneste",
+    groupName: "Lyd og bilde",
+    startsAt: "2027-01-10T11:00:00.000Z",
+    dropouts,
+  });
+
+  test("teksten har én knapp som sier ja, og forklarer forfallet i entall og flertall", () => {
+    expect(attentionText(dropout(1))).toEqual({ label: "Må fylles", note: "1 oppgave med forfall", yes: "Finn noen" });
+    expect(attentionText(dropout(3)).note).toBe("3 oppgaver med forfall");
+    expect(attentionText(dropout(1)).no).toBeUndefined();
+  });
+
+  test("har sin egen tagg", () => {
+    expect(attentionTagOf(dropout(1))).toBe("Må fylles");
+  });
+
+  test("hører ikke til listen over forespørsler og ledige oppgaver", () => {
+    const list = attentionListItems([dropout(1), { ...items[0] }, { ...items[5] }]);
+    expect(list.map((item) => item.type)).toEqual(["task_request", "open_task"]);
   });
 });

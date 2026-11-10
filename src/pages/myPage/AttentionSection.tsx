@@ -27,6 +27,8 @@ export const AttentionSection: React.FC<AttentionSectionProps> = ({ page, onShow
   // A call to a gathering is always shown. Of the requests, one stands on top at a time (the nearest);
   // when it is answered, the next takes its place. Everything else is behind one button.
   const invitations = attentionItems.filter((item) => item.type === "unanswered_invitation");
+  // Gatherings of groups the user leads with a dropout: always shown, not counted in the button
+  const leadDropouts = attentionItems.filter((item) => item.type === "lead_dropout");
   const requests = attentionItems.filter((item) => item.type === "task_request");
   const openTasks = attentionItems.filter((item) => item.type === "open_task");
   const firstRequest = requests[0];
@@ -87,7 +89,7 @@ export const AttentionSection: React.FC<AttentionSectionProps> = ({ page, onShow
             type="button"
             id={`btn-yes-${item.id}`}
             onClick={() => handleAttentionAnswer(item, true)}
-            className="flex-1 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+            className="flex-1 py-2 px-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
           >
             <Check className="w-4 h-4 stroke-[2.5]" />
             <span>{text.yes}</span>
@@ -115,6 +117,8 @@ export const AttentionSection: React.FC<AttentionSectionProps> = ({ page, onShow
     >
       {invitations.length > 0 && <div className="space-y-3">{invitations.map((item) => renderCard(item))}</div>}
 
+      {leadDropouts.length > 0 && <div className="space-y-3">{leadDropouts.map((item) => renderCard(item))}</div>}
+
       {/* One request at a time, so it has the user's attention; the count says that more will come */}
       {firstRequest && renderCard(firstRequest, requests.length > 1 ? `1 av ${requests.length}` : undefined)}
 
@@ -132,7 +136,7 @@ export const AttentionSection: React.FC<AttentionSectionProps> = ({ page, onShow
           type="button"
           id="btn-see-and-handle-attention"
           onClick={() => onShowAll()}
-          className="w-full py-3 px-4 bg-amber-700 hover:bg-amber-800 text-white text-sm font-bold rounded-2xl flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+          className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-2xl flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer"
         >
           <span>{buttonText}</span>
           <ChevronRight className="w-4 h-4 stroke-[2.5]" />

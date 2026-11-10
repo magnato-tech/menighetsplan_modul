@@ -106,19 +106,3 @@ export function useTaskDetail(taskId: string | undefined) {
       task && isAssignedToMe ? reportAbsence(task.id, currentUser.id) : refused("Du står ikke på denne oppgaven."),
   };
 }
-
-// 4. Hook: useModuleConfig
-export function useModuleConfig() {
-  const { moduleConfig, setModuleStatus, toggleKalender, toggleMeldinger } = useFirebase();
-
-  return {
-    moduleConfig,
-    kalender: moduleConfig.kalender,
-    meldinger: moduleConfig.meldinger,
-    isKalenderOn: moduleConfig.kalender === "on",
-    isMeldingerOn: moduleConfig.meldinger === "on",
-    setModuleStatus,
-    toggleKalender,
-    toggleMeldinger,
-  };
-}

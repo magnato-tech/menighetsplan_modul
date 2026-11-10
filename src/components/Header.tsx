@@ -3,24 +3,28 @@ import { Link, useLocation } from "react-router-dom";
 import { AccountMenu } from "./AccountMenu";
 import { ChurchSiteLink } from "./ChurchSiteLink";
 import { useCms } from "../context/CmsContext";
-import { useLeaderDashboard } from "../hooks/useAppHooks";
+import { useFirebase } from "../context/FirebaseDataContext";
 import { Flag, Shield } from "lucide-react";
 import { useMySemesterPlans } from "../hooks/useSemesterPlans";
+import { useMinSideModules } from "../hooks/useMinSideModules";
+import { logoOf } from "../utils/logo";
 
 export const Header: React.FC = () => {
   const { settings, surfaces } = useCms();
   const location = useLocation();
-  const { isLeader, urgentGatherings, currentUser } = useLeaderDashboard();
+  const { currentUser } = useFirebase();
 
   // The way into the admin: for administrators, and for web editors, who get its website part
   const isAdmin = currentUser.globalRole === "admin" || currentUser.globalRole === "nettredaktor";
 
-  const isLeaderPath = location.pathname.startsWith("/leder");
   const isAdminPath = location.pathname.startsWith("/admin");
   const isMyPagePath = location.pathname === "/minside" || location.pathname.startsWith("/minside/") || location.pathname === "/";
   // A semester plan waiting for the person: the flag by Min side stays until they have gone through it
-  const { mine: semesterPlans } = useMySemesterPlans();
+  const { isOn } = useMinSideModules();
+  const { mine: semesterPlans } = useMySemesterPlans(isOn("semesterplan"));
   const planWaits = semesterPlans.some((item) => item.waiting);
+  // The congregation's logo stands before its name, when there is one
+  const logo = logoOf(settings);
 
   return (
     <header className="sticky top-[var(--demo-strip,0px)] z-40 bg-white border-b border-slate-200/80 shadow-xs">
@@ -30,18 +34,22 @@ export const Header: React.FC = () => {
           <ChurchSiteLink
             id="app-logo-link"
             title="Til nettsiden"
+            textWithoutSite
             className="min-w-0 group transition-opacity hover:opacity-90"
           >
-            <p className="text-lg font-bold text-slate-800 tracking-tight leading-tight truncate group-hover:underline underline-offset-2">
-              {settings.churchName || "Menighetsplan"}
-            </p>
+            <div className="flex items-center gap-2.5 min-w-0">
+              {logo && <img src={logo} alt={settings.churchName} className="h-8 w-auto max-w-[9rem] object-contain shrink-0" />}
+              <p className="text-lg font-bold text-slate-800 tracking-tight leading-tight truncate group-hover:underline underline-offset-2">
+                {settings.churchName || "Menighetsplan"}
+              </p>
+            </div>
           </ChurchSiteLink>
 
           {/* Who is signed in, and the way out: behind the round mark with the initials */}
           <AccountMenu />
         </div>
 
-        {/* Navigation Tabs (Min side / Gruppeleder / Admin Studio) */}
+        {/* Navigation Tabs (Min side / Admin Studio). The groups are on Min side, under Mine grupper */}
         <nav className="flex items-center gap-1.5 mt-3 pt-2 border-t border-slate-100/80 overflow-x-auto pb-0.5 scrollbar-none">
           {surfaces.minSide && (
           <Link
@@ -49,7 +57,7 @@ export const Header: React.FC = () => {
             id="nav-tab-min-side"
             className={`text-xs font-bold px-2.5 py-1.5 rounded-xl whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
               isMyPagePath
-                ? "bg-slate-900 text-white shadow-xs"
+                ? "bg-primary-700 text-white shadow-xs"
                 : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
             }`}
           >
@@ -61,28 +69,6 @@ export const Header: React.FC = () => {
               />
             )}
           </Link>
-          )}
-
-          {surfaces.minSide && isLeader && (
-            <Link
-              to="/leder"
-              id="nav-tab-leder"
-              className={`text-xs font-bold px-2.5 py-1.5 rounded-xl whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
-                isLeaderPath
-                  ? "bg-emerald-700 text-white shadow-xs"
-                  : "text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/60"
-              }`}
-            >
-              <span>Gruppeleder</span>
-              {urgentGatherings.length > 0 && (
-                <span
-                  className={`w-2 h-2 rounded-full ${
-                    isLeaderPath ? "bg-amber-300" : "bg-red-500"
-                  } animate-pulse`}
-                  title="Trenger vikar"
-                />
-              )}
-            </Link>
           )}
 
           {isAdmin && (

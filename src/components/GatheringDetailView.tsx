@@ -185,11 +185,11 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
           </div>
           <div className="pt-2 flex flex-col gap-2">
             <Link
-              to={canAdminister ? studioTabUrl("planlegger-samlinger") : "/leder?tab=samlinger"}
+              to={canAdminister ? studioTabUrl("planlegger-samlinger") : "/minside?view=kalender"}
               className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-colors shadow-xs"
             >
               <ArrowLeft className="w-4 h-4" />
-              Tilbake til {canAdminister ? "Samlinger" : "Samlingsoversikt"}
+              Tilbake til {canAdminister ? "Samlinger" : "Kalender"}
             </Link>
           </div>
         </div>
@@ -230,9 +230,9 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
     ? `/samling/${gathering.id}`
     : isExplicitAdminView
     ? studioTabUrl("planlegger-samlinger")
-    : "/leder?tab=samlinger";
+    : "/minside?view=kalender";
 
-  const backLabel = fromRunSheet ? "Kjøreplanen" : isExplicitAdminView ? "Kalender" : "Samlinger";
+  const backLabel = fromRunSheet ? "Kjøreplanen" : "Kalender";
 
   const actions: GatheringAction[] = [
     ...(canAdminister

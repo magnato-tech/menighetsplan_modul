@@ -3,12 +3,15 @@ import { useNavigate } from "react-router-dom";
 import { useCurrentUser, useMyTasks } from "../../hooks/memberHooks";
 import { formatNorwegianDateTime } from "../../utils/dates";
 import { countSlots } from "../../utils/staffing";
+import { leadsGroup } from "../../utils/groups";
+import { ledGroupDropouts, nextLedActivity, withLedGroupsFirst } from "../../utils/leadGroups";
 import { useFirebase } from "../../context/FirebaseDataContext";
 import { Task, GroupMessage, Gathering, Group } from "../../types";
 import { AttentionItem } from "./attention";
 import { asksForAnswerNow, nextGatheringOf } from "../../utils/meetingPlan";
 import { useTimedMessage } from "../../hooks/useTimedMessage";
 import { useMySemesterPlans } from "../../hooks/useSemesterPlans";
+import { useMinSideModules } from "../../hooks/useMinSideModules";
 
 /**
  * Everything Min side shows, worked out from the planning data: what needs the
@@ -36,8 +39,13 @@ export function useMyPage() {
   } = useFirebase();
 
   const navigate = useNavigate();
+  // Which parts of Min side are on (see utils/minSideModules.ts). A part that is off is neither shown nor read.
+  const { isOn } = useMinSideModules();
+  const tasksOn = isOn("tjeneste");
+  const chatOn = isOn("gruppechat");
+  const husfellesskapOn = isOn("husfellesskap");
   // The semester plans open for the user: one waiting is shown first, one gone through as a link
-  const { mine: semesterPlans } = useMySemesterPlans();
+  const { mine: semesterPlans } = useMySemesterPlans(isOn("semesterplan"));
   const [feedbackMessage, showFeedbackMessage, clearFeedbackMessage] = useTimedMessage<{ text: string; type: "success" | "info" }>(4000);
 
   const showToast = (text: string, type: "success" | "info" = "success") => showFeedbackMessage({ text, type });
@@ -47,8 +55,9 @@ export function useMyPage() {
   const isUpcoming = (startsAt: string | undefined) => startsAt !== undefined && new Date(startsAt).getTime() >= now;
 
   // 1. User's groups
+  // The groups the user leads come first
   const myGroups = useMemo(
-    () => getUserGroups(currentUser.id),
+    () => withLedGroupsFirst(getUserGroups(currentUser.id), currentUser.id),
     [getUserGroups, currentUser.id]
   );
 
@@ -119,11 +128,32 @@ export function useMyPage() {
       });
     });
 
-    // C) Oppgaver med ledig plass i gruppene brukeren er med i
+    // C) Samlinger i en gruppe brukeren leder, med forfall som må fylles (bare når tjenesteoppgaver er på)
+    const leadDropouts = tasksOn
+      ? ledGroupDropouts({ groups: myGroups, personId: currentUser.id, gatherings, tasks, assignments, now })
+      : [];
+    leadDropouts.forEach(({ gathering, group, staffing }) => {
+      items.push({
+        type: "lead_dropout",
+        id: `lead-${gathering.id}-${group.id}`,
+        gatheringId: gathering.id,
+        title: gathering.title,
+        startsAt: gathering.startsAt,
+        location: gathering.location,
+        groupName: group.name,
+        dropouts: staffing.vacantCount,
+      });
+    });
+    // The leader fills these from the planning view, so the free tasks of that group and gathering are left out
+    const leadDropoutKeys = new Set(leadDropouts.map(({ gathering, group }) => `${gathering.id}-${group.id}`));
+
+    // D) Oppgaver med ledig plass i gruppene brukeren er med i
     const myGroupSet = new Set(myGroupIds);
     tasks
       .filter((task) => task.groupId && myGroupSet.has(task.groupId) && task.status !== "cancelled")
       .forEach((task) => {
+        // Only a group the user leads can be in leadDropoutKeys
+        if (leadDropoutKeys.has(`${task.gatheringId}-${task.groupId}`)) return;
         const taskAssignments = getAllAssignmentsForTask(task.id);
         // Leave out a task the user is already on, has been asked about (shown above) or has said no to
         if (taskAssignments.some((a) => a.personId === currentUser.id)) return;
@@ -147,14 +177,18 @@ export function useMyPage() {
       });
 
     // What was asked of the user personally comes first; within each kind, the nearest date first
-    const kindOrder = { task_request: 0, unanswered_invitation: 1, open_task: 2 };
+    const kindOrder = { task_request: 0, unanswered_invitation: 1, lead_dropout: 2, open_task: 3 };
     const startOf = (item: AttentionItem) => (item.startsAt ? new Date(item.startsAt).getTime() : Infinity);
-    return items.sort((a, b) => kindOrder[a.type] - kindOrder[b.type] || startOf(a) - startOf(b));
+    const sorted = items.sort((a, b) => kindOrder[a.type] - kindOrder[b.type] || startOf(a) - startOf(b));
+    // With tasks off, only the invitations to gatherings are asked about
+    return tasksOn ? sorted : sorted.filter((item) => item.type === "unanswered_invitation");
   }, [
+    tasksOn,
     myGroups,
     myGroupIds,
     tasks,
     assignments,
+    gatherings,
     getGatheringsForGroup,
     getPersonAttendance,
     getGatheringById,
@@ -170,6 +204,10 @@ export function useMyPage() {
   const handleAttentionAnswer = (item: AttentionItem, yes: boolean) => {
     const answer = () => {
       switch (item.type) {
+        case "lead_dropout":
+          // Nothing is written here: the planning view is where a dropout is filled
+          if (yes) navigate(`/leder/samling/${item.gatheringId}`);
+          return null;
         case "task_request":
           return {
             result: updateAssignmentStatus(item.assignmentId, yes ? "confirmed" : "declined"),
@@ -190,7 +228,9 @@ export function useMyPage() {
           };
       }
     };
-    const { result, thanks } = answer();
+    const outcome = answer();
+    if (!outcome) return;
+    const { result, thanks } = outcome;
     if (result.success) showToast(thanks, "success");
     else showToast(result.error || "Kunne ikke lagre svaret.", "info");
   };
@@ -286,15 +326,26 @@ export function useMyPage() {
     return null;
   };
 
+  // The next activity of a group the user leads, with its staffing (only when the tasks module is on)
+  const getLedActivity = (group: Group) => {
+    if (!tasksOn || !leadsGroup(group, currentUser.id)) return null;
+    return nextLedActivity({ groupId: group.id, gatherings, tasks, assignments, now });
+  };
+
+  // Opens the planning of one gathering
+  const handleOpenGatheringPlanning = (gatheringId: string) => navigate(`/leder/samling/${gatheringId}`);
+
   // Helper to get the latest chat message for a group
   const getGroupLatestMessage = (groupId: string): GroupMessage | null => {
+    if (!chatOn) return null;
     const msgs = getGroupMessages(groupId);
     return msgs.length > 0 ? msgs[msgs.length - 1] : null;
   };
 
   // Navigation helper to open specific group chat
   const handleOpenGroupChat = (group: Group) => {
-    if (group.category === "husgruppe") {
+    if (!chatOn) return;
+    if (group.category === "husgruppe" && husfellesskapOn) {
       navigate(`/husfellesskap/${group.id}?tab=chat`);
     } else {
       navigate(`/gruppe/${group.id}?tab=chat`);
@@ -303,7 +354,7 @@ export function useMyPage() {
 
   // Navigation helper to open group room
   const handleOpenGroupRoom = (group: Group) => {
-    if (group.category === "husgruppe") {
+    if (group.category === "husgruppe" && husfellesskapOn) {
       navigate(`/husfellesskap/${group.id}`);
     } else {
       navigate(`/gruppe/${group.id}`);
@@ -324,6 +375,8 @@ export function useMyPage() {
     myTaskInChurchEvent,
     nextPersonalGatheringData,
     getGroupNextActivity,
+    getLedActivity,
+    handleOpenGatheringPlanning,
     getGroupLatestMessage,
     handleOpenGroupChat,
     handleOpenGroupRoom,

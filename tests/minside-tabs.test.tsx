@@ -21,7 +21,8 @@ afterEach(cleanup);
 
 describe("Fanene på Min side", () => {
   test("det er tre faner, og siden åpner i oppgavene når adressen ikke ber om noe annet", () => {
-    expect(MY_PAGE_TABS.map((tab) => tab.label)).toEqual(["Mine oppgaver", "Mine grupper", "Kalender"]);
+    expect(MY_PAGE_TABS.map((tab) => tab.label)).toEqual(["Mine oppgaver", "Mine grupper", "Kalender", "Gudstjenester"]);
+    expect(toMyPageTab("gudstjenester")).toBe("gudstjenester");
     expect(toMyPageTab(null)).toBe("oppgaver");
     expect(toMyPageTab("tull")).toBe("oppgaver");
     expect(toMyPageTab("grupper")).toBe("grupper");
@@ -34,12 +35,12 @@ describe("Fanene på Min side", () => {
 
     const top = screen.getByRole("tablist");
     // No number on a tab: the tasks are counted where they are listed
-    expect(within(top).getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["Mine oppgaver", "Mine grupper", "Kalender"]);
+    expect(within(top).getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["Mine oppgaver", "Mine grupper", "Kalender", "Gudstjenester"]);
     expect(within(top).getByRole("tab", { selected: true }).textContent).toContain("Mine oppgaver");
 
     const bottom = screen.getByRole("navigation", { name: "Min side" });
     const buttons = within(bottom).getAllByRole("button");
-    expect(buttons).toHaveLength(3);
+    expect(buttons).toHaveLength(4);
     expect(buttons[0].getAttribute("aria-current")).toBe("page");
     // The bottom bar is for the phone only, the top one for wider screens
     expect(bottom.className).toContain("sm:hidden");
@@ -54,7 +55,7 @@ describe("Fanene på Min side", () => {
   test("heller ikke menylinjen nederst har noe tall", () => {
     render(<MyPageTabs active="grupper" onChange={() => undefined} />);
     const bottom = screen.getByRole("navigation", { name: "Min side" });
-    expect(within(bottom).getAllByRole("button").map((button) => button.textContent)).toEqual(["Mine oppgaver", "Mine grupper", "Kalender"]);
+    expect(within(bottom).getAllByRole("button").map((button) => button.textContent)).toEqual(["Mine oppgaver", "Mine grupper", "Kalender", "Gudstjenester"]);
   });
 
   test("oppgavene står rett på siden, med arrangement og tidspunkt, og fører til oppgaven", () => {

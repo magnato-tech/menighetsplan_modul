@@ -46,13 +46,13 @@ const WAYS_IN: { way: DemoWayIn; name: string; does: string; start: string }[] =
     way: "tjenestegruppeleder",
     name: "Tjenestegruppeleder",
     does: "Bemanner oppgavene i tjenestegruppene sine og holder listen over deltakere",
-    start: "/leder",
+    start: "/minside?view=grupper",
   },
   {
     way: "husgruppeleder",
     name: "Husfellesskapsleder",
     does: "Leder husfellesskapet og inviterer til gruppesamlinger",
-    start: "/leder",
+    start: "/minside?view=grupper",
   },
   {
     way: "tjenestegruppemedlem",
@@ -91,7 +91,9 @@ const pickFirst = (candidates: Person[], used: Set<string>): Person | undefined 
 export function whereDoorLeads(door: Pick<DemoDoor, "start">, wanted: string): string {
   const part = pathOf(door.start);
   const asked = pathOf(wanted);
-  return asked === part || asked.startsWith(`${part}/`) ? wanted : door.start;
+  // A bare address of the part goes to where the way in starts, which may hold a query of its own (?view=)
+  if (asked === part) return wanted === asked ? door.start : wanted;
+  return asked.startsWith(`${part}/`) ? wanted : door.start;
 }
 
 function personForWay(way: DemoWayIn, persons: Person[], groups: DemoGroup[], used: Set<string>): Person | undefined {

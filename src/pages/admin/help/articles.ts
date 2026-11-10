@@ -39,6 +39,45 @@ export type HelpNavItem =
 
 // ---------------------------------------------------------------- Kom i gang
 
+const losningen: HelpArticle = {
+  id: "losningen",
+  title: "Én nettside, tre visninger",
+  hvor: "Hele løsningen",
+  intro:
+    "Menigheten har én nettside, på sin egen adresse. Det dere legger inn i admin én gang, vises der det hører hjemme: for alle, for medlemmene og for gruppene. Det er ingen app å laste ned, og ingen egen side å huske.",
+  steg: [
+    "For alle: nettsiden med sider, nyheter, taler og arrangementene fra kalenderen. Den tilpasser seg telefon, nettbrett og PC.",
+    "For medlemmene: den som trykker **Logg inn** på nettsiden, kommer til **Min side** med sine oppgaver, sine grupper, kalenderen og **Gudstjenester**. Min side er en del av nettsiden, ikke en egen app.",
+    "For gruppene: en leder eller nestleder ser mer på Min side, men bare for sine egne grupper: bemanningen under **Mine grupper**, forfall som **Må fylles** og filteret **Jeg leder** i kalenderen.",
+    "Admin er ikke en fjerde visning, men stedet der alt legges inn. Et arrangement legges inn én gang i **Kalender**, og vises på nettsiden, på Min side og i bemanningen.",
+    "Alt er moduler. Under **Moduler** slår dere av det menigheten ikke bruker, så blir siden enklere, og på igjen når det trengs. Ingenting slettes.",
+    "Adressen virker også uten nettsiden: er **Vår nettside** slått av, går adressen rett til Min side, med innlogging foran.",
+  ],
+  godt:
+    "Admin har to brukernivåer. En administrator ser alt, også personregisteret og planleggingen. En nettredaktør ser bare nettsidedelen: sider, nyheter, taler, bilder, design og innstillinger. Nivået settes på personen under Personer.",
+  seOgsa: ["kom-i-gang", "min-side", "moduler", "flater"],
+  utenBilde: true,
+};
+
+const minSide: HelpArticle = {
+  id: "min-side",
+  title: "Min side for frivillige og ledere",
+  hvor: "Nettsiden → Logg inn → Min side",
+  intro: "Det frivillige og ledere ser når de har logget inn. Ingen app og ingen egen nettside: det er menighetens egen nettside, med det som er deres.",
+  steg: [
+    "Fanene står nederst på telefonen: **Mine oppgaver**, **Mine grupper**, **Kalender** og **Gudstjenester**. En del som er slått av under Moduler, vises ikke.",
+    "**Mine oppgaver**: forespørsler, ledige oppgaver og semesterplanen. Den frivillige svarer med ett trykk.",
+    "**Gudstjenester**: de neste gudstjenestene, med hvem som har sagt ja til hva. Egne oppgaver er uthevet.",
+    "Leder eller nestleder: gruppene en leder, står øverst under **Mine grupper**, med bemanningen på neste aktivitet. Et trykk på aktiviteten åpner planleggingen.",
+    "Forfall i egne grupper står som **Må fylles** på Mine oppgaver. **Finn noen** åpner planleggingen, der plassen fylles.",
+    "I **Kalender** viser **Jeg leder** gruppenes arrangementer, med rød prikk der det mangler folk.",
+  ],
+  godt:
+    "Vil noen ha Min side som et ikon på telefonen, velger de «Legg til på startskjermen» i nettleseren. Ikonet åpner Min side. Det finnes ingen egen side for gruppeledere lenger: rollen bestemmer hva Min side viser.",
+  seOgsa: ["losningen", "moduler", "bemanning"],
+  utenBilde: true,
+};
+
 const komIGang: HelpArticle = {
   id: "kom-i-gang",
   title: "Slik er admin bygget",
@@ -53,30 +92,30 @@ const komIGang: HelpArticle = {
   ],
   godt: "Admin er lys som standard. Solen ved Admin-overskriften bytter innholdet mellom lyst og mørkt, og knappen nederst i menyen, **Lys meny** eller **Mørk meny**, bytter selve menyen. Arrangementene legges inn én gang, i kalenderen under Planlegging, og vises på nettsiden av seg selv.",
   passPa: "Er **Vår nettside** slått av under **Flater i løsningen** (Database og Testdata), står bare Planlegging i admin. Er **Min side** slått av, får frivillige beskjed om at den ikke er i bruk.",
-  seOgsa: ["nytt", "tips", "flater"],
+  seOgsa: ["losningen", "nytt", "tips", "flater"],
   tabs: ["dashboard"],
 };
 
 const nytt: HelpArticle = {
   id: "nytt",
   title: "Nytt i høst",
-  hvor: "Nettside og Planlegging, hver på sitt sted i menyen",
-  intro: "Det som er nytt i admin høsten 2026. De seks første punktene gjelder Nettside, de seks neste Planlegging.",
+  hvor: "Nettside, Min side og Planlegging, hver på sitt sted",
+  intro: "Det som er nytt høsten 2026. De seks første punktene gjelder nettsiden og Min side, de seks neste planleggingen.",
   steg: [
     "**Historikk** i redigeringen av en side eller en nyhet henter fram en tidligere versjon.",
-    "Teksten i en blokk skrives med knapper for overskrift, fet, kursiv, lister og lenke, uten tegn.",
+    "Trykk på en seksjon i forhåndsvisningen, så åpnes den i redigeringen. Endringene vises med en gang.",
     "Har du endret noe uten å lagre, står det **Ikke lagret** ved fanen i menyen, og admin spør før du går.",
-    "Trykk på en seksjon i forhåndsvisningen, så åpnes den i redigeringen. Valgene i en modul vises med en gang.",
-    "Opplastede bilder lagres i et eget bildelager, ikke inne i sidene.",
-    "En nyhet uten siste dag gir et spørsmål om når den skal gå ut.",
+    "Nettsidens meny viser **Logg inn** for gjester og **Min side** for den som er logget inn. Min side har menighetens logo og farger.",
+    "Gruppeleder-siden er borte. En leder finner gruppene sine, forfall og **Jeg leder** på Min side.",
+    "**Gudstjenester** på Min side viser hvem som gjør hva på de neste gudstjenestene.",
     "**Semesterplan** under Kalender: frigi planen for et semester, så går teamene gjennom arrangementene på Min side ett om gangen.",
-    "**Bemanning** har et kort per team med tall for bekreftet, venter og ledig. Programmet står ved siden av teamene på stor skjerm.",
-    "Møteleder og gudstjenesteleder kan endre programmet fra Min side, under **Se og endre programmet** på oppgaven sin.",
+    "**Bemanning** har et kort per team med tall for bekreftet, venter og ledig. Programmet står ved siden av teamene på stor skjerm, og kan foldes sammen.",
+    "**Moduler** har fått en del for Min side: Grupper, Gruppechat, Husfellesskap, Tjeneste og bemanning, Semesterplan, Gudstjenesteplan og Kalender kan slås av hver for seg.",
     "**Notater** på et arrangement, **E-post til alle som er med** og **Melding til teamene** ligger øverst på arrangementet.",
-    "**Fra kirkens kalender** i Kalender: når menigheten har sin egen nettside, kan arrangementer hentes inn fra kirkens iCal-feed.",
-    "**Flater i løsningen** under Database og Testdata: slå av **Min side** eller **Vår nettside** uten å slette noe.",
+    "**Fra kirkens kalender** i Kalender: arrangementer kan hentes inn fra kirkens iCal-feed.",
+    "**Flater i løsningen** under Database og Testdata: slå av **Min side** eller **Vår nettside** uten å slette noe. Uten nettsiden går adressen rett til Min side.",
   ],
-  seOgsa: ["semesterplan", "bemanning", "kirkens-kalender", "flater", "sider-lagre", "nyheter"],
+  seOgsa: ["losningen", "min-side", "moduler", "semesterplan", "bemanning", "flater"],
   utenBilde: true,
 };
 
@@ -420,7 +459,7 @@ const kirkensKalender: HelpArticle = {
   intro:
     "Når menigheten har sin egen nettside (Vår nettside er av), kan dere hente arrangementer fra kirkens iCal-feed inn i planleggeren. Nye hendelser godkjennes én og én; knyttede arrangementer oppdateres når dere trykker oppdater.",
   steg: [
-    "Under **Database og Testdata**, i **Flater i løsningen**: slå av **Vår nettside**, legg inn **Menighetens nettside (https)** og **iCal-adresse (valgfritt)**, og trykk **Lagre flater**.",
+    "Under **Database og Testdata**, i **Flater i løsningen**: slå av **Vår nettside**, legg inn **Kirkens egen nettside (valgfritt, https)** og **iCal-adresse (valgfritt)**, og trykk **Lagre flater**.",
     "Åpne **Kalender**. Panelet **Fra kirkens kalender** viser det som mangler hos dere eller er borte fra feeden.",
     "For en ny rad: velg mal, trykk **Opprett**, **Opprett alle**, eller **Flere valg**. **Ikke nå** skjuler raden til neste gang.",
     "Kryss av **Opprett nye hendelser automatisk ved oppdatering** under Flater i løsningen, hvis forslagene er gode nok. Da opprettes nye rader når dere trykker **Oppdater**, og du trenger ikke trykke **Opprett** i tillegg. **Flere valg** er til unntakene.",
@@ -440,16 +479,17 @@ const bemanning: HelpArticle = {
   id: "bemanning",
   title: "Bemanning",
   hvor: "Planlegging → Kalender → et arrangement → Bemanning",
-  intro: "Fyll ledige oppgaver og ordne forfall på et arrangement, også fra mobilen.",
+  intro: "Planleggeren for gudstjenester og andre arrangementer: fyll ledige oppgaver og ordne forfall, på PC eller på mobilen.",
   steg: [
     "Hvert team har sitt kort. Tallene i headeren viser bekreftet, venter og ledig. Trykk på teamet for å folde det ut på mobil.",
     "Ved en ledig plass trykker du **Fyll plassen**, og velger **Tildel** (personen er avtalt) eller **Forespør** (den får en forespørsel på Min Side).",
     "Trykk på en person for å sette **Bekreftet**, **Forespurt** eller **Forfall**. Den som har sagt nei, vises under teksten «sa nei» på rollen.",
     "Vil du se bare det som må ordnes, trykk **Vis bare det som må ordnes**.",
     "På en stor skjerm står programmet til venstre ved siden av teamene. Trykk på en post for å se rollen den bruker.",
+    "Trenger du plassen, trykk **Fold sammen programmet**, og **Vis programmet** for å få det fram igjen. Valget huskes til neste gang. Menyen til venstre foldes med **‹‹**.",
   ],
   godt: "Trykk på rollenavnet for å se instruksen. Bytte: sett **Forfall** på den som ikke kan, og **Fyll plassen** på samme rolle. **Program** viser kjøreplanen; der endres ikke bemanningen. En gruppeleder ser bemanningen til sine egne grupper. Pilene ved datoen går til forrige og neste samling; trykk på datoen for en liste over dem. Øverst står **Møteleder** og **Taler** med navnene på dem som har sagt ja. Under dem kan du åpne **Notater**. Konvolutten sender **E-post til alle som er med**, og snakkeboblen sender **Melding til teamene**.",
-  seOgsa: ["oppgaver", "roller"],
+  seOgsa: ["oppgaver", "roller", "min-side"],
 };
 
 const oppgaver: HelpArticle = {
@@ -477,8 +517,8 @@ const grupper: HelpArticle = {
     "Trykk **Administrer gruppe**. Sett **Leder** og **Nestleder**, og legg til deltakere med **Legg til deltaker**.",
     "Trykk **Lagre endringer**.",
   ],
-  godt: "Gruppelederen ser bemanningen for sin gruppe og legger inn oppgavene framover. Ledergruppen er menighetsrådet på nettsiden.",
-  seOgsa: ["personer", "lederskap"],
+  godt: "Lederen og nestlederen ser gruppen øverst på Min side, med bemanningen og forfallene, og legger inn oppgavene framover. Ledergruppen er menighetsrådet på nettsiden.",
+  seOgsa: ["personer", "lederskap", "min-side"],
   tabs: ["planlegger-grupper"],
 };
 
@@ -493,7 +533,7 @@ const personer: HelpArticle = {
     "Under **Offentlig profil på nettsiden** bestemmer du hva som kan vises utad.",
     "Trykk **Lagre alle personopplysninger & tilganger**.",
   ],
-  godt: "E-postadressen her er den personen logger inn med på Min Side. Mange personer hentes inn fra Cornerstone med **Hent inn fra Cornerstone**.",
+  godt: "E-postadressen her er den personen logger inn med på Min Side. Tilgangen gir brukernivået: en administrator ser hele admin, en nettredaktør bare nettsidedelen. Mange personer hentes inn fra Cornerstone med **Hent inn fra Cornerstone**.",
   passPa: "Registeret har personopplysninger. Del ikke skjermbilder eller lister fra det utenfor admin.",
   seOgsa: ["grupper", "lederskap"],
   tabs: ["planlegger-personer"],
@@ -602,14 +642,16 @@ const moduler: HelpArticle = {
   id: "moduler",
   title: "Moduler",
   hvor: "Moduler",
-  intro: "Tilleggsmoduler som slås av og på for menigheten.",
+  intro: "Det som slås av og på etter menighetens behov: delene av Min side, og tilleggene i admin. Slå av det dere ikke bruker, så blir siden enklere.",
   steg: [
-    "Les hva modulen gjør, på kortet.",
-    "Slå den på med bryteren. Fanen dukker opp i menyen.",
-    "Slå den av igjen når den ikke trengs. Ingenting slettes.",
+    "Under **Min side** står delene frivillige og ledere ser: Grupper, Gruppechat, Husfellesskap, Tjeneste og bemanning, Semesterplan, Gudstjenesteplan og Kalender. Alle er på til noen slår dem av.",
+    "Slå av en del med bryteren. Fanen eller knappen forsvinner fra Min side med en gang.",
+    "Noen deler bygger på en annen: Gruppechat og Husfellesskap krever Grupper, og Gudstjenesteplan krever Tjeneste og bemanning. Bryteren er låst til den andre er på.",
+    "Tilleggene i admin, Analysebord og Besøk på nettsiden, slås på med bryteren. Fanen dukker opp i menyen.",
+    "Slå av igjen når noe ikke trengs. Ingenting slettes, og alt er der når det slås på igjen.",
   ],
-  godt: "Analysebord og Besøk på nettsiden er moduler. Det som står under Planlagt, er ikke laget ennå.",
-  seOgsa: ["analysebord", "besok"],
+  godt: "Det som står under Planlagt, er ikke laget ennå. Min side og nettsiden i sin helhet slås av og på under Flater i løsningen.",
+  seOgsa: ["losningen", "min-side", "analysebord", "besok", "flater"],
   tabs: ["moduler"],
   utenBilde: true,
 };
@@ -622,12 +664,12 @@ const flater: HelpArticle = {
   steg: [
     "Gå til **Database og Testdata** i menyen under System & Database. **Flater i løsningen** står under driftsmodus.",
     "Slå av **Min side** hvis menigheten ikke skal bruke den. Frivillige får da beskjed om at Min side ikke er i bruk, og administratorer sendes rett til admin.",
-    "Slå av **Vår nettside** hvis menigheten har sin egen nettside. Skriv inn adressen under **Menighetens nettside (https)**, så peker forsiden dit.",
+    "Slå av **Vår nettside** hvis menigheten ikke skal bruke nettsiden. Besøkende som åpner nettsidene, sendes da til Min side med innlogging foran. Skriv inn **Kirkens egen nettside (valgfritt, https)** hvis dere vil ha en lenke «Til kirkens nettside».",
     "Vil dere hente arrangementer fra kirkens kalender, legg inn **iCal-adresse (valgfritt)**. Se Kirkens kalender for resten.",
     "Trykk **Lagre flater**.",
   ],
   godt: "Innholdet i databasen slettes ikke. Slår du flaten på igjen, er alt som det var.",
-  passPa: "Er **Vår nettside** av, står bare Planlegging i admin. Adressen til menighetens nettside må være fylt ut før du kan lagre.",
+  passPa: "Er **Vår nettside** av, står bare Planlegging i admin. Adressen til menighetens egen nettside er valgfri: den brukes bare til lenker.",
   seOgsa: ["kirkens-kalender", "moduler", "kom-i-gang"],
   tabs: ["database-admin"],
   // No picture yet: the demo does not show the Database page. Take it outside the demo, then remove this line.
@@ -638,7 +680,9 @@ export const helpSections: HelpSection[] = [
   {
     title: "Kom i gang",
     items: [
+      { kind: "article", article: losningen },
       { kind: "article", article: komIGang },
+      { kind: "article", article: minSide },
       { kind: "article", article: nytt },
       { kind: "article", article: tips },
     ],

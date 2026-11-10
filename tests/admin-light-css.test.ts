@@ -47,6 +47,6 @@ describe("Lyst innhold i admin", () => {
 
   test("en farget knapp blir mørkere under musen, ikke lys", () => {
     const rule = css.split(/\r?\n/).find((line) => line.trimStart().startsWith(".hover\\:bg-indigo-700:"))!;
-    expect(rule).toContain("#4338ca");
+    expect(rule).toContain("var(--color-indigo-700)");
   });
 });

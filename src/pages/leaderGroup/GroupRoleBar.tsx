@@ -16,12 +16,12 @@ export const GroupRoleBar: React.FC<GroupRoleBarProps> = ({ detail }) => {
     <div className="flex items-center justify-between">
       {hasLeaderAccess ? (
         <Link
-          to="/leder"
+          to="/minside?view=grupper"
           id="btn-back-to-leader-nav"
           className="text-xs font-semibold text-slate-500 hover:text-slate-800 flex items-center gap-1.5 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Gruppeleder</span>
+          <span>Mine grupper</span>
         </Link>
       ) : (
         <Link

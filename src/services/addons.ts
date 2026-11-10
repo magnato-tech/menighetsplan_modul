@@ -2,6 +2,7 @@ import { doc, onSnapshot, setDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { CMS_COLLECTIONS } from "../data/collections";
 import { ADDONS_DOC_ID, ADDONS_RECORD, parseAddonChoices, type AddonChoices, type AddonId } from "../utils/addons";
+import { parseMinSideModules, type MinSideModuleChoices, type MinSideModuleId } from "../utils/minSideModules";
 
 /**
  * Where it is stored which add-ons are on (see utils/addons.ts): one marked document in
@@ -35,4 +36,27 @@ export function subscribeAddons(onChange: (choices: AddonChoices) => void, onErr
  */
 export async function saveAddonChoice(id: AddonId, on: boolean): Promise<void> {
   await setDoc(addonsRef(), { recordType: ADDONS_RECORD, on: { [id]: on } }, { merge: true });
+}
+
+/**
+ * Follows which Min side modules are switched off (see utils/minSideModules.ts). They are kept in
+ * the add-ons' document, so this listens to the same document and reads only its own field.
+ */
+export function subscribeMinSideModules(
+  onChange: (choices: MinSideModuleChoices) => void,
+  onError: (error: Error) => void
+): () => void {
+  return onSnapshot(
+    addonsRef(),
+    (snapshot) => {
+      if (!snapshot.exists() && snapshot.metadata.fromCache) return;
+      onChange(parseMinSideModules(snapshot.data()));
+    },
+    onError
+  );
+}
+
+/** Turns one Min side module on or off. Only that module's field is written. */
+export async function saveMinSideModule(id: MinSideModuleId, on: boolean): Promise<void> {
+  await setDoc(addonsRef(), { recordType: ADDONS_RECORD, minSide: { [id]: on } }, { merge: true });
 }

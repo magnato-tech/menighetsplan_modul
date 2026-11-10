@@ -68,7 +68,7 @@ Ved utdatert JavaScript etter deploy: `ChunkErrorBoundary` prøver én automatis
 | Flate | Ruter | Hovedfiler |
 |---|---|---|
 | Offentlig nettside | `/`, `/hva-skjer`, `/taler`, `/fellesskap`, `/lederskap`, `/om-oss`, `/kontakt`, `/side/:slug`, `/artikkel/:id`, `/arrangement/:id` | `src/pages/public/` |
-| Min side | `/minside`, `/leder`, `/oppgave/:id`, `/gruppe/:id`, `/samling/:id`, `/husfellesskap`, og detaljsidene under `/admin/…` | `src/pages/` |
+| Min side | `/minside`, `/leder` (går til Min side) og `/leder/samling/:id` (planleggingen), `/oppgave/:id`, `/gruppe/:id`, `/samling/:id`, `/husfellesskap`, og detaljsidene under `/admin/…` | `src/pages/` |
 | Admin Studio | `/admin` (faner via `?tab=`) | `src/pages/admin/` |
 
 Hvilke adresser som er interne, står i `MIN_SIDE_SECTIONS` i `src/utils/routes.ts`. Sammenligningen gjelder hele ledd i adressen, slik at `/leder` ikke fanger den offentlige siden `/lederskap`. Samme fil avgjør hva som er en offentlig adresse (`isPublicPath`), og brukes av både nettleseren og serveren.

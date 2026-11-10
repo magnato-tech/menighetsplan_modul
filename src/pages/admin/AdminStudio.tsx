@@ -24,6 +24,7 @@ import { isWebEditor } from "../../utils/session";
 import { webEditorMayOpen } from "./webEditor";
 
 import { AddonGate } from "./AddonGate";
+import { MinSideModuleGate } from "./MinSideModuleGate";
 
 import { OwnWebsiteGate } from "./OwnWebsiteGate";
 
@@ -161,7 +162,11 @@ function StudioTabPanel({ tab, activeTab, visited, children }: StudioTabPanelPro
 
               <AddonGate tab={tab}>
 
-                <OwnWebsiteGate tab={tab}>{children}</OwnWebsiteGate>
+                <MinSideModuleGate tab={tab}>
+
+                  <OwnWebsiteGate tab={tab}>{children}</OwnWebsiteGate>
+
+                </MinSideModuleGate>
 
               </AddonGate>
 
