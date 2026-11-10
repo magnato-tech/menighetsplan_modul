@@ -53,8 +53,16 @@ describe("Bildene og filene i mediebiblioteket", () => {
     await assertFails(deleteObject(ref(signedIn("hakon@eksempel.no"), PICTURE)));
     await assertFails(uploadString(ref(signedIn("kari@menigheten.no", false), "media/ny/stor.webp"), "bilde"));
 
-    await assertSucceeds(uploadString(ref(signedIn("Kari@Menigheten.no"), "media/ny/stor.webp"), "bilde"));
+    await assertSucceeds(uploadString(ref(signedIn("Kari@Menigheten.no"), "media/ny/stor.webp"), "bilde", "raw", { contentType: "image/webp" }));
     await assertSucceeds(deleteObject(ref(signedIn("kari@menigheten.no"), PICTURE)));
+  });
+
+  test("bare bilder kan lastes opp, ikke sider eller skript", async () => {
+    const kari = signedIn("kari@menigheten.no");
+    await assertFails(uploadString(ref(kari, "media/ny/side.html"), "<script>alert(1)</script>", "raw", { contentType: "text/html" }));
+    await assertFails(uploadString(ref(kari, "media/ny/skript.js"), "alert(1)", "raw", { contentType: "application/javascript" }));
+    await assertFails(uploadString(ref(kari, "media/ny/uten-type"), "bilde"));
+    await assertSucceeds(uploadString(ref(kari, "media/ny/logo.png"), "bilde", "raw", { contentType: "image/png" }));
   });
 
   test("ingenting kan legges utenfor mediebiblioteket", async () => {

@@ -5,15 +5,25 @@ rules_version = '2';
 // where the database rules look it up (see firestore.rules): in `logins`, in the database
 // named (default).
 //
+// Only pictures can be added, and none larger than 20 MB: the files are served to everyone, and
+// a page or a script among them would be served too.
+//
 // The demo's storage is open, and has no rules file of its own.
 service firebase.storage {
   match /b/{bucket}/o {
-    match /media/{mediaId}/{fileName} {
-      allow read: if true;
-      allow write: if request.auth != null
+    function writesMedia() {
+      return request.auth != null
         && request.auth.token.email_verified == true
         && firestore.exists(/databases/(default)/documents/logins/$(request.auth.token.email.lower()))
         && firestore.get(/databases/(default)/documents/logins/$(request.auth.token.email.lower())).data.role in ['admin', 'nettredaktor'];
+    }
+
+    match /media/{mediaId}/{fileName} {
+      allow read: if true;
+      allow delete: if writesMedia();
+      allow create, update: if writesMedia()
+        && request.resource.size < 20 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
     }
   }
 }

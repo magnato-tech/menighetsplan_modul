@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { spotifyEmbedUrl } from "../../utils/spotify";
 import { useCms } from "../../context/CmsContext";
 import { useMediaMap } from "../../hooks/useMediaMap";
 import { resolveMediaUrl } from "../../utils/media";
@@ -18,15 +19,6 @@ import {
 } from "lucide-react";
 
 // Helper to construct official Spotify embed URL from standard web or app link
-function getSpotifyEmbedUrl(url: string | undefined): string | null {
-  if (!url) return null;
-  if (url.includes("/embed/")) return url;
-  const match = url.match(/open\.spotify\.com\/(episode|show|track)\/([a-zA-Z0-9]+)/);
-  if (match) {
-    return `https://open.spotify.com/embed/${match[1]}/${match[2]}`;
-  }
-  return null;
-}
 
 export const PublicSermonsPage: React.FC = () => {
   const { sermons, settings } = useCms();
@@ -177,7 +169,7 @@ export const PublicSermonsPage: React.FC = () => {
           </div>
         ) : (
           filteredSermons.map((sermon) => {
-            const spotifyEmbed = getSpotifyEmbedUrl(sermon.spotifyUrl);
+            const spotifyEmbed = spotifyEmbedUrl(sermon.spotifyUrl);
             const isSpotifyOpen = openSpotifyId === sermon.id;
             const image = resolveMediaUrl(sermon.imageUrl, mediaById, "web");
 

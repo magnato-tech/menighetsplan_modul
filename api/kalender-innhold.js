@@ -1,5 +1,9 @@
 // Laget av `npm run build:api` fra server/vercel/kalender-innhold.ts. Ikke rediger denne filen: endre kilden og kjør kommandoen.
 
+// server/icalImport.ts
+import { lookup } from "node:dns/promises";
+import { isIP } from "node:net";
+
 // src/installation.ts
 var REQUIRED_SETTINGS = {
   apiKey: "VITE_FIREBASE_API_KEY",
@@ -158,10 +162,61 @@ async function readDocument(database, path, ask, headers) {
 
 // server/icalImport.ts
 var SURFACES_PATH = "cms_settings/surfaces";
+var lookupAll = async (host) => (await lookup(host, { all: true, verbatim: true })).map((entry) => entry.address);
+var FEED_TIMEOUT_MS = 1e4;
+var FEED_MAX_BYTES = 5 * 1024 * 1024;
+var FEED_MAX_REDIRECTS = 3;
+var ipv4Parts = (ip) => {
+  const parts = ip.split(".").map(Number);
+  return parts.length === 4 && parts.every((part) => Number.isInteger(part) && part >= 0 && part <= 255) ? parts : null;
+};
+function isInternalAddress(ip) {
+  const address = ip.trim().toLowerCase().replace(/^\[|\]$/g, "");
+  const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/.exec(address);
+  if (mapped) return isInternalAddress(mapped[1]);
+  const v4 = ipv4Parts(address);
+  if (v4) {
+    const [a, b] = v4;
+    return a === 0 || a === 10 || a === 127 || a === 100 && b >= 64 && b <= 127 || a === 169 && b === 254 || a === 172 && b >= 16 && b <= 31 || a === 192 && b === 168 || a === 192 && b === 0 || a === 198 && (b === 18 || b === 19) || a >= 224;
+  }
+  if (isIP(address) !== 6) return true;
+  if (address.startsWith("::")) return true;
+  const first = parseInt(address.split(":")[0] || "0", 16);
+  return (first & 65024) === 64512 || (first & 65472) === 65152 || (first & 65280) === 65280;
+}
+async function feedAddressRefusal(feedUrl, lookupHost = lookupAll) {
+  let url;
+  try {
+    url = new URL(feedUrl);
+  } catch {
+    return "Adressen kan ikke leses.";
+  }
+  if (url.protocol !== "https:" && url.protocol !== "http:") return "Adressen må begynne med https://.";
+  if (url.username || url.password) return "Adressen kan ikke ha brukernavn eller passord i seg.";
+  if (url.port && url.port !== "443" && url.port !== "80") return "Adressen kan ikke ha et eget portnummer.";
+  const host = url.hostname.toLowerCase().replace(/^\[|\]$/g, "");
+  if (host === "localhost" || /\.(localhost|local|internal|lan|home|intranet)$/.test(host)) return "Adressen peker inn i et lukket nett.";
+  if (isIP(host)) return isInternalAddress(host) ? "Adressen peker inn i et lukket nett." : null;
+  let addresses;
+  try {
+    addresses = await lookupHost(host);
+  } catch {
+    return "Fant ikke adressen.";
+  }
+  if (addresses.length === 0) return "Fant ikke adressen.";
+  return addresses.some(isInternalAddress) ? "Adressen peker inn i et lukket nett." : null;
+}
+async function limitedText(response) {
+  const declared = Number(response.headers?.get?.("content-length") ?? NaN);
+  if (Number.isFinite(declared) && declared > FEED_MAX_BYTES) return null;
+  const text = await response.text();
+  return Buffer.byteLength(text, "utf8") > FEED_MAX_BYTES ? null : text;
+}
 async function externalCalendarIcs({
   env,
   ask,
-  httpFetch
+  httpFetch,
+  lookupHost = lookupAll
 }) {
   const plain = (status, body) => ({
     status,
@@ -176,15 +231,30 @@ async function externalCalendarIcs({
   if (surfaces.ownWebsite) return plain(404, "Kalenderimport er bare når vår nettside er av.");
   const feedUrl = icalFeedUrl(surfaces);
   if (!feedUrl) return plain(404, "Ingen iCal-adresse er lagret.");
-  let response;
-  try {
-    response = await httpFetch(feedUrl, { headers: { Accept: "text/calendar,*/*" } });
-  } catch (error) {
-    console.error("Kunne ikke hente ekstern kalender:", error);
-    return plain(502, "Kunne ikke nå kirkens kalender.");
+  let response = null;
+  let address = feedUrl;
+  for (let hop = 0; hop <= FEED_MAX_REDIRECTS; hop++) {
+    const refusal = await feedAddressRefusal(address, lookupHost);
+    if (refusal) return plain(400, `Kalenderadressen kan ikke brukes: ${refusal}`);
+    try {
+      response = await httpFetch(address, {
+        headers: { Accept: "text/calendar,*/*" },
+        redirect: "manual",
+        signal: AbortSignal.timeout(FEED_TIMEOUT_MS)
+      });
+    } catch (error) {
+      console.error("Kunne ikke hente ekstern kalender:", error);
+      return plain(502, "Kunne ikke nå kirkens kalender.");
+    }
+    const next = response.status >= 300 && response.status < 400 ? response.headers?.get?.("location") : null;
+    if (!next) break;
+    address = new URL(next, address).toString();
+    response = null;
   }
-  const text = await response.text();
+  if (!response) return plain(502, "Kirkens kalender sendte oss videre for mange ganger.");
   if (!response.ok) return plain(502, `Kirkens kalender svarte ${response.status}.`);
+  const text = await limitedText(response);
+  if (text === null) return plain(502, "Kirkens kalender er for stor til å hentes.");
   if (!text.includes("BEGIN:VCALENDAR")) {
     if (/^\s*<!doctype html/i.test(text) || /CalendarEmbed/i.test(text)) {
       return plain(

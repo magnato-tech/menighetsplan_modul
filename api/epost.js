@@ -386,6 +386,7 @@ var settingOf = (env, name) => {
 function emailOfToken(idToken) {
   try {
     const payload = JSON.parse(Buffer.from(idToken.split(".")[1] ?? "", "base64url").toString("utf8"));
+    if (payload.email_verified !== true) return null;
     return usableEmail(payload.email);
   } catch {
     return null;
