@@ -32,6 +32,157 @@
   --color-accent-900: oklch(41.4% 0.112 45.904);
   --color-accent-950: oklch(27.9% 0.077 45.635);
 
+  /*
+   * The «Fjord» palette. Tailwind's own colour scales are redefined so that every hue has the
+   * same lightness and chroma at each stop, and only the hue differs: the colours sit together
+   * instead of competing. indigo/violet/purple are the brand, emerald/green/teal mean yes and
+   * covered, amber/yellow/orange mean waiting, red/rose mean missing or cancelled, blue/sky are
+   * information. Slate and stone (the greys) are Tailwind's own.
+   */
+  --color-indigo-50: oklch(97.5% 0.018 272);
+  --color-indigo-100: oklch(94.5% 0.035 272);
+  --color-indigo-200: oklch(89.0% 0.060 272);
+  --color-indigo-300: oklch(82.0% 0.090 272);
+  --color-indigo-400: oklch(72.0% 0.115 272);
+  --color-indigo-500: oklch(63.0% 0.125 272);
+  --color-indigo-600: oklch(54.5% 0.120 272);
+  --color-indigo-700: oklch(47.5% 0.105 272);
+  --color-indigo-800: oklch(40.5% 0.090 272);
+  --color-indigo-900: oklch(34.5% 0.075 272);
+  --color-indigo-950: oklch(26.5% 0.055 272);
+  --color-violet-50: oklch(97.5% 0.018 285);
+  --color-violet-100: oklch(94.5% 0.035 285);
+  --color-violet-200: oklch(89.0% 0.060 285);
+  --color-violet-300: oklch(82.0% 0.090 285);
+  --color-violet-400: oklch(72.0% 0.115 285);
+  --color-violet-500: oklch(63.0% 0.125 285);
+  --color-violet-600: oklch(54.5% 0.120 285);
+  --color-violet-700: oklch(47.5% 0.105 285);
+  --color-violet-800: oklch(40.5% 0.090 285);
+  --color-violet-900: oklch(34.5% 0.075 285);
+  --color-violet-950: oklch(26.5% 0.055 285);
+  --color-purple-50: oklch(97.5% 0.018 305);
+  --color-purple-100: oklch(94.5% 0.035 305);
+  --color-purple-200: oklch(89.0% 0.060 305);
+  --color-purple-300: oklch(82.0% 0.090 305);
+  --color-purple-400: oklch(72.0% 0.115 305);
+  --color-purple-500: oklch(63.0% 0.125 305);
+  --color-purple-600: oklch(54.5% 0.120 305);
+  --color-purple-700: oklch(47.5% 0.105 305);
+  --color-purple-800: oklch(40.5% 0.090 305);
+  --color-purple-900: oklch(34.5% 0.075 305);
+  --color-purple-950: oklch(26.5% 0.055 305);
+  --color-blue-50: oklch(97.5% 0.018 240);
+  --color-blue-100: oklch(94.5% 0.035 240);
+  --color-blue-200: oklch(89.0% 0.060 240);
+  --color-blue-300: oklch(82.0% 0.090 240);
+  --color-blue-400: oklch(72.0% 0.115 240);
+  --color-blue-500: oklch(63.0% 0.125 240);
+  --color-blue-600: oklch(54.5% 0.120 240);
+  --color-blue-700: oklch(47.5% 0.105 240);
+  --color-blue-800: oklch(40.5% 0.090 240);
+  --color-blue-900: oklch(34.5% 0.075 240);
+  --color-blue-950: oklch(26.5% 0.055 240);
+  --color-sky-50: oklch(97.5% 0.018 228);
+  --color-sky-100: oklch(94.5% 0.035 228);
+  --color-sky-200: oklch(89.0% 0.060 228);
+  --color-sky-300: oklch(82.0% 0.090 228);
+  --color-sky-400: oklch(72.0% 0.115 228);
+  --color-sky-500: oklch(63.0% 0.125 228);
+  --color-sky-600: oklch(54.5% 0.120 228);
+  --color-sky-700: oklch(47.5% 0.105 228);
+  --color-sky-800: oklch(40.5% 0.090 228);
+  --color-sky-900: oklch(34.5% 0.075 228);
+  --color-sky-950: oklch(26.5% 0.055 228);
+  --color-emerald-50: oklch(97.5% 0.018 165);
+  --color-emerald-100: oklch(94.5% 0.035 165);
+  --color-emerald-200: oklch(89.0% 0.060 165);
+  --color-emerald-300: oklch(82.0% 0.090 165);
+  --color-emerald-400: oklch(72.0% 0.115 165);
+  --color-emerald-500: oklch(63.0% 0.125 165);
+  --color-emerald-600: oklch(54.5% 0.120 165);
+  --color-emerald-700: oklch(47.5% 0.105 165);
+  --color-emerald-800: oklch(40.5% 0.090 165);
+  --color-emerald-900: oklch(34.5% 0.075 165);
+  --color-emerald-950: oklch(26.5% 0.055 165);
+  --color-green-50: oklch(97.5% 0.018 150);
+  --color-green-100: oklch(94.5% 0.035 150);
+  --color-green-200: oklch(89.0% 0.060 150);
+  --color-green-300: oklch(82.0% 0.090 150);
+  --color-green-400: oklch(72.0% 0.115 150);
+  --color-green-500: oklch(63.0% 0.125 150);
+  --color-green-600: oklch(54.5% 0.120 150);
+  --color-green-700: oklch(47.5% 0.105 150);
+  --color-green-800: oklch(40.5% 0.090 150);
+  --color-green-900: oklch(34.5% 0.075 150);
+  --color-green-950: oklch(26.5% 0.055 150);
+  --color-teal-50: oklch(97.5% 0.018 180);
+  --color-teal-100: oklch(94.5% 0.035 180);
+  --color-teal-200: oklch(89.0% 0.060 180);
+  --color-teal-300: oklch(82.0% 0.090 180);
+  --color-teal-400: oklch(72.0% 0.115 180);
+  --color-teal-500: oklch(63.0% 0.125 180);
+  --color-teal-600: oklch(54.5% 0.120 180);
+  --color-teal-700: oklch(47.5% 0.105 180);
+  --color-teal-800: oklch(40.5% 0.090 180);
+  --color-teal-900: oklch(34.5% 0.075 180);
+  --color-teal-950: oklch(26.5% 0.055 180);
+  --color-amber-50: oklch(97.5% 0.018 75);
+  --color-amber-100: oklch(94.5% 0.035 75);
+  --color-amber-200: oklch(89.0% 0.060 75);
+  --color-amber-300: oklch(82.0% 0.090 75);
+  --color-amber-400: oklch(72.0% 0.115 75);
+  --color-amber-500: oklch(63.0% 0.125 75);
+  --color-amber-600: oklch(54.5% 0.120 75);
+  --color-amber-700: oklch(47.5% 0.105 75);
+  --color-amber-800: oklch(40.5% 0.090 75);
+  --color-amber-900: oklch(34.5% 0.075 75);
+  --color-amber-950: oklch(26.5% 0.055 75);
+  --color-yellow-50: oklch(97.5% 0.018 88);
+  --color-yellow-100: oklch(94.5% 0.035 88);
+  --color-yellow-200: oklch(89.0% 0.060 88);
+  --color-yellow-300: oklch(82.0% 0.090 88);
+  --color-yellow-400: oklch(72.0% 0.115 88);
+  --color-yellow-500: oklch(63.0% 0.125 88);
+  --color-yellow-600: oklch(54.5% 0.120 88);
+  --color-yellow-700: oklch(47.5% 0.105 88);
+  --color-yellow-800: oklch(40.5% 0.090 88);
+  --color-yellow-900: oklch(34.5% 0.075 88);
+  --color-yellow-950: oklch(26.5% 0.055 88);
+  --color-orange-50: oklch(97.5% 0.018 55);
+  --color-orange-100: oklch(94.5% 0.035 55);
+  --color-orange-200: oklch(89.0% 0.060 55);
+  --color-orange-300: oklch(82.0% 0.090 55);
+  --color-orange-400: oklch(72.0% 0.115 55);
+  --color-orange-500: oklch(63.0% 0.125 55);
+  --color-orange-600: oklch(54.5% 0.120 55);
+  --color-orange-700: oklch(47.5% 0.105 55);
+  --color-orange-800: oklch(40.5% 0.090 55);
+  --color-orange-900: oklch(34.5% 0.075 55);
+  --color-orange-950: oklch(26.5% 0.055 55);
+  --color-red-50: oklch(97.5% 0.018 28);
+  --color-red-100: oklch(94.5% 0.035 28);
+  --color-red-200: oklch(89.0% 0.060 28);
+  --color-red-300: oklch(82.0% 0.090 28);
+  --color-red-400: oklch(72.0% 0.115 28);
+  --color-red-500: oklch(63.0% 0.125 28);
+  --color-red-600: oklch(54.5% 0.120 28);
+  --color-red-700: oklch(47.5% 0.105 28);
+  --color-red-800: oklch(40.5% 0.090 28);
+  --color-red-900: oklch(34.5% 0.075 28);
+  --color-red-950: oklch(26.5% 0.055 28);
+  --color-rose-50: oklch(97.5% 0.018 12);
+  --color-rose-100: oklch(94.5% 0.035 12);
+  --color-rose-200: oklch(89.0% 0.060 12);
+  --color-rose-300: oklch(82.0% 0.090 12);
+  --color-rose-400: oklch(72.0% 0.115 12);
+  --color-rose-500: oklch(63.0% 0.125 12);
+  --color-rose-600: oklch(54.5% 0.120 12);
+  --color-rose-700: oklch(47.5% 0.105 12);
+  --color-rose-800: oklch(40.5% 0.090 12);
+  --color-rose-900: oklch(34.5% 0.075 12);
+  --color-rose-950: oklch(26.5% 0.055 12);
+
   --color-page: #fafaf9;
 }
 
@@ -73,12 +224,12 @@
   --studio-input-text: #f8fafc;
   --studio-hover: rgb(30 41 59 / 0.9);
   --studio-overlay: rgb(2 6 23 / 0.8);
-  --studio-link: #818cf8;
-  --studio-link-hover: #a5b4fc;
-  --studio-accent-bg: rgb(30 27 75 / 0.55);
-  --studio-accent-border: rgb(67 56 202 / 0.45);
-  --studio-accent-text: #c7d2fe;
-  --studio-icon: #818cf8;
+  --studio-link: var(--color-indigo-400);
+  --studio-link-hover: var(--color-indigo-300);
+  --studio-accent-bg: color-mix(in oklch, var(--color-indigo-950) 55%, transparent);
+  --studio-accent-border: color-mix(in oklch, var(--color-indigo-700) 45%, transparent);
+  --studio-accent-text: var(--color-indigo-200);
+  --studio-icon: var(--color-indigo-400);
   /* Charts on the analysis board: two categorical slots, validated against the dark surface */
   --viz-1: #3987e5;
   --viz-2: #d95926;
@@ -86,9 +237,9 @@
   --viz-track: rgb(57 135 229 / 0.22);
   --viz-missing: #64748b;
   /* Status text, always paired with an icon and words */
-  --studio-good: #34d399;
-  --studio-warn: #fbbf24;
-  --studio-bad: #fb7185;
+  --studio-good: var(--color-emerald-400);
+  --studio-warn: var(--color-amber-400);
+  --studio-bad: var(--color-rose-400);
 }
 
 [data-studio-theme="light"] {
@@ -103,20 +254,20 @@
   --studio-input-text: #0f172a;
   --studio-hover: #f1f5f9;
   --studio-overlay: rgb(15 23 42 / 0.45);
-  --studio-link: #4338ca;
-  --studio-link-hover: #3730a3;
-  --studio-accent-bg: #eef2ff;
-  --studio-accent-border: #c7d2fe;
-  --studio-accent-text: #312e81;
-  --studio-icon: #4f46e5;
+  --studio-link: var(--color-indigo-700);
+  --studio-link-hover: var(--color-indigo-800);
+  --studio-accent-bg: var(--color-indigo-50);
+  --studio-accent-border: var(--color-indigo-200);
+  --studio-accent-text: var(--color-indigo-900);
+  --studio-icon: var(--color-indigo-600);
   --viz-1: #2a78d6;
   --viz-2: #eb6834;
   --viz-grid: #e2e8f0;
   --viz-track: #cde2fb;
   --viz-missing: #94a3b8;
-  --studio-good: #047857;
-  --studio-warn: #b45309;
-  --studio-bad: #be123c;
+  --studio-good: var(--color-emerald-700);
+  --studio-warn: var(--color-amber-700);
+  --studio-bad: var(--color-rose-700);
 }
 
 /* The front page hero image starts a little enlarged and settles slowly (see HeroBackdrop.tsx). */

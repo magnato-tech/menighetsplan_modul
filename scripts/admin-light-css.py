@@ -5,7 +5,7 @@ Run after a class in a dark hue (bg-*-950, text-*-300, border-*-800 …) is adde
 tests/admin-light-css.test.ts fails while a class is missing.
 """
 import re,subprocess,sys
-P={ # 50,100,200,500,600,700 (Tailwind v3 hexes)
+P={ # 50,100,200,500,600,700 (Tailwind v3 hexes; the greys are written as these, the other hues as variables)
 'slate':['#f8fafc','#f1f5f9','#e2e8f0','#64748b','#475569','#334155'],
 'gray':['#f9fafb','#f3f4f6','#e5e7eb','#6b7280','#4b5563','#374151'],
 'zinc':['#fafafa','#f4f4f5','#e4e4e7','#71717a','#52525b','#3f3f46'],
@@ -30,6 +30,10 @@ P={ # 50,100,200,500,600,700 (Tailwind v3 hexes)
 'fuchsia':['#fdf4ff','#fae8ff','#f5d0fe','#d946ef','#c026d3','#a21caf'],
 }
 GREYS={'slate','gray','zinc','stone','neutral'}
+STOPS=['50','100','200','500','600','700']
+# Coloured hues are written as the palette variable of the same stop, so they follow «Fjord» (index.css).
+# The greys stay as hex: they are Tailwind's own and are not part of the palette.
+def col(h,i): return P[h][i] if h in GREYS else f'var(--color-{h}-{STOPS[i]})'
 slate_text={'200':'#1e293b','300':'#334155','400':'#64748b'}
 files=sys.argv[1:] or ['src/pages/admin','src/components/admin','src/pages/AdminGroupDetailPage.tsx','src/pages/AdminPersonDetailPage.tsx','src/pages/AdminTaskDetailPage.tsx']
 txt=subprocess.run(['grep','-rhoE',r'\b((hover|group-hover|focus):)?(bg|text|border)-('+'|'.join(P)+r')-(950|900|800|700|400|300|200|100)(/[0-9]+)?\b']+files,capture_output=True,text=True).stdout.split()
@@ -37,7 +41,7 @@ rules=[];darkbg=[]
 def esc(c): return re.sub(r'([:/.])',r'\\\1',c)
 for tok in sorted(set(txt)):
     # v is the variant's name ("hover"), not the prefix with its colon, so the rule below gets its :hover
-    m=re.match(r'((hover|group-hover|focus):)?(bg|text|border)-(\w+)-(\d+)(/\d+)?$',tok); _,v,kind,h,sh,op=m.groups(); pal=P[h]
+    m=re.match(r'((hover|group-hover|focus):)?(bg|text|border)-(\w+)-(\d+)(/\d+)?$',tok); _,v,kind,h,sh,op=m.groups(); pal=[col(h,i) for i in range(6)]
     val=None
     if kind=='bg' and sh in('950','900','800'): val=pal[1] if v else pal[0]
     # A coloured button (bg-indigo-600) darkens to 700 under the mouse, on a light page as on a dark one.

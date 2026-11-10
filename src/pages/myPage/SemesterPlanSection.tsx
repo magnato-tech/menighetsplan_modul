@@ -31,7 +31,7 @@ export const SemesterPlanWaiting: React.FC<{ plans: MySemesterPlan[] }> = ({ pla
           </div>
           <Link
             to={semesterPlanPath(plan.id)}
-            className="block w-full py-3 rounded-2xl bg-amber-700 hover:bg-amber-800 text-white text-sm font-bold text-center"
+            className="block w-full py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold text-center"
           >
             {started ? "Fortsett" : "Start"}
           </Link>

@@ -268,7 +268,7 @@ export const TaskDetailPage: React.FC = () => {
               type="button"
               id="btn-claim-task"
               onClick={handleClaim}
-              className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-sm rounded-xl shadow-md shadow-emerald-200 transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold text-sm rounded-xl shadow-md shadow-indigo-200 transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               Ta denne oppgaven
             </button>
@@ -280,7 +280,7 @@ export const TaskDetailPage: React.FC = () => {
                 type="button"
                 id="btn-accept-request"
                 onClick={() => handleAnswer(true)}
-                className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-sm rounded-xl shadow-md shadow-emerald-200 transition-all cursor-pointer"
+                className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold text-sm rounded-xl shadow-md shadow-indigo-200 transition-all cursor-pointer"
               >
                 Ja, jeg kan
               </button>

@@ -89,7 +89,7 @@ export const AttentionSection: React.FC<AttentionSectionProps> = ({ page, onShow
             type="button"
             id={`btn-yes-${item.id}`}
             onClick={() => handleAttentionAnswer(item, true)}
-            className="flex-1 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+            className="flex-1 py-2 px-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
           >
             <Check className="w-4 h-4 stroke-[2.5]" />
             <span>{text.yes}</span>
@@ -136,7 +136,7 @@ export const AttentionSection: React.FC<AttentionSectionProps> = ({ page, onShow
           type="button"
           id="btn-see-and-handle-attention"
           onClick={() => onShowAll()}
-          className="w-full py-3 px-4 bg-amber-700 hover:bg-amber-800 text-white text-sm font-bold rounded-2xl flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+          className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-2xl flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer"
         >
           <span>{buttonText}</span>
           <ChevronRight className="w-4 h-4 stroke-[2.5]" />
