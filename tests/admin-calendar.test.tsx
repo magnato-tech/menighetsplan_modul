@@ -81,6 +81,15 @@ describe("Dagene i en måned og en uke", () => {
     expect(days[6].events.map((g) => g.id)).toEqual(["a"]);
   });
 
+  test("et arrangement som varer flere dager står på hver av dagene i uken, og det som startet før, først", () => {
+    const tur = event("tur", "2026-11-26", { startsAt: at("2026-11-26", "00:00"), endsAt: at("2026-11-29", "18:00") });
+    const frokost = event("frokost", "2026-11-27", { startsAt: at("2026-11-27", "08:00") });
+    const days = weekDays(new Date(2026, 10, 25), [frokost, tur]);
+    const ids = days.map((d) => d.events.map((g) => g.id));
+    expect(ids).toEqual([[], [], [], ["tur"], ["tur", "frokost"], ["tur"], ["tur"]]);
+    expect(weekDays(new Date(2026, 11, 2), [tur]).flatMap((d) => d.events)).toEqual([]);
+  });
+
   test("en måned har bare uker som har dager i måneden", () => {
     const weeks = monthWeeks(2026, 9, []);
     expect(weeks).toHaveLength(5);

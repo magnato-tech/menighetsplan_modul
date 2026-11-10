@@ -2,7 +2,8 @@ import React, { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import type { AdminGatheringItem } from "../../../../hooks/useAppHooks";
-import { monthLabel } from "../../../../utils/calendarMonth";
+import type { Gathering } from "../../../../types";
+import { dayBounds, isContinuationDay, lastsMoreThanOneDay, monthLabel } from "../../../../utils/calendarMonth";
 import { calendarKindOf, defaultMonthDay, dayKey, monthWeeks, weekDays, weekNumber, type CalendarKind } from "../../../../utils/adminCalendar";
 import { locationOf } from "../../../../utils/gatherings";
 import { visibilityOf } from "../../../../utils/visibility";
@@ -26,6 +27,20 @@ const PHONE_DOT_MAX = 3;
 const clock = (iso: string) => new Intl.DateTimeFormat("no-NO", { hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
 const dayAndMonth = (date: Date) => new Intl.DateTimeFormat("no-NO", { day: "numeric", month: "short" }).format(date);
 
+/**
+ * The time an event shows on a day. On a day it runs on after starting: «forts.». An all-day or multi-day event that
+ * starts at midnight shows no time at all, since 00:00 says nothing there.
+ */
+const timeOnDay = (g: Gathering, day: Date): string | null => {
+  if (isContinuationDay(g, dayBounds(day).start)) return "forts.";
+  const start = new Date(g.startsAt);
+  const atMidnight = start.getHours() === 0 && start.getMinutes() === 0 && start.getSeconds() === 0;
+  // All day (to midnight or later) or several days: 00:00 says nothing there
+  const wholeDay = Boolean(g.endsAt) && Date.parse(g.endsAt!) >= dayBounds(start).end + 1;
+  if (atMidnight && (wholeDay || lastsMoreThanOneDay(g))) return null;
+  return clock(g.startsAt);
+};
+
 interface GatheringsCalendarProps {
   items: AdminGatheringItem[];
   mode: "month" | "week";
@@ -41,22 +56,23 @@ interface GatheringsCalendarProps {
 }
 
 /** One event in the calendar: time and title, in the colour of its button. It opens the event, as the card does. */
-const EventPill: React.FC<{ item: AdminGatheringItem }> = ({ item }) => {
+const EventPill: React.FC<{ item: AdminGatheringItem; day: Date }> = ({ item, day }) => {
   const g = item.gathering;
   const internal = visibilityOf(g) === "intern";
   const missing = item.totalTasks > 0 && item.staffing.color === "red";
+  const time = timeOnDay(g, day);
   return (
     <Link
       to={`/admin/samling/${g.id}?vis=bemanning`}
       onClick={(event) => event.stopPropagation()}
-      title={`${clock(g.startsAt)} ${g.title}${internal ? " (kun intern)" : ""}${missing ? ` · mangler ${item.missingStaffingCount} frivillige` : ""}`}
+      title={`${time ? `${time} ` : ""}${g.title}${internal ? " (kun intern)" : ""}${missing ? ` · mangler ${item.missingStaffingCount} frivillige` : ""}`}
       data-calendar-event={g.id}
       className={`flex items-center gap-1 min-w-0 px-1.5 py-0.5 rounded text-[10px] leading-tight font-semibold text-white hover:brightness-110 ${
         KIND_COLORS[calendarKindOf(g, item.group)]
       } ${internal ? "opacity-70 ring-1 ring-inset ring-white/60" : ""} ${g.cancelled ? "line-through opacity-60" : ""}`}
     >
       {missing && <span className="w-1.5 h-1.5 shrink-0 rounded-full bg-rose-400 ring-1 ring-white" aria-label="Mangler frivillige" />}
-      <span className="shrink-0 tabular-nums opacity-90">{clock(g.startsAt)}</span>
+      {time && <span className="shrink-0 tabular-nums opacity-90">{time}</span>}
       <span className="truncate">{g.title}</span>
     </Link>
   );
@@ -223,7 +239,7 @@ export const GatheringsCalendar: React.FC<GatheringsCalendarProps> = ({ items, m
                   data-calendar-event={g.id}
                   className="flex items-start gap-3 px-3 py-2.5 min-h-11 hover:bg-[var(--studio-hover)]/40"
                 >
-                  <span className="w-11 shrink-0 pt-0.5 text-xs font-bold tabular-nums text-[var(--studio-muted)]">{clock(g.startsAt)}</span>
+                  <span className="w-11 shrink-0 pt-0.5 text-xs font-bold tabular-nums text-[var(--studio-muted)]">{timeOnDay(g, selectedCell?.date ?? anchor)}</span>
                   <span className="min-w-0 flex-1">
                     <span className={`block text-sm font-semibold text-[var(--studio-text)] ${g.cancelled ? "line-through opacity-60" : ""}`}>{g.title}</span>
                     <span className="block text-xs text-[var(--studio-muted)]">{locationOf(g)}</span>
@@ -267,7 +283,7 @@ export const GatheringsCalendar: React.FC<GatheringsCalendarProps> = ({ items, m
                     <NewButton cell={cell} onNewOnDay={onNewOnDay} />
                   </div>
                   {dayItems.slice(0, MONTH_DAY_MAX).map((item) => (
-                    <EventPill key={item.gathering.id} item={item} />
+                    <EventPill key={item.gathering.id} item={item} day={cell.date} />
                   ))}
                   {extra > 0 && (
                     <button
@@ -312,7 +328,7 @@ export const GatheringsCalendar: React.FC<GatheringsCalendarProps> = ({ items, m
               </div>
               <div className="space-y-0.5">
                 {dayItems.map((item) => (
-                  <EventPill key={item.gathering.id} item={item} />
+                  <EventPill key={item.gathering.id} item={item} day={cell.date} />
                 ))}
               </div>
             </div>
