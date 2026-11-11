@@ -7,6 +7,7 @@ import { buildRunSheet, sharedRunSheet } from "../../utils/runSheet";
 import { GatheringDetail, InstructionTarget } from "./gatheringDetail";
 import { InstructionDialog } from "./InstructionDialog";
 import { SharedRunSheetRowCard } from "./SharedRunSheetRowCard";
+import { RunSheetSidePanel } from "./RunSheetSidePanel";
 
 interface SharedRunSheetViewProps {
   detail: GatheringDetail;
@@ -41,9 +42,10 @@ export const SharedRunSheetView: React.FC<SharedRunSheetViewProps> = ({
   );
 
   if (!gathering) return null;
+  const hasSidePanel = tasksWithDetails.length > 0;
 
   return (
-    <div className="w-full max-w-2xl mx-auto bg-slate-50 sm:my-4 sm:rounded-3xl sm:border sm:border-slate-200/80 overflow-hidden print:bg-white print:border-none print:my-0">
+    <div className="w-full max-w-2xl lg:max-w-6xl mx-auto bg-slate-50 sm:my-4 sm:rounded-3xl sm:border sm:border-slate-200/80 overflow-hidden print:bg-white print:border-none print:my-0">
       {/* One compact row on a phone: back, the gathering, and the actions as icons */}
       <div className="px-3 py-3 sm:p-4 bg-white border-b border-slate-200/80 flex items-start gap-2 print:p-2 print:border-b-2 print:border-slate-800">
         <Link
@@ -99,35 +101,45 @@ export const SharedRunSheetView: React.FC<SharedRunSheetViewProps> = ({
         </div>
       </div>
 
-      <div className="p-3 sm:p-4 space-y-2.5">
-        {/* The list shows what it is; the word is kept for screen readers and on paper */}
-        <h2 className="sr-only print:not-sr-only print:flex print:items-center print:gap-1.5 print:text-xs print:font-bold print:uppercase">
-          <Clock className="w-3.5 h-3.5" aria-hidden />
-          Kjøreplan
-        </h2>
+      {/* The side panel takes room only when the event has tasks: without them it has nothing to show */}
+      <div className={hasSidePanel ? "lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-4 lg:items-start lg:p-4" : ""}>
+        <div className={`p-3 sm:p-4 space-y-2.5 ${hasSidePanel ? "lg:p-0" : ""}`}>
+          {/* The list shows what it is; the word is kept for screen readers and on paper */}
+          <h2 className="sr-only print:not-sr-only print:flex print:items-center print:gap-1.5 print:text-xs print:font-bold print:uppercase">
+            <Clock className="w-3.5 h-3.5" aria-hidden />
+            Kjøreplan
+          </h2>
 
-        {program ??
-          (rows.length === 0 ? (
-            <div className="p-6 text-center text-xs text-slate-500 bg-white rounded-2xl border border-slate-200/80">
-              Programmet er ikke lagt inn ennå.
-            </div>
-          ) : (
-            rows.map((row) => (
-              <SharedRunSheetRowCard
-                key={row.id}
-                row={row}
-                href={planningLink && row.isMyGroup ? `${planningLink}#schedule-row-${row.id}` : undefined}
-                onShowInstruction={(shown) =>
-                  setInstructionFor({
-                    title: shown.roleTitle || shown.title,
-                    instruction: shown.instruction || "",
-                    time: shown.meetAt || shown.time,
-                    groupName: shown.groupName,
-                  })
-                }
-              />
-            ))
-          ))}
+          {program ??
+            (rows.length === 0 ? (
+              <div className="p-6 text-center text-xs text-slate-500 bg-white rounded-2xl border border-slate-200/80">
+                Programmet er ikke lagt inn ennå.
+              </div>
+            ) : (
+              rows.map((row) => (
+                <SharedRunSheetRowCard
+                  key={row.id}
+                  row={row}
+                  href={planningLink && row.isMyGroup ? `${planningLink}#schedule-row-${row.id}` : undefined}
+                  onShowInstruction={(shown) =>
+                    setInstructionFor({
+                      title: shown.roleTitle || shown.title,
+                      instruction: shown.instruction || "",
+                      time: shown.meetAt || shown.time,
+                      groupName: shown.groupName,
+                    })
+                  }
+                />
+              ))
+            ))}
+        </div>
+
+        {/* Beside the programme on a PC only; the paper keeps the programme alone */}
+        {hasSidePanel && (
+          <aside aria-label="Bemanning og dine oppgaver" className="hidden lg:block print:hidden">
+            <RunSheetSidePanel detail={detail} personId={personId} />
+          </aside>
+        )}
       </div>
 
       {instructionFor && (
