@@ -73,7 +73,7 @@ export const MyPage: React.FC = () => {
 
         {/* The heading is the name of the part that is open, so nobody wonders where they are */}
         <div className="flex items-center justify-between gap-2">
-          <h1 id="my-page-heading" className="text-xl font-black text-slate-900 tracking-tight">
+          <h1 id="my-page-heading" className="text-xl lg:text-2xl font-black text-slate-900 tracking-tight">
             {heading}
           </h1>
           <VolunteerHelp />

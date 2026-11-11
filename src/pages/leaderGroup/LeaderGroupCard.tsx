@@ -159,13 +159,13 @@ export const LeaderGroupCard: React.FC<LeaderGroupCardProps> = ({ groupId, inPop
 
       {/* Tabs Navigation: Aktiviteter, Gruppechat, Medlemmer */}
       <div
-        className={`px-4 pt-3 pb-2 bg-slate-50 border-b border-slate-200/60 flex items-center gap-1.5 ${columns ? "lg:hidden" : ""}`}
+        className={`px-4 pt-3 pb-2 bg-slate-50 border-b border-slate-200/60 flex items-center gap-1.5 overflow-x-auto ${columns ? "lg:hidden" : ""}`}
       >
         <button
           type="button"
           id="tab-btn-group-aktiviteter"
           onClick={() => setActiveRoomTab("aktiviteter")}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap ${
             activeRoomTab === "aktiviteter"
               ? "bg-white text-emerald-800 shadow-2xs border border-slate-200"
               : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
@@ -180,7 +180,7 @@ export const LeaderGroupCard: React.FC<LeaderGroupCardProps> = ({ groupId, inPop
             type="button"
             id="tab-btn-group-chat"
             onClick={() => setActiveRoomTab("chat")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer relative ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap relative ${
               activeRoomTab === "chat"
                 ? "bg-white text-emerald-800 shadow-2xs border border-slate-200"
                 : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
@@ -200,7 +200,7 @@ export const LeaderGroupCard: React.FC<LeaderGroupCardProps> = ({ groupId, inPop
           type="button"
           id="tab-btn-group-medlemmer"
           onClick={() => setActiveRoomTab("medlemmer")}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap ${
             activeRoomTab === "medlemmer"
               ? "bg-white text-emerald-800 shadow-2xs border border-slate-200"
               : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"

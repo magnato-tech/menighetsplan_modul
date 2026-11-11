@@ -27,3 +27,12 @@ export const MIN_SIDE_CARD_GRID = "grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3 it
 
 /** One column of cards that is not stretched on a PC: it keeps the width of a tablet (Mine oppgaver). */
 export const MIN_SIDE_LIST_COLUMN = "space-y-4 lg:max-w-2xl";
+
+// The dialogs on Min side. On a phone the dialog is a sheet from the bottom; from sm (tablet) it is a
+// window in the middle of the screen, and a bit wider on a PC. The dialog keeps its own background,
+// padding and scrolling body; only the overlay and the panel size and place come from here.
+/** The dark layer behind a dialog on Min side. */
+export const MIN_SIDE_DIALOG_OVERLAY = "fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4";
+
+/** The window of a dialog on Min side: a bottom sheet on a phone, a centred window from tablet. */
+export const MIN_SIDE_DIALOG_PANEL = "w-full max-w-md sm:max-w-lg lg:max-w-xl rounded-t-3xl sm:rounded-3xl shadow-xl max-h-[85vh] sm:max-h-[80vh] flex flex-col overflow-hidden border border-slate-200";

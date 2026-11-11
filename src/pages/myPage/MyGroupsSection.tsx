@@ -80,13 +80,13 @@ export const MyGroupsSection: React.FC<MyGroupsSectionProps> = ({ page }) => {
                       </span>
                     )}
                   </div>
-                  <h3 className="text-sm font-bold text-slate-900 leading-snug">
+                  <h3 className="text-sm lg:text-base font-bold text-slate-900 leading-snug">
                     {group.name}
                   </h3>
                 </div>
 
                 {/* Meta: antall medlemmer · neste aktivitet */}
-                <div className="flex items-center gap-2 text-xs text-slate-500 flex-wrap">
+                <div className="flex items-center gap-2 text-xs lg:text-sm text-slate-500 flex-wrap">
                   <span className="flex items-center gap-1">
                     <Users className="w-3.5 h-3.5 text-slate-400" />
                     <span>
@@ -139,7 +139,7 @@ export const MyGroupsSection: React.FC<MyGroupsSectionProps> = ({ page }) => {
                         {formatChatMessageTime(latestMsg.createdAt)}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-600 leading-relaxed line-clamp-2">
+                    <p className="text-xs lg:text-sm text-slate-600 leading-relaxed line-clamp-2">
                       {latestMsg.content || (latestMsg.imageUrl ? "[Bilde]" : "")}
                     </p>
                   </div>

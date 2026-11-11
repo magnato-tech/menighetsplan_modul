@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { combineDateAndTimeToIso } from "../../utils/dates";
 import { todayInNorway } from "../../utils/birthDate";
+import { MIN_SIDE_DIALOG_OVERLAY, MIN_SIDE_DIALOG_PANEL } from "../../utils/minSideFrame";
 import {
   MEETING_REPEATS,
   daysTaken,
@@ -112,269 +113,271 @@ export const CreateMeetingDialog: React.FC<CreateMeetingDialogProps> = ({ model,
   };
 
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby="create-meeting-heading" className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white w-full max-w-md rounded-3xl p-5 sm:p-6 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-          <h3 id="create-meeting-heading" className="text-sm font-bold text-slate-900 flex items-center gap-2">
-            <Plus className="w-4 h-4 text-emerald-600" aria-hidden="true" />
-            <span>Planlegg samling</span>
-          </h3>
-          <button type="button" onClick={() => onClose()} aria-label="Lukk" className="text-slate-400 hover:text-slate-700 text-sm font-bold cursor-pointer">
-            ×
-          </button>
-        </div>
-
-        <form onSubmit={handleSaveNewMeeting} className="space-y-3.5">
-          <div>
-            <label htmlFor="input-create-title" className={label}>
-              Tittel / Samlingsnavn *
-            </label>
-            <input
-              type="text"
-              id="input-create-title"
-              value={formTitle}
-              onChange={(e) => setFormTitle(e.target.value)}
-              placeholder="f.eks. Husfellesskap hos Kari"
-              required
-              className={input}
-            />
+    <div role="dialog" aria-modal="true" aria-labelledby="create-meeting-heading" className={MIN_SIDE_DIALOG_OVERLAY}>
+      <div className={`${MIN_SIDE_DIALOG_PANEL} bg-white`}>
+        <div className="p-5 sm:p-6 space-y-4 min-h-0 flex-1 overflow-y-auto">
+          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+            <h3 id="create-meeting-heading" className="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <Plus className="w-4 h-4 text-emerald-600" aria-hidden="true" />
+              <span>Planlegg samling</span>
+            </h3>
+            <button type="button" onClick={() => onClose()} aria-label="Lukk" className="text-slate-400 hover:text-slate-700 text-sm font-bold cursor-pointer">
+              ×
+            </button>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          <form onSubmit={handleSaveNewMeeting} className="space-y-3.5">
             <div>
-              <label htmlFor="input-create-date" className={label}>
-                {repeats ? "Første dato *" : "Dato *"}
-              </label>
-              <input type="date" id="input-create-date" value={formDate} onChange={(e) => setFormDate(e.target.value)} required className={input} />
-            </div>
-
-            <div>
-              <label htmlFor="input-create-time" className={label}>
-                Klokkeslett *
-              </label>
-              <input type="time" id="input-create-time" value={formTime} onChange={(e) => setFormTime(e.target.value)} required className={input} />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label htmlFor="select-create-repeat" className={label}>
-                <span className="inline-flex items-center gap-1">
-                  <Repeat className="w-3.5 h-3.5 text-emerald-700" aria-hidden="true" />
-                  Gjenta
-                </span>
-              </label>
-              <select
-                id="select-create-repeat"
-                value={repeat}
-                onChange={(e) => {
-                  const chosen = e.target.value as MeetingRepeat;
-                  // Going from one gathering to a plan leaves the host open
-                  if (repeat === "once" && chosen !== "once") {
-                    setFormHostId("");
-                    setHostOfDay({});
-                  }
-                  setRepeat(chosen);
-                }}
-                className={input}
-              >
-                {MEETING_REPEATS.map((option) => (
-                  <option key={option.id} value={option.id}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {repeats && (
-              <div>
-                <label htmlFor="input-create-last-day" className={label}>
-                  Til og med
-                </label>
-                <input
-                  type="date"
-                  id="input-create-last-day"
-                  value={lastDay}
-                  min={formDate}
-                  onChange={(e) => setChosenLastDay(e.target.value)}
-                  className={input}
-                />
-              </div>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <div>
-              <label htmlFor="select-create-host" className={label}>
-                {repeats ? "Vert for alle" : "Vert (hos hvem)"}
-              </label>
-              <select id="select-create-host" value={formHostId} onChange={(e) => setFormHostId(e.target.value)} className={input}>
-                <option value="">{repeats ? "Avtales senere" : "Velg vert blant deltakerne..."}</option>
-                {members.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="input-create-location" className={label}>
-                Sted / Adresse
+              <label htmlFor="input-create-title" className={label}>
+                Tittel / Samlingsnavn *
               </label>
               <input
                 type="text"
-                id="input-create-location"
-                value={formLocation}
-                onChange={(e) => setFormLocation(e.target.value)}
-                placeholder={repeats ? "Tomt: hos verten" : "f.eks. Storgata 10"}
+                id="input-create-title"
+                value={formTitle}
+                onChange={(e) => setFormTitle(e.target.value)}
+                placeholder="f.eks. Husfellesskap hos Kari"
+                required
                 className={input}
               />
             </div>
-          </div>
 
-          {repeats && (
-            <section aria-label="Dagene i planen" className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-2">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                  <CalendarCheck className="w-4 h-4 text-emerald-700" aria-hidden="true" />
-                  <span>
-                    Forslag: {chosenDays.length} {chosenDays.length === 1 ? "samling" : "samlinger"}
-                  </span>
-                </p>
-                {members.length > 1 && chosenDays.length > 1 && (
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={takeTurns}
-                      className="px-2.5 py-1 rounded-lg bg-white border border-slate-300 text-[11px] font-bold text-slate-700 hover:border-emerald-500 cursor-pointer flex items-center gap-1"
-                    >
-                      <Users className="w-3.5 h-3.5" aria-hidden="true" />
-                      Bytt på
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setHostOfDay({})}
-                      className="px-2.5 py-1 rounded-lg bg-white border border-slate-300 text-[11px] font-bold text-slate-700 hover:border-emerald-500 cursor-pointer"
-                    >
-                      Samme vert
-                    </button>
-                  </div>
-                )}
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label htmlFor="input-create-date" className={label}>
+                  {repeats ? "Første dato *" : "Dato *"}
+                </label>
+                <input type="date" id="input-create-date" value={formDate} onChange={(e) => setFormDate(e.target.value)} required className={input} />
               </div>
-              <p className="text-[11px] text-slate-600">
-                Ingenting er opprettet ennå. Ta bort haken på en dag som ikke passer, og trykk «Opprett» nederst. Vert, sted og tema kan stå åpent og legges inn på hver samling når det nærmer seg.
-              </p>
 
-              {days.length === 0 ? (
-                <p className="text-xs text-slate-600">Ingen dager mellom første dato og «Til og med».</p>
-              ) : (
-                <ul className="max-h-56 overflow-y-auto space-y-1 pr-1">
-                  {days.map((day) => {
-                    const isTaken = taken.includes(day);
-                    const isChosen = !isTaken && !leftOut.includes(day);
-                    return (
-                      <li key={day} className="flex items-center gap-2 bg-white rounded-lg border border-slate-200 px-2 py-1.5">
-                        <input
-                          type="checkbox"
-                          id={`check-day-${day}`}
-                          checked={isChosen}
-                          disabled={isTaken}
-                          onChange={() => setLeftOut((before) => (before.includes(day) ? before.filter((other) => other !== day) : [...before, day]))}
-                          className="rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer disabled:cursor-not-allowed"
-                        />
-                        <label htmlFor={`check-day-${day}`} className={`text-xs font-semibold w-24 shrink-0 ${isChosen ? "text-slate-800" : "text-slate-400"}`}>
-                          {dayText(day)}
-                        </label>
-                        {isTaken ? (
-                          <span className="text-[11px] font-medium text-amber-800">Har alt en samling</span>
-                        ) : (
-                          <select
-                            aria-label={`Vert ${dayText(day)}`}
-                            value={hostFor(day)}
-                            disabled={!isChosen}
-                            onChange={(e) => setHostOfDay((before) => ({ ...before, [day]: e.target.value }))}
-                            className="flex-1 min-w-0 text-[11px] px-2 py-1 border border-slate-300 rounded-lg bg-white text-slate-800 disabled:opacity-50"
-                          >
-                            <option value="">Avtales senere</option>
-                            {members.map((m) => (
-                              <option key={m.id} value={m.id}>
-                                {m.name}
-                              </option>
-                            ))}
-                          </select>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
+              <div>
+                <label htmlFor="input-create-time" className={label}>
+                  Klokkeslett *
+                </label>
+                <input type="time" id="input-create-time" value={formTime} onChange={(e) => setFormTime(e.target.value)} required className={input} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label htmlFor="select-create-repeat" className={label}>
+                  <span className="inline-flex items-center gap-1">
+                    <Repeat className="w-3.5 h-3.5 text-emerald-700" aria-hidden="true" />
+                    Gjenta
+                  </span>
+                </label>
+                <select
+                  id="select-create-repeat"
+                  value={repeat}
+                  onChange={(e) => {
+                    const chosen = e.target.value as MeetingRepeat;
+                    // Going from one gathering to a plan leaves the host open
+                    if (repeat === "once" && chosen !== "once") {
+                      setFormHostId("");
+                      setHostOfDay({});
+                    }
+                    setRepeat(chosen);
+                  }}
+                  className={input}
+                >
+                  {MEETING_REPEATS.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {repeats && (
+                <div>
+                  <label htmlFor="input-create-last-day" className={label}>
+                    Til og med
+                  </label>
+                  <input
+                    type="date"
+                    id="input-create-last-day"
+                    value={lastDay}
+                    min={formDate}
+                    onChange={(e) => setChosenLastDay(e.target.value)}
+                    className={input}
+                  />
+                </div>
               )}
-            </section>
-          )}
+            </div>
 
-          <div>
-            <label htmlFor="input-create-theme" className={label}>
-              {repeats ? "Tema for den første samlingen" : "Tema for samlingen"}
-            </label>
-            <input
-              type="text"
-              id="input-create-theme"
-              value={formTheme}
-              onChange={(e) => setFormTheme(e.target.value)}
-              placeholder="f.eks. Nåde og tilgivelse i hverdagen"
-              className={input}
-            />
-          </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <label htmlFor="select-create-host" className={label}>
+                  {repeats ? "Vert for alle" : "Vert (hos hvem)"}
+                </label>
+                <select id="select-create-host" value={formHostId} onChange={(e) => setFormHostId(e.target.value)} className={input}>
+                  <option value="">{repeats ? "Avtales senere" : "Velg vert blant deltakerne..."}</option>
+                  {members.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-          <div>
-            <label htmlFor="input-create-bible-text" className={label}>
-              Bibeltekst
-            </label>
-            <input
-              type="text"
-              id="input-create-bible-text"
-              value={formBibleText}
-              onChange={(e) => setFormBibleText(e.target.value)}
-              placeholder="f.eks. Kolosserne 3, 12-17"
-              className={input}
-            />
-          </div>
+              <div>
+                <label htmlFor="input-create-location" className={label}>
+                  Sted / Adresse
+                </label>
+                <input
+                  type="text"
+                  id="input-create-location"
+                  value={formLocation}
+                  onChange={(e) => setFormLocation(e.target.value)}
+                  placeholder={repeats ? "Tomt: hos verten" : "f.eks. Storgata 10"}
+                  className={input}
+                />
+              </div>
+            </div>
 
-          <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-100 flex items-start gap-2.5">
-            <input
-              type="checkbox"
-              id="check-send-immediately"
-              checked={formSendImmediately}
-              onChange={(e) => setFormSendImmediately(e.target.checked)}
-              className="mt-0.5 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
-            />
-            <label htmlFor="check-send-immediately" className="text-xs text-emerald-950 font-medium cursor-pointer">
-              <span className="font-bold block">{repeats ? "Send innkalling" : "Send innkalling med en gang"}</span>
-              {repeats
-                ? "Deltakerne blir spurt om de kommer til den neste samlingen. De senere står i kalenderen til det er deres tur."
-                : "Deltakerne vil umiddelbart kunne svare KOMMER / KOMMER IKKE."}
-            </label>
-          </div>
+            {repeats && (
+              <section aria-label="Dagene i planen" className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <CalendarCheck className="w-4 h-4 text-emerald-700" aria-hidden="true" />
+                    <span>
+                      Forslag: {chosenDays.length} {chosenDays.length === 1 ? "samling" : "samlinger"}
+                    </span>
+                  </p>
+                  {members.length > 1 && chosenDays.length > 1 && (
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={takeTurns}
+                        className="px-2.5 py-1 rounded-lg bg-white border border-slate-300 text-[11px] font-bold text-slate-700 hover:border-emerald-500 cursor-pointer flex items-center gap-1"
+                      >
+                        <Users className="w-3.5 h-3.5" aria-hidden="true" />
+                        Bytt på
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setHostOfDay({})}
+                        className="px-2.5 py-1 rounded-lg bg-white border border-slate-300 text-[11px] font-bold text-slate-700 hover:border-emerald-500 cursor-pointer"
+                      >
+                        Samme vert
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <p className="text-[11px] text-slate-600">
+                  Ingenting er opprettet ennå. Ta bort haken på en dag som ikke passer, og trykk «Opprett» nederst. Vert, sted og tema kan stå åpent og legges inn på hver samling når det nærmer seg.
+                </p>
 
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-            <button
-              type="button"
-              onClick={() => onClose()}
-              className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors cursor-pointer"
-            >
-              Avbryt
-            </button>
-            <button
-              type="submit"
-              id="btn-submit-create-meeting"
-              disabled={saving || chosenDays.length === 0}
-              className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl transition-colors shadow-xs cursor-pointer flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Check className="w-4 h-4" aria-hidden="true" />
-              <span>{chosenDays.length > 1 ? `Opprett ${chosenDays.length} samlinger` : "Opprett samling"}</span>
-            </button>
-          </div>
-        </form>
+                {days.length === 0 ? (
+                  <p className="text-xs text-slate-600">Ingen dager mellom første dato og «Til og med».</p>
+                ) : (
+                  <ul className="max-h-56 overflow-y-auto space-y-1 pr-1">
+                    {days.map((day) => {
+                      const isTaken = taken.includes(day);
+                      const isChosen = !isTaken && !leftOut.includes(day);
+                      return (
+                        <li key={day} className="flex items-center gap-2 bg-white rounded-lg border border-slate-200 px-2 py-1.5">
+                          <input
+                            type="checkbox"
+                            id={`check-day-${day}`}
+                            checked={isChosen}
+                            disabled={isTaken}
+                            onChange={() => setLeftOut((before) => (before.includes(day) ? before.filter((other) => other !== day) : [...before, day]))}
+                            className="rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer disabled:cursor-not-allowed"
+                          />
+                          <label htmlFor={`check-day-${day}`} className={`text-xs font-semibold w-24 shrink-0 ${isChosen ? "text-slate-800" : "text-slate-400"}`}>
+                            {dayText(day)}
+                          </label>
+                          {isTaken ? (
+                            <span className="text-[11px] font-medium text-amber-800">Har alt en samling</span>
+                          ) : (
+                            <select
+                              aria-label={`Vert ${dayText(day)}`}
+                              value={hostFor(day)}
+                              disabled={!isChosen}
+                              onChange={(e) => setHostOfDay((before) => ({ ...before, [day]: e.target.value }))}
+                              className="flex-1 min-w-0 text-[11px] px-2 py-1 border border-slate-300 rounded-lg bg-white text-slate-800 disabled:opacity-50"
+                            >
+                              <option value="">Avtales senere</option>
+                              {members.map((m) => (
+                                <option key={m.id} value={m.id}>
+                                  {m.name}
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </section>
+            )}
+
+            <div>
+              <label htmlFor="input-create-theme" className={label}>
+                {repeats ? "Tema for den første samlingen" : "Tema for samlingen"}
+              </label>
+              <input
+                type="text"
+                id="input-create-theme"
+                value={formTheme}
+                onChange={(e) => setFormTheme(e.target.value)}
+                placeholder="f.eks. Nåde og tilgivelse i hverdagen"
+                className={input}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="input-create-bible-text" className={label}>
+                Bibeltekst
+              </label>
+              <input
+                type="text"
+                id="input-create-bible-text"
+                value={formBibleText}
+                onChange={(e) => setFormBibleText(e.target.value)}
+                placeholder="f.eks. Kolosserne 3, 12-17"
+                className={input}
+              />
+            </div>
+
+            <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-100 flex items-start gap-2.5">
+              <input
+                type="checkbox"
+                id="check-send-immediately"
+                checked={formSendImmediately}
+                onChange={(e) => setFormSendImmediately(e.target.checked)}
+                className="mt-0.5 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+              />
+              <label htmlFor="check-send-immediately" className="text-xs text-emerald-950 font-medium cursor-pointer">
+                <span className="font-bold block">{repeats ? "Send innkalling" : "Send innkalling med en gang"}</span>
+                {repeats
+                  ? "Deltakerne blir spurt om de kommer til den neste samlingen. De senere står i kalenderen til det er deres tur."
+                  : "Deltakerne vil umiddelbart kunne svare KOMMER / KOMMER IKKE."}
+              </label>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => onClose()}
+                className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+              >
+                Avbryt
+              </button>
+              <button
+                type="submit"
+                id="btn-submit-create-meeting"
+                disabled={saving || chosenDays.length === 0}
+                className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl transition-colors shadow-xs cursor-pointer flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Check className="w-4 h-4" aria-hidden="true" />
+                <span>{chosenDays.length > 1 ? `Opprett ${chosenDays.length} samlinger` : "Opprett samling"}</span>
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );

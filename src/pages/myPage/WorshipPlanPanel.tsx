@@ -56,8 +56,8 @@ export const WorshipPlanPanel: React.FC = () => {
           >
             <div className="flex items-start gap-2">
               <div className="min-w-0 flex-1">
-                <div className="text-sm font-bold text-slate-900">{service.title}</div>
-                <div className="flex items-center gap-1 text-xs text-slate-500 mt-0.5">
+                <div className="text-sm lg:text-base font-bold text-slate-900">{service.title}</div>
+                <div className="flex items-center gap-1 text-xs lg:text-sm text-slate-500 mt-0.5">
                   <Calendar className="w-3.5 h-3.5 text-slate-400" aria-hidden />
                   {formatNorwegianDateTime(service.startsAt)}
                 </div>
@@ -68,7 +68,7 @@ export const WorshipPlanPanel: React.FC = () => {
             {rows.length > 0 && (
               <div className="space-y-1.5 border-t border-slate-100 pt-2.5">
                 {rows.map((row) => (
-                  <div key={row.taskId} className="flex items-start gap-2 text-xs">
+                  <div key={row.taskId} className="flex items-start gap-2 text-xs lg:text-sm">
                     <span className={`min-w-0 flex-1 ${row.isMine ? "font-bold text-slate-900" : "text-slate-700"}`}>
                       <span>{row.role}</span>
                       {/* Nobody has said yes: one dash, not a separator and a dash */}

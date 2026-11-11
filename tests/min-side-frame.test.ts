@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { readFileSync } from "node:fs";
-import { MIN_SIDE_CARD_GRID, MIN_SIDE_LIST_COLUMN, minSideFrameClass } from "../src/utils/minSideFrame";
+import { MIN_SIDE_CARD_GRID, MIN_SIDE_DIALOG_OVERLAY, MIN_SIDE_DIALOG_PANEL, MIN_SIDE_LIST_COLUMN, minSideFrameClass } from "../src/utils/minSideFrame";
 
 const classes = (value: string) => value.split(" ");
 
@@ -54,5 +54,30 @@ describe("Mine oppgaver", () => {
   test("én kolonne på alle skjermer, som på PC ikke blir bredere enn på nettbrett", () => {
     expect(MIN_SIDE_LIST_COLUMN.split(" ")).toContain("lg:max-w-2xl");
     expect(readFileSync("src/pages/MyPage.tsx", "utf8")).toContain("className={MIN_SIDE_LIST_COLUMN}");
+  });
+});
+
+describe("Dialogene på Min side", () => {
+  test("overlegget er en bunnark på telefon og midtstilt fra nettbrett", () => {
+    expect(MIN_SIDE_DIALOG_OVERLAY).toContain("items-end sm:items-center");
+    expect(MIN_SIDE_DIALOG_OVERLAY.split(" ")).toEqual(expect.arrayContaining(["fixed", "inset-0", "z-50"]));
+  });
+
+  test("panelet er bredere på PC, og har rundt hjørne øverst på telefon", () => {
+    expect(MIN_SIDE_DIALOG_PANEL).toContain("lg:max-w-xl");
+    expect(MIN_SIDE_DIALOG_PANEL.split(" ")).toEqual(expect.arrayContaining(["rounded-t-3xl", "sm:rounded-3xl"]));
+  });
+
+  test.each([
+    "src/pages/myPage/AttentionModal.tsx",
+    "src/pages/myPage/VolunteerHelp.tsx",
+    "src/components/gathering/InstructionDialog.tsx",
+    "src/components/gathering/ProgramPostDialog.tsx",
+    "src/components/husfellesskap/CreateMeetingDialog.tsx",
+    "src/components/husfellesskap/EditMeetingDialog.tsx",
+  ])("%s bruker overlegget og panelet", (file) => {
+    const source = readFileSync(file, "utf8");
+    expect(source).toContain("MIN_SIDE_DIALOG_OVERLAY");
+    expect(source).toContain("MIN_SIDE_DIALOG_PANEL");
   });
 });

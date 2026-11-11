@@ -3,6 +3,7 @@ import { X } from "lucide-react";
 import type { ProgramItem } from "../../types";
 import { newId } from "../../utils/id";
 import { DEFAULT_DURATION_MINUTES } from "../../utils/programTiming";
+import { MIN_SIDE_DIALOG_OVERLAY, MIN_SIDE_DIALOG_PANEL } from "../../utils/minSideFrame";
 
 interface ProgramPostDialogProps {
   /** The post to change. Missing for a new plain post. */
@@ -57,14 +58,14 @@ export const ProgramPostDialog: React.FC<ProgramPostDialogProps> = ({ item, canD
 
   return (
     <div
-      className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-end sm:items-center justify-center sm:p-4 z-50 animate-fadeIn"
+      className={`${MIN_SIDE_DIALOG_OVERLAY} animate-fadeIn`}
       onClick={onClose}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="program-post-heading"
-        className="w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl p-5 space-y-4 shadow-2xl border border-slate-100"
+        className={`${MIN_SIDE_DIALOG_PANEL} bg-white p-5 space-y-4`}
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
@@ -81,7 +82,7 @@ export const ProgramPostDialog: React.FC<ProgramPostDialogProps> = ({ item, canD
           </button>
         </div>
 
-        <form onSubmit={submit} noValidate className="space-y-3">
+        <form onSubmit={submit} noValidate className="space-y-3 min-h-0 flex-1 overflow-y-auto">
           <label className="block space-y-1" htmlFor="program-post-title">
             <span className="text-[11px] font-semibold text-slate-700">Tittel</span>
             <input
