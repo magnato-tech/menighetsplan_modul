@@ -238,6 +238,16 @@ describe("En menighet med sin egen nettside i demoen", () => {
     expect(gatherings.some((g) => g.id === "gathering-1")).toBe(false);
   });
 
+  test("med eksempelmenighetens arrangementer er kalenderen og bemanningen eksempelmenighetens, og nettsiden fortsatt menighetens egen", () => {
+    const withEvents = siteDocuments(example, { ...sogne, exampleEvents: true }, NOW);
+    expect(ids(withEvents, COLLECTIONS.GATHERINGS)).toEqual(ids(example, COLLECTIONS.GATHERINGS));
+    expect(ids(withEvents, COLLECTIONS.TASKS)).toEqual(ids(example, COLLECTIONS.TASKS));
+    expect(ids(withEvents, COLLECTIONS.ASSIGNMENTS)).toEqual(ids(example, COLLECTIONS.ASSIGNMENTS));
+    expect(ids(withEvents, COLLECTIONS.GROUPS)).toEqual(ids(example, COLLECTIONS.GROUPS));
+    expect(ids(withEvents, COLLECTIONS.GATHERINGS)).not.toContain("gathering-sogne-1");
+    expect(ids(withEvents, CMS_COLLECTIONS.PAGES)).toEqual(["sogne-forside"]);
+  });
+
   test("ingenting peker på noe som er tatt ut: hver oppgave har samlingen sin, og hver tildeling oppgaven sin", () => {
     const gatherings = new Set(ids(site, COLLECTIONS.GATHERINGS));
     const tasks = new Set(ids(site, COLLECTIONS.TASKS));

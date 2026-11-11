@@ -1,6 +1,6 @@
 import { OPTIONAL_SETTINGS, REQUIRED_SETTINGS, readDemoInstallation, type InstallationEnv } from "../installation";
 import { storedFormOf, type MockDocument } from "../data/mockDocuments";
-import { CMS_COLLECTIONS, CMS_SETTINGS_DOC_ID } from "../data/collections";
+import { CMS_COLLECTIONS, CMS_SETTINGS_DOC_ID, COLLECTIONS } from "../data/collections";
 import { documentsToDelete, keepParts } from "./dataParts";
 import type { Dataset, DatasetDocument } from "./dataset";
 import { withoutStaffPictures } from "./demoPortraits";
@@ -66,8 +66,22 @@ export const pathOf = (document: { collection: string; id: string }): string => 
 /**
  * A congregation's set, as far as the reset reads it: its documents, when they were fetched, and
  * whether the congregation has said yes to being shown as its own website stands.
+ *
+ * `exampleEvents`: the congregation is shown with the example congregation's events, with their
+ * tasks and staffing, in place of the events fetched from its website. For a congregation whose
+ * planner the example's is modelled on, so the calendar, the services and the staffing agree.
  */
-export type SiteSet = Pick<Dataset, "collections" | "createdAt"> & { asPublished?: boolean };
+export type SiteSet = Pick<Dataset, "collections" | "createdAt"> & { asPublished?: boolean; exampleEvents?: boolean };
+
+/** What the example's events are, with what hangs on them: kept for a set with `exampleEvents`. */
+const EVENT_COLLECTIONS: ReadonlySet<string> = new Set([
+  COLLECTIONS.GATHERINGS,
+  COLLECTIONS.TASKS,
+  COLLECTIONS.ASSIGNMENTS,
+  COLLECTIONS.GROUPS,
+  COLLECTIONS.GATHERING_ATTENDANCES,
+  COLLECTIONS.GATHERING_HEADCOUNTS,
+]);
 
 /** The documents of one congregation in the demo: the example congregation is null (see utils/demoSite.ts). */
 export interface SiteContent {
@@ -93,11 +107,20 @@ export function siteDocuments(example: MockDocument[], set: SiteSet | null, now:
   for (const document of example) {
     (exampleCollections[document.collection] ??= []).push({ ...document.data, id: document.id });
   }
-  const gone = new Set(documentsToDelete(exampleCollections, ["website"]).map(pathOf));
+  const keepEvents = set.exampleEvents === true;
+  const gone = new Set(
+    documentsToDelete(exampleCollections, ["website"])
+      .filter((address) => !(keepEvents && EVENT_COLLECTIONS.has(address.collection)))
+      .map(pathOf)
+  );
 
   const weeks = weeksBetween(set.createdAt.slice(0, 10), now);
   const shown = set.asPublished === true ? set.collections : withoutStaffPictures(set.collections);
-  const website = Object.entries(keepParts(shown, ["website"])).flatMap(([collection, documents]) =>
+  // With the example's events, the set's own events and the group that owns them are left out
+  const setWebsite = Object.entries(keepParts(shown, ["website"])).filter(
+    ([collection]) => !(keepEvents && (collection === COLLECTIONS.GATHERINGS || collection === COLLECTIONS.GROUPS))
+  );
+  const website = setWebsite.flatMap(([collection, documents]) =>
     documents.map((document): MockDocument => {
       // The settings document is addressed by its place, not by a field in it
       const { id, ...withoutId } = document;

@@ -53,7 +53,9 @@ describe("Demoinnholdet følger kalenderen", () => {
     for (const gathering of gatherings) {
       const written = initialGatherings.find((g) => g.id === gathering.id)!;
       expect(weekdayAndClock.format(new Date(gathering.startsAt))).toBe(weekdayAndClock.format(new Date(written.startsAt)));
-      expect(weekdayAndClock.format(new Date(gathering.endsAt!))).toBe(weekdayAndClock.format(new Date(written.endsAt!)));
+      // An event with no end time in the planner has none in the demo either (endsAt is optional)
+      if (written.endsAt) expect(weekdayAndClock.format(new Date(gathering.endsAt!))).toBe(weekdayAndClock.format(new Date(written.endsAt)));
+      else expect(gathering.endsAt).toBeUndefined();
     }
   });
 

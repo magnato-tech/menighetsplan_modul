@@ -28,6 +28,11 @@ export interface DemoSetInfo {
    * Left out, it has not.
    */
   asPublished?: boolean;
+  /**
+   * Whether the congregation is shown in the demo with the example congregation's events and
+   * staffing in place of the events from its website (see SiteSet in utils/demoReset.ts).
+   */
+  exampleEvents?: boolean;
 }
 
 const isInfo = (value: unknown): value is DemoSetInfo => {
@@ -43,7 +48,8 @@ const isInfo = (value: unknown): value is DemoSetInfo => {
     typeof info.fetchedAt === "string" &&
     typeof info.documents === "number" &&
     (info.listed === undefined || typeof info.listed === "boolean") &&
-    (info.asPublished === undefined || typeof info.asPublished === "boolean")
+    (info.asPublished === undefined || typeof info.asPublished === "boolean") &&
+    (info.exampleEvents === undefined || typeof info.exampleEvents === "boolean")
   );
 };
 

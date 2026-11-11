@@ -30,8 +30,8 @@ describe("Standardrollene", () => {
 });
 
 describe("Møteledere og talere", () => {
-  test("malens Møteleder- og Taler-oppgaver hører til gruppen Møteledere og talere", () => {
-    const tasks = demoServiceSeries([]).tasks.filter((task) => task.title === "Møteleder" || task.title === "Taler");
+  test("malens Møteleder- og Taler-oppgaver hører til gruppen Gudstjenesteleder", () => {
+    const tasks = demoServiceSeries().tasks.filter((task) => task.title === "Møteleder" || task.title === "Taler");
     expect(tasks.length).toBeGreaterThan(0);
     for (const task of tasks) expect(task.groupId).toBe("group-moteledere");
   });
@@ -51,9 +51,9 @@ describe("Møteledere og talere", () => {
     expect(editing?.id).toBe("assign-gudstjeneste-2026-11-15-moteleder");
   });
 
-  test("gruppen Møteledere og talere har Per Kristian Moen som leder og Thomas Viken som nestleder", () => {
+  test("gruppen Gudstjenesteleder har Ola Hansen som leder, og Møteleder og Taler med", () => {
     const group = initialGroups.find((g) => g.id === "group-moteledere");
-    expect(group).toMatchObject({ leaderIds: ["person-7"], deputyLeaderIds: ["person-5"] });
-    expect(group?.memberIds).toEqual(expect.arrayContaining(["person-5", "person-7", "person-14", "person-12", "person-1"]));
+    expect(group).toMatchObject({ name: "Gudstjenesteleder", leaderIds: ["person-2"] });
+    expect(group?.memberIds).toEqual(expect.arrayContaining(["person-2", "person-6", "person-14", "person-1", "person-15"]));
   });
 });
