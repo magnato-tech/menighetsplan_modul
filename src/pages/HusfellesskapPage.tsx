@@ -20,7 +20,7 @@ export const HusfellesskapPage: React.FC = () => {
           </Link>
         </div>
 
-        <HusfellesskapView groupId={groupId} />
+        <HusfellesskapView groupId={groupId} columns />
       </div>
     </MinSideFrame>
   );

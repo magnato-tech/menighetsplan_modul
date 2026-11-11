@@ -8,6 +8,7 @@ import { MembersTab } from "./husfellesskap/MembersTab";
 import { CreateMeetingDialog } from "./husfellesskap/CreateMeetingDialog";
 import { EditMeetingDialog } from "./husfellesskap/EditMeetingDialog";
 import { useTimedMessage } from "../hooks/useTimedMessage";
+import { PC_CARD, PC_COLUMNS, PC_HEADING, pcTab } from "../utils/pcColumns";
 import {
   Calendar,
   Users,
@@ -19,7 +20,9 @@ import {
 export const HusfellesskapView: React.FC<{
   groupId?: string;
   defaultTab?: "meeting" | "chat" | "members";
-}> = ({ groupId, defaultTab = "meeting" }) => {
+  /** On PC (lg) show meeting on the left and chat and members on the right, instead of tabs. */
+  columns?: boolean;
+}> = ({ groupId, defaultTab = "meeting", columns = false }) => {
   const model = useHusfellesskap(groupId);
   const { group, isLeader, isDeputyLeader, leaders, deputyLeaders, members, activeMeeting, messages } = model;
 
@@ -88,7 +91,9 @@ export const HusfellesskapView: React.FC<{
       </div>
 
       {/* Tabs Navigation: Samling, Gruppechat, Medlemmer */}
-      <div className="px-4 pt-3 pb-2 bg-slate-50/70 border-b border-slate-100 flex items-center gap-1.5">
+      <div
+        className={`px-4 pt-3 pb-2 bg-slate-50/70 border-b border-slate-100 flex items-center gap-1.5 ${columns ? "lg:hidden" : ""}`}
+      >
         <button
           type="button"
           id="tab-btn-samling"
@@ -161,25 +166,55 @@ export const HusfellesskapView: React.FC<{
         </div>
       )}
 
-      {/* Tab Content 1: Samling & Oppmøte */}
-      {activeTab === "meeting" && (
-        <MeetingTab
-          model={model}
-          showToast={showToast}
-          onCreateMeeting={() => setShowCreateModal(true)}
-          onEditMeeting={() => setShowEditModal(true)}
-        />
-      )}
+      {columns ? (
+        // PC: meeting on the left, chat (when on) and members on the right. Everything stays mounted.
+        <div className={`${PC_COLUMNS} lg:p-5`}>
+          <div className={pcTab(activeTab === "meeting")}>
+            <MeetingTab
+              model={model}
+              showToast={showToast}
+              onCreateMeeting={() => setShowCreateModal(true)}
+              onEditMeeting={() => setShowEditModal(true)}
+            />
+          </div>
 
-      {/* Tab Content 2: Gruppechat */}
-      {activeTab === "chat" && (
-        <div id="section-husfellesskap-chat" className="p-3">
-          <HusfellesskapChat groupId={group.id} />
+          <div className="space-y-6">
+            {chatOn && (
+              <div id="section-husfellesskap-chat" className={`p-3 ${PC_CARD} ${pcTab(activeTab === "chat")}`}>
+                <h3 className={PC_HEADING}>Gruppechat</h3>
+                <HusfellesskapChat groupId={group.id} />
+              </div>
+            )}
+
+            <div className={`${PC_CARD} ${pcTab(activeTab === "members")}`}>
+              <h3 className={PC_HEADING}>Deltakere ({members.length})</h3>
+              <MembersTab model={model} group={group} />
+            </div>
+          </div>
         </div>
-      )}
+      ) : (
+        <>
+          {/* Tab Content 1: Samling & Oppmøte */}
+          {activeTab === "meeting" && (
+            <MeetingTab
+              model={model}
+              showToast={showToast}
+              onCreateMeeting={() => setShowCreateModal(true)}
+              onEditMeeting={() => setShowEditModal(true)}
+            />
+          )}
 
-      {/* Tab Content 3: Medlemmer */}
-      {activeTab === "members" && <MembersTab model={model} group={group} />}
+          {/* Tab Content 2: Gruppechat */}
+          {activeTab === "chat" && (
+            <div id="section-husfellesskap-chat" className="p-3">
+              <HusfellesskapChat groupId={group.id} />
+            </div>
+          )}
+
+          {/* Tab Content 3: Medlemmer */}
+          {activeTab === "members" && <MembersTab model={model} group={group} />}
+        </>
+      )}
 
       {/* MODAL: Opprett ny samling */}
       {showCreateModal && (
