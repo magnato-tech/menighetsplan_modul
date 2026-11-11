@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
-import { minSideFrameClass } from "../src/utils/minSideFrame";
+import { readFileSync } from "node:fs";
+import { MIN_SIDE_CARD_GRID, minSideFrameClass } from "../src/utils/minSideFrame";
 
 const classes = (value: string) => value.split(" ");
 
@@ -31,5 +32,20 @@ describe("Rammen rundt Min side", () => {
     expect(classes(minSideFrameClass("wide", true))).toContain("sm:pb-8");
     expect(classes(minSideFrameClass("narrow", true))).toContain("pb-[calc(6.5rem+env(safe-area-inset-bottom))]");
     expect(minSideFrameClass("narrow", false)).not.toContain("pb-");
+  });
+});
+
+describe("Kortene på Min side", () => {
+  test("én kolonne på telefon, to på nettbrett og tre på PC", () => {
+    const grid = MIN_SIDE_CARD_GRID.split(" ");
+    expect(grid).toContain("grid");
+    expect(grid).toContain("sm:grid-cols-2");
+    expect(grid).toContain("lg:grid-cols-3");
+  });
+
+  test("gruppene og gudstjenestene står i kolonner", () => {
+    for (const file of ["src/pages/myPage/MyGroupsSection.tsx", "src/pages/myPage/WorshipPlanPanel.tsx"]) {
+      expect(readFileSync(file, "utf8")).toContain("className={MIN_SIDE_CARD_GRID}");
+    }
   });
 });

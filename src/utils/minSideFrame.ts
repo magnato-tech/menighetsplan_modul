@@ -18,3 +18,9 @@ const BOTTOM_NAV_ROOM = "pb-[calc(6.5rem+env(safe-area-inset-bottom))] sm:pb-8";
 export function minSideFrameClass(width: MinSideFrameWidth = "wide", bottomNavRoom = false): string {
   return [BASE, WIDTH[width], bottomNavRoom ? BOTTOM_NAV_ROOM : ""].filter(Boolean).join(" ");
 }
+
+/**
+ * Cards side by side as the screen grows: one column on a phone, two on a tablet, three on a PC.
+ * For the lists of cards on Min side (the groups, the worship services).
+ */
+export const MIN_SIDE_CARD_GRID = "grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3 items-start";

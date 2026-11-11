@@ -4,6 +4,7 @@ import { Calendar, ChevronRight } from "lucide-react";
 import { useFirebase } from "../../context/FirebaseDataContext";
 import { formatNorwegianDateTime } from "../../utils/dates";
 import { upcomingWorshipServices, worshipPlanRows } from "../../utils/worshipPlan";
+import { MIN_SIDE_CARD_GRID } from "../../utils/minSideFrame";
 
 // The next worship services, and who has said yes to what. Everyone in the register sees the same,
 // as on the run sheet. A press on a service opens its run sheet.
@@ -36,7 +37,7 @@ export const WorshipPlanPanel: React.FC = () => {
   }
 
   return (
-    <div className="space-y-2.5">
+    <div className={MIN_SIDE_CARD_GRID}>
       {services.map((service) => {
         const rows = worshipPlanRows({
           gathering: service,

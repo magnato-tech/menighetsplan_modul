@@ -1,4 +1,5 @@
 import React from "react";
+import { MIN_SIDE_CARD_GRID } from "../../utils/minSideFrame";
 import { formatChatMessageTime, formatNorwegianDateTime } from "../../utils/dates";
 import { MyPageModel } from "./useMyPage";
 import { allGroupPersonIds } from "../../utils/groups";
@@ -39,7 +40,7 @@ export const MyGroupsSection: React.FC<MyGroupsSectionProps> = ({ page }) => {
   return (
     <section id="section-mine-grupper" className="space-y-2">
       {myGroups.length > 0 ? (
-        <div className="space-y-2.5">
+        <div className={MIN_SIDE_CARD_GRID}>
           {myGroups.map((group) => {
             const isGroupLeader = group.leaderIds.includes(currentUser.id);
             const isGroupDeputy = group.deputyLeaderIds?.includes(currentUser.id);
