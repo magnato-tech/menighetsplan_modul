@@ -10,6 +10,7 @@ import { GroupScheduleCard } from "./GroupScheduleCard";
 import { GroupActivities } from "./GroupActivities";
 import { GroupMembers } from "./GroupMembers";
 import { useMinSideModules } from "../../hooks/useMinSideModules";
+import { minSideFrameClass } from "../../utils/minSideFrame";
 import {
   ArrowLeft,
   Users,
@@ -60,7 +61,7 @@ export const LeaderGroupCard: React.FC<LeaderGroupCardProps> = ({ groupId, inPop
   // The popup is the frame itself, so the page's frame is left out there
   const frame = inPopup
     ? "w-full bg-slate-50"
-    : "w-full max-w-md mx-auto bg-slate-50 min-h-screen shadow-md sm:my-4 sm:rounded-3xl sm:border sm:border-slate-200/80 overflow-hidden";
+    : minSideFrameClass("wide");
   // The page has a back link; the popup shows only the role
   const topRow = inPopup ? (
     <div className="flex items-center">

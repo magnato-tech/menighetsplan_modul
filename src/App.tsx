@@ -204,7 +204,7 @@ function AppContent() {
           </ChunkErrorBoundary>
         </main>
         <footer className="py-6 border-t border-slate-200/60 bg-white/70 text-center text-xs text-slate-500">
-          <div className="max-w-md mx-auto px-4 space-y-1">
+          <div className="max-w-md sm:max-w-2xl lg:max-w-6xl mx-auto px-4 space-y-1">
             <p className="font-semibold text-slate-700">Menighetsplan Min Side</p>
             <p className="text-[11px] text-slate-400">
               Planlegging, gudstjenestelister og frivilligtjeneste

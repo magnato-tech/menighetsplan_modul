@@ -5,6 +5,8 @@ import { AttentionSection } from "./myPage/AttentionSection";
 import { MyGroupsSection } from "./myPage/MyGroupsSection";
 import { MyTasksTab } from "./myPage/MyTasksTab";
 import { MyPageTabs, shownMyPageTabs, toMyPageTab, type MyPageTab } from "./myPage/MyPageTabs";
+import { MyPageSideMenu } from "./myPage/MyPageSideMenu";
+import { MinSideFrame } from "../components/minSide/MinSideFrame";
 import { useMinSideModules } from "../hooks/useMinSideModules";
 import { MyCalendarPanel } from "./myPage/MyCalendarPanel";
 import { WorshipPlanPanel } from "./myPage/WorshipPlanPanel";
@@ -37,8 +39,11 @@ export const MyPage: React.FC = () => {
 
   return (
     // The room at the bottom is for the menu that is fixed there on a phone: the last card can be scrolled clear of it
-    <div className="w-full max-w-md mx-auto bg-slate-50 min-h-screen shadow-md sm:my-4 sm:rounded-3xl sm:border sm:border-slate-200/80 overflow-hidden pb-[calc(6.5rem+env(safe-area-inset-bottom))] sm:pb-8">
-      <div className="p-4 sm:p-6 space-y-4">
+    <MinSideFrame bottomNavRoom>
+      {/* On a PC the parts are listed in a column to the left; the page itself is the column to the right */}
+      <div className="p-4 sm:p-6 lg:grid lg:grid-cols-[13rem_1fr] lg:gap-6 lg:items-start">
+        <MyPageSideMenu active={tab} onChange={setTab} tabs={tabs} />
+        <div className="space-y-4 min-w-0">
         {/* Floating Feedback Notification */}
         {feedbackMessage && (
           <div
@@ -103,9 +108,10 @@ export const MyPage: React.FC = () => {
         {tab === "kalender" && <MyCalendarPanel />}
 
         {tab === "gudstjenester" && <WorshipPlanPanel />}
+        </div>
       </div>
 
       {showAttentionModal && <AttentionModal page={page} onClose={() => setShowAttentionModal(false)} />}
-    </div>
+    </MinSideFrame>
   );
 };

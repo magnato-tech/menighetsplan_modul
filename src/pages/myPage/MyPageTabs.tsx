@@ -46,7 +46,8 @@ interface MyPageTabsProps {
 export const MyPageTabs: React.FC<MyPageTabsProps> = ({ active, onChange, tabs = MY_PAGE_TABS }) => {
   return (
     <>
-      <div role="tablist" aria-label="Min side" className="hidden sm:flex items-center gap-1 p-1 rounded-2xl bg-white border border-slate-200/80">
+      {/* Under the heading on a tablet. On a PC the same parts are the column to the left (MyPageSideMenu) */}
+      <div role="tablist" aria-label="Min side" aria-orientation="horizontal" className="hidden sm:flex lg:hidden items-center gap-1 p-1 rounded-2xl bg-white border border-slate-200/80">
         {tabs.map(({ id, label, icon: Icon }) => (
           <button
             key={id}

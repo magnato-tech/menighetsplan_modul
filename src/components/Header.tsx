@@ -28,7 +28,7 @@ export const Header: React.FC = () => {
 
   return (
     <header className="sticky top-[var(--demo-strip,0px)] z-40 bg-white border-b border-slate-200/80 shadow-xs">
-      <div className="max-w-md mx-auto px-4 pt-3 pb-2">
+      <div className="max-w-md sm:max-w-2xl lg:max-w-6xl mx-auto px-4 pt-3 pb-2">
         <div className="flex items-center justify-between gap-3">
           {/* The congregation's own name, which leads to its website. The name of the product is not written here. */}
           <ChurchSiteLink

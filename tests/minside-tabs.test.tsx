@@ -4,6 +4,7 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { MyPageTabs, MY_PAGE_TABS, toMyPageTab } from "../src/pages/myPage/MyPageTabs";
+import { MyPageSideMenu } from "../src/pages/myPage/MyPageSideMenu";
 import { MyTasksTab } from "../src/pages/myPage/MyTasksTab";
 import type { MyPageModel } from "../src/pages/myPage/useMyPage";
 import { AttentionSection } from "../src/pages/myPage/AttentionSection";
@@ -19,6 +20,9 @@ vi.mock("../src/context/FirebaseDataContext", () => ({ useFirebase: () => accoun
 
 afterEach(cleanup);
 
+const horizontalTablist = () =>
+  screen.getAllByRole("tablist").find((element) => element.getAttribute("aria-orientation") === "horizontal") as HTMLElement;
+
 describe("Fanene på Min side", () => {
   test("det er tre faner, og siden åpner i oppgavene når adressen ikke ber om noe annet", () => {
     expect(MY_PAGE_TABS.map((tab) => tab.label)).toEqual(["Mine oppgaver", "Mine grupper", "Kalender", "Gudstjenester"]);
@@ -33,7 +37,8 @@ describe("Fanene på Min side", () => {
     const onChange = vi.fn();
     render(<MyPageTabs active="oppgaver" onChange={onChange} />);
 
-    const top = screen.getByRole("tablist");
+    // Two tablists are in the page, one for each breakpoint: the horizontal one is the one under the heading
+    const top = horizontalTablist();
     // No number on a tab: the tasks are counted where they are listed
     expect(within(top).getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["Mine oppgaver", "Mine grupper", "Kalender", "Gudstjenester"]);
     expect(within(top).getByRole("tab", { selected: true }).textContent).toContain("Mine oppgaver");
@@ -50,6 +55,18 @@ describe("Fanene på Min side", () => {
     expect(onChange).toHaveBeenCalledWith("kalender");
     fireEvent.click(within(top).getByText("Mine grupper"));
     expect(onChange).toHaveBeenCalledWith("grupper");
+  });
+
+  test("på PC er fanene en loddrett meny til venstre, med de samme fanene", () => {
+    const onChange = vi.fn();
+    render(<MyPageSideMenu active="grupper" onChange={onChange} tabs={MY_PAGE_TABS} />);
+    const side = screen.getByRole("tablist");
+    expect(side.getAttribute("aria-orientation")).toBe("vertical");
+    expect(side.className).toContain("lg:sticky");
+    expect(within(side).getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["Mine oppgaver", "Mine grupper", "Kalender", "Gudstjenester"]);
+    expect(within(side).getByRole("tab", { selected: true }).textContent).toContain("Mine grupper");
+    fireEvent.click(within(side).getByText("Gudstjenester"));
+    expect(onChange).toHaveBeenCalledWith("gudstjenester");
   });
 
   test("heller ikke menylinjen nederst har noe tall", () => {
@@ -108,7 +125,7 @@ describe("Fanene på Min side", () => {
     expect(page).toContain('{tab === "kalender" && <MyCalendarPanel />}');
     expect(page).not.toMatch(/NextChurchEventSection|NextForYouSection|MobileBottomNav|MyTasksModal|Vis oppgaveliste/);
     // Room for the last card above the menu at the bottom of a phone
-    expect(page).toContain("pb-[calc(6.5rem+env(safe-area-inset-bottom))]");
+    expect(page).toContain("<MinSideFrame bottomNavRoom>");
   });
 });
 

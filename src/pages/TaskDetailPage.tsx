@@ -1,3 +1,4 @@
+import { MinSideFrame } from "../components/minSide/MinSideFrame";
 import React, { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useTaskDetail, formatNorwegianDateTime } from "../hooks/useAppHooks";
@@ -77,7 +78,7 @@ export const TaskDetailPage: React.FC = () => {
   // Case 1: Permission Denied State (User tries to access task outside their groups)
   if (permissionDenied) {
     return (
-      <div className="w-full max-w-md mx-auto bg-slate-50 min-h-screen p-4 sm:p-6 sm:my-4 sm:rounded-3xl sm:border sm:border-slate-200/80 space-y-6">
+      <MinSideFrame width="narrow" className="p-4 sm:p-6 space-y-6">
         <Link
           to="/minside"
           className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-800"
@@ -109,14 +110,14 @@ export const TaskDetailPage: React.FC = () => {
             </Link>
           </div>
         </div>
-      </div>
+      </MinSideFrame>
     );
   }
 
   // Case 2: Not found
   if (!task) {
     return (
-      <div className="w-full max-w-md mx-auto bg-slate-50 min-h-screen p-4 sm:p-6 sm:my-4 sm:rounded-3xl sm:border sm:border-slate-200/80 space-y-6">
+      <MinSideFrame width="narrow" className="p-4 sm:p-6 space-y-6">
         <Link
           to="/minside"
           className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-800"
@@ -132,7 +133,7 @@ export const TaskDetailPage: React.FC = () => {
             Oppgaven kan ha blitt slettet eller ID-en er feil.
           </p>
         </div>
-      </div>
+      </MinSideFrame>
     );
   }
 
@@ -142,7 +143,7 @@ export const TaskDetailPage: React.FC = () => {
     : "Tidspunkt ikke oppgitt";
 
   return (
-    <div className="w-full max-w-md mx-auto bg-slate-50 min-h-screen p-4 sm:p-6 sm:my-4 sm:rounded-3xl sm:border sm:border-slate-200/80 space-y-5">
+    <MinSideFrame width="narrow" className="p-4 sm:p-6 space-y-5">
       {/* Top Nav Back */}
       <div className="flex items-center justify-between">
         <Link
@@ -347,6 +348,6 @@ export const TaskDetailPage: React.FC = () => {
           )}
         </div>
       </article>
-    </div>
+    </MinSideFrame>
   );
 };
