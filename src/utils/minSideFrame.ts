@@ -24,3 +24,6 @@ export function minSideFrameClass(width: MinSideFrameWidth = "wide", bottomNavRo
  * For the lists of cards on Min side (the groups, the worship services).
  */
 export const MIN_SIDE_CARD_GRID = "grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3 items-start";
+
+/** One column of cards that is not stretched on a PC: it keeps the width of a tablet (Mine oppgaver). */
+export const MIN_SIDE_LIST_COLUMN = "space-y-4 lg:max-w-2xl";

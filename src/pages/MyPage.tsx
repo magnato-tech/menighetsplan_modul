@@ -9,6 +9,7 @@ import { MyPageSideMenu } from "./myPage/MyPageSideMenu";
 import { MinSideFrame } from "../components/minSide/MinSideFrame";
 import { useMinSideModules } from "../hooks/useMinSideModules";
 import { MyCalendarPanel } from "./myPage/MyCalendarPanel";
+import { MIN_SIDE_LIST_COLUMN } from "../utils/minSideFrame";
 import { WorshipPlanPanel } from "./myPage/WorshipPlanPanel";
 import { AttentionModal } from "./myPage/AttentionModal";
 import { VolunteerHelp } from "./myPage/VolunteerHelp";
@@ -81,7 +82,8 @@ export const MyPage: React.FC = () => {
         <MyPageTabs active={tab} onChange={setTab} tabs={tabs} />
 
         {tab === "oppgaver" && (
-          <>
+          // One column on every screen: on a PC it keeps the width of a tablet, so a task reads as one line
+          <div className={MIN_SIDE_LIST_COLUMN}>
             {/* A semester plan waiting for the user comes first: it covers the whole semester at once */}
             {plansWaiting.length > 0 && <SemesterPlanWaiting plans={plansWaiting} />}
 
@@ -100,7 +102,7 @@ export const MyPage: React.FC = () => {
             )}
 
             {tasksOn && <MyTasksTab page={page} />}
-          </>
+          </div>
         )}
 
         {tab === "grupper" && <MyGroupsSection page={page} />}

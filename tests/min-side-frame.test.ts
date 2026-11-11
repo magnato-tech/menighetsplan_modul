@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { readFileSync } from "node:fs";
-import { MIN_SIDE_CARD_GRID, minSideFrameClass } from "../src/utils/minSideFrame";
+import { MIN_SIDE_CARD_GRID, MIN_SIDE_LIST_COLUMN, minSideFrameClass } from "../src/utils/minSideFrame";
 
 const classes = (value: string) => value.split(" ");
 
@@ -47,5 +47,12 @@ describe("Kortene på Min side", () => {
     for (const file of ["src/pages/myPage/MyGroupsSection.tsx", "src/pages/myPage/WorshipPlanPanel.tsx"]) {
       expect(readFileSync(file, "utf8")).toContain("className={MIN_SIDE_CARD_GRID}");
     }
+  });
+});
+
+describe("Mine oppgaver", () => {
+  test("én kolonne på alle skjermer, som på PC ikke blir bredere enn på nettbrett", () => {
+    expect(MIN_SIDE_LIST_COLUMN.split(" ")).toContain("lg:max-w-2xl");
+    expect(readFileSync("src/pages/MyPage.tsx", "utf8")).toContain("className={MIN_SIDE_LIST_COLUMN}");
   });
 });

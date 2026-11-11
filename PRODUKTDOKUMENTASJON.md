@@ -2076,13 +2076,13 @@ Bryterne virker på Min side, ikke på nettsiden. Om «Grupper» av også skal t
 
 **Skjermstørrelser.** Mobil under 640 punkter (som i dag), nettbrett 640–1023, PC fra 1024.
 
-**Trinnene.** Hvert trinn sendes inn for seg og prøves i 375, 768 og 1280 punkters bredde.
+**Trinnene.** Hvert trinn sendes inn for seg og prøves i 375, 768 og 1280 punkters bredde. Trinn 1 og 2 er sendt inn 11. november 2026.
 
 | Trinn | Hva | Mobil | Nettbrett | PC |
 |---|---|---|---|---|
 | 1 | Felles ramme og meny: én ramme i stedet for de åtte | Som i dag, menyen nederst | Bredere kolonne, fanene øverst | Bred side med menyen i en kolonne til venstre |
 | 2 | Mine grupper og Gudstjenester | Én kolonne | To kolonner med kort | Tre kolonner med kort |
-| 3 | Mine oppgaver | Som i dag | Én bredere kolonne | To kolonner: egne oppgaver, og ledige oppgaver og semesterplan ved siden av |
+| 3 | Mine oppgaver | Som i dag | Én bredere kolonne | Én kolonne, like bred som på nettbrett *(endret av produkteier 11. november 2026: ikke to kolonner)* |
 | 4 | Kalender | Liste | Månedsvisning | Månedsvisning med dagens arrangementer ved siden av |
 | 5 | Grupperom og kjøreplan | Som i dag | Bredere | Grupperom: aktiviteter, og chat og deltakere ved siden av. Kjøreplan: programmet, og bemanningen ved siden av |
 | 6 | Vinduer og tekst | Ark nedenfra | Vindu midt på skjermen | Vindu midt på skjermen, litt større tekst |
