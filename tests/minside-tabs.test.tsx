@@ -62,7 +62,9 @@ describe("Fanene på Min side", () => {
     render(<MyPageSideMenu active="grupper" onChange={onChange} tabs={MY_PAGE_TABS} />);
     const side = screen.getByRole("tablist");
     expect(side.getAttribute("aria-orientation")).toBe("vertical");
-    expect(side.className).toContain("lg:sticky");
+    expect(side.className).toContain("lg:flex");
+    // Not sticky: inside the frame (overflow-hidden) a sticky menu is pushed down from the frame's top
+    expect(side.className).not.toContain("lg:sticky");
     expect(within(side).getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["Mine oppgaver", "Mine grupper", "Kalender", "Gudstjenester"]);
     expect(within(side).getByRole("tab", { selected: true }).textContent).toContain("Mine grupper");
     fireEvent.click(within(side).getByText("Gudstjenester"));

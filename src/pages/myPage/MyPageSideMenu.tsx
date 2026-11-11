@@ -18,7 +18,7 @@ export const MyPageSideMenu: React.FC<MyPageSideMenuProps> = ({ active, onChange
       role="tablist"
       aria-orientation="vertical"
       aria-label="Min side"
-      className="hidden lg:flex lg:sticky lg:top-[calc(var(--demo-strip,0px)+8rem)] flex-col gap-1 p-1.5 rounded-2xl bg-white border border-slate-200/80"
+      className="hidden lg:flex flex-col gap-1 p-1.5 rounded-2xl bg-white border border-slate-200/80"
     >
       {tabs.map(({ id, label, icon: Icon }) => (
         <button

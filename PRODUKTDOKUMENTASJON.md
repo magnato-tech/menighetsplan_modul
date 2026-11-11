@@ -2070,13 +2070,13 @@ Bryterne virker på Min side, ikke på nettsiden. Om «Grupper» av også skal t
 4. ~~Er Gruppechat en egen modul, eller følger den alltid Grupper?~~ **Avgjort 9. november 2026:** begge deler. Gruppechat er en egen modul som krever Grupper. Er den på, har alle gruppene chat. Er Grupper av, er også chatten borte. *(trinn 1)*
 5. ~~Beholder Min side fanene nederst, uten nettsidens meny?~~ **Avgjort 10. november 2026:** ja, som anbefalt. *(trinn 6)*
 
-### Min side på mobil, nettbrett og PC *(bestemt av produkteier 11. november 2026, pågår)*
+### Min side på mobil, nettbrett og PC *(bestemt av produkteier 11. november 2026, bygget samme dag, ikke sluppet til menighetene)*
 
 **Hvorfor.** Min side er låst til en mobilkolonne på 448 punkter (`max-w-md`) på alle skjermer. På PC og nettbrett står den som en smal stripe midt på skjermen. Den samme rammen er skrevet åtte steder.
 
 **Skjermstørrelser.** Mobil under 640 punkter (som i dag), nettbrett 640–1023, PC fra 1024.
 
-**Trinnene.** Hvert trinn sendes inn for seg og prøves i 375, 768 og 1280 punkters bredde. Trinn 1 og 2 er sendt inn 11. november 2026.
+**Trinnene.** Hvert trinn sendes inn for seg og prøves i 375, 768 og 1280 punkters bredde. Alle sju trinn er sendt inn til `main` 11. november 2026, ikke sluppet til menighetene. På PC står menyen til venstre uten å følge med når man ruller: rammen klipper innholdet, så en meny som står fast, ville blitt skjøvet ned.
 
 | Trinn | Hva | Mobil | Nettbrett | PC |
 |---|---|---|---|---|
