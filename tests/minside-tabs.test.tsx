@@ -199,7 +199,9 @@ describe("Det som er tatt bort fra Min side", () => {
   test("kalenderen har ingen egen ramme med overskrift, og gruppene ingen overskrift som gjentar fanen", () => {
     const calendar = readFileSync("src/pages/myPage/MyCalendarPanel.tsx", "utf8");
     expect(calendar).not.toMatch(/>Min kalender<|Lukk kalender|modal-my-calendar/);
-    expect(calendar).toContain("repeatsTitle(label, event.gathering.title)");
+    // The list of cards (on a phone) is its own component, and says the group only when the title does not
+    const list = readFileSync("src/pages/myPage/MyCalendarList.tsx", "utf8");
+    expect(list).toContain("repeatsTitle(label, event.gathering.title)");
     expect(readFileSync("src/pages/myPage/MyGroupsSection.tsx", "utf8")).not.toMatch(/Mine grupper \(|Deltakelse/);
   });
 
