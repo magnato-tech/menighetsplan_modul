@@ -1314,6 +1314,8 @@ Bestilt av produkteier: en som er med i mange grupper, fikk 68 saker i én liste
 | **Flere kan trykkes inn** | Det som vises, har én av rollene som er trykket inn. Uten noen trykket inn vises alt. «Vis alle» nullstiller |
 | **Rolle, ikke gruppe** | Produkteier valgte det: noen er interessert i bare én rolle i en gruppe. En oppgave uten rolle står med sin egen tittel |
 | **Overskriften** | Viser «N av M» når listen er snevret inn |
+| **Datoer** | Oppgavene står under datoen sin. De tre første datoene vises, og «Vis flere datoer» viser resten |
+| **Lukke** | Escape lukker vinduet |
 | **Vises ikke** | Når listen bare har én rolle, er det ingenting å velge mellom |
 | **Boksen på Min side** | Med tre saker eller flere står bare tallet oppe til høyre. Overskriften «N saker venter på deg» er tatt ut: den ble for voldsom med mange saker |
 | **Prøvd** | 5 sjekker. Sett i nettleseren i telefonbredde med demoens oppdiktede personer: seks tagger, to trykket inn, og listen viste de to |

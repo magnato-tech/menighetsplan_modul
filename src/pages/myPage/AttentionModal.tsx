@@ -1,13 +1,12 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { formatNorwegianDateTime } from "../../utils/dates";
 import { MyPageModel } from "./useMyPage";
-import { attentionListItems, attentionTags, attentionText, withAttentionTags } from "./attention";
+import { ATTENTION_DATES_SHOWN, attentionByDate, attentionListItems, attentionTags, attentionText, withAttentionTags } from "./attention";
 import { repeatsTitle } from "../../utils/labels";
 import { MIN_SIDE_DIALOG_OVERLAY, MIN_SIDE_DIALOG_PANEL } from "../../utils/minSideFrame";
 import {
   AlertCircle,
   Check,
-  Clock,
   X,
 } from "lucide-react";
 
@@ -29,12 +28,26 @@ export const AttentionModal: React.FC<AttentionModalProps> = ({ page, onClose })
   // A tag whose last item has been answered, no longer narrows anything
   const active = new Set([...chosen].filter((tag) => tags.some((entry) => entry.tag === tag)));
   const shown = withAttentionTags(attentionItems, active);
+  // Only the first few dates are shown, until the user asks for the rest
+  const [showAll, setShowAll] = useState(false);
+  const groups = attentionByDate(shown);
+  const visibleGroups = showAll ? groups : groups.slice(0, ATTENTION_DATES_SHOWN);
+  const hiddenCount = groups.slice(ATTENTION_DATES_SHOWN).reduce((sum, group) => sum + group.items.length, 0);
   const toggle = (tag: string) => {
     const next = new Set(active);
     if (next.has(tag)) next.delete(tag);
     else next.add(tag);
     setChosen(next);
   };
+
+  // Escape closes the window
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
 
   return (
     <div
@@ -94,60 +107,75 @@ export const AttentionModal: React.FC<AttentionModalProps> = ({ page, onClose })
               <p>Du har håndtert alle dine saker!</p>
             </div>
           ) : (
-            <div className="grid gap-2.5 lg:grid-cols-2">
-              {shown.map((item) => {
-                const text = attentionText(item);
+            <div>
+              {visibleGroups.map((group) => (
+                <React.Fragment key={group.startsAt || "uten-dato"}>
+                  <h4 className="text-xs font-bold text-slate-600 px-1 mt-3 first:mt-0">
+                    {group.startsAt ? formatNorwegianDateTime(group.startsAt) : "Uten dato"}
+                  </h4>
+                  <div className="space-y-2">
+                    {group.items.map((item) => {
+                      const text = attentionText(item);
+                      const showsPill = text.label === "Trenger vikar" || text.label === "Forespørsel til deg";
 
-                return (
-                  <div
-                    key={item.id}
-                    className="p-3.5 bg-white rounded-2xl border border-slate-200 shadow-xs space-y-2.5"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-900 px-2 py-0.5 rounded-md">
-                        {text.label}
-                      </span>
-                      {item.groupName && !repeatsTitle(item.groupName, item.title) && (
-                        <span className="text-xs font-semibold text-slate-600">
-                          {item.groupName}
-                        </span>
-                      )}
-                    </div>
-                    <h4 className="text-xs font-bold text-slate-900">{item.title}</h4>
-                    {item.startsAt && (
-                      <div className="text-[11px] text-slate-600 flex items-center gap-1.5">
-                        <Clock className="w-3.5 h-3.5 text-slate-400" />
-                        <span>{formatNorwegianDateTime(item.startsAt)}</span>
-                      </div>
-                    )}
-                    {text.note && (
-                      <p className="text-[11px] text-slate-500 italic">
-                        {text.note}
-                      </p>
-                    )}
-                    <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
-                      <button
-                        type="button"
-                        onClick={() => handleAttentionAnswer(item, true)}
-                        className="flex-1 py-1.5 px-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1 cursor-pointer transition-colors"
-                      >
-                        <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-                        <span>{text.yes}</span>
-                      </button>
-                      {text.no && (
-                        <button
-                          type="button"
-                          onClick={() => handleAttentionAnswer(item, false)}
-                          className="py-1.5 px-3 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-semibold rounded-xl flex items-center justify-center gap-1 cursor-pointer transition-colors"
+                      return (
+                        <div
+                          key={item.id}
+                          className="p-3 bg-white rounded-xl border border-slate-200 flex items-center gap-3"
                         >
-                          <X className="w-3.5 h-3.5 text-slate-500" />
-                          <span>{text.no}</span>
-                        </button>
-                      )}
-                    </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <h5 className="text-xs font-bold text-slate-900">{item.title}</h5>
+                              {showsPill && (
+                                <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-900 px-2 py-0.5 rounded-md">
+                                  {text.label}
+                                </span>
+                              )}
+                            </div>
+                            {item.groupName && !repeatsTitle(item.groupName, item.title) && (
+                              <p className="text-[11px] text-slate-600">{item.groupName}</p>
+                            )}
+                            {text.note && (
+                              <p className="text-[11px] text-slate-500 italic">
+                                {text.note}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => handleAttentionAnswer(item, true)}
+                              className="py-1.5 px-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1 cursor-pointer transition-colors"
+                            >
+                              <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                              <span>{text.yes}</span>
+                            </button>
+                            {text.no && (
+                              <button
+                                type="button"
+                                onClick={() => handleAttentionAnswer(item, false)}
+                                className="py-1.5 px-3 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-semibold rounded-xl flex items-center justify-center gap-1 cursor-pointer transition-colors"
+                              >
+                                <X className="w-3.5 h-3.5 text-slate-500" />
+                                <span>{text.no}</span>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                );
-              })}
+                </React.Fragment>
+              ))}
+              {!showAll && groups.length > ATTENTION_DATES_SHOWN && (
+                <button
+                  type="button"
+                  onClick={() => setShowAll(true)}
+                  className="mt-3 mx-auto block text-xs font-bold text-emerald-800 underline underline-offset-2 cursor-pointer"
+                >
+                  Vis flere datoer ({hiddenCount} oppgaver)
+                </button>
+              )}
             </div>
           )}
         </div>
