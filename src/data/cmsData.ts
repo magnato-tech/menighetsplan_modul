@@ -39,6 +39,16 @@ export interface CmsPage {
   menuOrder?: number; // Canonical sort order in navigation menu
   navOrder?: number; // Compatibility alias
   inNavMenu?: boolean;
+  /**
+   * The "Oversikt" line in the submenu. Left out when false. A page that does not say
+   * keeps the line, which is how every existing menu behaves.
+   */
+  overviewInMenu?: boolean;
+  /**
+   * The page is only a heading for its sub-pages: it stays in the menu so the sub-pages
+   * have somewhere to hang, and it is not itself a page a visitor can open.
+   */
+  menuOnly?: boolean;
   linkUrl?: string; // Optional direct custom route, e.g. /hva-skjer or /taler
   updatedAt: string;
   updatedBy?: string;
