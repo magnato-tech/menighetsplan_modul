@@ -20,7 +20,8 @@ import { useStudioMenuFold } from "./studioMenuFold";
 import { UnsavedChangesContext, useUnsavedRegistry } from "../../hooks/useUnsavedChanges";
 import { UnsavedChangesDialog } from "./tabs/pages/UnsavedChangesDialog";
 import { helpArticleIdForTab } from "./help/articles";
-import { isWebEditor } from "../../utils/session";
+import { clerkOnlyInAdmin, isWebEditor } from "../../utils/session";
+import { membershipClerkMayOpen } from "./membershipClerk";
 import { webEditorMayOpen } from "./webEditor";
 
 import { AddonGate } from "./AddonGate";
@@ -67,6 +68,7 @@ import {
   LazyNewsTab,
 
   LazyPersonsTab,
+  LazyMembershipApplicationsTab,
 
   LazyRolesTab,
 
@@ -115,6 +117,12 @@ const LazyAdminTaskDetailPage = lazy(() =>
 const LazyAdminGatheringDetailPage = lazy(() =>
 
   import("../AdminGatheringDetailPage").then((m) => ({ default: m.AdminGatheringDetailPage }))
+
+);
+
+const LazyMembershipApplicationArchivePage = lazy(() =>
+
+  import("./MembershipApplicationArchivePage").then((m) => ({ default: m.MembershipApplicationArchivePage }))
 
 );
 
@@ -186,7 +194,7 @@ function StudioTabPanel({ tab, activeTab, visited, children }: StudioTabPanelPro
 
 
 
-function AdminStudioDetail({ kind }: { kind: "person" | "group" | "gathering" | "task" }) {
+function AdminStudioDetail({ kind, id }: { kind: "person" | "group" | "gathering" | "task" | "membershipApplication"; id: string }) {
 
   return (
 
@@ -201,6 +209,8 @@ function AdminStudioDetail({ kind }: { kind: "person" | "group" | "gathering" | 
         {kind === "gathering" && <LazyAdminGatheringDetailPage />}
 
         {kind === "task" && <LazyAdminTaskDetailPage />}
+
+        {kind === "membershipApplication" && <LazyMembershipApplicationArchivePage applicationId={id} />}
 
       </Suspense>
 
@@ -240,6 +250,7 @@ function AdminStudioContent() {
 
   // A web editor has the website part of the admin only (see webEditor.ts)
   const webEditor = isWebEditor(studio.currentUser);
+  const membershipClerkOnly = clerkOnlyInAdmin(studio.currentUser);
 
 
 
@@ -255,7 +266,10 @@ function AdminStudioContent() {
 
   // While a page is edited, the side menu folds to icons so the editor gets room (see useStudioMenuFold)
   const [pageEditorOpen, setPageEditorOpen] = useState(false);
-  const mayShow = (tab: StudioTab) => visitedTabs.includes(tab) && (!webEditor || webEditorMayOpen(tab));
+  const mayShow = (tab: StudioTab) =>
+    visitedTabs.includes(tab) &&
+    (!webEditor || webEditorMayOpen(tab)) &&
+    (!membershipClerkOnly || membershipClerkMayOpen(tab));
 
 
 
@@ -324,8 +338,9 @@ function AdminStudioContent() {
   const editingPageShown = pageEditorOpen && shownTab === "cms-sider";
   const { folded: menuFolded, toggle: toggleMenu } = useStudioMenuFold(editingPageShown);
 
-  const area: StudioArea =
-    webEditor && surfaces.ownWebsite
+  const area: StudioArea = membershipClerkOnly
+    ? "planlegging"
+    : webEditor && surfaces.ownWebsite
       ? "nettside"
       : surfaces.ownWebsite
         ? areaToShow(shownTab, chosenArea, level)
@@ -333,10 +348,16 @@ function AdminStudioContent() {
 
   // Any other tab, or a page of the register or the planning, sends a web editor to the overview
   const outsideWebEditor = webEditor && (Boolean(detailRoute) || !webEditorMayOpen(activeTab));
+  const outsideMembershipClerk =
+    membershipClerkOnly &&
+    ((detailRoute !== null &&
+      detailRoute.kind !== "person" &&
+      detailRoute.kind !== "membershipApplication") ||
+      !membershipClerkMayOpen(activeTab));
   useEffect(() => {
-    if (outsideWebEditor) navigate(studioTabUrl("dashboard"), { replace: true });
+    if (outsideWebEditor || outsideMembershipClerk) navigate(studioTabUrl("dashboard"), { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [outsideWebEditor]);
+  }, [outsideWebEditor, outsideMembershipClerk]);
 
   useEffect(() => {
 
@@ -394,7 +415,11 @@ function AdminStudioContent() {
 
     <UnsavedChangesContext.Provider value={unsavedRegistry}>
 
-    <div className="min-h-[calc(100vh-var(--demo-strip,0px))] flex flex-col md:flex-row font-sans">
+    <div
+      data-studio-theme={contentTheme}
+      style={{ colorScheme: contentTheme }}
+      className={`min-h-[calc(100vh-var(--demo-strip,0px))] flex flex-col md:flex-row font-sans ${studioBg}`}
+    >
 
       {feedback && (
 
@@ -445,6 +470,7 @@ function AdminStudioContent() {
         onLeaveStudio={leaveStudio}
 
         webEditor={webEditor}
+        membershipClerkOnly={membershipClerkOnly}
 
         onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
 
@@ -464,11 +490,15 @@ function AdminStudioContent() {
 
 
 
-        {detailRoute && !webEditor ? (
+        {detailRoute &&
+        !webEditor &&
+        (!membershipClerkOnly ||
+          detailRoute.kind === "person" ||
+          detailRoute.kind === "membershipApplication") ? (
 
           <LevelGate tab={detailRoute.backTab}>
 
-            <AdminStudioDetail kind={detailRoute.kind} />
+            <AdminStudioDetail kind={detailRoute.kind} id={detailRoute.id} />
 
           </LevelGate>
 
@@ -615,6 +645,14 @@ function AdminStudioContent() {
         <StudioTabPanel tab="planlegger-personer" activeTab={activeTab} visited={mayShow("planlegger-personer")}>
 
           <LazyPersonsTab studio={studio} showFeedback={showFeedback} />
+
+        </StudioTabPanel>
+
+
+
+        <StudioTabPanel tab="planlegger-medlemskap" activeTab={activeTab} visited={mayShow("planlegger-medlemskap")}>
+
+          <LazyMembershipApplicationsTab showFeedback={showFeedback} />
 
         </StudioTabPanel>
 

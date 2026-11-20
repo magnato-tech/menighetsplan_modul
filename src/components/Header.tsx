@@ -8,14 +8,14 @@ import { Flag, Shield } from "lucide-react";
 import { useMySemesterPlans } from "../hooks/useSemesterPlans";
 import { useMinSideModules } from "../hooks/useMinSideModules";
 import { logoOf } from "../utils/logo";
+import { mayEnterAdmin } from "../utils/session";
 
 export const Header: React.FC = () => {
   const { settings, surfaces } = useCms();
   const location = useLocation();
   const { currentUser } = useFirebase();
 
-  // The way into the admin: for administrators, and for web editors, who get its website part
-  const isAdmin = currentUser.globalRole === "admin" || currentUser.globalRole === "nettredaktor";
+  const isAdmin = mayEnterAdmin(currentUser);
 
   const isAdminPath = location.pathname.startsWith("/admin");
   const isMyPagePath = location.pathname === "/minside" || location.pathname.startsWith("/minside/") || location.pathname === "/";

@@ -8,9 +8,9 @@ import { personDeletion } from "../utils/personDeletion";
 import { deletePersonWithTraces } from "../services/personDeletion";
 import { reportWriteError } from "../services/writeErrors";
 import { DeletePersonDialog } from "./admin/DeletePersonDialog";
-import { studioTabUrl } from "./admin/studio";
+import { membershipClerkBoardUrl, studioTabUrl } from "./admin/studio";
 import { formatNorwegianDateTime } from "../utils/dates";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAdminDetailRoute } from "../utils/adminStudioRoutes";
 import { useAdminPersonDetail } from "../hooks/useAppHooks";
 import { AdminAccessRequired } from "../components/AdminAccessRequired";
@@ -30,6 +30,10 @@ import { toPublicProfile, publicProfileFields } from "../utils/publicProfile";
 import { compressImageFile } from "../utils/imageUpload";
 import { ageOn, birthDateError, formatBirthDate, todayInNorway } from "../utils/birthDate";
 import { membershipValue } from "../utils/personForm";
+import { DENOMINATION_ENROLLMENT_LABELS } from "../utils/membershipView";
+import { PersonMembershipLogSection } from "../components/admin/PersonMembershipLogSection";
+import { canManageMembershipApplications } from "./admin/membershipClerk";
+import { WithdrawMembershipDialog } from "./admin/membership/WithdrawMembershipDialog";
 import {
   Globe,
   User,
@@ -53,9 +57,13 @@ import {
 export const AdminPersonDetailPage: React.FC = () => {
   const detailRoute = useAdminDetailRoute();
   const personId = detailRoute?.kind === "person" ? detailRoute.id : "";
+  const [searchParams] = useSearchParams();
+  const fromMembershipBoard = searchParams.get("fra") === "medlemskap";
 
   const {
     isAdmin,
+    isFullAdmin,
+    clerkOnly,
     currentUser,
     person,
     personGroups,
@@ -71,6 +79,12 @@ export const AdminPersonDetailPage: React.FC = () => {
   const [birthDate, setBirthDate] = useState<string>("");
   const [congregationMember, setCongregationMember] = useState(false);
   const [denominationMember, setDenominationMember] = useState(false);
+  const [congregationJoinedAt, setCongregationJoinedAt] = useState("");
+  const [denominationJoinedAt, setDenominationJoinedAt] = useState("");
+  const [denominationEnrollmentType, setDenominationEnrollmentType] = useState<"" | "A" | "G">("");
+  const [denominationGEndedAt, setDenominationGEndedAt] = useState("");
+  const [membershipClerk, setMembershipClerk] = useState(false);
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [globalRole, setGlobalRole] = useState<Person["globalRole"]>("member");
   const [policeCert, setPoliceCert] = useState<string>("");
   const [unavailablePeriods, setUnavailablePeriods] = useState<{ from: string; to: string; reason?: string }[]>([]);
@@ -98,6 +112,11 @@ export const AdminPersonDetailPage: React.FC = () => {
       setBirthDate(person.birthDate || "");
       setCongregationMember(person.congregationMember === true);
       setDenominationMember(person.denominationMember === true);
+      setCongregationJoinedAt(person.congregationJoinedAt || "");
+      setDenominationJoinedAt(person.denominationJoinedAt || "");
+      setDenominationEnrollmentType(person.denominationEnrollmentType ?? "");
+      setDenominationGEndedAt(person.denominationGEndedAt ?? "");
+      setMembershipClerk(person.membershipClerk === true);
       setGlobalRole(person.globalRole || "member");
       setPoliceCert(person.policeCertificateValidUntil || "");
       setUnavailablePeriods(person.unavailablePeriods || []);
@@ -215,6 +234,30 @@ export const AdminPersonDetailPage: React.FC = () => {
     if (e) e.preventDefault();
     if (!person) return;
 
+    if (clerkOnly) {
+      const wrongCongregation = congregationJoinedAt && birthDateError(congregationJoinedAt);
+      const wrongDenomination = denominationJoinedAt && birthDateError(denominationJoinedAt);
+      const wrongGEnded = denominationGEndedAt && birthDateError(denominationGEndedAt);
+      if (wrongCongregation || wrongDenomination || wrongGEnded) {
+        showFeedback(wrongCongregation || wrongDenomination || wrongGEnded || "Ugyldig dato", "error");
+        return;
+      }
+      const res = updatePerson(person.id, {
+        congregationMember: membershipValue(congregationMember),
+        denominationMember: membershipValue(denominationMember),
+        congregationJoinedAt: congregationMember && congregationJoinedAt ? congregationJoinedAt : undefined,
+        denominationJoinedAt: denominationMember && denominationJoinedAt ? denominationJoinedAt : undefined,
+        denominationEnrollmentType:
+          denominationMember && (denominationEnrollmentType === "A" || denominationEnrollmentType === "G")
+            ? denominationEnrollmentType
+            : undefined,
+        denominationGEndedAt: denominationMember && denominationGEndedAt ? denominationGEndedAt : undefined,
+      });
+      if (res.success) showFeedback("Medlemskap ble lagret.");
+      else showFeedback(res.error || "Kunne ikke lagre.", "error");
+      return;
+    }
+
     if (!name.trim()) {
       showFeedback("Navn kan ikke være tomt.", "error");
       return;
@@ -225,6 +268,13 @@ export const AdminPersonDetailPage: React.FC = () => {
       showFeedback(wrongBirthDate, "error");
       return;
     }
+    const wrongCongregation = congregationJoinedAt && birthDateError(congregationJoinedAt);
+    const wrongDenomination = denominationJoinedAt && birthDateError(denominationJoinedAt);
+    const wrongGEnded = denominationGEndedAt && birthDateError(denominationGEndedAt);
+    if (wrongCongregation || wrongDenomination || wrongGEnded) {
+      showFeedback(wrongCongregation || wrongDenomination || wrongGEnded || "Ugyldig dato", "error");
+      return;
+    }
 
     const res = updatePerson(person.id, {
       name: name.trim(),
@@ -233,6 +283,14 @@ export const AdminPersonDetailPage: React.FC = () => {
       birthDate: birthDate || undefined,
       congregationMember: membershipValue(congregationMember),
       denominationMember: membershipValue(denominationMember),
+      congregationJoinedAt: congregationMember && congregationJoinedAt ? congregationJoinedAt : undefined,
+      denominationJoinedAt: denominationMember && denominationJoinedAt ? denominationJoinedAt : undefined,
+      denominationEnrollmentType:
+        denominationMember && (denominationEnrollmentType === "A" || denominationEnrollmentType === "G")
+          ? denominationEnrollmentType
+          : undefined,
+      denominationGEndedAt: denominationMember && denominationGEndedAt ? denominationGEndedAt : undefined,
+      membershipClerk: membershipValue(membershipClerk),
       globalRole,
       avatarUrl: avatarUrl.trim() || undefined,
       isStaff,
@@ -260,10 +318,100 @@ export const AdminPersonDetailPage: React.FC = () => {
     }
   };
 
-  // Friendly access denied screen if user is not admin
   if (!isAdmin) {
     return <AdminAccessRequired target="personkort i admin-flaten" />;
   }
+
+  const membershipFields = (
+    <>
+      <label className="flex items-center gap-2 text-xs text-[var(--studio-text)]">
+        <input
+          id="check-edit-congregation"
+          type="checkbox"
+          checked={congregationMember}
+          onChange={(event) => {
+            setCongregationMember(event.target.checked);
+            if (!event.target.checked) setCongregationJoinedAt("");
+          }}
+        />
+        Medlem i menigheten
+      </label>
+      {congregationMember && (
+        <div className="space-y-1.5 pl-6">
+          <label htmlFor="input-congregation-joined" className="text-xs font-bold text-[var(--studio-muted)]">
+            Innmeldt i menigheten
+          </label>
+          <input
+            type="date"
+            id="input-congregation-joined"
+            value={congregationJoinedAt}
+            max={todayInNorway()}
+            onChange={(event) => setCongregationJoinedAt(event.target.value)}
+            className={studioDetailInput}
+          />
+        </div>
+      )}
+      <label className="flex items-center gap-2 text-xs text-[var(--studio-text)]">
+        <input
+          id="check-edit-denomination"
+          type="checkbox"
+          checked={denominationMember}
+          onChange={(event) => {
+            setDenominationMember(event.target.checked);
+            if (!event.target.checked) {
+              setDenominationJoinedAt("");
+              setDenominationEnrollmentType("");
+            }
+          }}
+        />
+        Medlem i kirkesamfunnet
+      </label>
+      {denominationMember && (
+        <div className="space-y-1.5 pl-6">
+          <label htmlFor="input-denomination-joined" className="text-xs font-bold text-[var(--studio-muted)]">
+            Innmeldt i kirkesamfunnet
+          </label>
+          <input
+            type="date"
+            id="input-denomination-joined"
+            value={denominationJoinedAt}
+            max={todayInNorway()}
+            onChange={(event) => setDenominationJoinedAt(event.target.value)}
+            className={studioDetailInput}
+          />
+          <label htmlFor="select-denomination-enrollment-type" className="text-xs font-bold text-[var(--studio-muted)]">
+            Type i trossamfunnet
+          </label>
+          <select
+            id="select-denomination-enrollment-type"
+            value={denominationEnrollmentType}
+            onChange={(event) => setDenominationEnrollmentType(event.target.value as "" | "A" | "G")}
+            className={studioDetailInput}
+          >
+            <option value="">Ikke valgt</option>
+            <option value="A">{DENOMINATION_ENROLLMENT_LABELS.A}</option>
+            <option value="G">{DENOMINATION_ENROLLMENT_LABELS.G}</option>
+          </select>
+          <label htmlFor="input-denomination-g-ended" className="text-xs font-bold text-[var(--studio-muted)]">
+            Utmeldt som G (barn)
+          </label>
+          <input
+            type="date"
+            id="input-denomination-g-ended"
+            value={denominationGEndedAt}
+            max={todayInNorway()}
+            onChange={(event) => setDenominationGEndedAt(event.target.value)}
+            className={studioDetailInput}
+          />
+        </div>
+      )}
+    </>
+  );
+
+  const mayWithdraw =
+    person &&
+    canManageMembershipApplications(currentUser) &&
+    (person.congregationMember === true || person.denominationMember === true);
 
   if (!person) {
     return (
@@ -275,13 +423,73 @@ export const AdminPersonDetailPage: React.FC = () => {
     );
   }
 
+  const membershipBack = fromMembershipBoard ? (
+    <div className="flex flex-col gap-1 -mt-2 mb-2">
+      <Link
+        to={membershipClerkBoardUrl("inbox")}
+        className="text-xs font-bold text-indigo-500 hover:text-indigo-600"
+      >
+        Tilbake til oppgavebord
+      </Link>
+      <Link
+        to={membershipClerkBoardUrl("log")}
+        className="text-xs font-semibold text-[var(--studio-muted)] hover:text-[var(--studio-text)]"
+      >
+        Protokoll-logg (inn-/utmeldinger og datoer)
+      </Link>
+    </div>
+  ) : null;
+
+  if (clerkOnly) {
+    return (
+      <StudioDetailShell
+        backTab={fromMembershipBoard ? "planlegger-medlemskap" : "planlegger-personer"}
+        backLabel={fromMembershipBoard ? "Tilbake til oppgavebord" : "Tilbake til personregister"}
+        badge="Personkort"
+        feedback={feedback}
+      >
+        {membershipBack}
+        <form onSubmit={handleSave} className="space-y-4">
+          <div className={`${studioDetailCard} space-y-4`}>
+            <div>
+              <h2 className={studioDetailTitle}>{person.name}</h2>
+              <p className={`${studioDetailMuted} mt-1`}>Du kan endre medlemskap i menighet og kirkesamfunn.</p>
+            </div>
+            {membershipFields}
+            <button type="submit" className={studioPrimaryButton}>
+              Lagre medlemskap
+            </button>
+            {mayWithdraw && (
+              <button
+                type="button"
+                onClick={() => setWithdrawOpen(true)}
+                className="w-full px-4 py-2 rounded-xl border border-rose-300 text-rose-800 text-xs font-bold"
+              >
+                Meld ut (oppgave til protokoll)
+              </button>
+            )}
+          </div>
+          <PersonMembershipLogSection person={person} />
+        </form>
+        {withdrawOpen && (
+          <WithdrawMembershipDialog
+            person={person}
+            onClose={() => setWithdrawOpen(false)}
+            onCreated={() => showFeedback("Utmeldingsoppgave opprettet.", "success")}
+          />
+        )}
+      </StudioDetailShell>
+    );
+  }
+
   return (
     <StudioDetailShell
-      backTab="planlegger-personer"
-      backLabel="Tilbake til personregister"
+      backTab={fromMembershipBoard ? "planlegger-medlemskap" : "planlegger-personer"}
+      backLabel={fromMembershipBoard ? "Tilbake til oppgavebord" : "Tilbake til personregister"}
       badge="Personkort"
       feedback={feedback}
     >
+      {membershipBack}
       <div className="space-y-5">
         {/* Main Person Edit Card */}
         <form onSubmit={handleSave} className="space-y-4">
@@ -419,14 +627,27 @@ export const AdminPersonDetailPage: React.FC = () => {
               </p>
             </div>
 
-            <label className="flex items-center gap-2 text-xs text-[var(--studio-text)]">
-              <input id="check-edit-congregation" type="checkbox" checked={congregationMember} onChange={(event) => setCongregationMember(event.target.checked)} />
-              Medlem i menigheten
-            </label>
-            <label className="flex items-center gap-2 text-xs text-[var(--studio-text)]">
-              <input id="check-edit-denomination" type="checkbox" checked={denominationMember} onChange={(event) => setDenominationMember(event.target.checked)} />
-              Medlem i kirkesamfunnet
-            </label>
+            {membershipFields}
+            {mayWithdraw && (
+              <button
+                type="button"
+                onClick={() => setWithdrawOpen(true)}
+                className="w-full px-4 py-2 rounded-xl border border-rose-300 text-rose-800 text-xs font-bold mt-2"
+              >
+                Meld ut (oppgave til protokoll)
+              </button>
+            )}
+            {isFullAdmin && (
+              <label className="flex items-center gap-2 text-xs text-[var(--studio-text)] pt-1 border-t border-[var(--studio-border)]">
+                <input
+                  id="check-edit-membership-clerk"
+                  type="checkbox"
+                  checked={membershipClerk}
+                  onChange={(event) => setMembershipClerk(event.target.checked)}
+                />
+                Protokollansvarlig (Personer i admin og Mitt medlemskap)
+              </label>
+            )}
 
             {/* 4. Global Rolle (Sikrer støtte for flere co-admins) */}
             <div className="space-y-1.5 pt-1 border-t border-[var(--studio-border)]">
@@ -748,6 +969,16 @@ export const AdminPersonDetailPage: React.FC = () => {
             </div>
           </div>
         </form>
+
+        {canManageMembershipApplications(currentUser) && <PersonMembershipLogSection person={person} />}
+
+        {withdrawOpen && (
+          <WithdrawMembershipDialog
+            person={person}
+            onClose={() => setWithdrawOpen(false)}
+            onCreated={() => showFeedback("Utmeldingsoppgave opprettet.", "success")}
+          />
+        )}
 
         {/* Roles and Group Memberships */}
         <section

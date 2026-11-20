@@ -110,7 +110,15 @@ describe("Hvem man går inn som i demoen", () => {
       "medlemUtenTjeneste",
     ]);
     expect(new Set(doors.map((door) => door.person.id)).size).toBe(5);
-    expect(doors.every((door) => door.groupNames.length > 0 || door.way === "administrator")).toBe(true);
+    expect(
+      doors.every(
+        (door) =>
+          door.groupNames.length > 0 ||
+          door.way === "administrator" ||
+          door.way === "kunMenighet" ||
+          door.way === "kunKirkesamfunn"
+      )
+    ).toBe(true);
   });
 
   test("CMS-et er nevnt først i det administratoren gjør, så den som vil se det, finner veien", () => {
@@ -168,6 +176,8 @@ describe("Hvem man går inn som i demoen", () => {
         (group) => (group.category ?? "tjenestegruppe") === "tjenestegruppe" && group.memberIds.includes(volunteer!.id)
       )
     ).toBe(true);
+    expect(byWay.kunMenighet?.person.name).toBe("Frida Menighet");
+    expect(byWay.kunKirkesamfunn?.person.name).toBe("Ada Kirkesamfunn");
   });
 
   test("samme register gir samme personer, uansett rekkefølgen det kommer i", () => {

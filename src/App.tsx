@@ -39,6 +39,27 @@ const AdminStudio = lazy(() =>
 );
 const MyPage = lazy(() => import("./pages/MyPage").then((m) => ({ default: m.MyPage })));
 const SemesterPlanPage = lazy(() => import("./pages/SemesterPlanPage").then((m) => ({ default: m.SemesterPlanPage })));
+const MyMembershipPage = lazy(() =>
+  import("./pages/myPage/MyMembershipPage").then((m) => ({ default: m.MyMembershipPage }))
+);
+const CongregationMembershipApplyPage = lazy(() =>
+  import("./pages/myPage/membership/CongregationMembershipApplyPage").then((m) => ({
+    default: m.CongregationMembershipApplyPage,
+  }))
+);
+const DenominationAdultEnrollPage = lazy(() =>
+  import("./pages/myPage/membership/DenominationAdultEnrollPage").then((m) => ({
+    default: m.DenominationAdultEnrollPage,
+  }))
+);
+const DenominationChildEnrollPage = lazy(() =>
+  import("./pages/myPage/membership/DenominationChildEnrollPage").then((m) => ({
+    default: m.DenominationChildEnrollPage,
+  }))
+);
+const DenominationGToAPage = lazy(() =>
+  import("./pages/myPage/membership/DenominationGToAPage").then((m) => ({ default: m.DenominationGToAPage }))
+);
 const TaskDetailPage = lazy(() =>
   import("./pages/TaskDetailPage").then((m) => ({ default: m.TaskDetailPage }))
 );
@@ -182,6 +203,11 @@ function AppContent() {
             <Suspense fallback={<LazyRouteFallback />}>
               <Routes>
                 <Route path="/minside" element={<MyPage />} />
+                <Route path="/minside/medlemskap" element={<MyMembershipPage />} />
+                <Route path="/minside/medlemskap/soknad-menighet" element={<CongregationMembershipApplyPage />} />
+                <Route path="/minside/medlemskap/innmelding-kirkesamfunn" element={<DenominationAdultEnrollPage />} />
+                <Route path="/minside/medlemskap/innmelding-kirkesamfunn/barn" element={<DenominationChildEnrollPage />} />
+                <Route path="/minside/medlemskap/bekreft-voksen" element={<DenominationGToAPage />} />
                 <Route path="/minside/semesterplan/:planId" element={isOn("semesterplan") ? <SemesterPlanPage /> : <Navigate to="/minside" replace />} />
                 {/* The old Gruppeleder page is gone: its addresses go on to the groups on Min side */}
                 <Route path="/leder" element={<Navigate to={isOn("grupper") ? "/minside?view=grupper" : "/minside"} replace />} />

@@ -296,6 +296,12 @@ export interface CmsSettings {
    * congregation has turned it off; a settings document from before the choice existed counts.
    */
   countVisits?: boolean;
+  /** Name of the denomination on «Mitt medlemskap» when set; otherwise a neutral default label. */
+  denominationName?: string;
+  /** External form: enrollment in the denomination from age 15. */
+  denominationAdultEnrollmentUrl?: string;
+  /** External form: enrollment of children under 15 in the denomination. */
+  denominationChildEnrollmentUrl?: string;
 }
 
 export const initialLeadershipDecisions = [
@@ -393,6 +399,7 @@ export const emptyCmsSettings: CmsSettings = {
  */
 export const demoCmsSettings: CmsSettings = {
   churchName: "Fjordvik menighet",
+  denominationName: "Kirkesamfunnet (eksempel)",
   appName: "Menighetsplan",
   tagline: "Varmt fellesskap. Tydelig tro. Enkel tjeneste.",
   welcomeHeadline: "Velkommen til Fjordvik menighet",

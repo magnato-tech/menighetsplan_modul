@@ -9,6 +9,7 @@ import {
   GatheringHeadcount,
   GroupMessage,
   MemberProposal,
+  MembershipApplication,
   GroupCategory,
   MeetingSchedule,
   VolunteerRole,
@@ -30,7 +31,10 @@ export interface NewPersonInput {
   birthDate?: string;
   congregationMember?: boolean;
   denominationMember?: boolean;
-  globalRole?: "member" | "admin";
+  congregationJoinedAt?: string;
+  denominationJoinedAt?: string;
+  membershipClerk?: boolean;
+  globalRole?: "member" | "admin" | "nettredaktor";
 }
 
 export interface NewGroupInput {
@@ -121,6 +125,9 @@ export function buildPerson(data: NewPersonInput): Person {
     birthDate: data.birthDate?.trim() || undefined,
     ...(data.congregationMember ? { congregationMember: true as const } : {}),
     ...(data.denominationMember ? { denominationMember: true as const } : {}),
+    ...(data.congregationJoinedAt?.trim() ? { congregationJoinedAt: data.congregationJoinedAt.trim() } : {}),
+    ...(data.denominationJoinedAt?.trim() ? { denominationJoinedAt: data.denominationJoinedAt.trim() } : {}),
+    ...(data.membershipClerk ? { membershipClerk: true as const } : {}),
     globalRole: data.globalRole || "member",
   };
 }
@@ -311,5 +318,67 @@ export function buildGroupMessage(
     content: content.trim(),
     imageUrl,
     createdAt: new Date().toISOString(),
+  };
+}
+
+type MembershipApplicationCore = Pick<
+  MembershipApplication,
+  | "kind"
+  | "personId"
+  | "lastName"
+  | "firstNames"
+  | "address"
+  | "phone"
+  | "email"
+  | "nationalId"
+  | "baptized"
+  | "notOtherDenomination"
+  | "signaturePlace"
+  | "signatureDate"
+> &
+  Partial<
+    Pick<
+      MembershipApplication,
+      | "baptizedDate"
+      | "congregationName"
+      | "alsoDenomination"
+      | "childrenToEnroll"
+      | "childLastName"
+      | "childFirstNames"
+      | "childNationalId"
+      | "childBirthPlace"
+      | "childBaptized"
+      | "childBaptizedDate"
+      | "parent2Name"
+      | "childFromOtherDenomination"
+      | "childAttestationAttached"
+      | "parent2ConfirmNoOther"
+      | "parent2SignaturePlace"
+      | "parent2SignatureDate"
+    >
+  >;
+
+/** Builds one confidential membership form submission from Min side. */
+export function buildMembershipApplication(data: MembershipApplicationCore): MembershipApplication {
+  const lastName = data.lastName.trim();
+  const firstNames = data.firstNames.trim();
+  const applicantName =
+    data.kind === "denominationChildEnroll" && data.childFirstNames && data.childLastName
+      ? `${data.childFirstNames.trim()} ${data.childLastName.trim()}`.trim()
+      : `${firstNames} ${lastName}`.trim();
+  return {
+    id: newId("membership"),
+    submittedAt: new Date().toISOString(),
+    status: "submitted",
+    ...data,
+    applicantName,
+    lastName,
+    firstNames,
+    address: data.address.trim(),
+    phone: data.phone.trim(),
+    email: data.email.trim(),
+    nationalId: data.nationalId.replace(/\s/g, ""),
+    signaturePlace: data.signaturePlace.trim(),
+    signatureDate: data.signatureDate.trim(),
   };
 }

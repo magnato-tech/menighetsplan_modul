@@ -29,6 +29,7 @@ import {
   CircleHelp,
   Puzzle,
   LogOut,
+  ClipboardList,
 } from "lucide-react";
 import { countAddonsOn } from "../../utils/addons";
 import { hasPlanner } from "../../utils/level";
@@ -42,6 +43,9 @@ import { StudioData, StudioTab, NEAR_WEEKS, isUrgentTask, withinWeeks } from "./
 import { prefetchStudioTab } from "./studioTabLoaders";
 import { STUDIO_AREAS, STUDIO_AREA_NAMES, areaOfTab, type StudioArea } from "./studioAreas";
 import { usePendingProposalCounts } from "../../hooks/useMemberProposals";
+import { canManageMembershipApplications } from "./membershipClerk";
+import { openClerkTasks } from "../../utils/membershipClerkTasks";
+import { useMembershipClerkTasks } from "../../hooks/useMembershipClerkTasks";
 import { useExternalCalendarPending } from "../../hooks/useExternalCalendarQueue";
 import { useStudioAppearance } from "./studioAppearance";
 import { StudioThemeIconButton, StudioThemeToggle } from "./StudioThemeToggle";
@@ -69,6 +73,8 @@ interface StudioSidebarProps {
   onLeaveStudio?: (action: () => void) => void;
   /** A web editor: the website part only, without the choice of part, Lederskap & Stab or the system tabs. */
   webEditor?: boolean;
+  /** Protokollansvarlig: only Personer and help, not the rest of admin. */
+  membershipClerkOnly?: boolean;
   /** The menu folds to icons on a larger screen (while a page is edited). The names stay for screen readers. */
   compact?: boolean;
   /** Shows the button that folds the menu and opens it again. Only on a larger screen. */
@@ -103,6 +109,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
   unsavedTabs = [],
   onLeaveStudio = (action) => action(),
   webEditor = false,
+  membershipClerkOnly = false,
   compact = false,
   onToggleCompact,
 }) => {
@@ -128,6 +135,8 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
     .flatMap((section) => section.entries)
     .filter((entry) => areaOfTab(entry.tab) === area && (!webEditor || webEditorMayOpen(entry.tab)));
   const waitingProposals = [...usePendingProposalCounts(hasPlanner(level)).values()].reduce((sum, count) => sum + count, 0);
+  const manageMembership = canManageMembershipApplications(currentUser);
+  const membershipOpenCount = openClerkTasks(useMembershipClerkTasks(manageMembership)).length;
   const importPending = useExternalCalendarPending();
 
   // The add-ons that are on (see addons.ts), at the end of the part they belong to
@@ -220,7 +229,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
           </div>
 
           {/* The two parts of the admin. Only this menu and the overview follow the choice. */}
-          {!webEditor && surfaces.ownWebsite && (
+          {!webEditor && !membershipClerkOnly && surfaces.ownWebsite && (
           <div role="tablist" aria-label="Del av admin" className="sidebar-hide grid grid-cols-2 gap-1 p-1 rounded-xl bg-[var(--studio-surface)]">
             {STUDIO_AREAS.map((choice) => (
               <button
@@ -241,7 +250,65 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
           </div>
           )}
 
-          {/* Nav Section: Dashboard */}
+          {membershipClerkOnly ? (
+            <div className="space-y-1">
+                <button
+                  type="button"
+                  title="Oversikt"
+                  {...tabPrefetchHandlers("dashboard")}
+                  onClick={() => onTabChange("dashboard")}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
+                    activeTab === "dashboard"
+                      ? "bg-indigo-600 text-white shadow-sm"
+                      : "text-[var(--studio-muted)] hover:text-[var(--studio-text)] hover:bg-[var(--studio-bg)]"
+                  }`}
+                >
+                  <LayoutDashboard className="w-4 h-4" />
+                  <span className="sidebar-text">Oversikt</span>
+                </button>
+                <button
+                  type="button"
+                  title="Medlemskap og innmelding"
+                  {...tabPrefetchHandlers("planlegger-medlemskap")}
+                  onClick={() => onTabChange("planlegger-medlemskap")}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
+                    activeTab === "planlegger-medlemskap"
+                      ? "bg-indigo-600 text-white shadow-sm"
+                      : "text-[var(--studio-muted)] hover:text-[var(--studio-text)] hover:bg-[var(--studio-bg)]"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <ClipboardList className="w-4 h-4" />
+                    <span className="sidebar-text">Medlemskap</span>
+                  </div>
+                  {membershipOpenCount > 0 && (
+                    <span className="sidebar-hide text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-950">
+                      {membershipOpenCount}
+                    </span>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  title="Personer"
+                  {...tabPrefetchHandlers("planlegger-personer")}
+                  onClick={() => onTabChange("planlegger-personer")}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
+                    activeTab === "planlegger-personer"
+                      ? "bg-indigo-600 text-white shadow-sm"
+                      : "text-[var(--studio-muted)] hover:text-[var(--studio-text)] hover:bg-[var(--studio-bg)]"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Users className="w-4 h-4" />
+                    <span className="sidebar-text">Personer</span>
+                  </div>
+                  <span className="sidebar-hide text-[10px] px-1.5 py-0.5 rounded bg-[var(--studio-surface)] text-[var(--studio-muted)]">
+                    {adminPersons.length}
+                  </span>
+                </button>
+            </div>
+          ) : (
+            <>
           <div className="space-y-1">
             <button
               type="button"
@@ -550,6 +617,30 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
               </span>
             </button>
 
+            {manageMembership && (
+              <button
+                type="button"
+                title="Medlemskap og innmelding"
+                {...tabPrefetchHandlers("planlegger-medlemskap")}
+                onClick={() => onTabChange("planlegger-medlemskap")}
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
+                  activeTab === "planlegger-medlemskap"
+                    ? "bg-indigo-600 text-white shadow-sm"
+                    : "text-[var(--studio-muted)] hover:text-[var(--studio-text)] hover:bg-[var(--studio-bg)]"
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <ClipboardList className="w-4 h-4" />
+                  <span className="sidebar-text">Medlemskap</span>
+                </div>
+                {membershipOpenCount > 0 && (
+                  <span className="sidebar-hide text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-950">
+                    {membershipOpenCount}
+                  </span>
+                )}
+              </button>
+            )}
+
             {/* Templates are for both levels: an event is repeated with or without the planner */}
             <button
               type="button"
@@ -624,6 +715,8 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
             {addonButtons}
           </div>
           )}
+            </>
+          )}
 
           {/* In both parts */}
           <div className="space-y-1 pt-2 border-t border-[var(--studio-border)]">
@@ -644,7 +737,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
           </div>
 
           {/* Nav Section: System & Database. Not for a web editor */}
-          {!inDemo && !webEditor && (
+          {!inDemo && !webEditor && !membershipClerkOnly && (
           <div className="space-y-1">
             <div className="sidebar-hide text-[10px] font-black uppercase tracking-wider text-[var(--studio-muted)] px-3 py-1">
               System & Database

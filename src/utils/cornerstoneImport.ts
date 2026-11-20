@@ -222,14 +222,20 @@ export function readCornerstoneFile(text: string, register: readonly Known[], to
     if (birthDate && birthDateError(birthDate, today) !== null) birthDate = null;
 
     const email = loginIdOf(read(fields, "email"));
+    const congregationActive = read(fields, "congregationJoined") !== "" && read(fields, "congregationLeft") === "";
+    const denominationActive = read(fields, "denominationJoined") !== "" && read(fields, "denominationLeft") === "";
+    const congregationJoinedAt = congregationActive ? dayFromFile(read(fields, "congregationJoined")) : null;
+    const denominationJoinedAt = denominationActive ? dayFromFile(read(fields, "denominationJoined")) : null;
     const person: ImportCandidate = {
       line,
       name,
       email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : "",
       phone: read(fields, "phone"),
       ...(birthDate ? { birthDate } : {}),
-      ...(read(fields, "congregationJoined") !== "" && read(fields, "congregationLeft") === "" ? { congregationMember: true } : {}),
-      ...(read(fields, "denominationJoined") !== "" && read(fields, "denominationLeft") === "" ? { denominationMember: true } : {}),
+      ...(congregationActive ? { congregationMember: true } : {}),
+      ...(denominationActive ? { denominationMember: true } : {}),
+      ...(congregationJoinedAt ? { congregationJoinedAt } : {}),
+      ...(denominationJoinedAt ? { denominationJoinedAt } : {}),
     };
 
     if (register.some((known) => samePerson(known, person))) return void result.skipped.push({ line, name, reason: "in-register" });

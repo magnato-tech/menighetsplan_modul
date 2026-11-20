@@ -538,6 +538,24 @@ const personer: HelpArticle = {
   tabs: ["planlegger-personer"],
 };
 
+const medlemskap: HelpArticle = {
+  id: "medlemskap",
+  title: "Medlemskap og innmelding",
+  hvor: "Planlegging → Medlemskap",
+  intro:
+    "Søknader og innmeldinger fra Min side kommer hit som oppgaver for protokollansvarlig. Skjemaene arkiveres konfidensielt.",
+  steg: [
+    "Åpne en oppgave og marker **Merk som mottatt** når skjemaet er tatt imot.",
+    "Før inn i Cornerstone, og trykk **Ført inn i Cornerstone**.",
+    "Ved bekreftelse av voksenmedlemskap (G → A): fyll utmeldingsdato G og innmeldingsdato A – registeret oppdateres da automatisk.",
+    "Ved andre skjema: oppdater medlemskap på personkortet, og trykk **Bekreftet i Menighetsplan**.",
+  ],
+  godt: "Protokollansvarlig ser denne fanen uten full administrator-tilgang. Administratorer ser den også.",
+  utenBilde: true,
+  seOgsa: ["personer"],
+  tabs: ["planlegger-medlemskap"],
+};
+
 const maler: HelpArticle = {
   id: "maler",
   title: "Maler",
@@ -714,6 +732,7 @@ export const helpSections: HelpSection[] = [
       { kind: "article", article: oppgaver },
       { kind: "article", article: grupper },
       { kind: "article", article: personer },
+      { kind: "article", article: medlemskap },
       { kind: "article", article: maler },
       { kind: "article", article: semesterplan },
       { kind: "article", article: arshjul },

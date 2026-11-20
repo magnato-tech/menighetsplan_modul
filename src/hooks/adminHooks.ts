@@ -6,6 +6,7 @@ import { visitCounting } from "../utils/siteTraffic";
 import { Task, Group, Gathering } from "../types";
 import { validateGathering } from "../utils/validation";
 import { isInGroup } from "../utils/groups";
+import { clerkOnlyInAdmin, isAdministrator } from "../utils/session";
 import {
   AssignedPerson,
   TaskStaffingStatus,
@@ -286,7 +287,9 @@ export function useAdminPersonDetail(personId: string) {
     updatePerson,
   } = useFirebase();
 
-  const isAdmin = currentUser.globalRole === "admin";
+  const isFullAdmin = isAdministrator(currentUser);
+  const clerkOnly = clerkOnlyInAdmin(currentUser);
+  const isAdmin = isFullAdmin || clerkOnly;
   const person = getPersonById(personId);
 
   const personGroups = useMemo(() => {
@@ -317,6 +320,8 @@ export function useAdminPersonDetail(personId: string) {
 
   return {
     isAdmin,
+    isFullAdmin,
+    clerkOnly,
     currentUser,
     person,
     personGroups,

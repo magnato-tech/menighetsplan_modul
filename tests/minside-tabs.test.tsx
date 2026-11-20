@@ -213,7 +213,11 @@ describe("Det som er tatt bort fra Min side", () => {
     expect(initialsOf("Ola")).toBe("O");
     expect(initialsOf("")).toBe("?");
 
-    render(<AccountMenu />);
+    render(
+      <MemoryRouter>
+        <AccountMenu />
+      </MemoryRouter>
+    );
     const mark = screen.getByRole("button", { name: "Konto: Kari Nordmann" });
     expect(mark.textContent).toBe("KN");
     expect(screen.queryByText("Kari Nordmann")).toBeNull();

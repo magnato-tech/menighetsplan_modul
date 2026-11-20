@@ -18,6 +18,7 @@ export const STUDIO_TABS = [
   "planlegger-oppgaver",
   "planlegger-grupper",
   "planlegger-personer",
+  "planlegger-medlemskap",
   "planlegger-roller",
   "planlegger-maler",
   "planlegger-semesterplan",
@@ -40,6 +41,11 @@ export function toStudioTab(value: string | null): StudioTab {
 /** The address of a tab. Links built with this cannot point at a tab that does not exist. */
 export function studioTabUrl(tab: StudioTab): string {
   return `/admin?tab=${tab}`;
+}
+
+/** Oppgavebord for protokollansvarlig, valgfritt direkte til protokoll-logg. */
+export function membershipClerkBoardUrl(board: "inbox" | "log" = "inbox"): string {
+  return board === "log" ? "/admin?tab=planlegger-medlemskap&vis=log" : "/admin?tab=planlegger-medlemskap";
 }
 
 /**

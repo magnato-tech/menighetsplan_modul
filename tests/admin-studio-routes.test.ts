@@ -22,6 +22,12 @@ describe("Admin Studio-ruter", () => {
   const task = parseAdminDetailRoute("/admin/oppgave/t1");
   assert(task?.kind === "task" && task.backTab === "planlegger-oppgaver", "Parser oppgavekort");
 
+  const membership = parseAdminDetailRoute("/admin/medlemskap/app-1");
+  assert(
+    membership?.kind === "membershipApplication" && membership.backTab === "planlegger-medlemskap",
+    "Parser arkiv for medlemskapssøknad"
+  );
+
   assert(parseAdminDetailRoute("/admin?tab=planlegger-personer") === null, "Faner er ikke detaljkort");
 });
 

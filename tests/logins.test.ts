@@ -199,8 +199,8 @@ describe("Reglene i databasen", () => {
   });
 
   test("registeret og planleggingen leses bare av dem som står i registeret", () => {
-    expect(blockOf("persons")).toContain("allow get: if isAdmin() || (isMember() && personId == me());");
-    expect(blockOf("persons")).toContain("allow list: if isAdmin();");
+    expect(blockOf("persons")).toContain("allow get: if isAdmin() || isMembershipClerk() || (isMember() && personId == me());");
+    expect(blockOf("persons")).toContain("allow list: if isAdmin() || isMembershipClerk();");
     expect(blockOf("persons")).not.toContain("if true");
     for (const name of ["tasks", "assignments", "groupMessages", "gatheringAttendances"]) {
       expect(blockOf(name)).toContain("allow read");
