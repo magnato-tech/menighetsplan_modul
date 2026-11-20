@@ -19,6 +19,8 @@ const full: Required<CmsPage> = {
   menuOrder: 3,
   navOrder: 3,
   inNavMenu: false,
+  overviewInMenu: false,
+  menuOnly: true,
   linkUrl: "/",
   updatedAt: "2026-10-01T10:00:00.000Z",
   updatedBy: "p1",

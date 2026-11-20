@@ -1,3 +1,4 @@
+import { MinSideFrame } from "./minSide/MinSideFrame";
 import React from "react";
 import { Link } from "react-router-dom";
 import { Shield, ArrowLeft } from "lucide-react";
@@ -13,7 +14,7 @@ export const AdminAccessRequired: React.FC<AdminAccessRequiredProps> = ({ target
   const { currentUser } = useFirebase();
 
   return (
-    <div className="w-full max-w-md mx-auto bg-slate-50 min-h-screen shadow-md sm:my-4 sm:rounded-3xl sm:border sm:border-slate-200/80 overflow-hidden">
+    <MinSideFrame width="narrow">
       <div className="p-6 text-center space-y-4">
         <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-400">
           <Shield className="w-6 h-6" />
@@ -32,6 +33,6 @@ export const AdminAccessRequired: React.FC<AdminAccessRequiredProps> = ({ target
           Tilbake til Min side
         </Link>
       </div>
-    </div>
+    </MinSideFrame>
   );
 };

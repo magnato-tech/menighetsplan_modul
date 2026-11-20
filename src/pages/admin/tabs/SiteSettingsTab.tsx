@@ -124,6 +124,49 @@ export const SiteSettingsTab: React.FC = () => {
             </div>
           </div>
 
+          <div className="space-y-3 pt-2 border-t border-[var(--studio-border)]">
+            <p className="font-semibold text-[var(--studio-muted)]">Medlemskap på Min side</p>
+            <p className="text-[var(--studio-muted)]">
+              Tekst og lenker som frivillige ser under «Mitt medlemskap». La lenker stå tomme til skjema-URL er klare.
+            </p>
+            <div className="grid grid-cols-1 gap-4">
+              <div className="space-y-1">
+                <label className="font-semibold text-[var(--studio-muted)]">Navn på trossamfunnet</label>
+                <input
+                  type="text"
+                  value={settingsForm.denominationName ?? ""}
+                  onChange={(e) => setSettingsForm({ ...settingsForm, denominationName: e.target.value || undefined })}
+                  placeholder="Kirkesamfunnet"
+                  className="w-full px-3 py-2 rounded-xl bg-[var(--studio-input)] border border-[var(--studio-border)] text-[var(--studio-input-text)]"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="font-semibold text-[var(--studio-muted)]">Innmeldingsskjema (fra 15 år)</label>
+                <input
+                  type="url"
+                  value={settingsForm.denominationAdultEnrollmentUrl ?? ""}
+                  onChange={(e) =>
+                    setSettingsForm({ ...settingsForm, denominationAdultEnrollmentUrl: e.target.value || undefined })
+                  }
+                  placeholder="https://"
+                  className="w-full px-3 py-2 rounded-xl bg-[var(--studio-input)] border border-[var(--studio-border)] text-[var(--studio-input-text)]"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="font-semibold text-[var(--studio-muted)]">Innmeldingsskjema barn (under 15 år)</label>
+                <input
+                  type="url"
+                  value={settingsForm.denominationChildEnrollmentUrl ?? ""}
+                  onChange={(e) =>
+                    setSettingsForm({ ...settingsForm, denominationChildEnrollmentUrl: e.target.value || undefined })
+                  }
+                  placeholder="https://"
+                  className="w-full px-3 py-2 rounded-xl bg-[var(--studio-input)] border border-[var(--studio-border)] text-[var(--studio-input-text)]"
+                />
+              </div>
+            </div>
+          </div>
+
           <div className="space-y-2 text-xs">
             <p className="font-semibold text-[var(--studio-muted)]">Logo</p>
             <p className="text-[var(--studio-muted)]">

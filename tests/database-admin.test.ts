@@ -31,7 +31,11 @@ describe("Fylling og sletting av databasen", () => {
     populated.every((name) => ALL_COLLECTIONS.includes(name)),
     "Alle samlinger som fylles med mockdata er også med i slettingen"
   );
-  const collectionsWithoutMockSeed = new Set<string>([CMS_COLLECTIONS.MEDIA]);
+  const collectionsWithoutMockSeed = new Set<string>([
+    CMS_COLLECTIONS.MEDIA,
+    COLLECTIONS.MEMBERSHIP_APPLICATIONS,
+    COLLECTIONS.MEMBERSHIP_CLERK_TASKS,
+  ]);
   assert(
     [...Object.values(COLLECTIONS), ...Object.values(CMS_COLLECTIONS)].every(
       (name) => populated.includes(name) || collectionsWithoutMockSeed.has(name)

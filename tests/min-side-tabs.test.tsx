@@ -17,7 +17,7 @@ describe("Fanene på Min side når en modul er av", () => {
       </MemoryRouter>
     );
 
-    const top = within(screen.getByRole("tablist"));
+    const top = within(screen.getAllByRole("tablist").find((element) => element.getAttribute("aria-orientation") === "horizontal") as HTMLElement);
     expect(top.getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["Mine oppgaver", "Mine grupper", "Gudstjenester"]);
     const bottom = within(screen.getByRole("navigation", { name: "Min side" }));
     expect(bottom.getAllByRole("button").map((button) => button.textContent)).toEqual(["Mine oppgaver", "Mine grupper", "Gudstjenester"]);

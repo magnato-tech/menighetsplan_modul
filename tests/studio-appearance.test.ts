@@ -1,9 +1,13 @@
 import { describe } from "vitest";
 import { assert } from "./assert";
 import {
+  DEFAULT_STUDIO_THEME,
+  loadStudioAppearance,
   parseStudioTheme,
   readStudioTheme,
   writeStudioTheme,
+  STUDIO_APPEARANCE_EPOCH,
+  STUDIO_APPEARANCE_EPOCH_KEY,
   STUDIO_SIDEBAR_THEME_KEY,
   STUDIO_CONTENT_THEME_KEY,
 } from "../src/pages/admin/studioAppearance";
@@ -41,4 +45,15 @@ describe("Admin Studio-utseende", () => {
 
   writeStudioTheme(STUDIO_CONTENT_THEME_KEY, "dark", storage);
   assert(readStudioTheme(STUDIO_CONTENT_THEME_KEY, storage) === "dark", "Lagrer innholds-tema uavhengig");
+
+  storage.removeItem(STUDIO_APPEARANCE_EPOCH_KEY);
+  writeStudioTheme(STUDIO_SIDEBAR_THEME_KEY, "dark", storage);
+  writeStudioTheme(STUDIO_CONTENT_THEME_KEY, "dark", storage);
+  const migrated = loadStudioAppearance(storage);
+  assert(migrated.sidebarTheme === DEFAULT_STUDIO_THEME, "Ny epoke setter lys meny");
+  assert(migrated.contentTheme === DEFAULT_STUDIO_THEME, "Ny epoke setter lyst innhold");
+  storage.setItem(STUDIO_APPEARANCE_EPOCH_KEY, STUDIO_APPEARANCE_EPOCH);
+  writeStudioTheme(STUDIO_CONTENT_THEME_KEY, "dark", storage);
+  const saved = loadStudioAppearance(storage);
+  assert(saved.contentTheme === "dark", "Valg beholdes etter epoke");
 });

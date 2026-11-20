@@ -38,6 +38,8 @@ export const COLLECTION_LABELS: Record<string, string> = {
   [COLLECTIONS.VOLUNTEER_ROLES]: "Tjenesteroller",
   [COLLECTIONS.GROUP_MESSAGES]: "Meldinger i grupper",
   [COLLECTIONS.MEMBER_PROPOSALS]: "Forslag til deltakere",
+  [COLLECTIONS.MEMBERSHIP_APPLICATIONS]: "Medlemskapssøknader",
+  [COLLECTIONS.MEMBERSHIP_CLERK_TASKS]: "Protokolloppgaver",
   [COLLECTIONS.GATHERING_ATTENDANCES]: "Svar på samlinger",
   [COLLECTIONS.GATHERING_HEADCOUNTS]: "Oppmøtetall",
 };

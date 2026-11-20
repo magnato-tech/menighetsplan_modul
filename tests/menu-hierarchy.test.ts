@@ -1,7 +1,7 @@
 import { describe } from "vitest";
 import { assert } from "./assert";
 import { initialCmsPages, type CmsPage } from "../src/data/cmsData";
-import { buildMenuBar, buildPageTree, buildPublicMenu, countPages, findOrphanPages, withoutPage, pageUrl } from "../src/utils/menu";
+import { buildMenuBar, buildPageTree, buildPublicMenu, countPages, findOrphanPages, isPublicArticle, showsMenuOverview, withoutPage, pageUrl } from "../src/utils/menu";
 
 describe("Menystruktur og CMS-sider", () => {
   const page = (id: string, extra: Partial<CmsPage> = {}): CmsPage => ({
@@ -109,6 +109,19 @@ describe("Menystruktur og CMS-sider", () => {
   assert(pageUrl({ slug: "om-oss" }) === "/om-oss", "En side ligger under sin egen slug");
   assert(pageUrl({ slug: "kalender", linkUrl: "/hva-skjer" }) === "/hva-skjer", "linkUrl overstyrer slug");
   assert(pageUrl({ slug: "" }) === "/", "En side uten slug er forsiden");
+
+  // A menu heading keeps its sub-pages and is not a page, and Oversikt can be left out
+  const heading = page("bli-med", { menuOnly: true });
+  const child = page("gi", { parentId: "bli-med" });
+  const withHeading = buildPublicMenu([heading, child]);
+  assert(withHeading.length === 1 && withHeading[0].children.length === 1, "En menyoverskrift beholder underfanene");
+  assert(showsMenuOverview(heading) === false, "En menyoverskrift har ingen Oversikt-linje");
+  assert(isPublicArticle(heading) === false, "En menyoverskrift er ikke en side som kan åpnes");
+  assert(isPublicArticle(child) === true, "Underfanen til en menyoverskrift kan åpnes");
+  const quietOverview = page("om-oss", { overviewInMenu: false });
+  assert(showsMenuOverview(quietOverview) === false, "En side kan la Oversikt-linjen ligge");
+  assert(isPublicArticle(quietOverview) === true, "Siden uten Oversikt-linje kan likevel åpnes");
+  assert(showsMenuOverview(page("vanlig")) === true, "En vanlig side har Oversikt-linjen");
 
   // 8. Dual support: parentPageId / parentId og menuOrder / navOrder
   const modernPages: CmsPage[] = [

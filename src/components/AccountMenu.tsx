@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { LogOut } from "lucide-react";
 import { useFirebase } from "../context/FirebaseDataContext";
-import { ROLE_LABELS, roleOf } from "../utils/session";
+import { accountRoleLine } from "../utils/session";
+import { canOpenMyMembership } from "../utils/membershipAccess";
 
 /** The letters a person is shown by: the first of the first name and of the last, «MT». */
 export function initialsOf(name: string): string {
@@ -38,6 +40,7 @@ export const AccountMenu: React.FC = () => {
 
   if (session.status !== "member") return null;
   const { person } = session;
+  const showMembership = canOpenMyMembership(person, groups);
 
   return (
     <div ref={menu} className="relative shrink-0">
@@ -57,8 +60,18 @@ export const AccountMenu: React.FC = () => {
         <div role="menu" aria-label="Konto" className="absolute right-0 top-full mt-2 z-50 w-56 rounded-2xl border border-slate-200 bg-white shadow-lg p-3 space-y-3">
           <div className="px-1">
             <p className="text-sm font-bold text-slate-900 break-words">{person.name}</p>
-            <p className="text-xs font-medium text-slate-500">{ROLE_LABELS[roleOf(person, groups)]}</p>
+            <p className="text-xs font-medium text-slate-500">{accountRoleLine(person, groups)}</p>
           </div>
+          {showMembership && (
+            <Link
+              to="/minside/medlemskap"
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className="block w-full text-center px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50"
+            >
+              Mitt medlemskap
+            </Link>
+          )}
           <button
             type="button"
             role="menuitem"

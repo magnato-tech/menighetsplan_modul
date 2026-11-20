@@ -240,6 +240,7 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
   const [registerReady, setRegisterReady] = useState(false);
   // Whether what was received is the register itself, and not only the public copies of it
   const [registerWhole, setRegisterWhole] = useState(false);
+  const [clerkRegisterWhole, setClerkRegisterWhole] = useState(false);
   const [gatheringsReady, setGatheringsReady] = useState(false);
   const [listsReady, setListsReady] = useState(false);
   const [planningReady, setPlanningReady] = useState(false);
@@ -364,11 +365,34 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
     return () => stops.forEach((stop) => stop());
   }, [fullRegister, memberAccess, memberId, login.status]);
 
+  // Protokollansvarlig (not administrator): the whole register for Personer in admin
+  useEffect(() => {
+    if (fullRegister || !memberAccess || !memberId) {
+      setClerkRegisterWhole(false);
+      return;
+    }
+    if (ownPerson?.membershipClerk !== true) {
+      setClerkRegisterWhole(false);
+      return;
+    }
+    return subscribeCollection<Person>(COLLECTIONS.PERSONS, (list) => {
+      setPersons(list);
+      setClerkRegisterWhole(true);
+      setRegisterReady(true);
+    });
+  }, [fullRegister, memberAccess, memberId, ownPerson?.membershipClerk, ownPerson?.id]);
+
+  const wholeRegister = fullRegister || clerkRegisterWhole;
+
   // Who is using the app. Where anyone can stand in, the register decides who an account is, and
   // the stand-in is someone from it. Elsewhere the account's own login decides, and the register
   // counts only once all of it has arrived: the public copies are not the register.
-  const sessionPersons = fullRegister ? persons : ownPerson ? [ownPerson] : [];
-  const sessionReady = fullRegister ? registerReady && (CAN_STAND_IN || registerWhole) : ownReady || login.status !== "found";
+  const sessionPersons = wholeRegister ? persons : ownPerson ? [ownPerson] : [];
+  const sessionReady = fullRegister
+    ? registerReady && (CAN_STAND_IN || registerWhole)
+    : clerkRegisterWhole
+      ? registerReady && clerkRegisterWhole
+      : ownReady || login.status !== "found";
   const session = useMemo<Session>(() => {
     if (!CAN_STAND_IN) return sessionOfLogin(accountState, login, sessionPersons, sessionReady);
     const real = sessionOf(accountState, persons, registerReady);
@@ -384,11 +408,11 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
   }, [fullRegister, groups, publicCards, ownedGroups]);
 
   const visiblePersons = useMemo(() => {
-    if (fullRegister) return persons;
+    if (wholeRegister) return persons;
     const byId = new Map(publicPersons.map((person) => [person.id, person]));
     if (ownPerson) byId.set(ownPerson.id, ownPerson);
     return [...byId.values()];
-  }, [fullRegister, persons, publicPersons, ownPerson]);
+  }, [wholeRegister, persons, publicPersons, ownPerson]);
 
   // An administrator's own browser keeps the logins and the copies in step with the register
   // (see hooks/useRegisterMirror.ts). Not where anyone can stand in: there the database is open.

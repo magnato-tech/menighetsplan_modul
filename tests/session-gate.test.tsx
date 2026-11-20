@@ -127,21 +127,43 @@ describe("Hvem som er logget inn, står øverst på Min side", () => {
   test("navnet, rollen og veien ut", () => {
     app.groups = [{ id: "lyd", name: "Lyd", leaderIds: ["ola"], memberIds: [] } as unknown as Group];
     use(member(ola));
-    render(<AccountMenu />);
+    render(
+      <MemoryRouter>
+        <AccountMenu />
+      </MemoryRouter>
+    );
 
     // Behind the round mark with the initials
     fireEvent.click(screen.getByRole("button", { name: "Konto: Ola Hansen" }));
     expect(screen.getByText("Ola Hansen")).toBeTruthy();
     expect(screen.getByText("Gruppeleder")).toBeTruthy();
+    expect(screen.getByRole("menuitem", { name: "Mitt medlemskap" })).toBeTruthy();
     fireEvent.click(screen.getByRole("menuitem", { name: "Logg ut" }));
     expect(app.signOut).toHaveBeenCalledTimes(1);
   });
 
+  test("frivillig ser lenken Mitt medlemskap", () => {
+    const liv: Person = { id: "liv", name: "Liv Frivillig", email: "liv@eksempel.no", globalRole: "member" };
+    use(member(liv));
+    render(
+      <MemoryRouter>
+        <AccountMenu />
+      </MemoryRouter>
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Konto: Liv Frivillig" }));
+    expect(screen.getByRole("menuitem", { name: "Mitt medlemskap" })).toBeTruthy();
+  });
+
   test("en administrator står som administrator, og uten innlogging vises ingenting", () => {
     use(member(kari));
-    const { unmount } = render(<AccountMenu />);
+    const { unmount } = render(
+      <MemoryRouter>
+        <AccountMenu />
+      </MemoryRouter>
+    );
     fireEvent.click(screen.getByRole("button", { name: /^Konto: / }));
     expect(screen.getByText("Administrator")).toBeTruthy();
+    expect(screen.getByRole("menuitem", { name: "Mitt medlemskap" })).toBeTruthy();
     unmount();
 
     use({ status: "signedOut" });

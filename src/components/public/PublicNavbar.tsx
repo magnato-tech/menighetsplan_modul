@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useCms } from "../../context/CmsContext";
 import { useFirebase } from "../../context/FirebaseDataContext";
-import { buildPublicMenu, pageUrl } from "../../utils/menu";
+import { buildPublicMenu, pageUrl, showsMenuOverview } from "../../utils/menu";
 import { signInUrl } from "../../utils/session";
 import { menuLogoOf, overlayLogoOf } from "../../utils/logo";
 import { heroMenuStyleOf } from "../../utils/heroLayout";
@@ -160,29 +160,35 @@ export const PublicNavbar: React.FC = () => {
                 );
               }
 
+              const headingOnly = item.page.menuOnly === true;
+              const parentClass = `inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-all ${capitals} ${
+                item.isActive ? linkActive : linkIdle
+              }`;
               return (
                 <div className="relative group" key={item.page.id}>
-                  <Link
-                    to={item.targetUrl}
-                    className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-all ${capitals} ${
-                      item.isActive
-                        ? linkActive
-                        : linkIdle
-                    }`}
-                  >
-                    <span>{item.page.title}</span>
-                    <ChevronRight className="w-3.5 h-3.5 text-stone-400 rotate-90 group-hover:rotate-270 group-hover:text-primary-700 transition-transform" />
-                  </Link>
+                  {headingOnly ? (
+                    <span className={parentClass}>
+                      <span>{item.page.title}</span>
+                      <ChevronRight className="w-3.5 h-3.5 text-stone-400 rotate-90 group-hover:rotate-270 group-hover:text-primary-700 transition-transform" />
+                    </span>
+                  ) : (
+                    <Link to={item.targetUrl} className={parentClass}>
+                      <span>{item.page.title}</span>
+                      <ChevronRight className="w-3.5 h-3.5 text-stone-400 rotate-90 group-hover:rotate-270 group-hover:text-primary-700 transition-transform" />
+                    </Link>
+                  )}
 
                   {/* Dropdown Menu */}
                   <div className="absolute left-0 top-full pt-1 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all duration-150 z-50">
                     <div className="bg-white/98 backdrop-blur-md rounded-2xl shadow-xl border border-stone-200/90 py-2 min-w-[210px] space-y-0.5">
+                      {showsMenuOverview(item.page) && (
                       <Link
                         to={item.targetUrl}
                         className="block px-3.5 py-2 text-xs font-bold text-stone-900 hover:bg-primary-50/80 hover:text-primary-900 rounded-lg mx-1.5 transition-colors border-b border-stone-100 mb-1"
                       >
                         Oversikt: {item.page.title}
                       </Link>
+                      )}
                       {item.children.map((child) => (
                         <Link
                           key={child.page.id}
@@ -299,6 +305,15 @@ export const PublicNavbar: React.FC = () => {
               return (
                 <div key={item.page.id} className="space-y-1">
                   <div className="flex items-center justify-between">
+                    {item.page.menuOnly === true ? (
+                      <span
+                        className={`block flex-1 px-3 py-2 rounded-lg text-sm font-semibold ${
+                          item.isActive ? "bg-primary-50 text-primary-900 font-bold" : "text-stone-700"
+                        }`}
+                      >
+                        {item.page.title}
+                      </span>
+                    ) : (
                     <Link
                       to={item.targetUrl}
                       onClick={() => setMobileMenuOpen(false)}
@@ -310,6 +325,7 @@ export const PublicNavbar: React.FC = () => {
                     >
                       {item.page.title}
                     </Link>
+                    )}
 
                     {hasSub && (
                       <button

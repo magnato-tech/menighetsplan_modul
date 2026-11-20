@@ -17,6 +17,22 @@ export interface Person {
   congregationMember?: boolean;
   /** Whether the person belongs to its denomination. Absent means they do not. Only on the register. */
   denominationMember?: boolean;
+  /** Calendar day the person joined the congregation, when known: "1980-03-12". Only on the register. */
+  congregationJoinedAt?: string;
+  /** Calendar day the person joined the denomination, when known. Only on the register. */
+  denominationJoinedAt?: string;
+  /** Calendar day the person left the congregation, when known. Only on the register. */
+  congregationEndedAt?: string;
+  /** Calendar day the person left the denomination, when known. Only on the register. */
+  denominationEndedAt?: string;
+  /** How the person is enrolled in the denomination: adult (A) or child with parents (G). Only on the register. */
+  denominationEnrollmentType?: "A" | "G";
+  /** Calendar day G membership ended when the person confirms adult (A) membership. Only on the register. */
+  denominationGEndedAt?: string;
+  /** References to membership forms this person has sent; protokollansvarlig may read the list. */
+  membershipLog?: MembershipLogEntry[];
+  /** May open «Mitt medlemskap» on Min side and work with the membership protocol. An administrator may have this too. */
+  membershipClerk?: true;
   /** «nettredaktor»: the website part of the admin only, never the register or the planning (see utils/session.ts). */
   globalRole: "member" | "admin" | "nettredaktor";
   policeCertificateValidUntil?: string; // ISO date YYYY-MM-DD
@@ -66,6 +82,123 @@ export interface Group {
   meetingSchedule?: MeetingSchedule;
   memberJoinedAt?: Record<string, string>; // ISO date when person joined group
   notificationPreferences?: Record<string, boolean>; // personId -> true/false
+}
+
+export type MembershipApplicationKind =
+  | "congregationApply"
+  | "denominationAdultEnroll"
+  | "denominationChildEnroll"
+  | "denominationGToA";
+
+export type MembershipApplicationStatus =
+  | "submitted"
+  | "received"
+  | "cornerstoneDone"
+  | "completed"
+  | "dismissed";
+
+/** Extra lines on the person log besides Min-side søknader. */
+export type MembershipLogExtraKind = "withdrawal" | "enrollmentDateCorrection";
+
+export type MembershipLogKind = MembershipApplicationKind | MembershipLogExtraKind;
+
+/** A line on the person card: archived form or protokollansvarlig-handling. */
+export interface MembershipLogEntry {
+  applicationId?: string;
+  taskId?: string;
+  kind: MembershipLogKind;
+  submittedAt: string;
+  status: MembershipApplicationStatus | "completed";
+  updatedAt: string;
+  /** Short note for utmelding eller datoretting. */
+  note?: string;
+}
+
+/**
+ * A congregation membership application or denomination enrollment, sent from Min side.
+ * Stored confidentially for protokollansvarlig; national id is never copied to the person card.
+ */
+export interface MembershipApplication {
+  id: string;
+  kind: MembershipApplicationKind;
+  personId: string;
+  submittedAt: string;
+  status: MembershipApplicationStatus;
+  /** Name shown in protokollansvarligens liste. */
+  applicantName: string;
+  lastName: string;
+  firstNames: string;
+  address: string;
+  phone: string;
+  email: string;
+  /** Eleven digits when given. Only on this document. */
+  nationalId: string;
+  baptized: boolean;
+  baptizedDate?: string;
+  congregationName?: string;
+  alsoDenomination?: boolean;
+  notOtherDenomination: boolean;
+  childrenToEnroll?: boolean;
+  signaturePlace: string;
+  signatureDate: string;
+  /** Child enrollment (vedlegg). */
+  childLastName?: string;
+  childFirstNames?: string;
+  childNationalId?: string;
+  childBirthPlace?: string;
+  childBaptized?: boolean;
+  childBaptizedDate?: string;
+  parent2Name?: string;
+  childFromOtherDenomination?: boolean;
+  childAttestationAttached?: boolean;
+  parent2ConfirmNoOther?: boolean;
+  parent2SignaturePlace?: string;
+  parent2SignatureDate?: string;
+  receivedAt?: string;
+  receivedBy?: string;
+  cornerstoneAt?: string;
+  cornerstoneBy?: string;
+  completedAt?: string;
+  completedBy?: string;
+  dismissedAt?: string;
+  dismissedBy?: string;
+  /** Filled by protokollansvarlig when completing a G→A transition (reference log). */
+  transitionGEndedAt?: string;
+  transitionAStartedAt?: string;
+}
+
+export type MembershipClerkTaskKind = "correctEnrollmentDate" | "application" | "withdrawal";
+
+export type MembershipClerkTaskStatus = "open" | "done";
+
+/** Work item on the membership clerk task board. */
+export interface MembershipClerkTask {
+  id: string;
+  kind: MembershipClerkTaskKind;
+  status: MembershipClerkTaskStatus;
+  createdAt: string;
+  personId: string;
+  personName: string;
+  instruction: string;
+  comment?: string;
+  doneAt?: string;
+  doneBy?: string;
+  /** For correctEnrollmentDate: which date field must be corrected. */
+  enrollmentField?: "congregationJoinedAt" | "denominationJoinedAt";
+  /** Set when the task is completed with a new enrollment date. */
+  correctedEnrollmentDate?: string;
+  applicationId?: string;
+  withdrawCongregation?: boolean;
+  withdrawDenomination?: boolean;
+  withdrawalDate?: string;
+  cornerstoneUpdated?: boolean;
+  /** Innmelding: signert skjema er lagt i arkivet (steg 2). */
+  applicationArchiveConfirmed?: boolean;
+  /** @deprecated Bruk attestationEmailedAt eller attestationPosted. */
+  attestationSent?: boolean;
+  attestationPosted?: boolean;
+  attestationEmailedAt?: string;
+  attestationEmailedBy?: string;
 }
 
 /** A name a leader has asked an administrator to add to a group. Nothing but the name. */

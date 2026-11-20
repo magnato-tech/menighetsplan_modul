@@ -8,14 +8,14 @@ import { Flag, Shield } from "lucide-react";
 import { useMySemesterPlans } from "../hooks/useSemesterPlans";
 import { useMinSideModules } from "../hooks/useMinSideModules";
 import { logoOf } from "../utils/logo";
+import { mayEnterAdmin } from "../utils/session";
 
 export const Header: React.FC = () => {
   const { settings, surfaces } = useCms();
   const location = useLocation();
   const { currentUser } = useFirebase();
 
-  // The way into the admin: for administrators, and for web editors, who get its website part
-  const isAdmin = currentUser.globalRole === "admin" || currentUser.globalRole === "nettredaktor";
+  const isAdmin = mayEnterAdmin(currentUser);
 
   const isAdminPath = location.pathname.startsWith("/admin");
   const isMyPagePath = location.pathname === "/minside" || location.pathname.startsWith("/minside/") || location.pathname === "/";
@@ -28,7 +28,7 @@ export const Header: React.FC = () => {
 
   return (
     <header className="sticky top-[var(--demo-strip,0px)] z-40 bg-white border-b border-slate-200/80 shadow-xs">
-      <div className="max-w-md mx-auto px-4 pt-3 pb-2">
+      <div className="max-w-md sm:max-w-2xl lg:max-w-6xl mx-auto px-4 pt-3 pb-2">
         <div className="flex items-center justify-between gap-3">
           {/* The congregation's own name, which leads to its website. The name of the product is not written here. */}
           <ChurchSiteLink

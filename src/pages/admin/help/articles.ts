@@ -65,17 +65,16 @@ const minSide: HelpArticle = {
   hvor: "Nettsiden → Logg inn → Min side",
   intro: "Det frivillige og ledere ser når de har logget inn. Ingen app og ingen egen nettside: det er menighetens egen nettside, med det som er deres.",
   steg: [
-    "Fanene står nederst på telefonen: **Mine oppgaver**, **Mine grupper**, **Kalender** og **Gudstjenester**. En del som er slått av under Moduler, vises ikke.",
+    "Fire faner: **Mine oppgaver**, **Mine grupper**, **Kalender** og **Gudstjenester**. De står nederst på telefonen, øverst på nettbrett og i en meny til venstre på PC. En del som er slått av under Moduler, vises ikke.",
     "**Mine oppgaver**: forespørsler, ledige oppgaver og semesterplanen. Den frivillige svarer med ett trykk.",
     "**Gudstjenester**: de neste gudstjenestene, med hvem som har sagt ja til hva. Egne oppgaver er uthevet.",
     "Leder eller nestleder: gruppene en leder, står øverst under **Mine grupper**, med bemanningen på neste aktivitet. Et trykk på aktiviteten åpner planleggingen.",
     "Forfall i egne grupper står som **Må fylles** på Mine oppgaver. **Finn noen** åpner planleggingen, der plassen fylles.",
-    "I **Kalender** viser **Jeg leder** gruppenes arrangementer, med rød prikk der det mangler folk.",
+    "I **Kalender** viser **Jeg leder** gruppenes arrangementer, med rød prikk der det mangler folk. På nettbrett og PC er kalenderen en måned; trykk på en dag for å se hva som skjer.",
   ],
   godt:
-    "Vil noen ha Min side som et ikon på telefonen, velger de «Legg til på startskjermen» i nettleseren. Ikonet åpner Min side. Det finnes ingen egen side for gruppeledere lenger: rollen bestemmer hva Min side viser.",
+    "På PC står gruppene og gudstjenestene i tre kolonner, grupperommet viser aktiviteter, chat og deltakere side om side, og kjøreplanen har bemanningen ved siden av programmet. Vil noen ha Min side som et ikon på telefonen, velger de «Legg til på startskjermen» i nettleseren. Ikonet åpner Min side. Det finnes ingen egen side for gruppeledere lenger: rollen bestemmer hva Min side viser.",
   seOgsa: ["losningen", "moduler", "bemanning"],
-  utenBilde: true,
 };
 
 const komIGang: HelpArticle = {
@@ -539,6 +538,24 @@ const personer: HelpArticle = {
   tabs: ["planlegger-personer"],
 };
 
+const medlemskap: HelpArticle = {
+  id: "medlemskap",
+  title: "Medlemskap og innmelding",
+  hvor: "Planlegging → Medlemskap",
+  intro:
+    "Søknader og innmeldinger fra Min side kommer hit som oppgaver for protokollansvarlig. Skjemaene arkiveres konfidensielt.",
+  steg: [
+    "Åpne en oppgave og marker **Merk som mottatt** når skjemaet er tatt imot.",
+    "Før inn i Cornerstone, og trykk **Ført inn i Cornerstone**.",
+    "Ved bekreftelse av voksenmedlemskap (G → A): fyll utmeldingsdato G og innmeldingsdato A – registeret oppdateres da automatisk.",
+    "Ved andre skjema: oppdater medlemskap på personkortet, og trykk **Bekreftet i Menighetsplan**.",
+  ],
+  godt: "Protokollansvarlig ser denne fanen uten full administrator-tilgang. Administratorer ser den også.",
+  utenBilde: true,
+  seOgsa: ["personer"],
+  tabs: ["planlegger-medlemskap"],
+};
+
 const maler: HelpArticle = {
   id: "maler",
   title: "Maler",
@@ -715,6 +732,7 @@ export const helpSections: HelpSection[] = [
       { kind: "article", article: oppgaver },
       { kind: "article", article: grupper },
       { kind: "article", article: personer },
+      { kind: "article", article: medlemskap },
       { kind: "article", article: maler },
       { kind: "article", article: semesterplan },
       { kind: "article", article: arshjul },

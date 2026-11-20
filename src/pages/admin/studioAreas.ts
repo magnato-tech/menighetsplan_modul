@@ -32,6 +32,7 @@ const TAB_AREAS: Record<StudioTab, StudioArea | null> = {
   "planlegger-oppgaver": "planlegging",
   "planlegger-grupper": "planlegging",
   "planlegger-personer": "planlegging",
+  "planlegger-medlemskap": "planlegging",
   "planlegger-roller": "planlegging",
   "planlegger-maler": "planlegging",
   "planlegger-semesterplan": "planlegging",

@@ -22,6 +22,8 @@ import { enrichTasksWithVolunteerRoles } from "./mockTaskVolunteerRoles";
 import { SEMESTER_PLAN_RECORD, gatheringTemplateFields, headcountFields, volunteerRoleFields } from "./settingsRecords";
 import { weeksBetween, withLiveDates } from "../utils/liveDates";
 import { demoServiceTemplate } from "./demoServices";
+import { todayInNorway } from "../utils/birthDate";
+import { withMockMembership } from "../utils/mockMembershipSeed";
 
 export interface MockDocument {
   collection: string;
@@ -40,7 +42,7 @@ export interface CustomMockCounts {
 /** The whole example congregation: what the demo is filled with, and what «full demo» in admin writes. */
 export const FULL_DEMO_COUNTS: CustomMockCounts = {
   personCount: initialPersons.length,
-  groupCount: 15,
+  groupCount: 18,
   // Every gathering and task, with the services every other Sunday (see demoServices.ts)
   gatheringCount: initialGatherings.length,
   taskCount: initialTasks.length,
@@ -227,7 +229,27 @@ export function getCustomMockDocuments(counts?: CustomMockCounts, now: number = 
   documents.push({ collection: CMS_COLLECTIONS.SETTINGS, id: CMS_SETTINGS_DOC_ID, data: demoCmsSettings });
 
   const weeks = weeksBetween(DEMO_CONTENT_WEEK, now);
-  return documents.map((document) => ({ ...document, data: withLiveDates(document.data, weeks) }));
+  const today = todayInNorway(new Date(now));
+  const membershipById = new Map(
+    withMockMembership(persons, groups, assignments, today).map((person) => [person.id, person])
+  );
+  return documents.map((document) => {
+    const data = withLiveDates(document.data, weeks);
+    if (document.collection !== COLLECTIONS.PERSONS) return { ...document, data };
+    const seeded = membershipById.get(document.id);
+    if (!seeded) return { ...document, data };
+    return {
+      ...document,
+      data: {
+        ...(data as Person),
+        congregationMember: seeded.congregationMember,
+        denominationMember: seeded.denominationMember,
+        congregationJoinedAt: seeded.congregationJoinedAt,
+        denominationJoinedAt: seeded.denominationJoinedAt,
+        denominationEnrollmentType: seeded.denominationEnrollmentType,
+      },
+    };
+  });
 }
 
 // The demo's template for a worship service is made where its services are (see demoServices.ts)
