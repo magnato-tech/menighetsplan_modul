@@ -83,7 +83,7 @@ export const PublishSection: React.FC<PublishSectionProps> = ({ editingPage, onU
             <input
               type="checkbox"
               checked={editingPage.isPublished !== false}
-              onChange={(e) => onUpdate({ ...editingPage, isPublished: e.target.checked })}
+              onChange={(e) => onUpdate({ isPublished: e.target.checked })}
               className="w-4 h-4 mt-0.5 rounded text-indigo-600 focus:ring-0"
             />
             <div>
@@ -98,7 +98,7 @@ export const PublishSection: React.FC<PublishSectionProps> = ({ editingPage, onU
             <input
               type="checkbox"
               checked={editingPage.inNavMenu !== false}
-              onChange={(e) => onUpdate({ ...editingPage, inNavMenu: e.target.checked })}
+              onChange={(e) => onUpdate({ inNavMenu: e.target.checked })}
               className="w-4 h-4 mt-0.5 rounded text-indigo-600 focus:ring-0"
             />
             <div>

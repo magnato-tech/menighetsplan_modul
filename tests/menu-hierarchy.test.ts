@@ -68,8 +68,25 @@ describe("Menystruktur og CMS-sider", () => {
     page("barn-av-kladd", { parentId: "kladd" }),
   ];
   const publicMenu = buildPublicMenu(mixed);
-  assert(ids(publicMenu.map((n) => n.page)) === "synlig", "Kladder og sider skjult fra menyen vises ikke i den offentlige menyen");
+  assert(ids(publicMenu.map((n) => n.page)) === "synlig,barn-av-kladd", "Kladder og sider skjult fra menyen vises ikke, men underfanene deres blir stående");
   assert(ids(publicMenu[0].children) === "synlig-barn", "En underfane som er kladd vises ikke i den offentlige menyen");
+  const hiddenParent = [
+    page("forelder", { inNavMenu: false, navOrder: 1 }),
+    page("barn", { parentId: "forelder", navOrder: 1 }),
+    page("soken", { parentId: "forelder", navOrder: 2 }),
+  ];
+  assert(
+    ids(buildPublicMenu(hiddenParent).map((n) => n.page)) === "barn,soken",
+    "Tar man en hovedfane ut av menyen, blir underfanene stående"
+  );
+  const broughtBack = hiddenParent.map((p) => (p.id === "forelder" ? { ...p, inNavMenu: true } : p));
+  const restored = buildPublicMenu(broughtBack);
+  assert(
+    restored.length === 1 && restored[0].page.id === "forelder" && ids(restored[0].children) === "barn,soken",
+    "Publiserer man hovedfanen i menyen igjen, kommer den tilbake med underfanene under seg"
+  );
+  assert(isPublicArticle(page("forelder", { isPublished: false })) === false, "En upublisert side kan ikke åpnes");
+  assert(showsMenuOverview(page("forelder")) === true, "En publisert hovedfane har Oversikt-linjen igjen");
   assert(buildPageTree(mixed).length === 3, "Admin-treet viser også kladder og skjulte sider");
   assert(
     ids(buildPageTree(mixed).find((n) => n.page.id === "kladd")?.children ?? []) === "barn-av-kladd",

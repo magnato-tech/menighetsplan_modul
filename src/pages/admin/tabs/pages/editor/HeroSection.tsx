@@ -311,11 +311,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between gap-2">
-              <label className="text-xs font-semibold text-[var(--studio-muted)] block">Primærknapp</label>
-              <label className="flex items-center gap-2 cursor-pointer text-[11px] font-semibold text-[var(--studio-muted)] shrink-0">
+        <div className="@container grid grid-cols-1 @min-[40rem]:grid-cols-2 gap-3">
+          <div className="space-y-1.5 min-w-0">
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+              <span className="text-xs font-semibold text-[var(--studio-muted)]">Primærknapp</span>
+              <label className="flex items-center gap-2 cursor-pointer text-[11px] font-semibold text-[var(--studio-muted)]">
                 <input
                   type="checkbox"
                   checked={editingPage.showHeroPrimaryCta !== false}
@@ -341,10 +341,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               emptyLabel={isHomePage ? "Hva skjer på forsiden (anbefalt)" : "Ingen lenke"}
             />
           </div>
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between gap-2">
-              <label className="text-xs font-semibold text-[var(--studio-muted)] block">Sekundærknapp</label>
-              <label className="flex items-center gap-2 cursor-pointer text-[11px] font-semibold text-[var(--studio-muted)] shrink-0">
+          <div className="space-y-1.5 min-w-0">
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+              <span className="text-xs font-semibold text-[var(--studio-muted)]">Sekundærknapp</span>
+              <label className="flex items-center gap-2 cursor-pointer text-[11px] font-semibold text-[var(--studio-muted)]">
                 <input
                   type="checkbox"
                   checked={editingPage.showHeroSecondaryCta !== false}

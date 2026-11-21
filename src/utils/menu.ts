@@ -63,11 +63,17 @@ export function isPagePublished(page: CmsPage, now = new Date()): boolean {
   return true;
 }
 
-/** The tree visitors see: published pages that are marked for the menu and not scheduled in the future. */
+/**
+ * The tree visitors see: published pages that are marked for the menu and not scheduled in the future.
+ * A sub-page stays in the menu when its parent page is a draft or is left out of the menu, so taking
+ * the overview away does not take the sub-pages with it. Publishing the parent puts them back under it.
+ */
 export function buildPublicMenu(pages: CmsPage[] = [], now = new Date()): PageNode[] {
-  return buildPageTree(
-    (pages || []).filter((p) => isPagePublished(p, now) && p.inNavMenu !== false)
-  );
+  const visible = (pages || []).filter((p) => isPagePublished(p, now) && p.inNavMenu !== false);
+  const tree = buildPageTree(visible);
+  const placed = new Set(tree.flatMap((node) => [node.page.id, ...node.children.map((child) => child.id)]));
+  const loose = visible.filter((page) => !placed.has(page.id)).sort(byMenuOrder);
+  return [...tree, ...loose.map((page) => ({ page, children: [] }))];
 }
 
 /** Sub-pages that no menu reaches, because their parent is gone or is itself a sub-page. */

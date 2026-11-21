@@ -147,8 +147,8 @@ const siderSidetre: HelpArticle = {
     "Trykk **Sidestruktur** øverst. Bryteren husker hvilken visning du brukte sist.",
     "Dra en side for å flytte den, eller bruk pilene opp og ned.",
     "Den runde **+** øverst lager en ny hovedfane. **+ Underfane** på en fane lager en side under den. Kopier-knappen lager en kopi som kladd. Den nye siden åpnes i Rediger.",
-    "Trykk på statusen for å publisere en side eller sette den til kladd. Før en side tas bort fra nettsiden, blir du spurt.",
-    "Trykk **I toppmeny** eller **I meny** for å ta siden ut av menyen, og trykk igjen for å vise den. Siden finnes fortsatt på sin adresse.",
+    "Trykk på statusen for å publisere en side eller sette den til kladd. Før en side tas bort fra nettsiden, blir du spurt. Nettsiden endrer seg med en gang: kladd tar bort siden, og publisert henter den tilbake.",
+    "Trykk **I toppmeny** eller **I meny** for å ta siden ut av menyen, og trykk igjen for å vise den. Menylinjen, også **Oversikt**, kommer og går med en gang. Siden finnes fortsatt på sin adresse. Underfanene blir stående i menyen.",
     "**Rediger** på en rad åpner siden i Rediger. Øyet viser siden i ny fane, også en kladd.",
   ],
   godt: "Menylinjen øverst er nettsidens meny: trykk en fane, så ruller listen dit. **Kollaps alle** og **Utvid alle** viser eller skjuler underfanene.",
@@ -259,12 +259,11 @@ const siderPublisering: HelpArticle = {
   hvor: "Nettside → Sider & Innhold → Rediger → Publisering & Synlighet",
   intro: "Bestem om siden vises, om den står i menyen, og om den skal vente til et tidspunkt.",
   steg: [
-    "**Aktiver publisering** viser siden på nettsiden.",
-    "**Vis i offentlig meny** legger den i menyen. Uten den nås siden bare med lenken.",
-    "Skal siden komme senere, sett **Publiseringsdato & tidspunkt (Planlegging)**, eller trykk **I morgen 09:00**.",
-    "Trykk **Lagre**.",
+    "**Aktiver publisering** viser siden på nettsiden med en gang. Tar du den av, blir du spurt, og siden forsvinner med en gang. Huker du av igjen, kommer siden tilbake.",
+    "**Vis i offentlig meny** legger den i menyen med en gang, også linjen **Oversikt**. Uten den nås siden bare med lenken, og underfanene blir stående i menyen. Huker du av igjen, kommer menylinjen tilbake.",
+    "Skal siden komme senere, sett **Publiseringsdato & tidspunkt (Planlegging)**, eller trykk **I morgen 09:00**, og trykk **Lagre**.",
   ],
-  godt: "En kladd vises ikke på nettsiden. En planlagt side kommer av seg selv på tidspunktet.",
+  godt: "En kladd vises ikke på nettsiden. En planlagt side kommer av seg selv på tidspunktet. De to avkrysningene **Vis på siden** under toppbildet gjelder bare knappene der, ikke om siden er publisert.",
   seOgsa: ["sider-sidetre", "sider-sok"],
 };
 
