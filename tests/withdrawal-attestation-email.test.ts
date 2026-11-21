@@ -1,4 +1,4 @@
-import { describe, expect, test, vi } from "vitest";
+import { describe, expect, test } from "vitest";
 import type { Person } from "../src/types";
 import { DEFAULT_FROM_ADDRESS, EMAIL_DOCUMENT, PERSONS, SEND_URL, SETTINGS_DOCUMENT } from "../server/emailSending";
 import { sendWithdrawalAttestationEmail } from "../server/withdrawalAttestationEmail";
@@ -13,7 +13,7 @@ const env = {
   EMAIL_FROM_ADDRESS: "ikke-svar@menighetsplan.no",
 };
 
-const fieldsOf = (data: Record<string, unknown>) =>
+const fieldsOf = (data: object) =>
   Object.fromEntries(
     Object.entries(data).map(([key, value]) => [
       key,
@@ -33,6 +33,7 @@ const member: Person = {
   id: "member",
   name: "Kari Klok",
   email: "kari@example.org",
+  globalRole: "member",
 };
 
 const tokenFor = (email: string) => {
@@ -101,7 +102,7 @@ describe("Utmeldingsattest på e-post", () => {
       expect(result.body.copyTo).toBe("post@eksempelmenighet.no");
     }
     expect(sent).toHaveLength(1);
-    const batch = sent[0] as { to: string[]; cc: string[]; attachments: { filename: string }[] }[];
+    const batch = sent[0] as { from: string; to: string[]; cc: string[]; attachments: { filename: string }[] }[];
     expect(batch[0].to).toEqual(["kari@example.org"]);
     expect(batch[0].cc).toEqual(["post@eksempelmenighet.no"]);
     expect(batch[0].attachments[0].filename).toContain("utmeldingsattest");

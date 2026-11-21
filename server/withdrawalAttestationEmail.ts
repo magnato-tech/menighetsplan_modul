@@ -34,14 +34,18 @@ export async function sendWithdrawalAttestationEmail({
   ask: Fetch;
   wait?: (ms: number) => Promise<void>;
 }): Promise<{ status: number; body: WithdrawalAttestationEmailOutcome }> {
-  const refuse = (reason: Exclude<EmailOutcome, { ok: true }>["reason"], message: string, status = 400) =>
-    ({ status, body: { ok: false, reason, message } });
+  const refuse = (
+    reason: Exclude<EmailOutcome, { ok: true }>["reason"],
+    message: string,
+    status = 400
+  ): { status: number; body: WithdrawalAttestationEmailOutcome } => ({ status, body: { ok: false, reason, message } });
 
   if (readDemoInstallation(env) !== null) {
     return { status: 403, body: { ok: false, reason: "demo", message: "Demoen sender ikke e-post." } };
   }
   const installation = readInstallationConfig(env);
-  const apiKey = typeof env[EMAIL_SETTINGS.apiKey] === "string" ? env[EMAIL_SETTINGS.apiKey].trim() : "";
+  const apiKeyValue = env[EMAIL_SETTINGS.apiKey];
+  const apiKey = typeof apiKeyValue === "string" ? apiKeyValue.trim() : "";
   if (!installation || !apiKey || !siteUrl) {
     return { status: 503, body: { ok: false, reason: "not-configured", message: "E-post er ikke satt opp for denne installasjonen ennå." } };
   }
@@ -127,8 +131,8 @@ export async function sendWithdrawalAttestationEmail({
     return { status: 500, body: { ok: false, reason: "unreachable", message: "Attesten kunne ikke lages." } };
   }
 
-  const fromAddress =
-    (typeof env[EMAIL_SETTINGS.from] === "string" && env[EMAIL_SETTINGS.from].trim()) || DEFAULT_FROM_ADDRESS;
+  const fromValue = env[EMAIL_SETTINGS.from];
+  const fromAddress = (typeof fromValue === "string" && fromValue.trim()) || DEFAULT_FROM_ADDRESS;
   const from = senderOf(churchName, fromAddress);
   const subject = withdrawalAttestationEmailSubject(task!.personName);
   const text = withdrawalAttestationEmailText(churchName);
@@ -171,6 +175,6 @@ export async function sendWithdrawalAttestationEmail({
 
   return {
     status: 200,
-    body: { ok: true, mode: "send", sent: 1, withoutEmail: 0, to, copyTo: replyTo },
+    body: { ok: true, mode: "send", sent: 1, withoutEmail: 0, stopped: null, remainingPersonIds: [], to, copyTo: replyTo },
   };
 }
