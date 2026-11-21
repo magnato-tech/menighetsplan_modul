@@ -2,7 +2,6 @@ import type { Assignment, Group, Person } from "../types";
 import {
   DEMO_LEGACY_PROTOCOL_PERSON_IDS,
   DEMO_MEMBERSHIP_APPLICATION_PERSON_IDS,
-  DEMO_WITHDRAWAL_TASK_PERSON_IDS,
 } from "./demoMembershipClerkSeed";
 import { ageOn } from "./birthDate";
 import { allGroupPersonIds } from "./groups";
