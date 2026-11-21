@@ -292,12 +292,23 @@ export const AdminCmsPanel: React.FC<AdminCmsPanelProps> = ({
     }
   };
 
+  // The open editor follows a publish or menu change, so the next Lagre does not put the old choice back.
+  const keepEditorVisibility = (pageId: string, patch: Partial<CmsPage>, base: CmsPage) => {
+    setEditingPage((current) => (current?.id === pageId ? { ...current, ...patch } : current));
+    if (editingPage?.id !== pageId) return;
+    const next = { ...editingPage, ...patch };
+    if (pageFingerprint(next) === pageFingerprint({ ...base, ...patch })) {
+      setSavedFingerprint(pageFingerprint(next));
+    }
+  };
+
   const setPublished = async (page: CmsPage, willBePublished: boolean) => {
     const success = await savePage({
       ...page,
       isPublished: willBePublished,
     });
     if (success) {
+      keepEditorVisibility(page.id, { isPublished: willBePublished, status: willBePublished ? "published" : "draft" }, page);
       showFeedback(
         willBePublished
           ? `«${page.title}» er nå publisert på nettsiden!`
@@ -328,10 +339,54 @@ export const AdminCmsPanel: React.FC<AdminCmsPanelProps> = ({
     const willShow = page.inNavMenu === false;
     const success = await savePage({ ...page, inNavMenu: willShow });
     if (success) {
+      keepEditorVisibility(page.id, { inNavMenu: willShow }, page);
       showFeedback(willShow ? `«${page.title}» vises nå i menyen` : `«${page.title}» er tatt ut av menyen`);
     } else {
       showFeedback("Kunne ikke oppdatere menyen", "error");
     }
+  };
+
+  // The two choices in the editor are saved at once, the same way as the switches in the page list.
+  // Anything else in the patch is only the editor's draft, until Lagre.
+  const handleEditorUpdate = (patch: Partial<CmsPage>) => {
+    const keys = Object.keys(patch);
+    const visibilityOnly = keys.length > 0 && keys.every((key) => key === "isPublished" || key === "inNavMenu");
+    const stored = editingPage?.id ? pages.find((page) => page.id === editingPage.id) : undefined;
+    if (visibilityOnly && stored && editingPage && "isPublished" in patch && patch.isPublished === false && stored.isPublished !== false) {
+      const base = pageFingerprint(editingPage) === savedFingerprint ? { ...stored, ...editingPage } : stored;
+      setUnpublishPage(base);
+      return;
+    }
+    setEditingPage((prev) => (prev ? { ...prev, ...patch } : patch));
+    if (!visibilityOnly || !stored || !editingPage) return;
+    const willBePublished = "isPublished" in patch ? patch.isPublished !== false : stored.isPublished !== false;
+    const willShowInMenu = "inNavMenu" in patch ? patch.inNavMenu !== false : stored.inNavMenu !== false;
+    if ((stored.isPublished !== false) === willBePublished && (stored.inNavMenu !== false) === willShowInMenu) return;
+    // The editor may be ahead of the list just after Lagre. Saving the list then would put the old text back.
+    const base = pageFingerprint(editingPage) === savedFingerprint ? { ...stored, ...editingPage } : stored;
+    void savePage({ ...base, isPublished: willBePublished, inNavMenu: willShowInMenu }).then((success) => {
+      if (!success) {
+        setEditingPage((current) =>
+          current?.id === stored.id ? { ...current, isPublished: stored.isPublished, inNavMenu: stored.inNavMenu } : current
+        );
+        showFeedback("Kunne ikke oppdatere publiseringen", "error");
+        return;
+      }
+      keepEditorVisibility(
+        stored.id,
+        { isPublished: willBePublished, inNavMenu: willShowInMenu, status: willBePublished ? "published" : "draft" },
+        base
+      );
+      showFeedback(
+        "isPublished" in patch
+          ? willBePublished
+            ? `«${stored.title}» er nå publisert på nettsiden!`
+            : `«${stored.title}» er satt til kladd (upublisert).`
+          : willShowInMenu
+            ? `«${stored.title}» vises nå i menyen`
+            : `«${stored.title}» er tatt ut av menyen`
+      );
+    });
   };
 
   // Every page is listed here, drafts and pages hidden from the menu included
@@ -473,7 +528,7 @@ export const AdminCmsPanel: React.FC<AdminCmsPanelProps> = ({
           editingPage={editingPage}
           isNewPage={isNewPage}
           availableParentPages={availableParentPages}
-          onUpdate={(patch) => setEditingPage((prev) => (prev ? { ...prev, ...patch } : patch))}
+          onUpdate={handleEditorUpdate}
           onSave={handleSavePage}
           onClose={handleCloseEditor}
           onDuplicate={
