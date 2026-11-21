@@ -523,7 +523,8 @@ async function sendWithdrawalAttestationEmail({
     return { status: 403, body: { ok: false, reason: "demo", message: "Demoen sender ikke e-post." } };
   }
   const installation = readInstallationConfig(env);
-  const apiKey = typeof env[EMAIL_SETTINGS.apiKey] === "string" ? env[EMAIL_SETTINGS.apiKey].trim() : "";
+  const apiKeyValue = env[EMAIL_SETTINGS.apiKey];
+  const apiKey = typeof apiKeyValue === "string" ? apiKeyValue.trim() : "";
   if (!installation || !apiKey || !siteUrl) {
     return { status: 503, body: { ok: false, reason: "not-configured", message: "E-post er ikke satt opp for denne installasjonen ennå." } };
   }
@@ -595,7 +596,8 @@ async function sendWithdrawalAttestationEmail({
     console.error("Kunne ikke lage attest:", error instanceof Error ? error.message : error);
     return { status: 500, body: { ok: false, reason: "unreachable", message: "Attesten kunne ikke lages." } };
   }
-  const fromAddress = typeof env[EMAIL_SETTINGS.from] === "string" && env[EMAIL_SETTINGS.from].trim() || DEFAULT_FROM_ADDRESS;
+  const fromValue = env[EMAIL_SETTINGS.from];
+  const fromAddress = typeof fromValue === "string" && fromValue.trim() || DEFAULT_FROM_ADDRESS;
   const from = senderOf(churchName, fromAddress);
   const subject = withdrawalAttestationEmailSubject(task.personName);
   const text = withdrawalAttestationEmailText(churchName);
@@ -635,7 +637,7 @@ async function sendWithdrawalAttestationEmail({
   }
   return {
     status: 200,
-    body: { ok: true, mode: "send", sent: 1, withoutEmail: 0, to, copyTo: replyTo }
+    body: { ok: true, mode: "send", sent: 1, withoutEmail: 0, stopped: null, remainingPersonIds: [], to, copyTo: replyTo }
   };
 }
 
