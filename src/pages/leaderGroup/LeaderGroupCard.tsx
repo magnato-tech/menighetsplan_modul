@@ -10,6 +10,8 @@ import { GroupScheduleCard } from "./GroupScheduleCard";
 import { GroupActivities } from "./GroupActivities";
 import { GroupMembers } from "./GroupMembers";
 import { useMinSideModules } from "../../hooks/useMinSideModules";
+import { minSideFrameClass } from "../../utils/minSideFrame";
+import { PC_CARD, PC_COLUMNS, PC_HEADING, pcTab } from "../../utils/pcColumns";
 import {
   ArrowLeft,
   Users,
@@ -48,6 +50,8 @@ export const LeaderGroupCard: React.FC<LeaderGroupCardProps> = ({ groupId, inPop
   // Room Tab for non-husgruppe: 'aktiviteter' | 'chat' | 'medlemmer'. Chat that is off opens activities instead.
   const [chosenRoomTab, setActiveRoomTab] = useState<LeaderGroupTab>(initialTab || "aktiviteter");
   const activeRoomTab: LeaderGroupTab = !chatOn && chosenRoomTab === "chat" ? "aktiviteter" : chosenRoomTab;
+  // On the page, PC (lg) shows the three sections side by side instead of the tabs. The popup keeps the tabs.
+  const columns = !inPopup;
 
   useEffect(() => {
     if (initialTab) {
@@ -60,7 +64,7 @@ export const LeaderGroupCard: React.FC<LeaderGroupCardProps> = ({ groupId, inPop
   // The popup is the frame itself, so the page's frame is left out there
   const frame = inPopup
     ? "w-full bg-slate-50"
-    : "w-full max-w-md mx-auto bg-slate-50 min-h-screen shadow-md sm:my-4 sm:rounded-3xl sm:border sm:border-slate-200/80 overflow-hidden";
+    : minSideFrameClass("wide");
   // The page has a back link; the popup shows only the role
   const topRow = inPopup ? (
     <div className="flex items-center">
@@ -120,7 +124,7 @@ export const LeaderGroupCard: React.FC<LeaderGroupCardProps> = ({ groupId, inPop
         </div>
 
         <div className="p-4 sm:p-5">
-          <HusfellesskapView groupId={group.id} />
+          <HusfellesskapView groupId={group.id} columns={!inPopup} />
         </div>
       </div>
     );
@@ -154,12 +158,14 @@ export const LeaderGroupCard: React.FC<LeaderGroupCardProps> = ({ groupId, inPop
       </div>
 
       {/* Tabs Navigation: Aktiviteter, Gruppechat, Medlemmer */}
-      <div className="px-4 pt-3 pb-2 bg-slate-50 border-b border-slate-200/60 flex items-center gap-1.5">
+      <div
+        className={`px-4 pt-3 pb-2 bg-slate-50 border-b border-slate-200/60 flex items-center gap-1.5 overflow-x-auto ${columns ? "lg:hidden" : ""}`}
+      >
         <button
           type="button"
           id="tab-btn-group-aktiviteter"
           onClick={() => setActiveRoomTab("aktiviteter")}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap ${
             activeRoomTab === "aktiviteter"
               ? "bg-white text-emerald-800 shadow-2xs border border-slate-200"
               : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
@@ -174,7 +180,7 @@ export const LeaderGroupCard: React.FC<LeaderGroupCardProps> = ({ groupId, inPop
             type="button"
             id="tab-btn-group-chat"
             onClick={() => setActiveRoomTab("chat")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer relative ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap relative ${
               activeRoomTab === "chat"
                 ? "bg-white text-emerald-800 shadow-2xs border border-slate-200"
                 : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
@@ -194,7 +200,7 @@ export const LeaderGroupCard: React.FC<LeaderGroupCardProps> = ({ groupId, inPop
           type="button"
           id="tab-btn-group-medlemmer"
           onClick={() => setActiveRoomTab("medlemmer")}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap ${
             activeRoomTab === "medlemmer"
               ? "bg-white text-emerald-800 shadow-2xs border border-slate-200"
               : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
@@ -224,22 +230,51 @@ export const LeaderGroupCard: React.FC<LeaderGroupCardProps> = ({ groupId, inPop
 
         {/* Activities and members stay mounted while hidden, so filters and a half-edited
             meeting plan are still there after a look at another tab. */}
-        <div>
-          <div id="section-group-aktiviteter-tab" className="space-y-6" hidden={activeRoomTab !== "aktiviteter"}>
+        <div className={columns ? PC_COLUMNS : undefined}>
+          <div
+            id="section-group-aktiviteter-tab"
+            className={`space-y-6 ${columns ? pcTab(activeRoomTab === "aktiviteter") : ""}`}
+            hidden={!columns && activeRoomTab !== "aktiviteter"}
+          >
             <GroupScheduleCard detail={detail} group={group} showToast={showToast} />
             <GroupActivities detail={detail} showToast={showToast} />
           </div>
 
-          {/* TAB 2: CHAT */}
-          {activeRoomTab === "chat" && (
-            <div id="section-group-chat-tab" className="space-y-4">
-              <GroupChat groupId={group.id} />
-            </div>
-          )}
+          {columns ? (
+            // PC: chat (when on) above members, in the right column
+            <div className="space-y-6">
+              {chatOn && (
+                <div
+                  id="section-group-chat-tab"
+                  className={`space-y-4 ${PC_CARD} ${pcTab(activeRoomTab === "chat")}`}
+                >
+                  <h2 className={PC_HEADING}>Gruppechat</h2>
+                  <GroupChat groupId={group.id} />
+                </div>
+              )}
 
-          <div id="section-group-medlemmer-tab" className="space-y-4" hidden={activeRoomTab !== "medlemmer"}>
-            <GroupMembers detail={detail} group={group} showToast={showToast} />
-          </div>
+              <div
+                id="section-group-medlemmer-tab"
+                className={`space-y-4 ${PC_CARD} ${pcTab(activeRoomTab === "medlemmer")}`}
+              >
+                <h2 className={PC_HEADING}>Deltakere ({members.length})</h2>
+                <GroupMembers detail={detail} group={group} showToast={showToast} />
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* TAB 2: CHAT */}
+              {activeRoomTab === "chat" && (
+                <div id="section-group-chat-tab" className="space-y-4">
+                  <GroupChat groupId={group.id} />
+                </div>
+              )}
+
+              <div id="section-group-medlemmer-tab" className="space-y-4" hidden={activeRoomTab !== "medlemmer"}>
+                <GroupMembers detail={detail} group={group} showToast={showToast} />
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

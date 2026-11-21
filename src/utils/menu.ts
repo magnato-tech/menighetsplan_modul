@@ -38,6 +38,16 @@ export function buildPageTree(pages: CmsPage[]): PageNode[] {
     }));
 }
 
+/** The "Oversikt" line under a menu heading. A heading that is only a menu has none, and a page can leave it out. */
+export function showsMenuOverview(page: Pick<CmsPage, "overviewInMenu" | "menuOnly">): boolean {
+  return page.menuOnly !== true && page.overviewInMenu !== false;
+}
+
+/** A page a visitor can open. A menu heading holds its sub-pages and is not a page of its own. */
+export function isPublicArticle(page: CmsPage, now = new Date()): boolean {
+  return isPagePublished(page, now) && page.menuOnly !== true;
+}
+
 /** Returns true if a page is currently published and not held back by a future scheduled publish date. */
 export function isPagePublished(page: CmsPage, now = new Date()): boolean {
   if (page.isPublished === false || page.status === "draft") {
@@ -53,11 +63,17 @@ export function isPagePublished(page: CmsPage, now = new Date()): boolean {
   return true;
 }
 
-/** The tree visitors see: published pages that are marked for the menu and not scheduled in the future. */
+/**
+ * The tree visitors see: published pages that are marked for the menu and not scheduled in the future.
+ * A sub-page stays in the menu when its parent page is a draft or is left out of the menu, so taking
+ * the overview away does not take the sub-pages with it. Publishing the parent puts them back under it.
+ */
 export function buildPublicMenu(pages: CmsPage[] = [], now = new Date()): PageNode[] {
-  return buildPageTree(
-    (pages || []).filter((p) => isPagePublished(p, now) && p.inNavMenu !== false)
-  );
+  const visible = (pages || []).filter((p) => isPagePublished(p, now) && p.inNavMenu !== false);
+  const tree = buildPageTree(visible);
+  const placed = new Set(tree.flatMap((node) => [node.page.id, ...node.children.map((child) => child.id)]));
+  const loose = visible.filter((page) => !placed.has(page.id)).sort(byMenuOrder);
+  return [...tree, ...loose.map((page) => ({ page, children: [] }))];
 }
 
 /** Sub-pages that no menu reaches, because their parent is gone or is itself a sub-page. */

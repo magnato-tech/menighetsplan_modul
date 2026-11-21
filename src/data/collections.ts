@@ -17,6 +17,8 @@ const PLANNER_NAMES = {
   ASSIGNMENTS: "assignments",
   GROUP_MESSAGES: "groupMessages",
   MEMBER_PROPOSALS: "memberProposals",
+  MEMBERSHIP_APPLICATIONS: "membershipApplications",
+  MEMBERSHIP_CLERK_TASKS: "membershipClerkTasks",
   GATHERING_ATTENDANCES: "gatheringAttendances",
   GATHERING_HEADCOUNTS: "gatheringHeadcounts",
   VOLUNTEER_ROLES: "volunteer_roles",

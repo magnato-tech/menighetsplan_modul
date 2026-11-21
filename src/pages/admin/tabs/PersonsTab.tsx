@@ -31,6 +31,7 @@ import { personListFile } from "../../../utils/personListFile";
 import { createPersonInGroup } from "../../../services/memberProposals";
 import { reportWriteError } from "../../../services/writeErrors";
 import { DEMO } from "../../../demo";
+import { clerkOnlyInAdmin } from "../../../utils/session";
 import { useOperatingMode } from "../../../hooks/useOperatingMode";
 import { CornerstoneImportDialog } from "../CornerstoneImportDialog";
 
@@ -40,7 +41,8 @@ interface PersonsTabProps {
 }
 
 export const PersonsTab: React.FC<PersonsTabProps> = ({ studio, showFeedback }) => {
-  const { adminPersons, adminGroups, addPerson } = studio;
+  const { adminPersons, adminGroups, addPerson, currentUser } = studio;
+  const clerkOnly = clerkOnlyInAdmin(currentUser ?? { globalRole: "member" });
   const [creating, setCreating] = useState(false);
   const [importing, setImporting] = useState(false);
   const [newName, setNewName] = useState("");
@@ -163,6 +165,7 @@ export const PersonsTab: React.FC<PersonsTabProps> = ({ studio, showFeedback }) 
           </p>
         </div>
 
+        {!clerkOnly && (
         <button
           type="button"
           onClick={() => setCreating((open) => !open)}
@@ -171,8 +174,9 @@ export const PersonsTab: React.FC<PersonsTabProps> = ({ studio, showFeedback }) 
           <UserPlus className="w-4 h-4" />
           <span>{creating ? "Lukk skjema" : "Ny person"}</span>
         </button>
+        )}
         {/* Not in the demo: its database is open to everyone, and a real register must never be put there */}
-        {DEMO === null && (
+        {DEMO === null && !clerkOnly && (
           <button
             type="button"
             id="btn-import-cornerstone"

@@ -1,8 +1,11 @@
-import { Badge, Calendar, CalendarRange, FileText, FolderKanban, Headphones, Images, LayoutTemplate, ListTodo, Mail, Newspaper, Palette, Sliders, Star, Users, type LucideIcon } from "lucide-react";
+import { Badge, Calendar, CalendarRange, ClipboardList, FileText, FolderKanban, Headphones, Images, LayoutTemplate, ListTodo, Mail, Newspaper, Palette, Sliders, Star, Users, type LucideIcon } from "lucide-react";
 import { useCms } from "../../context/CmsContext";
 import { useLevel } from "../../hooks/useLevel";
 import { useStockImageCount } from "../../hooks/useStockImageCount";
 import { usePendingProposalCounts } from "../../hooks/useMemberProposals";
+import { useMembershipApplications } from "../../hooks/useMembershipApplications";
+import { canManageMembershipApplications } from "./membershipClerk";
+import { openMembershipApplications } from "../../utils/membershipClerkWorkflow";
 import { useExternalCalendarPending } from "../../hooks/useExternalCalendarQueue";
 import { hasPlanner } from "../../utils/level";
 import { NEAR_WEEKS, isUrgentTask, withinWeeks, type StudioData, type StudioTab } from "./studio";
@@ -28,12 +31,14 @@ export interface StudioMenuEntry {
  */
 export function useStudioMenuEntries(studio: StudioData, area: StudioArea, options: { webEditor?: boolean } = {}): StudioMenuEntry[] {
   const { webEditor = false } = options;
-  const { adminPersons, adminGroups, adminGatherings, adminTasks, adminVolunteerRoles } = studio;
+  const { currentUser, adminPersons, adminGroups, adminGatherings, adminTasks, adminVolunteerRoles } = studio;
   const { pages, media, news, sermons, staff } = useCms();
   const withPlanner = hasPlanner(useLevel());
   // The media library counts the images that come with the app next to the uploaded ones
   const mediaCount = media.filter((item) => item.status === "ready").length + useStockImageCount();
   const waitingProposals = [...usePendingProposalCounts(withPlanner).values()].reduce((sum, count) => sum + count, 0);
+  const membershipManage = canManageMembershipApplications(currentUser);
+  const membershipOpen = openMembershipApplications(useMembershipApplications(membershipManage)).length;
   const urgentTasksCount = withinWeeks(adminTasks, NEAR_WEEKS).filter(isUrgentTask).length;
   const importPending = useExternalCalendarPending();
 
@@ -67,6 +72,20 @@ export function useStudioMenuEntries(studio: StudioData, area: StudioArea, optio
         ]
       : []),
     { tab: "planlegger-personer", label: "Personer", icon: Users, iconClass: "", count: adminPersons.length },
+    ...(membershipManage
+      ? [
+          {
+            tab: "planlegger-medlemskap" as const,
+            label: "Medlemskap",
+            icon: ClipboardList,
+            iconClass: "",
+            alerts:
+              membershipOpen > 0
+                ? [{ text: String(membershipOpen), tone: "amber" as const, title: "Åpne søknader" }]
+                : [],
+          },
+        ]
+      : []),
     { tab: "planlegger-maler", label: "Maler", icon: LayoutTemplate, iconClass: "" },
     { tab: "arshjul", label: "Årshjul", icon: CalendarRange, iconClass: "" },
     ...(withPlanner ? [{ tab: "epost" as const, label: "Send e-post", icon: Mail, iconClass: "" }] : []),

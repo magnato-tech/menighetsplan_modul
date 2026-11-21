@@ -117,6 +117,18 @@ export const isWebEditor = (person: Pick<Person, "globalRole"> | null | undefine
 /** Whether the person gets into the admin at all: an administrator wholly, a web editor the website part. */
 export const mayOpenStudio = (person: Pick<Person, "globalRole">): boolean => isAdministrator(person) || isWebEditor(person);
 
+/** Protokollansvarlig: may read the register in admin and open «Mitt medlemskap». An administrator may have this too. */
+export const isRegisterClerk = (person: Pick<Person, "membershipClerk"> | null | undefined): boolean =>
+  person?.membershipClerk === true;
+
+/** Into the admin: administrator, web editor, or protokollansvarlig without being either. */
+export const mayEnterAdmin = (person: Pick<Person, "globalRole" | "membershipClerk">): boolean =>
+  mayOpenStudio(person) || isRegisterClerk(person);
+
+/** Protokollansvarlig in admin, but not an administrator or web editor: only Personer. */
+export const clerkOnlyInAdmin = (person: Pick<Person, "globalRole" | "membershipClerk">): boolean =>
+  isRegisterClerk(person) && !mayOpenStudio(person);
+
 export const leadsAGroup = (person: Pick<Person, "id">, groups: GroupRoles[]): boolean =>
   groups.some((group) => leadsGroup(group, person.id));
 
@@ -133,6 +145,12 @@ export const ROLE_LABELS: Record<SessionRole, string> = {
   gruppeleder: "Gruppeleder",
   medlem: "Frivillig",
 };
+
+/** The role line in the account menu, with protokollansvarlig when the flag is set. */
+export function accountRoleLine(person: Pick<Person, "id" | "globalRole" | "membershipClerk">, groups: GroupRoles[]): string {
+  const base = ROLE_LABELS[roleOf(person, groups)];
+  return isRegisterClerk(person) ? `${base} · Protokollansvarlig` : base;
+}
 
 /**
  * Where to go after signing in: the address that was asked for, when it is one of the app's own.

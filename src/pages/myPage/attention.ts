@@ -90,3 +90,25 @@ export function attentionTags(items: readonly AttentionItem[]): { tag: string; c
 export function withAttentionTags<T extends AttentionItem>(items: readonly T[], chosen: ReadonlySet<string>): T[] {
   return chosen.size === 0 ? [...items] : items.filter((item) => chosen.has(attentionTagOf(item)));
 }
+
+/** One group of items that share a gathering time, in the order they come in the list. */
+export interface AttentionDateGroup<T extends AttentionItem> { startsAt: string; items: T[] }
+
+/**
+ * The items grouped by their exact start time (one group per gathering), in the order they come.
+ * Items without a time end up in one group last.
+ */
+export function attentionByDate<T extends AttentionItem>(items: readonly T[]): AttentionDateGroup<T>[] {
+  const groups = new Map<string, AttentionDateGroup<T>>();
+  for (const item of items) {
+    const group = groups.get(item.startsAt);
+    if (group) group.items.push(item);
+    else groups.set(item.startsAt, { startsAt: item.startsAt, items: [item] });
+  }
+  const dated = [...groups.values()].filter((group) => group.startsAt !== "");
+  const undated = groups.get("");
+  return undated ? [...dated, undated] : dated;
+}
+
+/** The number of date groups shown before «Vis flere datoer». */
+export const ATTENTION_DATES_SHOWN = 3;

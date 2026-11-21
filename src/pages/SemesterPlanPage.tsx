@@ -1,3 +1,4 @@
+import { MinSideFrame } from "../components/minSide/MinSideFrame";
 import React, { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Clock, MapPin } from "lucide-react";
@@ -40,7 +41,7 @@ export const SemesterPlanPage: React.FC = () => {
   useEffect(() => (cardGatheringId ? watchGatheringAssignments(cardGatheringId) : undefined), [cardGatheringId, watchGatheringAssignments]);
 
   const shell = (children: React.ReactNode) => (
-    <div className="w-full max-w-md mx-auto bg-slate-50 min-h-screen shadow-md sm:my-4 sm:rounded-3xl sm:border sm:border-slate-200/80 overflow-hidden pb-[calc(6.5rem+env(safe-area-inset-bottom))] sm:pb-8">
+    <MinSideFrame width="narrow" bottomNavRoom>
       <div className="p-4 sm:p-6 space-y-4">
         <div className="flex items-center gap-3">
           <Link
@@ -54,7 +55,7 @@ export const SemesterPlanPage: React.FC = () => {
         </div>
         {children}
       </div>
-    </div>
+    </MinSideFrame>
   );
 
   if (!ready || (item && index === null)) return shell(<p className="text-sm text-slate-500">Henter planen …</p>);

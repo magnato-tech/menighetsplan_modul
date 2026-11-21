@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { X } from "lucide-react";
 import { GatheringDetail, InstructionTarget } from "./gatheringDetail";
 import { studioTabUrl } from "../../pages/admin/studio";
+import { MIN_SIDE_DIALOG_OVERLAY, MIN_SIDE_DIALOG_PANEL } from "../../utils/minSideFrame";
 
 interface InstructionDialogProps {
   detail: GatheringDetail;
@@ -19,11 +20,11 @@ export const InstructionDialog: React.FC<InstructionDialogProps> = ({ task, onCl
   return (
     <div
       id="modal-view-instruction"
-      className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fadeIn"
+      className={`${MIN_SIDE_DIALOG_OVERLAY} animate-fadeIn`}
       onClick={() => onClose()}
     >
       <div
-        className="w-full max-w-md bg-white rounded-3xl p-5 space-y-4 shadow-2xl border border-slate-100 relative"
+        className={`${MIN_SIDE_DIALOG_PANEL} bg-white p-5 space-y-4 relative`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">

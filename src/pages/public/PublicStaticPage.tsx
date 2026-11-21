@@ -17,7 +17,7 @@ import { resolveVisualBlocks } from "../../utils/cmsBlocks";
 import { buildLinkContext, ensureSectionAnchors, resolveCmsLinkForDisplay } from "../../utils/cmsLinks";
 import { objectStyleOf } from "../../utils/focusPoint";
 import { HeroButtons } from "../../components/cms/HeroButtons";
-import { isPagePublished } from "../../utils/menu";
+import { isPublicArticle } from "../../utils/menu";
 import { formatNorwegianDateTime } from "../../utils/dates";
 import { usePreviewPageDraft } from "../../hooks/usePreviewPageDraft";
 import { useResolvedMediaUrl } from "../../hooks/useMediaMap";
@@ -66,7 +66,7 @@ export const PublicStaticPage: React.FC<PublicStaticPageProps> = ({
   const heroImageAlt = page?.heroImageAlt?.trim() || "";
 
   const isAvailable = page
-    ? Boolean(pageOverride) || isLiveDraft || isPagePublished(page)
+    ? Boolean(pageOverride) || isLiveDraft || isPublicArticle(page)
     : false;
 
   if (!page || !isAvailable) {

@@ -5,8 +5,11 @@ import { AttentionSection } from "./myPage/AttentionSection";
 import { MyGroupsSection } from "./myPage/MyGroupsSection";
 import { MyTasksTab } from "./myPage/MyTasksTab";
 import { MyPageTabs, shownMyPageTabs, toMyPageTab, type MyPageTab } from "./myPage/MyPageTabs";
+import { MyPageSideMenu } from "./myPage/MyPageSideMenu";
+import { MinSideFrame } from "../components/minSide/MinSideFrame";
 import { useMinSideModules } from "../hooks/useMinSideModules";
 import { MyCalendarPanel } from "./myPage/MyCalendarPanel";
+import { MIN_SIDE_LIST_COLUMN } from "../utils/minSideFrame";
 import { WorshipPlanPanel } from "./myPage/WorshipPlanPanel";
 import { AttentionModal } from "./myPage/AttentionModal";
 import { VolunteerHelp } from "./myPage/VolunteerHelp";
@@ -37,8 +40,11 @@ export const MyPage: React.FC = () => {
 
   return (
     // The room at the bottom is for the menu that is fixed there on a phone: the last card can be scrolled clear of it
-    <div className="w-full max-w-md mx-auto bg-slate-50 min-h-screen shadow-md sm:my-4 sm:rounded-3xl sm:border sm:border-slate-200/80 overflow-hidden pb-[calc(6.5rem+env(safe-area-inset-bottom))] sm:pb-8">
-      <div className="p-4 sm:p-6 space-y-4">
+    <MinSideFrame bottomNavRoom>
+      {/* On a PC the parts are listed in a column to the left; the page itself is the column to the right */}
+      <div className="p-4 sm:p-6 lg:grid lg:grid-cols-[13rem_1fr] lg:gap-6 lg:items-start">
+        <MyPageSideMenu active={tab} onChange={setTab} tabs={tabs} />
+        <div className="space-y-4 min-w-0">
         {/* Floating Feedback Notification */}
         {feedbackMessage && (
           <div
@@ -67,7 +73,7 @@ export const MyPage: React.FC = () => {
 
         {/* The heading is the name of the part that is open, so nobody wonders where they are */}
         <div className="flex items-center justify-between gap-2">
-          <h1 id="my-page-heading" className="text-xl font-black text-slate-900 tracking-tight">
+          <h1 id="my-page-heading" className="text-xl lg:text-2xl font-black text-slate-900 tracking-tight">
             {heading}
           </h1>
           <VolunteerHelp />
@@ -76,7 +82,8 @@ export const MyPage: React.FC = () => {
         <MyPageTabs active={tab} onChange={setTab} tabs={tabs} />
 
         {tab === "oppgaver" && (
-          <>
+          // One column on every screen: on a PC it keeps the width of a tablet, so a task reads as one line
+          <div className={MIN_SIDE_LIST_COLUMN}>
             {/* A semester plan waiting for the user comes first: it covers the whole semester at once */}
             {plansWaiting.length > 0 && <SemesterPlanWaiting plans={plansWaiting} />}
 
@@ -95,7 +102,7 @@ export const MyPage: React.FC = () => {
             )}
 
             {tasksOn && <MyTasksTab page={page} />}
-          </>
+          </div>
         )}
 
         {tab === "grupper" && <MyGroupsSection page={page} />}
@@ -103,9 +110,10 @@ export const MyPage: React.FC = () => {
         {tab === "kalender" && <MyCalendarPanel />}
 
         {tab === "gudstjenester" && <WorshipPlanPanel />}
+        </div>
       </div>
 
       {showAttentionModal && <AttentionModal page={page} onClose={() => setShowAttentionModal(false)} />}
-    </div>
+    </MinSideFrame>
   );
 };

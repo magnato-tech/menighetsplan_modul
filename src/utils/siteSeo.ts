@@ -3,7 +3,7 @@ import type { Gathering } from "../types";
 import { teaserOf } from "./gatheringPresentation";
 import { isOpenCommunityGathering } from "./gatherings";
 import { mediaMapFromList, resolveShareableMediaUrl } from "./media";
-import { isPagePublished, pageUrl } from "./menu";
+import { isPublicArticle, pageUrl } from "./menu";
 import { isPublicPath } from "./routes";
 
 // What each address of the website tells search engines and sharing services: title,
@@ -137,7 +137,7 @@ export function seoForPath(pathname: string, site: SiteContent, now: Date = new 
   const { settings } = site;
   const base = { churchName: settings.churchName, siteName: settings.appName };
   const path = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
-  const published = site.pages.filter((page) => isPagePublished(page, now));
+  const published = site.pages.filter((page) => isPublicArticle(page, now));
 
   if (path === "/" || path === "/nettside") {
     // The front page speaks for the whole church, so its title is the church's name

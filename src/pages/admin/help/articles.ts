@@ -65,17 +65,16 @@ const minSide: HelpArticle = {
   hvor: "Nettsiden → Logg inn → Min side",
   intro: "Det frivillige og ledere ser når de har logget inn. Ingen app og ingen egen nettside: det er menighetens egen nettside, med det som er deres.",
   steg: [
-    "Fanene står nederst på telefonen: **Mine oppgaver**, **Mine grupper**, **Kalender** og **Gudstjenester**. En del som er slått av under Moduler, vises ikke.",
+    "Fire faner: **Mine oppgaver**, **Mine grupper**, **Kalender** og **Gudstjenester**. De står nederst på telefonen, øverst på nettbrett og i en meny til venstre på PC. En del som er slått av under Moduler, vises ikke.",
     "**Mine oppgaver**: forespørsler, ledige oppgaver og semesterplanen. Den frivillige svarer med ett trykk.",
     "**Gudstjenester**: de neste gudstjenestene, med hvem som har sagt ja til hva. Egne oppgaver er uthevet.",
     "Leder eller nestleder: gruppene en leder, står øverst under **Mine grupper**, med bemanningen på neste aktivitet. Et trykk på aktiviteten åpner planleggingen.",
     "Forfall i egne grupper står som **Må fylles** på Mine oppgaver. **Finn noen** åpner planleggingen, der plassen fylles.",
-    "I **Kalender** viser **Jeg leder** gruppenes arrangementer, med rød prikk der det mangler folk.",
+    "I **Kalender** viser **Jeg leder** gruppenes arrangementer, med rød prikk der det mangler folk. På nettbrett og PC er kalenderen en måned; trykk på en dag for å se hva som skjer.",
   ],
   godt:
-    "Vil noen ha Min side som et ikon på telefonen, velger de «Legg til på startskjermen» i nettleseren. Ikonet åpner Min side. Det finnes ingen egen side for gruppeledere lenger: rollen bestemmer hva Min side viser.",
+    "På PC står gruppene og gudstjenestene i tre kolonner, grupperommet viser aktiviteter, chat og deltakere side om side, og kjøreplanen har bemanningen ved siden av programmet. Vil noen ha Min side som et ikon på telefonen, velger de «Legg til på startskjermen» i nettleseren. Ikonet åpner Min side. Det finnes ingen egen side for gruppeledere lenger: rollen bestemmer hva Min side viser.",
   seOgsa: ["losningen", "moduler", "bemanning"],
-  utenBilde: true,
 };
 
 const komIGang: HelpArticle = {
@@ -148,8 +147,8 @@ const siderSidetre: HelpArticle = {
     "Trykk **Sidestruktur** øverst. Bryteren husker hvilken visning du brukte sist.",
     "Dra en side for å flytte den, eller bruk pilene opp og ned.",
     "Den runde **+** øverst lager en ny hovedfane. **+ Underfane** på en fane lager en side under den. Kopier-knappen lager en kopi som kladd. Den nye siden åpnes i Rediger.",
-    "Trykk på statusen for å publisere en side eller sette den til kladd. Før en side tas bort fra nettsiden, blir du spurt.",
-    "Trykk **I toppmeny** eller **I meny** for å ta siden ut av menyen, og trykk igjen for å vise den. Siden finnes fortsatt på sin adresse.",
+    "Trykk på statusen for å publisere en side eller sette den til kladd. Før en side tas bort fra nettsiden, blir du spurt. Nettsiden endrer seg med en gang: kladd tar bort siden, og publisert henter den tilbake.",
+    "Trykk **I toppmeny** eller **I meny** for å ta siden ut av menyen, og trykk igjen for å vise den. Menylinjen, også **Oversikt**, kommer og går med en gang. Siden finnes fortsatt på sin adresse. Underfanene blir stående i menyen.",
     "**Rediger** på en rad åpner siden i Rediger. Øyet viser siden i ny fane, også en kladd.",
   ],
   godt: "Menylinjen øverst er nettsidens meny: trykk en fane, så ruller listen dit. **Kollaps alle** og **Utvid alle** viser eller skjuler underfanene.",
@@ -260,12 +259,11 @@ const siderPublisering: HelpArticle = {
   hvor: "Nettside → Sider & Innhold → Rediger → Publisering & Synlighet",
   intro: "Bestem om siden vises, om den står i menyen, og om den skal vente til et tidspunkt.",
   steg: [
-    "**Aktiver publisering** viser siden på nettsiden.",
-    "**Vis i offentlig meny** legger den i menyen. Uten den nås siden bare med lenken.",
-    "Skal siden komme senere, sett **Publiseringsdato & tidspunkt (Planlegging)**, eller trykk **I morgen 09:00**.",
-    "Trykk **Lagre**.",
+    "**Aktiver publisering** viser siden på nettsiden med en gang. Tar du den av, blir du spurt, og siden forsvinner med en gang. Huker du av igjen, kommer siden tilbake.",
+    "**Vis i offentlig meny** legger den i menyen med en gang, også linjen **Oversikt**. Uten den nås siden bare med lenken, og underfanene blir stående i menyen. Huker du av igjen, kommer menylinjen tilbake.",
+    "Skal siden komme senere, sett **Publiseringsdato & tidspunkt (Planlegging)**, eller trykk **I morgen 09:00**, og trykk **Lagre**.",
   ],
-  godt: "En kladd vises ikke på nettsiden. En planlagt side kommer av seg selv på tidspunktet.",
+  godt: "En kladd vises ikke på nettsiden. En planlagt side kommer av seg selv på tidspunktet. De to avkrysningene **Vis på siden** under toppbildet gjelder bare knappene der, ikke om siden er publisert.",
   seOgsa: ["sider-sidetre", "sider-sok"],
 };
 
@@ -539,6 +537,24 @@ const personer: HelpArticle = {
   tabs: ["planlegger-personer"],
 };
 
+const medlemskap: HelpArticle = {
+  id: "medlemskap",
+  title: "Medlemskap og innmelding",
+  hvor: "Planlegging → Medlemskap",
+  intro:
+    "Søknader og innmeldinger fra Min side kommer hit som oppgaver for protokollansvarlig. Skjemaene arkiveres konfidensielt.",
+  steg: [
+    "Åpne en oppgave og marker **Merk som mottatt** når skjemaet er tatt imot.",
+    "Før inn i Cornerstone, og trykk **Ført inn i Cornerstone**.",
+    "Ved bekreftelse av voksenmedlemskap (G → A): fyll utmeldingsdato G og innmeldingsdato A – registeret oppdateres da automatisk.",
+    "Ved andre skjema: oppdater medlemskap på personkortet, og trykk **Bekreftet i Menighetsplan**.",
+  ],
+  godt: "Protokollansvarlig ser denne fanen uten full administrator-tilgang. Administratorer ser den også.",
+  utenBilde: true,
+  seOgsa: ["personer"],
+  tabs: ["planlegger-medlemskap"],
+};
+
 const maler: HelpArticle = {
   id: "maler",
   title: "Maler",
@@ -715,6 +731,7 @@ export const helpSections: HelpSection[] = [
       { kind: "article", article: oppgaver },
       { kind: "article", article: grupper },
       { kind: "article", article: personer },
+      { kind: "article", article: medlemskap },
       { kind: "article", article: maler },
       { kind: "article", article: semesterplan },
       { kind: "article", article: arshjul },

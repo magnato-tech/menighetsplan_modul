@@ -12,7 +12,9 @@ export type DemoWayIn =
   | "tjenestegruppeleder"
   | "husgruppeleder"
   | "tjenestegruppemedlem"
-  | "medlemUtenTjeneste";
+  | "medlemUtenTjeneste"
+  | "kunMenighet"
+  | "kunKirkesamfunn";
 
 export type DemoGroup = GroupRoles & Pick<Group, "id" | "name" | "category">;
 
@@ -66,7 +68,25 @@ const WAYS_IN: { way: DemoWayIn; name: string; does: string; start: string }[] =
     does: "Ser Min side uten ledige tjenesteoppgaver (kun husfellesskap eller råd)",
     start: "/minside",
   },
+  {
+    way: "kunMenighet",
+    name: "Kun medlem i menigheten",
+    does: "Ser Mitt medlemskap som søker om tilknytning til kirkesamfunnet",
+    start: "/minside/medlemskap",
+  },
+  {
+    way: "kunKirkesamfunn",
+    name: "Kun medlem i kirkesamfunnet",
+    does: "Ser Mitt medlemskap uten medlemskap i menigheten – kan søke om medlemskap",
+    start: "/minside/medlemskap",
+  },
 ];
+
+const isDenominationOnly = (person: Person): boolean =>
+  person.denominationMember === true && person.congregationMember !== true;
+
+const isCongregationOnly = (person: Person): boolean =>
+  person.congregationMember === true && person.denominationMember !== true;
 
 const pathOf = (address: string): string => address.split(/[?#]/)[0];
 
@@ -140,6 +160,16 @@ function personForWay(way: DemoWayIn, persons: Person[], groups: DemoGroup[], us
         persons
           .filter((person) => roleOf(person, groups) === "medlem" && !inTjeneste(person.id))
           .sort((a, b) => groupNamesOf(b, groups).length - groupNamesOf(a, groups).length || byNameThenId(a, b)),
+        used
+      );
+    case "kunMenighet":
+      return pickFirst(
+        persons.filter((person) => isCongregationOnly(person) && roleOf(person, groups) === "medlem").sort(byNameThenId),
+        used
+      );
+    case "kunKirkesamfunn":
+      return pickFirst(
+        persons.filter((person) => isDenominationOnly(person) && roleOf(person, groups) === "medlem").sort(byNameThenId),
         used
       );
     default:

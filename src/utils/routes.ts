@@ -4,7 +4,15 @@ import { UNSUBSCRIBE_PATH } from "./newsletter";
 // and what search engines are told all follow from this, in the browser and on the server.
 
 /** The sections of Min side. An internal address must start with one of these. */
-export const MIN_SIDE_SECTIONS = ["/minside", "/leder", "/oppgave", "/gruppe", "/samling", "/husfellesskap", "/meldinger"];
+export const MIN_SIDE_SECTIONS = [
+  "/minside",
+  "/leder",
+  "/oppgave",
+  "/gruppe",
+  "/samling",
+  "/husfellesskap",
+  "/meldinger",
+];
 
 // Whole path segments only: "/leder" must not claim the public page "/lederskap"
 const isUnder = (pathname: string, section: string) => pathname === section || pathname.startsWith(`${section}/`);

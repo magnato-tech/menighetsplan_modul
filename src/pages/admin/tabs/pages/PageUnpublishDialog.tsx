@@ -30,7 +30,7 @@ export const PageUnpublishDialog: React.FC<PageUnpublishDialogProps> = ({ page, 
           <span>Ta «{page.title}» bort fra nettsiden?</span>
         </h3>
         <p className="text-xs text-[var(--studio-muted)] leading-relaxed">
-          Siden blir kladd og vises ikke på nettsiden før du publiserer den igjen. Innholdet blir liggende.
+          Siden blir kladd og forsvinner fra nettsiden med en gang. Publiserer du den igjen, kommer den tilbake. Underfanene blir stående i menyen. Innholdet blir liggende.
         </p>
         <div className="flex justify-end gap-2 pt-2">
           <button

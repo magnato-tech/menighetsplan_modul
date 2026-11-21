@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { AttentionModal } from "../src/pages/myPage/AttentionModal";
-import { attentionListItems, attentionTagOf, attentionTags, attentionText, withAttentionTags, type AttentionItem } from "../src/pages/myPage/attention";
+import { ATTENTION_DATES_SHOWN, attentionByDate, attentionListItems, attentionTagOf, attentionTags, attentionText, withAttentionTags, type AttentionItem } from "../src/pages/myPage/attention";
 import type { MyPageModel } from "../src/pages/myPage/useMyPage";
 
 // A long list of what needs one's action, narrowed with tags: one for each role.
@@ -46,7 +46,7 @@ describe("Listen med tagger", () => {
   const handleAttentionAnswer = vi.fn();
   const show = (list = items) => render(<AttentionModal page={{ attentionItems: list, handleAttentionAnswer } as unknown as MyPageModel} onClose={() => {}} />);
   const tags = () => screen.getByRole("group", { name: "Vis bare disse" });
-  const cards = () => screen.getAllByRole("heading", { level: 4 }).map((heading) => heading.textContent);
+  const cards = () => screen.getAllByRole("heading", { level: 5 }).map((heading) => heading.textContent);
 
   test("flere tagger kan trykkes inn, og alle som er trykket inn, vises", () => {
     show();
@@ -116,5 +116,48 @@ describe("Samlinger med forfall i grupper man leder", () => {
   test("hører ikke til listen over forespørsler og ledige oppgaver", () => {
     const list = attentionListItems([dropout(1), { ...items[0] }, { ...items[5] }]);
     expect(list.map((item) => item.type)).toEqual(["task_request", "open_task"]);
+  });
+});
+
+describe("Datoene i listen", () => {
+  test("samler etter tidspunkt i den rekkefølgen de kommer, og de uten dato står sist i én gruppe", () => {
+    const at = (item: AttentionItem, startsAt: string): AttentionItem => ({ ...item, startsAt });
+    const list: AttentionItem[] = [
+      at(items[0], "2027-02-01T10:00:00.000Z"),
+      at(items[1], ""),
+      at(items[2], "2027-01-10T10:00:00.000Z"),
+      at(items[3], "2027-02-01T10:00:00.000Z"),
+      at(items[4], ""),
+    ];
+    const groups = attentionByDate(list);
+    expect(groups.map((group) => group.startsAt)).toEqual(["2027-02-01T10:00:00.000Z", "2027-01-10T10:00:00.000Z", ""]);
+    expect(groups.map((group) => group.items.map((item) => item.id))).toEqual([["1", "4"], ["3"], ["2", "5"]]);
+    expect(ATTENTION_DATES_SHOWN).toBe(3);
+  });
+
+  test("viser de tre første datoene, og «Vis flere datoer» viser resten", () => {
+    const at = (id: string, day: number): AttentionItem => ({ ...open(id, "Oppgave " + id, "Gruppe"), startsAt: "2027-03-" + String(day).padStart(2, "0") + "T10:00:00.000Z" });
+    // Five dates; the 4th has two items
+    const list = [at("a", 1), at("b", 2), at("c", 3), at("d", 4), at("e", 4), at("f", 5)];
+    const handleAttentionAnswer = vi.fn();
+    render(<AttentionModal page={{ attentionItems: list, handleAttentionAnswer } as unknown as MyPageModel} onClose={() => {}} />);
+    const dateHeadings = () => screen.getAllByRole("heading", { level: 4 });
+
+    expect(dateHeadings()).toHaveLength(3);
+    expect(screen.getByRole("heading", { level: 5, name: "Oppgave a" })).toBeTruthy();
+    expect(screen.queryByRole("heading", { level: 5, name: "Oppgave f" })).toBeNull();
+
+    const more = screen.getByRole("button", { name: "Vis flere datoer (3 oppgaver)" });
+    fireEvent.click(more);
+    expect(dateHeadings()).toHaveLength(5);
+    expect(screen.getByRole("heading", { level: 5, name: "Oppgave f" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /Vis flere datoer/ })).toBeNull();
+  });
+
+  test("Escape lukker vinduet", () => {
+    const onClose = vi.fn();
+    render(<AttentionModal page={{ attentionItems: items, handleAttentionAnswer: vi.fn() } as unknown as MyPageModel} onClose={onClose} />);
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 });

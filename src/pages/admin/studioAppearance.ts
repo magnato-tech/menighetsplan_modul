@@ -2,8 +2,14 @@ import React, { createContext, useCallback, useContext, useMemo, useState } from
 
 export type StudioTheme = "dark" | "light";
 
+/** Standard for hele Admin Studio (meny og innhold). */
+export const DEFAULT_STUDIO_THEME: StudioTheme = "light";
+
 export const STUDIO_SIDEBAR_THEME_KEY = "menighetsplan_studio_sidebar";
 export const STUDIO_CONTENT_THEME_KEY = "menighetsplan_studio_content";
+/** Bumper når standard utseende endres, så alle får lys modus én gang. */
+export const STUDIO_APPEARANCE_EPOCH_KEY = "menighetsplan_studio_epoch";
+export const STUDIO_APPEARANCE_EPOCH = "2";
 
 export interface StudioAppearance {
   sidebarTheme: StudioTheme;
@@ -15,8 +21,7 @@ export interface StudioAppearance {
 }
 
 export function parseStudioTheme(value: string | null): StudioTheme {
-  // Light until the person has chosen dark themselves
-  return value === "dark" ? "dark" : "light";
+  return value === "dark" ? "dark" : DEFAULT_STUDIO_THEME;
 }
 
 export function readStudioTheme(key: string, storage: Storage = localStorage): StudioTheme {
@@ -27,12 +32,26 @@ export function writeStudioTheme(key: string, theme: StudioTheme, storage: Stora
   storage.setItem(key, theme);
 }
 
+/** Leser lagret tema, eller setter lys standard når epoken mangler (første besøk / etter oppgradering). */
+export function loadStudioAppearance(storage: Storage = localStorage): { sidebarTheme: StudioTheme; contentTheme: StudioTheme } {
+  if (storage.getItem(STUDIO_APPEARANCE_EPOCH_KEY) !== STUDIO_APPEARANCE_EPOCH) {
+    writeStudioTheme(STUDIO_SIDEBAR_THEME_KEY, DEFAULT_STUDIO_THEME, storage);
+    writeStudioTheme(STUDIO_CONTENT_THEME_KEY, DEFAULT_STUDIO_THEME, storage);
+    storage.setItem(STUDIO_APPEARANCE_EPOCH_KEY, STUDIO_APPEARANCE_EPOCH);
+    return { sidebarTheme: DEFAULT_STUDIO_THEME, contentTheme: DEFAULT_STUDIO_THEME };
+  }
+  return {
+    sidebarTheme: readStudioTheme(STUDIO_SIDEBAR_THEME_KEY, storage),
+    contentTheme: readStudioTheme(STUDIO_CONTENT_THEME_KEY, storage),
+  };
+}
+
 function useStudioAppearanceState(): StudioAppearance {
-  const [sidebarTheme, setSidebarThemeState] = useState<StudioTheme>(() =>
-    readStudioTheme(STUDIO_SIDEBAR_THEME_KEY)
+  const [sidebarTheme, setSidebarThemeState] = useState<StudioTheme>(
+    () => loadStudioAppearance().sidebarTheme
   );
-  const [contentTheme, setContentThemeState] = useState<StudioTheme>(() =>
-    readStudioTheme(STUDIO_CONTENT_THEME_KEY)
+  const [contentTheme, setContentThemeState] = useState<StudioTheme>(
+    () => loadStudioAppearance().contentTheme
   );
 
   const setSidebarTheme = useCallback((theme: StudioTheme) => {

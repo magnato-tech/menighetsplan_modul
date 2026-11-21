@@ -29,7 +29,7 @@ export const MyTasksTab: React.FC<{ page: MyPageModel }> = ({ page }) => {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 space-y-1">
-                      <p className="text-sm font-bold text-slate-900">{task.title}</p>
+                      <p className="text-sm lg:text-base font-bold text-slate-900">{task.title}</p>
                       {/* Two tasks may have the same title, so each says which event it is on */}
                       {gathering && (
                         <p className="text-[11px] text-slate-600 flex items-center gap-1.5">
@@ -39,7 +39,7 @@ export const MyTasksTab: React.FC<{ page: MyPageModel }> = ({ page }) => {
                           </span>
                         </p>
                       )}
-                      {task.description && <p className="text-xs text-slate-600">{task.description}</p>}
+                      {task.description && <p className="text-xs lg:text-sm text-slate-600">{task.description}</p>}
                     </div>
                     <ChevronRight className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" aria-hidden="true" />
                   </div>
