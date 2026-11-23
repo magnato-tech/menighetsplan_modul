@@ -1958,6 +1958,8 @@ git push origin origin/main:stabil
 
 **Sluppet til Lillesand 23. november 2026, andre gang** (`stabil` = `90921cd`, `main` `a2554f3` slått sammen inn etter beskjed fra produkteier): Arrangementer på nettsiden som tabell etter dato med filter, Sjekk nettsiden med serier og «Ikke nå», overskriften og ingressen på forsiden bare på selve forsiden («Navnet på appen» i innstillingene), og nettsiden på mobil uten toppbilde. Databasereglene er ikke endret.
 
+**Sluppet til Lillesand 23. november 2026, tredje gang** (`stabil` = `721577e`, `main` `6277719` slått sammen inn etter beskjed fra produkteier): Aktuelt & Nyheter med status og filter, søk og filter i talearkivet, «Endret … av …» på sider og nyheter, «Denne uka på nettsiden» på Oversikt (på mobil bak en bjelle ved menyknappen), papirkurv i 30 dager for sider, nyheter og taler, og toppbildet med færre valg. Databasereglene er ikke endret.
+
 ### Brukernivåer som holder i databasen *(avtalt 12. oktober 2026; lesetilgangen er i koden, ikke publisert i databasen ennå)*
 
 **Problemet.** Appen har tre roller (administrator, gruppeleder, frivillig). De styrer skjermene. Lesingen av registeret var den samme for alle som var logget inn. Produkteier har bedt om tre sikre nivåer, og frivillige skal ikke inviteres inn før reglene er publisert.
