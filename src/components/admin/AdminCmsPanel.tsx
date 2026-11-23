@@ -20,7 +20,6 @@ import { PageUnpublishDialog } from "../../pages/admin/tabs/pages/PageUnpublishD
 
 // The two views of the panel, chosen with the switch at the top
 type PagesView = "rediger" | "struktur";
-const VIEW_KEY = "menighetsplan:sider-visning";
 const LAST_OPENED_KEY = "menighetsplan:sider-sist-apnet";
 
 // Storage can be blocked (private mode, settings), so every access is guarded
@@ -57,6 +56,8 @@ export interface AdminCmsPanelProps {
   onCreateHandled?: () => void;
   /** Tells the admin whether a page is open in the editor, so the side menu can fold to icons. */
   onEditorOpenChange?: (open: boolean) => void;
+  /** Counts the presses on «Sider & Innhold» in the admin menu. Each new press shows Sidestruktur. */
+  showTreeRequest?: number;
 }
 
 /**
@@ -68,13 +69,14 @@ export const AdminCmsPanel: React.FC<AdminCmsPanelProps> = ({
   createRequested = false,
   onCreateHandled,
   onEditorOpenChange,
+  showTreeRequest,
 }) => {
   const { pages, savePage, deletePage, reorderPages } = useCms();
 
   const [editingPage, setEditingPage] = useState<Partial<CmsPage> | null>(null);
-  // Editor or tree: one at a time, so the page is not split in two parts. Remembered between visits.
-  const [view, setView] = useState<PagesView>(() => (readStoredText(VIEW_KEY) === "struktur" ? "struktur" : "rediger"));
-  useEffect(() => writeStoredText(VIEW_KEY, view), [view]);
+  // Editor or tree: one at a time, so the page is not split in two parts. Every visit starts on the tree.
+  // Opening a page (or asking for a new one) switches to the editor, see openEditor and the createRequested effect.
+  const [view, setView] = useState<PagesView>("struktur");
   // A page that is taken off the website is only asked about here, before it is saved as a draft
   const [unpublishPage, setUnpublishPage] = useState<CmsPage | null>(null);
 
@@ -159,6 +161,16 @@ export const AdminCmsPanel: React.FC<AdminCmsPanelProps> = ({
       setView("struktur");
     });
   };
+
+  // A press on «Sider & Innhold» in the admin menu shows Sidestruktur, also when the panel is open already.
+  // Unsaved changes are asked about first, as with the switch at the top.
+  const lastTreeRequest = useRef(showTreeRequest);
+  useEffect(() => {
+    if (showTreeRequest === lastTreeRequest.current) return;
+    lastTreeRequest.current = showTreeRequest;
+    handleSwitchView("struktur");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showTreeRequest]);
 
   const handleOpenEditPage = (page: CmsPage) => {
     if (editingPage?.id === page.id) return;

@@ -51,15 +51,14 @@ afterEach(() => {
 });
 
 describe("Visning: Rediger eller Sidestruktur", () => {
-  test("standard er Rediger, med forsiden åpen og uten fanetreet", () => {
+  test("standard er Sidestruktur, med treet og ingen redigering", () => {
     const view = panel();
-    expect(view.getByText("Rediger side: Forside")).toBeTruthy();
-    expect(bryter(view).getByRole("button", { name: "Rediger" }).getAttribute("aria-pressed")).toBe("true");
-    expect(view.queryByText("+ Underfane")).toBeNull();
-    expect(rad("page-om-oss")).toBeNull();
+    expect(view.queryByText("Rediger side: Forside")).toBeNull();
+    expect(bryter(view).getByRole("button", { name: "Sidestruktur" }).getAttribute("aria-pressed")).toBe("true");
+    expect(rad("page-om-oss")).not.toBeNull();
   });
 
-  test("Sidestruktur viser treet og ingen redigering, og husker valget ved ny visning", () => {
+  test("Sidestruktur viser treet og ingen redigering, og en ny visning starter også i treet", () => {
     let view = panel();
     fireEvent.click(bryter(view).getByRole("button", { name: "Sidestruktur" }));
     expect(view.queryByText("Rediger side: Forside")).toBeNull();

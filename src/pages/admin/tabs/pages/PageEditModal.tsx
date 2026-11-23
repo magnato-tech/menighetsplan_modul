@@ -100,6 +100,8 @@ export function scrollPreviewToTarget(
 const FIELDS_MIN_PX = 380;
 const PREVIEW_MIN_PX = 480;
 const SECTION_LIST_PX = 220;
+// The thin strip with the «››» button that is left when the list is folded away
+const SECTION_STRIP_PX = 28;
 const GAP_PX = 24; // gap-6 in the layout
 const DIVIDER_PX = 10;
 const KEY_STEP_PX = 24;
@@ -209,6 +211,8 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
   const wideEdit = useMediaQuery("(min-width: 1024px)", false);
   const navFits = viewMode === "split" ? wideSplit : viewMode === "edit" ? wideEdit : false;
   const showNav = navFits && !navCollapsed;
+  // Width of the section column beside the fields with its gaps: the list, the strip when folded, or nothing
+  const navReservePx = navFits ? (navCollapsed ? SECTION_STRIP_PX : SECTION_LIST_PX) + 3 * GAP_PX : 2 * GAP_PX;
 
   // Responsive device simulation in preview area: desktop (full width), tablet (768px), mobile (390px)
   const [previewDevice, setPreviewDevice] = useState<"desktop" | "tablet" | "mobile">("desktop");
@@ -447,17 +451,17 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
         width: fieldsWidth ?? undefined,
         flexBasis: fieldsWidth ? undefined : "40%",
         // A width kept from a wider screen still leaves the preview its least width
-        maxWidth: `calc(100% - ${(showNav ? SECTION_LIST_PX + 3 * GAP_PX : 2 * GAP_PX) + DIVIDER_PX + PREVIEW_MIN_PX}px)`,
+        maxWidth: `calc(100% - ${navReservePx + DIVIDER_PX + PREVIEW_MIN_PX}px)`,
       }
     : undefined;
 
   // The fields column can be shown narrower or wider. The preview keeps the rest of the row.
-  const clampFieldsWidth = (px: number, withList: boolean): number => {
+  const clampFieldsWidth = (px: number): number => {
     const rowWidth = splitRowRef.current?.getBoundingClientRect().width ?? 0;
     // Without a measured row (tests, hidden) there is no upper limit
     const upper =
       rowWidth > 0
-        ? rowWidth - (withList ? SECTION_LIST_PX + 3 * GAP_PX : 2 * GAP_PX) - DIVIDER_PX - PREVIEW_MIN_PX
+        ? rowWidth - navReservePx - DIVIDER_PX - PREVIEW_MIN_PX
         : Infinity;
     return Math.round(Math.max(FIELDS_MIN_PX, Math.min(px, upper)));
   };
@@ -472,7 +476,7 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
   };
 
   // The line between the fields and the preview. It is hidden below lg, where the columns stack.
-  const renderSplitter = (withList: boolean) => {
+  const renderSplitter = () => {
     const dragging = liveFieldsWidth !== null;
     return (
       <>
@@ -493,7 +497,7 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
           onPointerMove={(e) => {
             const drag = dragRef.current;
             if (!drag) return;
-            drag.latest = clampFieldsWidth(drag.startWidth + e.clientX - drag.startX, withList);
+            drag.latest = clampFieldsWidth(drag.startWidth + e.clientX - drag.startX);
             setLiveFieldsWidth(drag.latest);
           }}
           onPointerUp={endFieldsDrag}
@@ -507,7 +511,7 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
             e.preventDefault();
             const current = fieldsWidth ?? fieldsRef.current?.getBoundingClientRect().width ?? 0;
             const step = e.key === "ArrowRight" ? KEY_STEP_PX : -KEY_STEP_PX;
-            setFieldsWidth(clampFieldsWidth(current + step, withList));
+            setFieldsWidth(clampFieldsWidth(current + step));
           }}
           className="hidden lg:flex group w-2.5 shrink-0 self-stretch cursor-col-resize justify-center rounded-sm focus:outline-none"
         >
@@ -750,6 +754,24 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
     </>
   );
 
+  // The folded list: a thin strip with «››» where the list stands
+  const renderSectionStrip = () => (
+    <div
+      data-section-strip
+      className="shrink-0 w-[28px] self-stretch flex flex-col items-center p-1 rounded-xl border border-[var(--studio-border)] bg-[var(--studio-surface)]"
+    >
+      <button
+        type="button"
+        onClick={() => setCollapsed(false)}
+        aria-label="Vis seksjoner"
+        title="Vis seksjoner"
+        className="px-1.5 py-0.5 rounded text-xs font-bold text-[var(--studio-muted)] hover:bg-[var(--studio-hover)] hover:text-[var(--studio-text)] cursor-pointer"
+      >
+        ››
+      </button>
+    </div>
+  );
+
   const renderSectionNav = () => (
     <div className="w-[220px] shrink-0 sticky top-[calc(var(--demo-strip,0px)+6rem)] max-h-[82vh]">
       <PageSectionNav
@@ -850,17 +872,6 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
         </div>
 
         {viewMode !== "preview" && <EditorTextSizeControl value={textSize} onChange={setTextSize} />}
-
-        {navFits && navCollapsed && (
-          <button
-            type="button"
-            onClick={() => setCollapsed(false)}
-            aria-label="Vis seksjoner"
-            className="px-3 py-1.5 rounded-xl bg-[var(--studio-bg)] hover:bg-[var(--studio-panel-bg)] text-[var(--studio-accent-text)] border border-indigo-700/60 text-xs font-semibold cursor-pointer"
-          >
-            Seksjoner
-          </button>
-        )}
 
         {/* On narrow screens there is no list beside the fields, so a select jumps to a section instead */}
         {!navFits && viewMode !== "preview" && (
@@ -989,19 +1000,20 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
               {renderActiveSection()}
             </div>
           </div>
-          {renderSplitter(true)}
+          {renderSplitter()}
           <div className="flex-1 min-w-0 w-full sticky top-[calc(var(--demo-strip,0px)+6rem)]">
             {renderLiveFrontendPreview()}
           </div>
         </div>
       ) : viewMode === "split" ? (
         <div ref={splitRowRef} className="flex flex-col lg:flex-row gap-6 items-start w-full">
+          {navFits && navCollapsed && renderSectionStrip()}
           <div ref={fieldsRef} className={`${fieldsColumnClass} space-y-4 overflow-y-auto max-h-[82vh] pr-2`} style={fieldsStyle}>
             <div className="space-y-4" style={fieldsZoomStyle}>
               {renderFormFields()}
             </div>
           </div>
-          {renderSplitter(false)}
+          {renderSplitter()}
           <div className="flex-1 min-w-0 w-full sticky top-[calc(var(--demo-strip,0px)+6rem)]">
             {renderLiveFrontendPreview()}
           </div>
@@ -1012,6 +1024,15 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
           <div className="flex-1 min-w-0">
             <div className="space-y-4" style={fieldsZoomStyle}>
               {renderActiveSection()}
+            </div>
+          </div>
+        </div>
+      ) : viewMode === "edit" && navFits ? (
+        <div className="flex flex-col lg:flex-row gap-6 items-start w-full">
+          {renderSectionStrip()}
+          <div className="flex-1 min-w-0">
+            <div className="space-y-4" style={fieldsZoomStyle}>
+              {renderFormFields()}
             </div>
           </div>
         </div>

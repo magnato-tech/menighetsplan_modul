@@ -144,7 +144,7 @@ const siderSidetre: HelpArticle = {
   hvor: "Nettside → Sider & Innhold → Sidestruktur",
   intro: "Sider & Innhold har to visninger. I **Rediger** arbeider du med innholdet på én side. I **Sidestruktur** ordner du menyen: hovedfaner med underfaner, i den rekkefølgen de står på nettsiden.",
   steg: [
-    "Trykk **Sidestruktur** øverst. Bryteren husker hvilken visning du brukte sist.",
+    "**Sider & Innhold** åpner alltid Sidestruktur. Bytt til **Rediger** øverst for å arbeide med innholdet på én side.",
     "Dra en side for å flytte den, eller bruk pilene opp og ned.",
     "Den runde **+** øverst lager en ny hovedfane. **+ Underfane** på en fane lager en side under den. Kopier-knappen lager en kopi som kladd. Den nye siden åpnes i Rediger.",
     "Trykk på statusen for å publisere en side eller sette den til kladd. Før en side tas bort fra nettsiden, blir du spurt.",
@@ -169,7 +169,7 @@ const siderRedigere: HelpArticle = {
     "Dra en blokk i listen for å endre rekkefølgen. Øyet ved en blokk skjuler den på nettsiden uten å slette den. **Legg til blokk eller modul** nederst setter inn tekst, bilde eller en ferdig modul.",
     "Trykk på en seksjon i forhåndsvisningen, så åpnes feltene til den.",
   ],
-  godt: "Er skjermen smal, står seksjonene under hverandre, og **Gå til seksjon** øverst hopper dit. **‹‹** i listen skjuler den, og **Seksjoner** øverst viser den igjen. Se siden som **Desktop**, **Nettbrett** eller **Mobil**.",
+  godt: "Er skjermen smal, står seksjonene under hverandre, og **Gå til seksjon** øverst hopper dit. **‹‹** i listen skjuler den. Da blir den en smal stripe til venstre, og **››** øverst der viser den igjen. Se siden som **Desktop**, **Nettbrett** eller **Mobil**.",
   passPa: "Et nytt bilde vises i forhåndsvisningen først etter lagring. Det står en melding over forhåndsvisningen når det er slik.",
   seOgsa: ["sider-innhold", "sider-lagre"],
 };

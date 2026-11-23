@@ -301,7 +301,12 @@ function AdminStudioContent() {
 
 
 
-  const handleTabChange = (tab: StudioTab) => {
+  // Presses on «Sider & Innhold» in the menu: each one shows Sidestruktur (not when a new page is asked for)
+  const [pagesMenuPresses, setPagesMenuPresses] = useState(0);
+
+  const handleTabChange = (tab: StudioTab, forNewPage = false) => {
+
+    if (tab === "cms-sider" && !forNewPage) setPagesMenuPresses((n) => n + 1);
 
     openTab(tab);
 
@@ -318,7 +323,7 @@ function AdminStudioContent() {
 
     setCreateRequest(tab);
 
-    handleTabChange(tab);
+    handleTabChange(tab, true);
 
   };
 
@@ -532,6 +537,8 @@ function AdminStudioContent() {
             onCreateHandled={clearCreateRequest}
 
             onEditorOpenChange={setPageEditorOpen}
+
+            showTreeRequest={pagesMenuPresses}
 
           />
 
