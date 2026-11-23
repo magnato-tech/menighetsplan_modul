@@ -1739,6 +1739,16 @@ Bestilt av produkteier. Backloggen og kartleggingen (WordPress, Squarespace, Wix
 | **Tekstblokken direkte** | Et trykk på tittelen eller teksten i en blokk åpner den. Teksten vises i forhåndsvisningen av seg selv; «Bruk endringer» er borte for tekstblokker |
 | **Nettredaktør** | Fjerde brukernivå, valgt under Tilgang på personkortet (`globalRole: "nettredaktor"`, i `logins` som `nettredaktor`). Ser bare Nettside-delen av admin (`webEditor.ts`): ikke Lederskap & Stab, Planlegging, e-post, moduler eller database, og Hjelp bare for Nettside. Får det et medlem får av data, aldri hele registeret. På arrangementer et eget skjema for bilde og tekst (`GatheringWebsiteDialog`). Reglene (`firestore.rules`, `storage.rules`): skriver sider, nyheter, taler, mediebiblioteket, innstillingene og historikken; på arrangementer bare bilde, tekst, lenke og synlighet. Prøvd med regeltester mot emulatoren. I demoen er Kristine Vik nettredaktør, med egen dør. **Reglene må publiseres av produkteier før rollen virker hos en menighet** |
 
+### Oversikt, status og ett sted per felt (23. november 2026)
+
+Bestilt av produkteier etter en vurdering av CMS-et med monday.com som målestokk: alle skal se hva som må gjøres, og hvor.
+
+| Del | Hva som er levert |
+|---|---|
+| **Arrangementer på nettsiden** | En tabell sortert etter dato og gruppert per måned (`eventsOnWebsite.ts`). Knapper øverst med antall: Kommende (valgt), Mangler bilde og tekst, Offentlig, Kun intern, Fremhevet og Tidligere. Det som er over, står bare under Tidligere. Synligheten velges i merket under «På nettsiden»; knappene Fremhev, Offentlig og Kun intern på hver rad er tatt bort |
+| **Sjekk nettsiden** | Arrangementer i samme serie som mangler bilde eller tekst, står som én linje med antall og datoer. «Bilde og tekst på alle» åpner skjemaet for den første, med valget «Bruk samme bilde og tekst på de andre kommende i serien» (bare nettsidefeltene lagres). Hver linje har «Ikke nå», som huskes i nettleseren til den som trykket (`menighetsplan:sjekk-ikke-naa`), ikke i databasen |
+| **Nettside-innstillinger** | Overskriften og ingressen på forsiden er tatt ut her. De endres på selve forsiden, og knappen «Åpne Forsiden i Sider & Innhold» åpner den i redigeringen. Verdiene i innstillingene ligger igjen som reserve, og vises som forslag i feltene på forsiden når den mangler egen tekst. «Plattformnavn» heter «Navnet på appen» |
+
 **Rettet og sluppet til Lillesand 21. oktober 2026** (`stabil` = `6c42820`, bare denne rettingen oppå `6f9bc98`): knappen «Populer testdata (32 personer)» og boksen «Fyll inn testdata nå» er fjernet fra Lederskap & Stab, der de sto også i en menighets app i drift. Henvisningen til et simulert halvår i analysebordet vises bare i demo. `tests/no-testdata-in-production.test.tsx` passer på at de ikke kommer tilbake.
 
 **Sluppet til menighetene 21. oktober 2026** (`stabil` flyttet fram til `6f9bc98` etter beskjed fra produkteier): menylinjen i Sider, forsiden trinn 1 og 2, Lagre som holder siden åpen, menyene som står fast, advarselen om endringer som ikke er lagret, forhåndsvisningen som viser toppen av seksjonen, «Hva skjer» med valg, kalenderen i planleggingen, fargene i lys admin og navnet på tekstblokker. Databasereglene var ikke endret, så ingenting måtte limes inn hos Lillesand.

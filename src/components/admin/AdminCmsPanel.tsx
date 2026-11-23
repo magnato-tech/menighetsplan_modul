@@ -58,6 +58,9 @@ export interface AdminCmsPanelProps {
   onEditorOpenChange?: (open: boolean) => void;
   /** Counts the presses on «Sider & Innhold» in the admin menu. Each new press shows Sidestruktur. */
   showTreeRequest?: number;
+  /** Set when the settings tab asks for the front page to open in the editor. */
+  editFrontPageRequested?: boolean;
+  onFrontPageEditHandled?: () => void;
 }
 
 /**
@@ -70,6 +73,8 @@ export const AdminCmsPanel: React.FC<AdminCmsPanelProps> = ({
   onCreateHandled,
   onEditorOpenChange,
   showTreeRequest,
+  editFrontPageRequested = false,
+  onFrontPageEditHandled,
 }) => {
   const { pages, savePage, deletePage, reorderPages } = useCms();
 
@@ -399,6 +404,15 @@ export const AdminCmsPanel: React.FC<AdminCmsPanelProps> = ({
     const page = pages.find((p) => p.id === remembered) ?? findFrontPage(pages, hierarchicalPages);
     if (page) openEditor({ ...page }, false);
   }, [view, editingPage, createRequested, pages, hierarchicalPages]);
+
+  // The settings tab asks for the front page in the editor. Waits until the pages are loaded.
+  useEffect(() => {
+    if (!editFrontPageRequested || pages.length === 0) return;
+    onFrontPageEditHandled?.();
+    const front = findFrontPage(pages, hierarchicalPages);
+    if (front) handleOpenEditPage(front);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editFrontPageRequested, pages, hierarchicalPages]);
 
   return (
     <div ref={panelRef} className="w-full space-y-6 transition-all scroll-mt-[calc(var(--demo-strip,0px)+1rem)]">

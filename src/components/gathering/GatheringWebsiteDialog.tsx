@@ -11,6 +11,8 @@ interface GatheringWebsiteDialogProps {
   /** Stores the presentation; the answer says whether it went well. */
   onSave: (updates: Partial<Gathering>) => { success: boolean; error?: string };
   onClose: () => void;
+  /** Other upcoming events in the same series, which can take the same picture and text. Checked by default. */
+  alsoFor?: { count: number; onSaveAll: (updates: Partial<Gathering>) => void };
 }
 
 /**
@@ -18,14 +20,20 @@ interface GatheringWebsiteDialogProps {
  * nothing of its time, place or staffing, which are the planning's. What is stored is the presentation
  * only (websiteUpdatesOf).
  */
-export const GatheringWebsiteDialog: React.FC<GatheringWebsiteDialogProps> = ({ gathering, onSave, onClose }) => {
+export const GatheringWebsiteDialog: React.FC<GatheringWebsiteDialogProps> = ({ gathering, onSave, onClose, alsoFor }) => {
   const [values, setValues] = useState<GatheringFormValues>(() => formOfGathering(gathering));
+  const [alsoChecked, setAlsoChecked] = useState(true);
   const [error, setError] = useState("");
 
   const save = () => {
-    const result = onSave(websiteUpdatesOf(values));
-    if (result.success) onClose();
-    else setError(result.error || "Kunne ikke lagre. Prøv igjen.");
+    const updates = websiteUpdatesOf(values);
+    const result = onSave(updates);
+    if (!result.success) {
+      setError(result.error || "Kunne ikke lagre. Prøv igjen.");
+      return;
+    }
+    if (alsoFor && alsoChecked) alsoFor.onSaveAll(updates);
+    onClose();
   };
 
   return (
@@ -49,7 +57,13 @@ export const GatheringWebsiteDialog: React.FC<GatheringWebsiteDialogProps> = ({ 
           <Suspense fallback={<p className="text-sm text-slate-500">Henter feltene …</p>}>
             <GatheringWebsiteFields values={values} onChange={(changes) => setValues((current) => ({ ...current, ...changes }))} />
           </Suspense>
-          {error && <p className="mt-3 text-sm text-rose-600">{error}</p>}
+          {alsoFor && (
+            <label className="mt-4 flex items-start gap-2 text-sm text-slate-700 cursor-pointer">
+              <input type="checkbox" checked={alsoChecked} onChange={(event) => setAlsoChecked(event.target.checked)} className="mt-0.5 w-4 h-4 accent-indigo-600" />
+              <span>Bruk samme bilde og tekst på de andre kommende i serien ({alsoFor.count})</span>
+            </label>
+          )}
+          {error &&<p className="mt-3 text-sm text-rose-600">{error}</p>}
         </div>
         <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-slate-200">
           <button type="button" onClick={onClose} className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100 cursor-pointer">

@@ -21,7 +21,12 @@ const extensionOf = (name: string) => /\.[a-z0-9]+$/i.exec(name)?.[0].toLowerCas
 import { SOCIAL_FIELDS, socialUrlOf } from "../../../utils/socialLinks";
 import { SocialIcon } from "../../../components/public/SocialIcon";
 
-export const SiteSettingsTab: React.FC = () => {
+export interface SiteSettingsTabProps {
+  /** Opens the front page in the page editor under «Sider & Innhold». */
+  onOpenFrontPage?: () => void;
+}
+
+export const SiteSettingsTab: React.FC<SiteSettingsTabProps> = ({ onOpenFrontPage }) => {
   const { settings, saveSettings } = useCms();
 
   const [settingsForm, setSettingsForm] = useState<CmsSettings>({ ...settings });
@@ -113,7 +118,7 @@ export const SiteSettingsTab: React.FC = () => {
               />
             </div>
             <div className="space-y-1">
-              <label className="font-semibold text-[var(--studio-muted)]">Plattformnavn</label>
+              <label className="font-semibold text-[var(--studio-muted)]">Navnet på appen</label>
               <input
                 type="text"
                 value={settingsForm.appName}
@@ -121,6 +126,7 @@ export const SiteSettingsTab: React.FC = () => {
                 className="w-full px-3 py-2 rounded-xl bg-[var(--studio-input)] border border-[var(--studio-border)] text-[var(--studio-input-text)]"
                 required
               />
+              <p className="text-[var(--studio-muted)]">Vises i nettleserfanen og øverst på nettsiden.</p>
             </div>
           </div>
 
@@ -274,24 +280,17 @@ export const SiteSettingsTab: React.FC = () => {
             />
           </div>
 
-          <div className="space-y-1 text-xs">
-            <label className="font-semibold text-[var(--studio-muted)]">Hovedoverskrift på forsiden (Hero)</label>
-            <input
-              type="text"
-              value={settingsForm.welcomeHeadline}
-              onChange={(e) => setSettingsForm({ ...settingsForm, welcomeHeadline: e.target.value })}
-              className="w-full px-3 py-2 rounded-xl bg-[var(--studio-input)] border border-[var(--studio-border)] text-[var(--studio-input-text)]"
-            />
-          </div>
-
-          <div className="space-y-1 text-xs">
-            <label className="font-semibold text-[var(--studio-muted)]">Ingresstekst på forsiden</label>
-            <textarea
-              rows={2}
-              value={settingsForm.welcomeSubtext}
-              onChange={(e) => setSettingsForm({ ...settingsForm, welcomeSubtext: e.target.value })}
-              className="w-full px-3 py-2 rounded-xl bg-[var(--studio-input)] border border-[var(--studio-border)] text-[var(--studio-input-text)]"
-            />
+          <div className="p-4 rounded-xl bg-[var(--studio-accent-bg)] border border-[var(--studio-accent-border)] space-y-3 text-xs">
+            <p className="text-[var(--studio-text)]">
+              <span className="font-bold">Overskriften og ingressen på forsiden</span> endrer du på selve forsiden, der du ser hvordan de blir.
+            </p>
+            <button
+              type="button"
+              onClick={onOpenFrontPage}
+              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-sm transition-all cursor-pointer"
+            >
+              Åpne Forsiden i Sider & Innhold
+            </button>
           </div>
         </div>
 

@@ -263,6 +263,7 @@ function AdminStudioContent() {
   const [visitedTabs, setVisitedTabs] = useState<StudioTab[]>([tabParam]);
 
   const [createRequest, setCreateRequest] = useState<StudioTab | null>(null);
+  const [frontPageRequest, setFrontPageRequest] = useState(false);
 
   // While a page is edited, the side menu folds to icons so the editor gets room (see useStudioMenuFold)
   const [pageEditorOpen, setPageEditorOpen] = useState(false);
@@ -328,6 +329,15 @@ function AdminStudioContent() {
   };
 
   const clearCreateRequest = () => setCreateRequest(null);
+
+  // The button «Åpne Forsiden i Sider & Innhold» on the settings tab. Not through handleTabChange,
+  // which would show Sidestruktur instead of the front page.
+  const openFrontPageInEditor = () => {
+    setFrontPageRequest(true);
+    openTab("cms-sider");
+    navigate(studioTabUrl("cms-sider"));
+    setSidebarOpen(false);
+  };
 
   // The part of the admin the menu shows (see studioAreas.ts): the part of the open tab, or the one last chosen
 
@@ -539,6 +549,8 @@ function AdminStudioContent() {
             onEditorOpenChange={setPageEditorOpen}
 
             showTreeRequest={pagesMenuPresses}
+            editFrontPageRequested={frontPageRequest}
+            onFrontPageEditHandled={() => setFrontPageRequest(false)}
 
           />
 
@@ -598,7 +610,7 @@ function AdminStudioContent() {
 
         <StudioTabPanel tab="cms-innstillinger" activeTab={activeTab} visited={mayShow("cms-innstillinger")}>
 
-          <LazySiteSettingsTab />
+          <LazySiteSettingsTab onOpenFrontPage={openFrontPageInEditor} />
 
         </StudioTabPanel>
 
