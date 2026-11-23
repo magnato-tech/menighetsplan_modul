@@ -446,20 +446,20 @@ export const VisualBlockManager: React.FC<VisualBlockManagerProps> = ({
                       {isDynamic ? (
                         <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-950 border border-indigo-700 text-[var(--studio-accent-text)] flex items-center gap-1">
                           <Sparkles className="w-2.5 h-2.5 text-[var(--studio-icon)]" />
-                          <span>⚡ Dynamisk modul</span>
+                          <span>Fylles ut av seg selv</span>
                         </span>
                       ) : (
                         <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[var(--studio-surface)] border border-[var(--studio-border)] text-emerald-300">
-                          📝 Statisk innhold
+                          Tekst du skriver
                         </span>
                       )}
                     </div>
 
                     <p className="text-[11px] text-[var(--studio-muted)] leading-snug line-clamp-2">
                       {isDynamic && dynamicMeta
-                        ? `Datakilde: ${dynamicMeta.dataSource}`
+                        ? `${dynamicMeta.dataSource}`
                         : block.type === "person-grid"
-                        ? "Datakilde: Personregisteret"
+                        ? "Hentes fra Lederskap og stab"
                         : `«${staticPreviewText(block)}»`}
                     </p>
                   </div>
@@ -600,7 +600,7 @@ export const VisualBlockManager: React.FC<VisualBlockManagerProps> = ({
                       : block.type === "module-gallery"
                       ? "Bildene velges fra bildebiblioteket."
                       : block.type.startsWith("module-")
-                      ? `Arrangement, artikler og tall hentes fra ${DYNAMIC_MODULES_META[block.type as DynamicModuleType]?.dataSource}. Feltene over styrer bare tekst og utseende på modulen.`
+                      ? `${DYNAMIC_MODULES_META[block.type as DynamicModuleType]?.dataSource}. Feltene over styrer bare tekst og utseende på modulen.`
                       : undefined
                   }
                 />

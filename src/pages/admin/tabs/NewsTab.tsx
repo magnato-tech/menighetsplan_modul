@@ -5,6 +5,7 @@ import { draftFingerprint, useLeaveGuard, useReportUnsaved, useSaveShortcut } fr
 import { UnsavedChangesDialog } from "./pages/UnsavedChangesDialog";
 import { NewsEndDateDialog } from "./NewsEndDateDialog";
 import { NewsPreviewDialog } from "./NewsPreviewDialog";
+import { CmsMediaPicker } from "../../../components/admin/CmsMediaPicker";
 
 // The text field with buttons, loaded the first time an article is opened
 const RichTextField = lazy(() => import("../../../components/admin/RichTextField"));
@@ -104,6 +105,8 @@ export const NewsTab: React.FC<NewsTabProps> = ({ studio, showFeedback, createRe
       title: "",
       slug: "",
       summary: "",
+      imageUrl: "",
+      imageAlt: "",
       content: "Skriv artikkelteksten her...\n\nFlere avsnitt kan legges til med linjeskift.",
       category: "aktuelt",
       author: currentUser.name || "Menigheten",
@@ -234,6 +237,18 @@ export const NewsTab: React.FC<NewsTabProps> = ({ studio, showFeedback, createRe
               onChange={(e) => setEditingNews({ ...editingNews, summary: e.target.value })}
               placeholder="En kort innledning som fanger oppmerksomheten..."
               className="w-full px-3 py-2 rounded-xl bg-[var(--studio-bg)] border border-[var(--studio-border)] text-[var(--studio-input-text)] focus:outline-hidden"
+            />
+          </div>
+
+          <div className="space-y-1 text-xs">
+            <CmsMediaPicker
+              label="Bilde"
+              value={editingNews.imageUrl || ""}
+              onChange={(url) => setEditingNews((current) => (current ? { ...current, imageUrl: url } : current))}
+              altValue={editingNews.imageAlt || ""}
+              onAltChange={(alt) => setEditingNews((current) => (current ? { ...current, imageAlt: alt } : current))}
+              helpText="Vises på nyhetskortet og øverst i artikkelen."
+              decorative
             />
           </div>
 

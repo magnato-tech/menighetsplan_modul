@@ -88,6 +88,7 @@ const NAMED: Record<string, string> = {
   heroTitle: "tittel i toppbildet",
   heroImage: "toppbilde",
   imageUrl: "bilde",
+  imageAlt: "bildebeskrivelse",
   isPublished: "publisering",
   metaDescription: "beskrivelse for Google",
   category: "kategori",

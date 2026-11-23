@@ -443,8 +443,11 @@ Felles begrep for enhver samling: gudstjeneste, ungdomsmøte, bønnemøte, dugna
 | `publishedAt` | ISO 8601 | Ja | Publiseringstidspunkt. Nyeste vises først |
 | `isPublished` | `boolean` | Ja | Kladd eller publisert |
 | `imageUrl` | `string` | Nei | Bilde |
+| `imageAlt` | `string` | Nei | Beskrivelse av bildet for skjermleser. Tom når bildet er dekor |
 | `expiresAt` | `YYYY-MM-DD` | Nei | «Vises til og med»: siste dag artikkelen står i listene på nettsiden |
 | `gatheringRefId` | `string` | Nei | Arrangementet artikkelen hører til. Uten dato vises artikkelen til og med dagen arrangementet holdes |
+
+En nyhet kan få et bilde med beskrivelse for skjermleser, og bildet vises på nyhetskortet og øverst i artikkelen.
 
 **Hvor lenge en nyhet vises** *(levert 12. oktober 2026)*. En artikkel står til den tas ut, med to unntak:
 

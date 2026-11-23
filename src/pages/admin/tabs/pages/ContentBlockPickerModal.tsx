@@ -44,12 +44,12 @@ export const CONTENT_BLOCKS: ContentBlockDefinition[] = [
     category: "Dynamisk",
     isDynamic: true,
     description: "Henter automatisk neste fremhevede gudstjeneste fra planleggeren med dato, tid, sted og barnekirke/kirkekaffe.",
-    dataSource: "Gudstjenesteplanleggeren (Firebase)",
+    dataSource: "Hentes fra planleggingen",
     icon: <Calendar className="w-5 h-5 text-amber-400" />,
     template: `:::module-worship[highlight]\n:::`,
     previewNode: (
       <div className="w-full p-2.5 rounded-lg bg-white border border-stone-200 text-stone-800 space-y-1">
-        <span className="text-[9px] font-bold uppercase text-primary-700">⚡ Neste Gudstjeneste</span>
+        <span className="text-[9px] font-bold uppercase text-primary-700">Neste gudstjeneste</span>
         <div className="font-bold text-stone-900 text-xs">Høsttakkefest & fellesskapsmåltid</div>
         <div className="text-[9px] text-stone-500">Søndag 11. Oktober · Kl. 11:00 · Hovedsalen</div>
       </div>
@@ -61,7 +61,7 @@ export const CONTENT_BLOCKS: ContentBlockDefinition[] = [
     category: "Dynamisk",
     isDynamic: true,
     description: "De fire neste offentlige arrangementene – uten kalender-merkelapp eller lenke.",
-    dataSource: "Møtekalender (Firebase)",
+    dataSource: "Hentes fra kalenderen",
     icon: <Calendar className="w-5 h-5 text-sky-400" />,
     template: `:::module-calendar[grid]\n:::`,
     previewNode: (
@@ -77,7 +77,7 @@ export const CONTENT_BLOCKS: ContentBlockDefinition[] = [
     category: "Dynamisk",
     isDynamic: true,
     description: "Full kalender med liste, månedsvisning og abonnement på iCal-feed.",
-    dataSource: "Møtekalender (Firebase)",
+    dataSource: "Hentes fra kalenderen",
     icon: <Calendar className="w-5 h-5 text-primary-400" />,
     template: `:::module-kalender[month]\n:::`,
     previewNode: (
@@ -93,7 +93,7 @@ export const CONTENT_BLOCKS: ContentBlockDefinition[] = [
     category: "Dynamisk",
     isDynamic: true,
     description: "Lister automatisk de 3 nyeste publiserte artiklene fra menighetsarbeidet.",
-    dataSource: "CMS Nyhetsarkiv",
+    dataSource: "Hentes fra Aktuelt og nyheter",
     icon: <FileText className="w-5 h-5 text-emerald-400" />,
     template: `:::module-news[grid]\n:::`,
     previewNode: (
@@ -109,7 +109,7 @@ export const CONTENT_BLOCKS: ContentBlockDefinition[] = [
     category: "Dynamisk",
     isDynamic: true,
     description: "Innebygd taleavspiller for siste preken med Spotify-avspilling og arkivlenke.",
-    dataSource: "CMS Prekenarkiv",
+    dataSource: "Hentes fra Taler og prekener",
     icon: <Headphones className="w-5 h-5 text-pink-400" />,
     template: `:::module-sermon[player]\n:::`,
     previewNode: (
@@ -125,7 +125,7 @@ export const CONTENT_BLOCKS: ContentBlockDefinition[] = [
     category: "Dynamisk",
     isDynamic: true,
     description: "Fremhevet invitasjonsbanner til å finne et lokalt husfellesskap og nære relasjoner.",
-    dataSource: "Fellesskapsregisteret",
+    dataSource: "Hentes fra gruppene",
     icon: <Users className="w-5 h-5 text-[var(--studio-icon)]" />,
     template: `:::module-groups[banner]\n:::`,
     previewNode: (
@@ -141,7 +141,7 @@ export const CONTENT_BLOCKS: ContentBlockDefinition[] = [
     category: "Dynamisk",
     isDynamic: true,
     description: "Viser menighetens Vipps-nummer og bankkonto for gaver fra innstillingene.",
-    dataSource: "Menighetsinnstillinger",
+    dataSource: "Hentes fra Nettside-innstillinger",
     icon: <Heart className="w-5 h-5 text-rose-400" />,
     template: `:::module-giving[card]\n:::`,
     previewNode: (
@@ -157,7 +157,7 @@ export const CONTENT_BLOCKS: ContentBlockDefinition[] = [
     category: "Dynamisk",
     isDynamic: true,
     description: "Kart med adressen, uten informasjonskapsler.",
-    dataSource: "OpenStreetMap",
+    dataSource: "Kart fra OpenStreetMap",
     icon: <MapPin className="w-5 h-5 text-sky-400" />,
     template: `:::module-map[medium]\n:::`,
     previewNode: (
@@ -173,7 +173,7 @@ export const CONTENT_BLOCKS: ContentBlockDefinition[] = [
     category: "Dynamisk",
     isDynamic: true,
     description: "Bilder fra bildebiblioteket i et rutenett. Trykk på et bilde for stort bilde.",
-    dataSource: "Bildebiblioteket",
+    dataSource: "Hentes fra Mediebiblioteket",
     icon: <Images className="w-5 h-5 text-amber-400" />,
     template: `:::module-gallery[grid]\n:::`,
     previewNode: (
@@ -306,7 +306,7 @@ export const CONTENT_BLOCKS: ContentBlockDefinition[] = [
     category: "Personer & Roller",
     isDynamic: true,
     description: "Viser alle ansatte i staben med bilde, stillingstittel, bio, telefon og e-post direkte fra registeret.",
-    dataSource: "Personregisteret",
+    dataSource: "Hentes fra Lederskap og stab",
     icon: <Briefcase className="w-5 h-5 text-[var(--studio-icon)]" />,
     template: `:::personer[stab]`,
     previewNode: (
@@ -328,7 +328,7 @@ export const CONTENT_BLOCKS: ContentBlockDefinition[] = [
     category: "Personer & Roller",
     isDynamic: true,
     description: "Viser menighetsråd og valgt lederskap fra personregisteret.",
-    dataSource: "Personregisteret",
+    dataSource: "Hentes fra Lederskap og stab",
     icon: <Users className="w-5 h-5 text-[var(--studio-icon)]" />,
     template: `:::personer[lederskap]`,
     previewNode: (
@@ -344,7 +344,7 @@ export const CONTENT_BLOCKS: ContentBlockDefinition[] = [
     category: "Personer & Roller",
     isDynamic: true,
     description: "Viser pastorer og forkynnere fra personregisteret.",
-    dataSource: "Personregisteret",
+    dataSource: "Hentes fra Lederskap og stab",
     icon: <Users className="w-5 h-5 text-amber-400" />,
     template: `:::personer[pastor]`,
     previewNode: (
@@ -386,7 +386,7 @@ export const ContentBlockPickerModal: React.FC<ContentBlockPickerModalProps> = (
       className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--studio-overlay)] backdrop-blur-xs p-4 sm:p-6"
       role="dialog"
       aria-modal="true"
-      aria-label="Felles blokkbibliotek"
+      aria-label="Legg til på siden"
     >
       <div className="bg-[var(--studio-bg)] border border-[var(--studio-border)] rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         {/* Header */}
@@ -396,9 +396,9 @@ export const ContentBlockPickerModal: React.FC<ContentBlockPickerModalProps> = (
               <Sparkles className="w-4 h-4 text-[var(--studio-icon)]" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-[var(--studio-text)]">Felles blokkbibliotek</h3>
+              <h3 className="text-base font-bold text-[var(--studio-text)]">Legg til på siden</h3>
               <p className="text-xs text-[var(--studio-muted)]">
-                Velg blant statiske innholdsformater eller dynamiske moduler som henter sanntidsdata.
+                Velg hva som skal stå på siden.
               </p>
             </div>
           </div>
@@ -423,7 +423,7 @@ export const ContentBlockPickerModal: React.FC<ContentBlockPickerModalProps> = (
                 : "text-[var(--studio-muted)] hover:text-[var(--studio-text)] hover:bg-[var(--studio-surface)]"
             }`}
           >
-            Alle blokker ({CONTENT_BLOCKS.length})
+            Alle ({CONTENT_BLOCKS.length})
           </button>
           <button
             type="button"
@@ -435,7 +435,7 @@ export const ContentBlockPickerModal: React.FC<ContentBlockPickerModalProps> = (
             }`}
           >
             <Sparkles className="w-3 h-3 text-[var(--studio-icon)]" />
-            <span>⚡ Dynamiske moduler ({CONTENT_BLOCKS.filter((b) => b.isDynamic).length})</span>
+            <span>Fylles ut av seg selv ({CONTENT_BLOCKS.filter((b) => b.isDynamic).length})</span>
           </button>
           <button
             type="button"
@@ -446,7 +446,7 @@ export const ContentBlockPickerModal: React.FC<ContentBlockPickerModalProps> = (
                 : "text-[var(--studio-muted)] hover:text-[var(--studio-text)] hover:bg-[var(--studio-surface)]"
             }`}
           >
-            📝 Statisk innhold ({CONTENT_BLOCKS.filter((b) => !b.isDynamic).length})
+            Tekst og bilder ({CONTENT_BLOCKS.filter((b) => !b.isDynamic).length})
           </button>
         </div>
 
@@ -474,14 +474,14 @@ export const ContentBlockPickerModal: React.FC<ContentBlockPickerModalProps> = (
                           {block.isDynamic ? (
                             <span className="text-[10px] font-bold text-[var(--studio-accent-text)] bg-indigo-950 px-2 py-0.5 rounded border border-[var(--studio-accent-border)] flex items-center gap-1">
                               <Sparkles className="w-2.5 h-2.5 text-[var(--studio-icon)]" />
-                              <span>⚡ Dynamisk modul</span>
+                              <span>Fylles ut av seg selv</span>
                             </span>
                           ) : (
                             <span className="text-[10px] font-bold text-emerald-300 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800">
-                              📝 Statisk innhold
+                              Tekst du skriver
                             </span>
                           )}
-                          <span className="text-[10px] text-[var(--studio-muted)]">{block.category}</span>
+                          {!block.isDynamic && <span className="text-[10px] text-[var(--studio-muted)]">{block.category}</span>}
                         </div>
                       </div>
                     </div>
@@ -493,7 +493,7 @@ export const ContentBlockPickerModal: React.FC<ContentBlockPickerModalProps> = (
 
                   {block.dataSource && (
                     <div className="text-[11px] text-[var(--studio-accent-text)] bg-[var(--studio-panel-bg)] p-1.5 rounded border border-[var(--studio-border)]">
-                      <strong>Datakilde:</strong> {block.dataSource}
+                      {block.dataSource}
                     </div>
                   )}
 

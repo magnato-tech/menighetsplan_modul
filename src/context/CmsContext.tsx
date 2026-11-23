@@ -290,6 +290,7 @@ const writes = {
       publishedAt: newsData.publishedAt || new Date().toISOString(),
       isPublished: newsData.isPublished !== false,
       imageUrl: newsData.imageUrl || "",
+      imageAlt: newsData.imageAlt || "",
       // How long the article is shown (see utils/news.ts). Left out, it stands until it is taken out
       ...(newsData.expiresAt?.trim() ? { expiresAt: newsData.expiresAt.trim() } : {}),
       ...(newsData.gatheringRefId ? { gatheringRefId: newsData.gatheringRefId } : {}),

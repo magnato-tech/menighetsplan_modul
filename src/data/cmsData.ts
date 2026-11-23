@@ -105,6 +105,8 @@ export interface CmsNewsArticle {
   publishedAt: string;
   isPublished: boolean;
   imageUrl?: string;
+  /** Description of the image for screen readers. Empty when the image is decorative or missing. */
+  imageAlt?: string;
   gatheringRefId?: string;
   expiresAt?: string;
 }

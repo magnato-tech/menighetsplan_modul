@@ -52,14 +52,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-indigo-400" />
             <h4 className="text-xs font-bold text-[var(--studio-text)] uppercase tracking-wider flex items-center gap-2">
-              <span>📌 Hero / Toppbanner</span>
-              <span className="text-[10px] text-[var(--studio-accent-text)] font-normal bg-indigo-950 px-2 py-0.5 rounded border border-[var(--studio-accent-border)]">
-                Fast toppramme
-              </span>
+              <span>Toppbilde</span>
             </h4>
           </div>
           <span className="text-[11px] font-semibold text-[var(--studio-accent-text)]">
-            Låst øverst · Kan ikke flyttes eller slettes
+            Står alltid øverst på siden
           </span>
         </div>
 

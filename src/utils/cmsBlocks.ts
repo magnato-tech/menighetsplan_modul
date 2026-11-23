@@ -109,7 +109,7 @@ export const DYNAMIC_MODULES_META: Record<DynamicModuleType, DynamicModuleMeta> 
     type: "module-worship",
     title: "Neste gudstjeneste",
     description: "Henter automatisk neste fremhevede gudstjeneste med dato, tidspunkt og program.",
-    dataSource: "Gudstjenesteplanleggeren (Firebase)",
+    dataSource: "Hentes fra planleggingen",
     supportedVariants: [
       { id: "highlight", label: "Fremhevet kort" },
       { id: "compact", label: "Kompakt infolinje" },
@@ -119,14 +119,14 @@ export const DYNAMIC_MODULES_META: Record<DynamicModuleType, DynamicModuleMeta> 
     type: "module-calendar",
     title: "Hva skjer",
     description: "De neste offentlige arrangementene som kort. Antall, utvalg og oppsett velges i modulen.",
-    dataSource: "Arrangementskalenderen (Firebase)",
+    dataSource: "Hentes fra kalenderen",
     supportedVariants: [{ id: "grid", label: "Arrangementskort" }],
   },
   "module-kalender": {
     type: "module-kalender",
     title: "Kalender",
     description: "Full kalender med liste og månedsvisning, samt abonnement på iCal-feed.",
-    dataSource: "Arrangementskalenderen (Firebase)",
+    dataSource: "Hentes fra kalenderen",
     supportedVariants: [
       { id: "month", label: "Månedsrutenett" },
       { id: "list", label: "Liste som standard" },
@@ -136,7 +136,7 @@ export const DYNAMIC_MODULES_META: Record<DynamicModuleType, DynamicModuleMeta> 
     type: "module-news",
     title: "Nyheter og artikler",
     description: "Viser de nyeste publiserte artiklene. En artikkel går ut av listen etter datoen den er satt til, eller når arrangementet den hører til, er holdt.",
-    dataSource: "CMS Nyhetsdatabase og arrangementskalenderen",
+    dataSource: "Hentes fra Aktuelt og nyheter",
     supportedVariants: [
       { id: "grid", label: "3 artikkelkort" },
       { id: "compact", label: "Kompakt liste" },
@@ -146,7 +146,7 @@ export const DYNAMIC_MODULES_META: Record<DynamicModuleType, DynamicModuleMeta> 
     type: "module-sermon",
     title: "Siste tale fra søndagen",
     description: "Spill av siste tale direkte med lyd og Spotify-integrasjon.",
-    dataSource: "CMS Prekenarkiv",
+    dataSource: "Hentes fra Taler og prekener",
     supportedVariants: [
       { id: "player", label: "Full spiller med bilde" },
       { id: "minimal", label: "Kompakt lydstripe" },
@@ -156,7 +156,7 @@ export const DYNAMIC_MODULES_META: Record<DynamicModuleType, DynamicModuleMeta> 
     type: "module-groups",
     title: "Husfellesskap & Grupper",
     description: "Banner og snarvei til å bli med i et nært fellesskap.",
-    dataSource: "Fellesskapsregisteret",
+    dataSource: "Hentes fra gruppene",
     supportedVariants: [
       { id: "banner", label: "Stort gradientbanner" },
       { id: "cards", label: "2 oppdelte infokort" },
@@ -166,7 +166,7 @@ export const DYNAMIC_MODULES_META: Record<DynamicModuleType, DynamicModuleMeta> 
     type: "module-giving",
     title: "Givertjeneste & Vipps",
     description: "Viser menighetens Vipps-nummer og bankkonto for gaver.",
-    dataSource: "Menighetsinnstillinger",
+    dataSource: "Hentes fra Nettside-innstillinger",
     supportedVariants: [
       { id: "card", label: "Både Vipps og bankkonto" },
       { id: "vipps", label: "Kun Vipps-fokus" },
@@ -176,7 +176,7 @@ export const DYNAMIC_MODULES_META: Record<DynamicModuleType, DynamicModuleMeta> 
     type: "module-map",
     title: "Kart",
     description: "Kart over adressen, uten informasjonskapsler. Trykk «Finn på kartet» etter at adressen er skrevet.",
-    dataSource: "OpenStreetMap",
+    dataSource: "Kart fra OpenStreetMap",
     // The first variant is the default height
     supportedVariants: [
       { id: "medium", label: "Middels (360 px)" },
@@ -188,7 +188,7 @@ export const DYNAMIC_MODULES_META: Record<DynamicModuleType, DynamicModuleMeta> 
     type: "module-gallery",
     title: "Bildegalleri",
     description: "Bilder fra bildebiblioteket i et rutenett. Trykk på et bilde for å se det stort.",
-    dataSource: "Bildebiblioteket",
+    dataSource: "Hentes fra Mediebiblioteket",
     supportedVariants: [{ id: "grid", label: "Rutenett" }],
   },
 };

@@ -533,8 +533,7 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
         <div className="px-4 py-2.5 bg-[var(--studio-panel-bg)] border-b border-[var(--studio-border)] flex flex-wrap items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="font-bold text-[var(--studio-text)]">Ekte nettside-rendering</span>
-            <span className="text-[var(--studio-muted)] hidden xl:inline">· 1:1 produksjonslayout & tema</span>
+            <span className="font-bold text-[var(--studio-text)]">Slik ser siden ut</span>
             {previewScale !== null && (
               <span className="text-[var(--studio-muted)]">· vist i {Math.round(previewScale * 100)} %</span>
             )}
@@ -834,7 +833,7 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
             }`}
           >
             <LayoutGrid className="w-3.5 h-3.5" />
-            <span>Splitt</span>
+            <span>Begge</span>
           </button>
           <button
             type="button"

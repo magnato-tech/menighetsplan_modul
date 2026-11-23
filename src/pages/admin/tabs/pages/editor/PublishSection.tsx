@@ -203,7 +203,7 @@ export const PublishSection: React.FC<PublishSectionProps> = ({ editingPage, onU
             )
           ) : (
             <p className="text-[11px] text-[var(--studio-muted)]">
-              💡 La feltet stå tomt hvis du vil publisere siden umiddelbart ved lagring.
+              La feltet stå tomt hvis du vil publisere siden umiddelbart ved lagring.
             </p>
           )}
         </div>

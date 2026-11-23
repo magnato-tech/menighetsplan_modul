@@ -128,9 +128,9 @@ export const NewsModule: React.FC<NewsModuleProps> = ({
               >
                 <div className="space-y-2">
                   {image && (
-                    // The title right below says what the article is; the picture is not described twice
+                    // The description is written by the editor; empty when the picture is decorative
                     <div className="-mx-5 -mt-5 mb-4 h-40 bg-stone-200">
-                      <img src={image} alt="" loading="lazy" className={cardImageClass(cardImageFitOf(config.imageFit))} />
+                      <img src={image} alt={article.imageAlt || ""} loading="lazy" className={cardImageClass(cardImageFitOf(config.imageFit))} />
                     </div>
                   )}
                   <div className="text-[10px] font-bold uppercase tracking-wider text-primary-700">

@@ -107,10 +107,10 @@ export const PublicArticlePage: React.FC = () => {
       </header>
 
       {image && (
-        // The headline above says what the article is; the picture is not described twice
+        // The description is written by the editor; empty when the picture is decorative
         <img
           src={image}
-          alt=""
+          alt={article?.imageAlt || ""}
           className="w-full max-h-[28rem] object-cover rounded-2xl border border-stone-200"
         />
       )}

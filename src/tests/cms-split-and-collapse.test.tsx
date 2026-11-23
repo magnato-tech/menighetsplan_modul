@@ -269,13 +269,13 @@ describe("PageEditModal & PublicStaticPage: Ekte forhåndsvisning i ny fane", ()
       </MemoryRouter>
     );
 
-    // Verifiser at modus-knapper (Rediger, Splitt, Forhåndsvis) finnes
+    // Verifiser at modus-knapper (Rediger, Begge, Forhåndsvis) finnes
     expect(screen.getByRole("button", { name: /^Rediger$/i })).toBeDefined();
-    expect(screen.getByRole("button", { name: /^Splitt$/i })).toBeDefined();
+    expect(screen.getByRole("button", { name: /^Begge$/i })).toBeDefined();
     expect(screen.getByRole("button", { name: /^Forhåndsvis$/i })).toBeDefined();
 
     // Verifiser at ekte nettside-rendering finnes i preview-området som iframe
-    expect(screen.getByText(/Ekte nettside-rendering/i)).toBeDefined();
+    expect(screen.getByText(/Slik ser siden ut/i)).toBeDefined();
     const iframe = document.querySelector('iframe[title="Forhåndsvisning av nettsiden"]');
     expect(iframe?.getAttribute("src")).toContain("/gudstjenester?preview=true&embedded=1");
 
@@ -316,7 +316,7 @@ describe("PageEditModal & PublicStaticPage: Ekte forhåndsvisning i ny fane", ()
       </MemoryRouter>
     );
 
-    expect(screen.getByText(/Låst øverst · Kan ikke flyttes eller slettes/i)).toBeDefined();
+    expect(screen.getByText(/Står alltid øverst på siden/i)).toBeDefined();
     expect(screen.getByDisplayValue("Velkommen hit")).toBeDefined();
     expect(screen.getByText("Neste gudstjeneste", { selector: "span" })).toBeDefined();
     expect(screen.queryByRole("button", { name: /Rå Markdown/i })).toBeNull();
