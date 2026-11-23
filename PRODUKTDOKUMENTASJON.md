@@ -1739,6 +1739,16 @@ Bestilt av produkteier. Backloggen og kartleggingen (WordPress, Squarespace, Wix
 | **Tekstblokken direkte** | Et trykk på tittelen eller teksten i en blokk åpner den. Teksten vises i forhåndsvisningen av seg selv; «Bruk endringer» er borte for tekstblokker |
 | **Nettredaktør** | Fjerde brukernivå, valgt under Tilgang på personkortet (`globalRole: "nettredaktor"`, i `logins` som `nettredaktor`). Ser bare Nettside-delen av admin (`webEditor.ts`): ikke Lederskap & Stab, Planlegging, e-post, moduler eller database, og Hjelp bare for Nettside. Får det et medlem får av data, aldri hele registeret. På arrangementer et eget skjema for bilde og tekst (`GatheringWebsiteDialog`). Reglene (`firestore.rules`, `storage.rules`): skriver sider, nyheter, taler, mediebiblioteket, innstillingene og historikken; på arrangementer bare bilde, tekst, lenke og synlighet. Prøvd med regeltester mot emulatoren. I demoen er Kristine Vik nettredaktør, med egen dør. **Reglene må publiseres av produkteier før rollen virker hos en menighet** |
 
+### Denne uka, papirkurv og enklere toppbilde (23. november 2026)
+
+Bestilt av produkteier etter fjerde runde med monday.com som målestokk.
+
+| Del | Hva som er levert |
+|---|---|
+| **Oversikt «Denne uka på nettsiden»** | Øverst på Oversikt under Nettside (`weekOnWebsite.ts`, `WeekOnWebsiteCard.tsx`): «Mangler før søndag» (offentlige arrangementer resten av uka, med «Bilde og tekst»), «Publiseres» og «Går ut» (nyheter denne uka), og «Sist endret» (sider og nyheter, med hvem). De fire tallene står som en liten linje nederst |
+| **Papirkurv** | Sider (med undersider), nyheter og taler som slettes, tas vare på i 30 dager og kan hentes tilbake under Nettside → Papirkurv (`trash.ts`). Kopien lagres i `cms_settings` som en `contentVersion` med `deleted: true`, samme sted som historikken, så reglene trengte ingen endring. Historikken og beskjæringen av gamle versjoner tar ikke med det som ligger i papirkurven. Feiler kopien, slettes ingenting |
+| **Toppbildet** | Bilder (opptil tre som små ruter), overskrift og høyde på datamaskin står først; resten (meny, slør, utsnitt, zoom, skrift, ingress, knapper, beskrivelse for skjermleser) ligger under «Flere valg». Bare skjermbildet er endret |
+
 ### Nyheter med status, søk i taler og «Endret … av …» (23. november 2026)
 
 Bestilt av produkteier etter tredje runde med monday.com som målestokk.

@@ -13,6 +13,7 @@ export const WEB_EDITOR_TABS: readonly StudioTab[] = [
   "cms-design",
   "cms-innstillinger",
   "cms-overstyringer",
+  "cms-papirkurv",
   "cms-hjelp",
   "nettsidebesok",
 ];

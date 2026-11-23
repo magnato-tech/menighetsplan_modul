@@ -505,8 +505,8 @@ export const NewsTab: React.FC<NewsTabProps> = ({ studio, showFeedback, createRe
                         <button
                           type="button"
                           onClick={async () => {
-                            if (confirm(`Vil du slette artikkelen "${item.title}"?`)) {
-                              if (await deleteNews(item.id)) showFeedback("Artikkelen ble slettet");
+                            if (confirm(`Flytte «${item.title}» til papirkurven? Du kan hente den tilbake i 30 dager.`)) {
+                              if (await deleteNews(item.id)) showFeedback("Artikkelen er flyttet til papirkurven");
                             }
                           }}
                           className="p-2 rounded-lg bg-[var(--studio-bg)] hover:bg-red-950 text-[var(--studio-muted)] hover:text-red-400"

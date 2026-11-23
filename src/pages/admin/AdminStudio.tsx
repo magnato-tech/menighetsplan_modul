@@ -50,6 +50,7 @@ import {
 
   LazyAnalyticsTab,
   LazySiteTrafficTab,
+  LazyTrashTab,
 
   LazyDemoSetupTab,
 
@@ -728,6 +729,12 @@ function AdminStudioContent() {
         <StudioTabPanel tab="nettsidebesok" activeTab={activeTab} visited={mayShow("nettsidebesok")}>
 
           <LazySiteTrafficTab showFeedback={showFeedback} />
+
+        </StudioTabPanel>
+
+        <StudioTabPanel tab="cms-papirkurv" activeTab={activeTab} visited={mayShow("cms-papirkurv")}>
+
+          <LazyTrashTab studio={studio} showFeedback={showFeedback} />
 
         </StudioTabPanel>
 

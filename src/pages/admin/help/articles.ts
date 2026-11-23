@@ -213,10 +213,9 @@ const siderHero: HelpArticle = {
   hvor: "Nettside → Sider & Innhold → Forside → Rediger → Toppbilde",
   intro: "Toppbildet er det første besøkende ser: bilde, tittel og meny.",
   steg: [
-    "**Menyen øverst** står først: over bildet, eller som en hvit linje med bildet under. Den kan velges når forsiden har et bakgrunnsbilde.",
-    "Velg bakgrunnsbildet. Under **Endre utsnitt** drar du rammen dit bildet skal vises, og **Zoom** går nærmere. **Tilbakestill** gir hele bildet igjen. **Høyde på toppbildet** og **Slør over bildet** står rett under, og bilde 2 og 3 kan få egen tittel.",
-    "Skriv **Tittel i Hero**, og velg **Tekststørrelse på tittelen**, **Skrift på tittelen** og hvordan **Tittelen på bildet** skal stå.",
-    "Undertittel og knapper kommer til slutt, i samme rekkefølge som på forsiden.",
+    "Under **Bilder** velger du opptil tre bilder. De toner over i hverandre.",
+    "Skriv overskriften i **Tittel i Hero**, og velg høyden under **Høyde på datamaskin**: **Lav**, **Middels** eller **Hele skjermen**. På mobil vises bare overskriften i en tynn linje.",
+    "Resten ligger under **Flere valg**: utsnitt og zoom, **Menyen øverst**, **Slør over bildet**, rolig zoom, titler på bilde 2 og 3, størrelse, skrift og stil på overskriften, undertittel, knapper og beskrivelse for skjermleser.",
   ],
   godt: "Undertittel og knapper er av til du huker av **Vis på siden**. Prikker under bildet kommer av seg selv, piler slår du på.",
   passPa: "Et bilde med tekst på kan kuttes i kantene. Bruk helst bilder uten tekst i toppbildet.",
@@ -284,6 +283,21 @@ const siderSok: HelpArticle = {
 };
 
 // ---------------------------------------------------------------- Nettside: de andre fanene
+
+const papirkurv: HelpArticle = {
+  id: "papirkurv",
+  title: "Papirkurv",
+  hvor: "Nettside → Papirkurv",
+  intro: "En side, nyhet eller tale du sletter, legges i papirkurven i 30 dager, så den kan hentes tilbake.",
+  steg: [
+    "Når du sletter, blir du spurt om å flytte den til papirkurven. Den forsvinner fra nettsiden med en gang.",
+    "Åpne **Papirkurv** for å se det som er slettet, når og av hvem, og når det går for godt.",
+    "Trykk **Hent tilbake**. Den kommer tilbake med samme adresse og innhold. En side som ble slettet med undersider, kommer tilbake med dem.",
+  ],
+  godt: "Etter 30 dager slettes det for godt.",
+  seOgsa: ["sider-sidetre", "nyheter"],
+  tabs: ["cms-papirkurv"],
+};
 
 const forside: HelpArticle = {
   id: "forside",
@@ -720,6 +734,7 @@ export const helpSections: HelpSection[] = [
       { kind: "article", article: tema },
       { kind: "article", article: innstillinger },
       { kind: "article", article: besok },
+      { kind: "article", article: papirkurv },
     ],
   },
   {

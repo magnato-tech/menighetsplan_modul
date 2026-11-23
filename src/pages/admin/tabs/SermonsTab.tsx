@@ -404,8 +404,8 @@ export const SermonsTab: React.FC<SermonsTabProps> = ({ studio, showFeedback }) 
                       <button
                         type="button"
                         onClick={async () => {
-                          if (confirm(`Vil du slette talen "${s.title}"?`)) {
-                            if (await deleteSermon(s.id)) showFeedback("Talen ble slettet");
+                          if (confirm(`Flytte «${s.title}» til papirkurven? Du kan hente den tilbake i 30 dager.`)) {
+                            if (await deleteSermon(s.id)) showFeedback("Talen er flyttet til papirkurven");
                           }
                         }}
                         className="p-2 rounded-lg bg-[var(--studio-bg)] hover:bg-red-950 text-[var(--studio-muted)] hover:text-red-400"

@@ -13,6 +13,7 @@ export const STUDIO_TABS = [
   "cms-design",
   "cms-innstillinger",
   "cms-overstyringer",
+  "cms-papirkurv",
   "cms-hjelp",
   "planlegger-samlinger",
   "planlegger-oppgaver",

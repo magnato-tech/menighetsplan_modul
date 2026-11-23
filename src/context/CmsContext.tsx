@@ -20,7 +20,8 @@ import { defaultSurfaces, type InstallationSurfaces } from "../utils/surfaces";
 import { newId } from "../utils/id";
 import { buildPageRecord } from "../utils/pageRecord";
 import { contentChanged, versionOf } from "../utils/contentVersions";
-import { keepVersion } from "../services/contentVersions";
+import { deleteTrashRecord, fetchTrashRecords, keepVersion, moveToTrash } from "../services/contentVersions";
+import { groupTrash, isExpired, trashRecordOf, type TrashItem, type TrashRecord } from "../utils/trash";
 import {
   CmsPage,
   CmsNewsArticle,
@@ -68,9 +69,15 @@ interface CmsContextValue {
   deletePage: (pageId: string) => Promise<boolean>;
   reorderPages: (orderedPageIds: string[]) => Promise<boolean>;
   saveNews: (newsData: Partial<CmsNewsArticle> & { id?: string }) => Promise<boolean>;
+  /** Moves the news article to the recycle bin (see utils/trash.ts). */
   deleteNews: (newsId: string) => Promise<boolean>;
   saveSermon: (sermonData: Partial<CmsSermon> & { id?: string }) => Promise<boolean>;
+  /** Moves the talk to the recycle bin. */
   deleteSermon: (sermonId: string) => Promise<boolean>;
+  /** The items in the recycle bin, newest first. Items kept for more than 30 days are removed for good first. */
+  fetchTrash: () => Promise<TrashItem[]>;
+  /** Puts a page (with the sub-pages deleted with it), article or talk back as it was. */
+  restoreFromTrash: (item: TrashItem) => Promise<boolean>;
   saveStaff: (staffData: Partial<CmsStaffMember> & { id?: string }) => Promise<boolean>;
   deleteStaff: (staffId: string) => Promise<boolean>;
   saveSettings: (settingsData: Partial<CmsSettings>) => Promise<boolean>;
@@ -267,6 +274,15 @@ async function attempt(action: string, write: () => Promise<unknown>): Promise<b
   }
 }
 
+/** Keeps a copy in the recycle bin first, and deletes only once that copy is stored. */
+async function trashThenDelete(action: string, records: TrashRecord[], remove: () => Promise<unknown>): Promise<boolean> {
+  if (!(await attempt("flytte til papirkurven", () => moveToTrash(records)))) return false;
+  return attempt(action, remove);
+}
+
+/** The collection each kind of item is put back into. */
+const COLLECTION_OF = { page: CMS_COLLECTIONS.PAGES, news: CMS_COLLECTIONS.NEWS, sermon: CMS_COLLECTIONS.SERMONS } as const;
+
 // Each write builds the complete document, so a field left out in the editor gets its default
 const writes = {
   setAddon: (id: AddonId, on: boolean) =>
@@ -301,8 +317,6 @@ const writes = {
     };
     return attempt("lagre nyhetsartikkelen", () => createDocument(CMS_COLLECTIONS.NEWS, article));
   },
-  deleteNews: (newsId: string) =>
-    attempt("slette nyhetsartikkelen", () => deleteDocument(CMS_COLLECTIONS.NEWS, newsId)),
 
   saveSermon: (sermonData: Partial<CmsSermon> & { id?: string }) => {
     const sermon: CmsSermon = {
@@ -320,7 +334,6 @@ const writes = {
     };
     return attempt("lagre talen", () => createDocument(CMS_COLLECTIONS.SERMONS, sermon));
   },
-  deleteSermon: (sermonId: string) => attempt("slette talen", () => deleteDocument(CMS_COLLECTIONS.SERMONS, sermonId)),
 
   saveStaff: (staffData: Partial<CmsStaffMember> & { id?: string }) => {
     const member: CmsStaffMember = {
@@ -466,12 +479,57 @@ export const CmsProvider: React.FC<{ children: React.ReactNode; publicPagesOnly?
         }
       },
       getMediaUsages: (mediaId) => findMediaUsages(mediaId, pages, news, staff, sermons),
+      // The page and its sub-pages go to the recycle bin together, under one deletion group
       deletePage: (pageId: string) => {
+        const root = pages.find((p) => p.id === pageId);
+        if (!root) return Promise.resolve(false);
         const subPageIds = pages
           .filter((p) => (p.parentPageId !== undefined ? p.parentPageId === pageId : p.parentId === pageId))
           .map((p) => p.id);
-        return attempt("slette siden", () => deletePageWithSubPages(pageId, subPageIds));
+        const deletedAt = new Date().toISOString();
+        const deletionGroup = newId("papirkurv");
+        const records = [root, ...pages.filter((p) => subPageIds.includes(p.id))].map((page) =>
+          trashRecordOf(newId("papirkurv"), "page", page, { deletedAt, deletedBy: editorId, deletionGroup, root: page.id === pageId })
+        );
+        return trashThenDelete("slette siden", records, () => deletePageWithSubPages(pageId, subPageIds));
       },
+      deleteNews: (newsId: string) => {
+        const article = news.find((n) => n.id === newsId);
+        if (!article) return Promise.resolve(false);
+        const record = trashRecordOf(newId("papirkurv"), "news", article, {
+          deletedAt: new Date().toISOString(),
+          deletedBy: editorId,
+          deletionGroup: newId("papirkurv"),
+          root: true,
+        });
+        return trashThenDelete("slette nyhetsartikkelen", [record], () => deleteDocument(CMS_COLLECTIONS.NEWS, newsId));
+      },
+      deleteSermon: (sermonId: string) => {
+        const sermon = sermons.find((s) => s.id === sermonId);
+        if (!sermon) return Promise.resolve(false);
+        const record = trashRecordOf(newId("papirkurv"), "sermon", sermon, {
+          deletedAt: new Date().toISOString(),
+          deletedBy: editorId,
+          deletionGroup: newId("papirkurv"),
+          root: true,
+        });
+        return trashThenDelete("slette talen", [record], () => deleteDocument(CMS_COLLECTIONS.SERMONS, sermonId));
+      },
+      fetchTrash: async () => {
+        const now = Date.now();
+        const records = await fetchTrashRecords();
+        // Kept for more than 30 days: removed for good. A failure is tried again the next time the list is opened
+        await Promise.allSettled(records.filter((r) => isExpired(r.deletedAt, now)).map((r) => deleteTrashRecord(r.id)));
+        return groupTrash(records.filter((r) => !isExpired(r.deletedAt, now)));
+      },
+      restoreFromTrash: (item: TrashItem) =>
+        attempt("hente tilbake fra papirkurven", async () => {
+          // The items go back under the ids they had, and leave the recycle bin only when they are stored again
+          await Promise.all(
+            item.members.map((m) => setDocument(COLLECTION_OF[m.kind], m.targetId, { ...m.snapshot, id: m.targetId }))
+          );
+          await Promise.all(item.members.map((m) => deleteTrashRecord(m.id)));
+        }),
       reorderPages: (orderedPageIds: string[]) =>
         attempt("endre rekkefølge på sidene", () => reorderPagesInFirestore(orderedPageIds)),
       saveSettings: (settingsData: Partial<CmsSettings>) =>

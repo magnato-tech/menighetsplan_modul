@@ -7,14 +7,11 @@ import {
   ChevronRight,
   CircleHelp,
   ExternalLink,
-  FileText,
   Plus,
   Users,
   ListTodo,
   LayoutDashboard,
-  Newspaper,
   Sliders,
-  Headphones,
   User,
 } from "lucide-react";
 import {
@@ -35,6 +32,7 @@ import { useStudioMenuEntries } from "../studioMenu";
 import { useLevel } from "../../../hooks/useLevel";
 import { hasPlanner } from "../../../utils/level";
 import { countPages } from "../../../utils/menu";
+import { WeekOnWebsiteCard } from "./dashboard/WeekOnWebsiteCard";
 
 interface DashboardTabProps {
   studio: StudioData;
@@ -65,6 +63,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ studio, area, webEdi
   const withPlanner = hasPlanner(useLevel());
   const planning = area === "planlegging";
   const pageCounts = countPages(pages);
+  const nameOf = (personId: string) => studio.adminPersons?.find((entry) => entry.person?.id === personId)?.person?.name;
   // The menu on a phone: the same entries as the side menu shows for this part
   const menuEntries = useStudioMenuEntries(studio, area, { webEditor });
   // What the planning opens with: the next gatherings, and what must be ordered in the nearest weeks
@@ -184,6 +183,18 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ studio, area, webEdi
         />
       )}
 
+      {!planning && (
+        <WeekOnWebsiteCard
+          pages={pages}
+          news={news}
+          gatherings={gatherings}
+          nameOf={nameOf}
+          now={now}
+          onTabChange={onTabChange}
+          onSaveGathering={(id, updates) => studio.updateGathering(id, updates)}
+        />
+      )}
+
       {/* Stat Cards */}
       <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {planning && (
@@ -220,63 +231,6 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ studio, area, webEdi
         </div>
         )}
 
-        {!planning && (
-          <>
-
-        <div
-          onClick={() => onTabChange("cms-taler")}
-          className="p-5 rounded-2xl bg-[var(--studio-surface)] border border-[var(--studio-border)] hover:border-indigo-500 cursor-pointer transition-all space-y-2"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-[var(--studio-muted)] uppercase tracking-wider">Taler & Prekener</span>
-            <Headphones className="w-4 h-4 text-amber-300" />
-          </div>
-          <div className="text-3xl font-black text-[var(--studio-text)]">{sermons.length}</div>
-          <p className="text-[11px] text-[var(--studio-muted)]">Opptak tilgjengelig for menigheten</p>
-        </div>
-
-        <div
-          onClick={() => onTabChange("cms-sider")}
-          className="p-5 rounded-2xl bg-[var(--studio-surface)] border border-[var(--studio-border)] hover:border-indigo-500 cursor-pointer transition-all space-y-2"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-[var(--studio-muted)] uppercase tracking-wider">Sider</span>
-            <FileText className="w-4 h-4 text-emerald-400" />
-          </div>
-          <div className="text-3xl font-black text-[var(--studio-text)]">{pageCounts.published}</div>
-          <p className="text-[11px] text-[var(--studio-muted)]">Publiserte sider på nettsiden</p>
-          <p className="text-[11px] text-[var(--studio-muted)]">
-            {pageCounts.main} hovedfaner · {pageCounts.sub} underfaner
-            {pageCounts.scheduled > 0 && ` · ${pageCounts.scheduled} planlagt`}
-            {pageCounts.drafts > 0 && ` · ${pageCounts.drafts} ${pageCounts.drafts === 1 ? "kladd" : "kladder"}`}
-          </p>
-        </div>
-
-        <div
-          onClick={() => onTabChange("cms-nyheter")}
-          className="p-5 rounded-2xl bg-[var(--studio-surface)] border border-[var(--studio-border)] hover:border-indigo-500 cursor-pointer transition-all space-y-2"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-[var(--studio-muted)] uppercase tracking-wider">Nyheter & Aktuelt</span>
-            <Newspaper className="w-4 h-4 text-rose-400" />
-          </div>
-          <div className="text-3xl font-black text-[var(--studio-text)]">{news.length}</div>
-          <p className="text-[11px] text-[var(--studio-muted)]">Artikler for frivillige og offentlighet</p>
-        </div>
-
-        <div
-          onClick={() => onTabChange("cms-stab")}
-          className="p-5 rounded-2xl bg-[var(--studio-surface)] border border-[var(--studio-border)] hover:border-indigo-500 cursor-pointer transition-all space-y-2"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-[var(--studio-muted)] uppercase tracking-wider">Lederskap & Stab</span>
-            <Users className="w-4 h-4 text-[var(--studio-icon)]" />
-          </div>
-          <div className="text-3xl font-black text-[var(--studio-text)]">{staff.length}</div>
-          <p className="text-[11px] text-[var(--studio-muted)]">Registrerte ledere og ansatte</p>
-        </div>
-          </>
-        )}
       </div>
 
       {!planning && (
@@ -371,6 +325,27 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ studio, area, webEdi
         </div>
         )}
       </div>
+
+      {/* The website's numbers, as plain words that lead to their tab */}
+      {!planning && (
+        <p className="text-xs text-[var(--studio-muted)] flex flex-wrap items-center gap-x-1.5">
+          <button type="button" onClick={() => onTabChange("cms-sider")} className="hover:text-[var(--studio-text)] hover:underline cursor-pointer">
+            {pageCounts.published} {pageCounts.published === 1 ? "side" : "sider"}
+          </button>
+          <span aria-hidden="true">·</span>
+          <button type="button" onClick={() => onTabChange("cms-nyheter")} className="hover:text-[var(--studio-text)] hover:underline cursor-pointer">
+            {news.length} {news.length === 1 ? "nyhet" : "nyheter"}
+          </button>
+          <span aria-hidden="true">·</span>
+          <button type="button" onClick={() => onTabChange("cms-taler")} className="hover:text-[var(--studio-text)] hover:underline cursor-pointer">
+            {sermons.length} {sermons.length === 1 ? "tale" : "taler"}
+          </button>
+          <span aria-hidden="true">·</span>
+          <button type="button" onClick={() => onTabChange("cms-stab")} className="hover:text-[var(--studio-text)] hover:underline cursor-pointer">
+            {staff.length} i Lederskap & Stab
+          </button>
+        </p>
+      )}
     </div>
   );
 };

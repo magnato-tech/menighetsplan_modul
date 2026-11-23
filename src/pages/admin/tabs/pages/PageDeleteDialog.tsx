@@ -21,10 +21,10 @@ export const PageDeleteDialog: React.FC<PageDeleteDialogProps> = ({
       <div className="bg-[var(--studio-bg)] border border-[var(--studio-border)] rounded-2xl p-6 max-w-md w-full space-y-4 shadow-2xl">
         <h3 className="text-base font-bold text-[var(--studio-text)] flex items-center gap-2">
           <AlertTriangle className="w-5 h-5 text-rose-500" />
-          <span>Slette side permanent?</span>
+          <span>Flytte side til papirkurven?</span>
         </h3>
         <p className="text-xs text-[var(--studio-muted)] leading-relaxed">
-          Er du sikker på at du vil slette denne siden fra nettsiden? Denne handlingen kan ikke angres.
+          Siden tas bort fra nettsiden og flyttes til papirkurven. Du kan hente den tilbake i 30 dager, og den står der den sto.
         </p>
         {subPagesCount > 0 && (
           <p className="text-xs text-amber-300 leading-relaxed bg-amber-950/40 p-3 rounded-xl border border-amber-800/40">
@@ -46,7 +46,7 @@ export const PageDeleteDialog: React.FC<PageDeleteDialogProps> = ({
             onClick={onConfirm}
             className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold cursor-pointer transition-colors"
           >
-            Ja, slett permanent
+            Flytt til papirkurven
           </button>
         </div>
       </div>

@@ -27,6 +27,7 @@ const TAB_AREAS: Record<StudioTab, StudioArea | null> = {
   "cms-design": "nettside",
   "cms-innstillinger": "nettside",
   "cms-overstyringer": "nettside",
+  "cms-papirkurv": "nettside",
   "cms-hjelp": null,
   "planlegger-samlinger": "planlegging",
   "planlegger-oppgaver": "planlegging",

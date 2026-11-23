@@ -36,7 +36,7 @@ import { hasPlanner } from "../../utils/level";
 import { useLevel } from "../../hooks/useLevel";
 import { DEMO } from "../../demo";
 import { webEditorMayOpen } from "./webEditor";
-import { SlidersHorizontal } from "lucide-react";
+import { SlidersHorizontal, Trash2 } from "lucide-react";
 import { useDemoOwner } from "../../hooks/useDemoOwner";
 import { STUDIO_ADDONS, addonMenuSections } from "./addons";
 import { StudioData, StudioTab, NEAR_WEEKS, isUrgentTask, withinWeeks } from "./studio";
@@ -506,6 +506,21 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
               <span className="sidebar-text">Arrangementer på nettsiden</span>
             </button>
             {addonButtons}
+
+            <button
+              type="button"
+              title="Papirkurv"
+              {...tabPrefetchHandlers("cms-papirkurv")}
+              onClick={() => onTabChange("cms-papirkurv")}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
+                activeTab === "cms-papirkurv"
+                  ? "bg-indigo-600 text-white shadow-sm"
+                  : "text-[var(--studio-muted)] hover:text-[var(--studio-text)] hover:bg-[var(--studio-bg)]"
+              }`}
+            >
+              <Trash2 className="w-4 h-4" />
+              <span className="sidebar-text">Papirkurv</span>
+            </button>
           </div>
           )}
 

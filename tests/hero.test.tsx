@@ -339,7 +339,8 @@ describe("Toppbildet i redigeringen", () => {
   };
 
   test("forsiden har valgene for zoom, meny og slør, som før til de endres", () => {
-    const { getByLabelText, onUpdate } = rediger(home);
+    const { getByLabelText, getByText, onUpdate } = rediger(home);
+    getByText("Flere valg").closest("details")!.open = true;
     const zoom = getByLabelText("Rolig zoom på toppbildet") as HTMLInputElement;
     const menu = getByLabelText("Menyen øverst") as HTMLSelectElement;
     const veil = getByLabelText("Slør over bildet") as HTMLSelectElement;
@@ -356,7 +357,8 @@ describe("Toppbildet i redigeringen", () => {
   });
 
   test("et toppbilde får eget tittelfelt, og tittelen følger bildet når et bilde foran tas ut", () => {
-    const { getByLabelText, onUpdate } = rediger({ ...home, heroImages: [tre[1], tre[2]], heroImageTitles: ["Søndag", "Bli med"] });
+    const { getByLabelText, getByText, onUpdate } = rediger({ ...home, heroImages: [tre[1], tre[2]], heroImageTitles: ["Søndag", "Bli med"] });
+    getByText("Flere valg").closest("details")!.open = true;
     fireEvent.change(getByLabelText("Tittel på toppbilde 2"), { target: { value: "Søndag kl. 11" } });
     expect(onUpdate).toHaveBeenCalledWith({ heroImageTitles: ["Søndag kl. 11", "Bli med"] });
     fireEvent.change(getByLabelText("Tekststørrelse på tittelen"), { target: { value: "xlarge" } });
