@@ -1920,6 +1920,8 @@ git push origin origin/main:stabil
 * Reglene som er publisert hos Lillesand, er fra 12. oktober kl. 19 og mangler tillegget som lar en frivillig lagre `calendarFeedToken` på seg selv. De må publiseres på nytt før det personlige kalenderabonnementet virker der.
 * Filer med personopplysninger (registeret, bemanningen) ligger utenfor repoet og skal aldri inn i det.
 
+**Sluppet til Lillesand 23. november 2026** (`stabil` = `b87db87`, `main` `337f7d2` slått sammen inn etter beskjed fra produkteier): ledige oppgaver gruppert etter dato, Min side på PC og nettbrett (trinn 1–7), oppgavebordet for medlemskap med søknader fra Min side og protokoll-logg, Gi en gave med Vipps 524887, enklere ord i side-redigeringen, bilde på nyheter, linjen «Oversikt» med bryteren «Vis i menyen», og Sider & Innhold som alltid åpner Sidestruktur med «››» for Seksjoner. **Databasereglene er endret** (medlemskap: `isMembershipClerk`, `membershipApplications`, `membershipClerkTasks`, og `membershipLog` på egen person). `firestore.rules` må limes inn i Lillesands Firebase før medlemskapsdelen virker der. Alt som virket før, virker uten de nye reglene.
+
 ### Brukernivåer som holder i databasen *(avtalt 12. oktober 2026; lesetilgangen er i koden, ikke publisert i databasen ennå)*
 
 **Problemet.** Appen har tre roller (administrator, gruppeleder, frivillig). De styrer skjermene. Lesingen av registeret var den samme for alle som var logget inn. Produkteier har bedt om tre sikre nivåer, og frivillige skal ikke inviteres inn før reglene er publisert.
