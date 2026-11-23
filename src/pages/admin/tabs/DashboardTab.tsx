@@ -183,16 +183,19 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ studio, area, webEdi
         />
       )}
 
+      {/* On a phone the week is behind the bell in the top bar (see WeekBell.tsx), so the card shows from the phone breakpoint up */}
       {!planning && (
-        <WeekOnWebsiteCard
-          pages={pages}
-          news={news}
-          gatherings={gatherings}
-          nameOf={nameOf}
-          now={now}
-          onTabChange={onTabChange}
-          onSaveGathering={(id, updates) => studio.updateGathering(id, updates)}
-        />
+        <div className="hidden md:block">
+          <WeekOnWebsiteCard
+            pages={pages}
+            news={news}
+            gatherings={gatherings}
+            nameOf={nameOf}
+            now={now}
+            onTabChange={onTabChange}
+            onSaveGathering={(id, updates) => studio.updateGathering(id, updates)}
+          />
+        </div>
       )}
 
       {/* Stat Cards */}

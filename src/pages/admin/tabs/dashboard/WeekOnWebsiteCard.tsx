@@ -17,6 +17,8 @@ interface WeekOnWebsiteCardProps {
   onTabChange: (tab: StudioTab) => void;
   /** Stores the presentation of an event, as «Sjekk nettsiden» does. */
   onSaveGathering: (id: string, updates: Partial<Gathering>) => { success: boolean; error?: string };
+  /** Inside the panel on a phone: no outer box and no heading, the panel has the title. */
+  inPanel?: boolean;
 }
 
 const COLUMN_TITLE = "text-xs font-bold text-[var(--studio-muted)] uppercase tracking-wider flex items-center justify-between gap-2";
@@ -24,7 +26,7 @@ const ROW = "w-full text-left p-3 rounded-xl bg-[var(--studio-bg)] hover:bg-[var
 const EMPTY = "text-xs text-[var(--studio-muted)] p-3";
 
 /** «Denne uka på nettsiden»: what is missing before Sunday, what is published or ends this week, and what changed last. */
-export const WeekOnWebsiteCard: React.FC<WeekOnWebsiteCardProps> = ({ pages, news, gatherings, nameOf, now, onTabChange, onSaveGathering }) => {
+export const WeekOnWebsiteCard: React.FC<WeekOnWebsiteCardProps> = ({ pages, news, gatherings, nameOf, now, onTabChange, onSaveGathering, inPanel = false }) => {
   const [editing, setEditing] = useState<Gathering | null>(null);
   const week = weekOf(now);
   const events = missingThisWeek(gatherings, now);
@@ -32,13 +34,15 @@ export const WeekOnWebsiteCard: React.FC<WeekOnWebsiteCardProps> = ({ pages, new
   const { publishing, expiring } = newsThisWeek(news, gatherings, now);
   const changes = recentChanges(pages, news, now, 5);
 
-  return (
-    <section aria-labelledby="denne-uka-paa-nettsiden" className="p-6 rounded-2xl bg-[var(--studio-surface)] border border-[var(--studio-border)] space-y-4">
+  const content = (
+    <>
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h2 id="denne-uka-paa-nettsiden" className="flex items-center gap-2 text-[var(--studio-icon)] font-bold text-sm">
-          <Globe className="w-4 h-4" aria-hidden="true" />
-          <span>Denne uka på nettsiden</span>
-        </h2>
+        {inPanel ? null : (
+          <h2 id="denne-uka-paa-nettsiden" className="flex items-center gap-2 text-[var(--studio-icon)] font-bold text-sm">
+            <Globe className="w-4 h-4" aria-hidden="true" />
+            <span>Denne uka på nettsiden</span>
+          </h2>
+        )}
         <span className="text-xs text-[var(--studio-muted)]">{week.label}</span>
       </div>
 
@@ -139,6 +143,13 @@ export const WeekOnWebsiteCard: React.FC<WeekOnWebsiteCardProps> = ({ pages, new
           onClose={() => setEditing(null)}
         />
       )}
+    </>
+  );
+
+  if (inPanel) return <div className="space-y-4">{content}</div>;
+  return (
+    <section aria-labelledby="denne-uka-paa-nettsiden" className="p-6 rounded-2xl bg-[var(--studio-surface)] border border-[var(--studio-border)] space-y-4">
+      {content}
     </section>
   );
 };

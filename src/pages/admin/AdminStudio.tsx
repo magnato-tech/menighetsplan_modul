@@ -16,6 +16,7 @@ import { useLevel } from "../../hooks/useLevel";
 import { useTimedMessage } from "../../hooks/useTimedMessage";
 
 import { StudioSidebar } from "./StudioSidebar";
+import { WeekBell } from "./WeekBell";
 import { useStudioMenuFold } from "./studioMenuFold";
 import { UnsavedChangesContext, useUnsavedRegistry } from "../../hooks/useUnsavedChanges";
 import { UnsavedChangesDialog } from "./tabs/pages/UnsavedChangesDialog";
@@ -489,6 +490,7 @@ function AdminStudioContent() {
         membershipClerkOnly={membershipClerkOnly}
 
         onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+        topBarExtra={<WeekBell studio={studio} onTabChange={handleTabChange} />}
 
       />
 

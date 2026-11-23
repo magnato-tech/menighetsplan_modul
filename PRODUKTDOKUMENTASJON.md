@@ -1745,7 +1745,7 @@ Bestilt av produkteier etter fjerde runde med monday.com som målestokk.
 
 | Del | Hva som er levert |
 |---|---|
-| **Oversikt «Denne uka på nettsiden»** | Øverst på Oversikt under Nettside (`weekOnWebsite.ts`, `WeekOnWebsiteCard.tsx`): «Mangler før søndag» (offentlige arrangementer resten av uka, med «Bilde og tekst»), «Publiseres» og «Går ut» (nyheter denne uka), og «Sist endret» (sider og nyheter, med hvem). De fire tallene står som en liten linje nederst |
+| **Oversikt «Denne uka på nettsiden»** | Øverst på Oversikt under Nettside (`weekOnWebsite.ts`, `WeekOnWebsiteCard.tsx`): «Mangler før søndag» (offentlige arrangementer resten av uka, med «Bilde og tekst»), «Publiseres» og «Går ut» (nyheter denne uka), og «Sist endret» (sider og nyheter, med hvem). De fire tallene står som en liten linje nederst. På mobil (under `md`) ligger kortet bak en bjelle øverst ved menyknappen, med antallet som mangler før søndag; den åpner «Denne uka» i et eget panel (`WeekBell.tsx`), og menyen på Oversikt står som før |
 | **Papirkurv** | Sider (med undersider), nyheter og taler som slettes, tas vare på i 30 dager og kan hentes tilbake under Nettside → Papirkurv (`trash.ts`). Kopien lagres i `cms_settings` som en `contentVersion` med `deleted: true`, samme sted som historikken, så reglene trengte ingen endring. Historikken og beskjæringen av gamle versjoner tar ikke med det som ligger i papirkurven. Feiler kopien, slettes ingenting |
 | **Toppbildet** | Bilder (opptil tre som små ruter), overskrift og høyde på datamaskin står først; resten (meny, slør, utsnitt, zoom, skrift, ingress, knapper, beskrivelse for skjermleser) ligger under «Flere valg». Bare skjermbildet er endret |
 
