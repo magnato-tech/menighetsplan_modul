@@ -96,6 +96,20 @@ export const WorshipModule: React.FC<WorshipModuleProps> = ({
     }
   };
 
+  // Short form for the one-line summary on a phone: «søn. 29. nov.»
+  const formatShortDate = (dateStr: string) => {
+    try {
+      const d = new Date(dateStr);
+      return new Intl.DateTimeFormat("no-NO", {
+        weekday: "short",
+        day: "numeric",
+        month: "short",
+      }).format(d);
+    } catch {
+      return dateStr;
+    }
+  };
+
   const formatTime = (dateStr: string) => {
     try {
       const d = new Date(dateStr);
@@ -167,7 +181,7 @@ export const WorshipModule: React.FC<WorshipModuleProps> = ({
             <img
               src={image}
               alt={nextWorship?.imageAlt?.trim() || ""}
-              className="w-full lg:w-80 aspect-video object-cover rounded-xl shrink-0 bg-stone-100"
+              className="h-28 w-full sm:h-auto lg:w-80 aspect-video object-cover rounded-xl shrink-0 bg-stone-100"
             />
           )}
           <div className="space-y-2 flex-1 min-w-0">
@@ -178,6 +192,18 @@ export const WorshipModule: React.FC<WorshipModuleProps> = ({
             <h2 className="text-2xl sm:text-3xl font-black text-stone-900 tracking-tight">
               {nextWorship ? nextWorship.title : "Ingen samlinger er lagt ut ennå"}
             </h2>
+            {/* On a phone the date, time and place fit on one line here; from sm up they are in the grey box below */}
+            {nextWorship && (
+              <p className="sm:hidden text-sm font-semibold text-stone-800">
+                <span>{((s) => s.charAt(0).toUpperCase() + s.slice(1))(formatShortDate(nextWorship.startsAt))}</span>
+                {` · kl. ${formatTime(nextWorship.startsAt)} · ${locationOf(nextWorship)}`}
+              </p>
+            )}
+            {nextWorship && countdown && (
+              <span className="sm:hidden inline-flex px-2.5 py-1 rounded-md bg-primary-50 text-primary-800 text-xs font-bold">
+                {countdown}
+              </span>
+            )}
             {nextWorship?.theme && (
               <p className="text-sm font-medium text-stone-600">
                 <span className="font-semibold text-stone-800">Tema:</span> {nextWorship.theme}
@@ -194,7 +220,7 @@ export const WorshipModule: React.FC<WorshipModuleProps> = ({
           </div>
 
           {nextWorship && (
-            <div className="flex flex-wrap items-center gap-4 text-sm text-stone-700 bg-stone-50 p-4 rounded-xl border border-stone-200/60">
+            <div className="hidden sm:flex flex-wrap items-center gap-4 text-sm text-stone-700 bg-stone-50 p-4 rounded-xl border border-stone-200/60">
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-primary-600" />
                 <span className="font-semibold capitalize">{formatDate(nextWorship.startsAt)}</span>

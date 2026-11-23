@@ -29,7 +29,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   copiedIngress,
   showCopiedIngress,
 }) => {
-  // The site settings hold the welcome headline, which is shown as a placeholder on the front page.
+  // The site settings hold the welcome headline and intro. On the front page they are shown as placeholders.
   const { settings } = useCms();
   return (
     <div data-page-section="hero" className="space-y-4">
@@ -303,7 +303,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             rows={2}
             value={editingPage.summary || ""}
             onChange={(e) => onUpdate({ ...editingPage, summary: e.target.value })}
-            placeholder="En engasjerende setning eller to som oppsummerer sidens budskap..."
+            placeholder={(isHomePage && settings.welcomeSubtext) || "En engasjerende setning eller to som oppsummerer sidens budskap..."}
             className="w-full px-3 py-2 rounded-xl bg-[var(--studio-panel-bg)] border border-[var(--studio-border)] text-[var(--studio-input-text)] text-xs focus:outline-hidden focus:border-indigo-500 resize-y"
           />
         </div>

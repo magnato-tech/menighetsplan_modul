@@ -279,7 +279,17 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ studio, area, webEdi
         )}
       </div>
 
-      {!planning && <SiteCheckCard pages={pages} news={news} gatherings={gatherings} media={media} now={now} onTabChange={onTabChange} />}
+      {!planning && (
+        <SiteCheckCard
+          pages={pages}
+          news={news}
+          gatherings={gatherings}
+          media={media}
+          now={now}
+          onTabChange={onTabChange}
+          onSaveGathering={(id, updates) => studio.updateGathering(id, updates)}
+        />
+      )}
 
       {/* Quick Actions Grid */}
       <div className="hidden md:grid md:grid-cols-2 gap-6">

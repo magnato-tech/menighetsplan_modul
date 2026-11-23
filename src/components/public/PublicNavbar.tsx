@@ -56,8 +56,13 @@ export const PublicNavbar: React.FC = () => {
   const onHero = location.pathname === "/" && Boolean(homePage?.heroImage) && menuStyle !== "white" && !isPreviewTab;
   const overlay = onHero && !scrolled && !mobileMenuOpen;
   const capitals = settings.menuUppercase === true ? "uppercase tracking-wider" : "";
-  const linkIdle = overlay ? "text-white/90 hover:text-white hover:bg-white/15" : "text-stone-600 hover:text-stone-900 hover:bg-stone-100/70";
-  const linkActive = overlay ? "text-white bg-white/20 font-bold" : "text-primary-900 bg-primary-50/80 font-bold";
+  // Over the picture only from sm up (max-sm: and sm: never both apply): below sm there is no picture, so the menu is the plain white bar
+  const linkIdle = overlay
+    ? "max-sm:text-stone-600 max-sm:hover:text-stone-900 max-sm:hover:bg-stone-100/70 sm:text-white/90 sm:hover:text-white sm:hover:bg-white/15"
+    : "text-stone-600 hover:text-stone-900 hover:bg-stone-100/70";
+  const linkActive = overlay
+    ? "max-sm:text-primary-900 max-sm:bg-primary-50/80 sm:text-white sm:bg-white/20 font-bold"
+    : "text-primary-900 bg-primary-50/80 font-bold";
 
   const toggleMobileSubmenu = (pageId: string) => {
     setOpenMobileSubmenus((prev) => ({
@@ -95,35 +100,36 @@ export const PublicNavbar: React.FC = () => {
   return (
     <header
       data-menu-on-hero={overlay ? "true" : undefined}
-      className={`${onHero ? "fixed inset-x-0" : "sticky"} top-[var(--demo-strip,0px)] z-50 border-b transition-colors duration-300 ${
+      className={`${onHero ? "sticky sm:fixed sm:inset-x-0" : "sticky"} top-[var(--demo-strip,0px)] z-50 border-b transition-colors duration-300 ${
         overlay
           ? menuStyle === "clear"
-            ? "bg-transparent border-transparent"
-            : "bg-gradient-to-b from-stone-950/75 to-transparent border-transparent"
+            ? "max-sm:bg-white/95 max-sm:backdrop-blur-md max-sm:border-stone-200/80 max-sm:shadow-xs sm:bg-transparent sm:border-transparent"
+            : "max-sm:bg-white/95 max-sm:backdrop-blur-md max-sm:border-stone-200/80 max-sm:shadow-xs sm:bg-gradient-to-b sm:from-stone-950/75 sm:to-transparent sm:border-transparent"
           : "bg-white/95 backdrop-blur-md border-stone-200/80 shadow-xs"
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 sm:h-20">
           {/* Logo & Brand Name */}
-          {logoOnHero ? (
-            // Over the picture: the light logo on its own, or the ordinary one on a light plate so it can be read
-            <Link to="/" aria-label={`${settings.churchName}, til forsiden`} className={`flex items-center ${logoOnHero.plate ? "bg-white/95 rounded-xl px-3 py-1.5 shadow-sm" : ""}`}>
+          {/* Over the picture (sm and up) the light logo; below sm the ordinary logo or name, as on any white bar */}
+          {logoOnHero && (
+            <Link to="/" aria-label={`${settings.churchName}, til forsiden`} className={`hidden sm:flex items-center ${logoOnHero.plate ? "bg-white/95 rounded-xl px-3 py-1.5 shadow-sm" : ""}`}>
               <img src={logoOnHero.src} alt={settings.churchName} className="h-9 sm:h-11 w-auto max-w-[60vw] object-contain" />
             </Link>
-          ) : logo ? (
+          )}
+          {logo ? (
             // The logo says the name itself
-            <Link to="/" aria-label={`${settings.churchName}, til forsiden`} className="flex items-center">
+            <Link to="/" aria-label={`${settings.churchName}, til forsiden`} className={`flex items-center ${logoOnHero ? "sm:hidden" : ""}`}>
               <img src={logo} alt={settings.churchName} className="h-9 sm:h-11 w-auto max-w-[60vw] object-contain" />
             </Link>
           ) : (
-          <Link to="/" className="flex items-center gap-3 group">
+          <Link to="/" className={`flex items-center gap-3 group ${logoOnHero ? "sm:hidden" : ""}`}>
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-900 to-primary-700 flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform">
               <Church className="w-5 h-5 text-accent-300" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className={`text-lg font-black tracking-tight transition-colors ${overlay ? "text-white" : "text-slate-900 group-hover:text-primary-950"}`}>
+                <span className={`text-lg font-black tracking-tight transition-colors ${overlay ? "text-slate-900 sm:text-white" : "text-slate-900 group-hover:text-primary-950"}`}>
                   {nameInPlaceOfLogo ? settings.churchName : settings.appName || "Menighetsplan"}
                 </span>
                 {!nameInPlaceOfLogo && (
@@ -248,7 +254,7 @@ export const PublicNavbar: React.FC = () => {
                 aria-label="Administrasjon"
                 title="Administrasjon"
                 className={`inline-flex items-center justify-center w-9 h-9 rounded-lg transition-colors ${
-                  overlay ? "text-white/85 hover:text-white hover:bg-white/15" : "text-stone-500 hover:text-primary-800 hover:bg-stone-100"
+                  overlay ? "max-sm:text-stone-500 max-sm:hover:text-primary-800 max-sm:hover:bg-stone-100 sm:text-white/85 sm:hover:text-white sm:hover:bg-white/15" : "text-stone-500 hover:text-primary-800 hover:bg-stone-100"
                 }`}
               >
                 <Settings className="w-[18px] h-[18px]" aria-hidden="true" />
@@ -269,7 +275,7 @@ export const PublicNavbar: React.FC = () => {
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className={`p-2 rounded-lg ${overlay ? "text-white hover:bg-white/15" : "text-stone-600 hover:text-stone-900 hover:bg-stone-100"}`}
+              className={`p-2 rounded-lg ${overlay ? "max-sm:text-stone-600 max-sm:hover:text-stone-900 max-sm:hover:bg-stone-100 sm:text-white sm:hover:bg-white/15" : "text-stone-600 hover:text-stone-900 hover:bg-stone-100"}`}
               aria-label="Åpne meny"
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}

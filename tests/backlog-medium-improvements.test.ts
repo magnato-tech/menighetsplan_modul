@@ -64,6 +64,9 @@ describe("10. Sjekk nettsiden", () => {
       ["eventMissing", "cms-overstyringer"],
     ]);
     expect(findings[1].where).toMatch(/^Kirkelunsj · /);
+    expect(findings[1].key).toBe("eventMissing:g1");
+    expect(findings[1].gatheringIds).toEqual(["g1"]);
+    expect(findings[0].key).toBe("newsStanding:n1");
   });
 });
 

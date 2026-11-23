@@ -1739,6 +1739,20 @@ Bestilt av produkteier. Backloggen og kartleggingen (WordPress, Squarespace, Wix
 | **Tekstblokken direkte** | Et trykk på tittelen eller teksten i en blokk åpner den. Teksten vises i forhåndsvisningen av seg selv; «Bruk endringer» er borte for tekstblokker |
 | **Nettredaktør** | Fjerde brukernivå, valgt under Tilgang på personkortet (`globalRole: "nettredaktor"`, i `logins` som `nettredaktor`). Ser bare Nettside-delen av admin (`webEditor.ts`): ikke Lederskap & Stab, Planlegging, e-post, moduler eller database, og Hjelp bare for Nettside. Får det et medlem får av data, aldri hele registeret. På arrangementer et eget skjema for bilde og tekst (`GatheringWebsiteDialog`). Reglene (`firestore.rules`, `storage.rules`): skriver sider, nyheter, taler, mediebiblioteket, innstillingene og historikken; på arrangementer bare bilde, tekst, lenke og synlighet. Prøvd med regeltester mot emulatoren. I demoen er Kristine Vik nettredaktør, med egen dør. **Reglene må publiseres av produkteier før rollen virker hos en menighet** |
 
+### Nettsiden på mobil uten toppbilde (23. november 2026)
+
+Bestilt av produkteier: på mobil tok toppbildet og bildet på det fremhevede kortet nesten hele skjermen. Under bredden for nettbrett (`sm`, 640 px) vises ikke det store toppbildet; overskriften står i en tynn hvit linje under menyen, med knappene små under. Menyen er da alltid den vanlige hvite linjen, også der den ellers ligger over bildet. Kortet «Neste gudstjeneste» får et lavere bilde, og dato, tid og sted på én linje rett under tittelen; den grå boksen med det samme skjules på mobil. Fra nettbrett og opp er nettsiden uendret (sjekket piksel for piksel på PC).
+
+### Oversikt, status og ett sted per felt (23. november 2026)
+
+Bestilt av produkteier etter en vurdering av CMS-et med monday.com som målestokk: alle skal se hva som må gjøres, og hvor.
+
+| Del | Hva som er levert |
+|---|---|
+| **Arrangementer på nettsiden** | En tabell sortert etter dato og gruppert per måned (`eventsOnWebsite.ts`). Knapper øverst med antall: Kommende (valgt), Mangler bilde og tekst, Offentlig, Kun intern, Fremhevet og Tidligere. Det som er over, står bare under Tidligere. Synligheten velges i merket under «På nettsiden»; knappene Fremhev, Offentlig og Kun intern på hver rad er tatt bort |
+| **Sjekk nettsiden** | Arrangementer i samme serie som mangler bilde eller tekst, står som én linje med antall og datoer. «Bilde og tekst på alle» åpner skjemaet for den første, med valget «Bruk samme bilde og tekst på de andre kommende i serien» (bare nettsidefeltene lagres). Hver linje har «Ikke nå», som huskes i nettleseren til den som trykket (`menighetsplan:sjekk-ikke-naa`), ikke i databasen |
+| **Nettside-innstillinger** | Overskriften og ingressen på forsiden er tatt ut her. De endres på selve forsiden, og knappen «Åpne Forsiden i Sider & Innhold» åpner den i redigeringen. Verdiene i innstillingene ligger igjen som reserve, og vises som forslag i feltene på forsiden når den mangler egen tekst. «Plattformnavn» heter «Navnet på appen» |
+
 **Rettet og sluppet til Lillesand 21. oktober 2026** (`stabil` = `6c42820`, bare denne rettingen oppå `6f9bc98`): knappen «Populer testdata (32 personer)» og boksen «Fyll inn testdata nå» er fjernet fra Lederskap & Stab, der de sto også i en menighets app i drift. Henvisningen til et simulert halvår i analysebordet vises bare i demo. `tests/no-testdata-in-production.test.tsx` passer på at de ikke kommer tilbake.
 
 **Sluppet til menighetene 21. oktober 2026** (`stabil` flyttet fram til `6f9bc98` etter beskjed fra produkteier): menylinjen i Sider, forsiden trinn 1 og 2, Lagre som holder siden åpen, menyene som står fast, advarselen om endringer som ikke er lagret, forhåndsvisningen som viser toppen av seksjonen, «Hva skjer» med valg, kalenderen i planleggingen, fargene i lys admin og navnet på tekstblokker. Databasereglene var ikke endret, så ingenting måtte limes inn hos Lillesand.
@@ -1919,6 +1933,8 @@ git push origin origin/main:stabil
 * Før en slipp prøves det nye i demoen, og det sies fra om databasereglene er endret. Reglene følger ikke med koden: `firestore.rules` må limes inn i hver menighets Firebase-prosjekt (Firestore → Rules → Publish).
 * Reglene som er publisert hos Lillesand, er fra 12. oktober kl. 19 og mangler tillegget som lar en frivillig lagre `calendarFeedToken` på seg selv. De må publiseres på nytt før det personlige kalenderabonnementet virker der.
 * Filer med personopplysninger (registeret, bemanningen) ligger utenfor repoet og skal aldri inn i det.
+
+**Sluppet til Lillesand 23. november 2026** (`stabil` = `b87db87`, `main` `337f7d2` slått sammen inn etter beskjed fra produkteier): ledige oppgaver gruppert etter dato, Min side på PC og nettbrett (trinn 1–7), oppgavebordet for medlemskap med søknader fra Min side og protokoll-logg, Gi en gave med Vipps 524887, enklere ord i side-redigeringen, bilde på nyheter, linjen «Oversikt» med bryteren «Vis i menyen», og Sider & Innhold som alltid åpner Sidestruktur med «››» for Seksjoner. **Databasereglene er endret** (medlemskap: `isMembershipClerk`, `membershipApplications`, `membershipClerkTasks`, og `membershipLog` på egen person). `firestore.rules` må limes inn i Lillesands Firebase før medlemskapsdelen virker der. Alt som virket før, virker uten de nye reglene.
 
 ### Brukernivåer som holder i databasen *(avtalt 12. oktober 2026; lesetilgangen er i koden, ikke publisert i databasen ennå)*
 

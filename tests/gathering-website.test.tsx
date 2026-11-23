@@ -160,21 +160,50 @@ describe("«Arrangementer på nettsiden» i CMS-et", () => {
         <VisibilityTab studio={studio} showFeedback={showFeedback} />
       </MemoryRouter>
     );
-  const row = (title: string) => screen.getByRole("heading", { name: title }).closest("div.rounded-2xl") as HTMLElement;
+  // The row of an event in the table: the one holding its title
+  const row = (title: string) => screen.getByText(title).closest("tr") as HTMLElement;
+  const filter = (name: RegExp) => screen.getByRole("button", { name });
+
+  test("viser kommende som standard, med antall på filterknappene", () => {
+    show();
+    expect(screen.getByRole("heading", { name: "Arrangementer på nettsiden" })).toBeTruthy();
+    expect(filter(/^Kommende/).getAttribute("aria-pressed")).toBe("true");
+    expect(filter(/^Tidligere/).getAttribute("aria-pressed")).toBe("false");
+    expect(filter(/^Kommende/).textContent).toContain("4");
+    expect(screen.getByRole("group", { name: "Vis arrangementer" })).toBeTruthy();
+  });
 
   test("sier med ord hva hvert arrangement mangler, og spør ikke et internt arrangement om noe", () => {
     show();
-    expect(screen.getByRole("heading", { name: "Arrangementer på nettsiden" })).toBeTruthy();
-    expect(within(row("Høstfest")).getByText("Har bilde og tekst")).toBeTruthy();
-    expect(within(row("Gudstjeneste")).getByText("Mangler bilde og tekst")).toBeTruthy();
-    expect(within(row("Konsert")).getByText("Mangler tekst")).toBeTruthy();
-    expect(within(row("Styremøte")).queryByText(/Mangler|Har bilde/)).toBeNull();
+    expect(within(row("Høstfest")).getByText("Har")).toBeTruthy();
+    expect(within(row("Gudstjeneste")).getByText("Mangler")).toBeTruthy();
+    expect(within(row("Gudstjeneste")).getByTitle("Mangler bilde og tekst")).toBeTruthy();
+    expect(within(row("Konsert")).getByTitle("Mangler tekst")).toBeTruthy();
+    expect(within(row("Styremøte")).queryByText(/^(Mangler|Har)$/)).toBeNull();
   });
 
-  test("viser bildet til arrangementet som har et", () => {
+  test("filteret «Mangler bilde og tekst» viser bare det som mangler, og ikke interne arrangementer", () => {
+    show();
+    fireEvent.click(filter(/^Mangler bilde og tekst/));
+    expect(filter(/^Mangler bilde og tekst/).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.queryByText("Høstfest")).toBeNull();
+    expect(screen.queryByText("Styremøte")).toBeNull();
+    expect(screen.getByText("Gudstjeneste")).toBeTruthy();
+    expect(screen.getByText("Konsert")).toBeTruthy();
+  });
+
+  test("filteret «Tidligere» er tomt når alle arrangementene er framover, og viser en tom tilstand", () => {
+    show();
+    fireEvent.click(filter(/^Tidligere/));
+    expect(screen.getByText("Ingen arrangementer her.")).toBeTruthy();
+    expect(screen.queryByText("Høstfest")).toBeNull();
+  });
+
+  test("viser bildet til arrangementet som har et, og en tom ramme for de andre", () => {
     show();
     expect(row("Høstfest").querySelector("img")?.getAttribute("src")).toBe(POSTER);
     expect(row("Gudstjeneste").querySelector("img")).toBeNull();
+    expect(row("Gudstjeneste").querySelector("div[aria-hidden='true']")).toBeTruthy();
   });
 
   test("«Bilde og tekst» åpner arrangementets skjema på delen om nettsiden, og lagrer på arrangementet", async () => {
@@ -191,10 +220,19 @@ describe("«Arrangementer på nettsiden» i CMS-et", () => {
     expect(showFeedback).toHaveBeenCalledWith("Arrangementet ble oppdatert!");
   });
 
-  test("synligheten settes som før", () => {
+  test("synligheten settes med menyen «På nettsiden», som før", () => {
     show();
-    fireEvent.click(within(row("Konsert")).getByRole("button", { name: "Fremhev" }));
+    const menu = within(row("Konsert")).getByRole("combobox", { name: "Synlighet på nettsiden for Konsert" }) as HTMLSelectElement;
+    expect(menu.value).toBe("offentlig");
+    fireEvent.change(menu, { target: { value: "fremhevet" } });
     expect(updateGathering).toHaveBeenCalledWith("c", { visibility: "fremhevet", isPublic: true });
+    expect(showFeedback).toHaveBeenCalledWith("Synlighet oppdatert til: Fremhevet på forsiden");
+  });
+
+  test("har ikke lenger egne knapper for synlighet på hver rad", () => {
+    show();
+    expect(within(row("Konsert")).queryByRole("button", { name: "Fremhev" })).toBeNull();
+    expect(within(row("Konsert")).queryByRole("button", { name: "Kun intern" })).toBeNull();
   });
 });
 

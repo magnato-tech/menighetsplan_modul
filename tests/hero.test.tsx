@@ -125,7 +125,7 @@ describe("Toppbildet", () => {
         <PublicHomePage pageOverride={{ ...home, heroImages: [tre[1], tre[2], "https://example.org/fire.jpg"] }} />
       </MemoryRouter>
     );
-    const hero = document.querySelector(`[data-cms-preview-target="${CMS_PREVIEW_TARGET_HERO}"]`)!;
+    const hero = document.querySelector(`section[data-cms-preview-target="${CMS_PREVIEW_TARGET_HERO}"]`)!;
     expect([...hero.querySelectorAll("img")].map((img) => img.getAttribute("src"))).toEqual(tre);
     expect(hero.className).toContain("min-h-[72vh]");
   });
@@ -136,14 +136,14 @@ describe("Toppbildet", () => {
         <PublicHomePage pageOverride={{ ...home, heroImage: "" }} />
       </MemoryRouter>
     );
-    const hero = document.querySelector(`[data-cms-preview-target="${CMS_PREVIEW_TARGET_HERO}"]`)!;
+    const hero = document.querySelector(`section[data-cms-preview-target="${CMS_PREVIEW_TARGET_HERO}"]`)!;
     expect(hero.querySelector("img")).toBeNull();
     expect(hero.className).not.toContain("min-h-[72vh]");
   });
 });
 
 describe("Valgene for toppbildet på forsiden", () => {
-  const hero = () => document.querySelector(`[data-cms-preview-target="${CMS_PREVIEW_TARGET_HERO}"]`)!;
+  const hero = () => document.querySelector(`section[data-cms-preview-target="${CMS_PREVIEW_TARGET_HERO}"]`)!;
   const vis = (page: Partial<CmsPage>) =>
     render(
       <MemoryRouter>
@@ -209,7 +209,7 @@ describe("Valgene for toppbildet på forsiden", () => {
 });
 
 describe("Flere toppbilder med hver sin tittel", () => {
-  const hero = () => document.querySelector(`[data-cms-preview-target="${CMS_PREVIEW_TARGET_HERO}"]`)!;
+  const hero = () => document.querySelector(`section[data-cms-preview-target="${CMS_PREVIEW_TARGET_HERO}"]`)!;
   const vis = (page: Partial<CmsPage>) =>
     render(
       <MemoryRouter>
@@ -271,7 +271,10 @@ describe("Menyen oppå toppbildet", () => {
     const header = meny("/");
     expect(header.getAttribute("data-menu-on-hero")).toBe("true");
     expect(header.className).toContain("fixed");
-    expect(header.className).not.toContain("bg-white");
+    // From sm up the bar is see-through over the picture; below sm there is no picture, so it is the white bar
+    expect(header.className.split(" ")).not.toContain("bg-white/95");
+    expect(header.className).toContain("sm:bg-gradient-to-b");
+    expect(header.className).toContain("max-sm:bg-white/95");
 
     Object.defineProperty(window, "scrollY", { value: 300, configurable: true });
     fireEvent.scroll(window);

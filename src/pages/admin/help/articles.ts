@@ -291,9 +291,9 @@ const forside: HelpArticle = {
   hvor: "Nettside → Arrangementer på nettsiden",
   intro: "Gi arrangementene bilde og tekst, og bestem hvilke som løftes fram, vises eller holdes interne.",
   steg: [
-    "Se etter arrangementer merket «Mangler bilde og tekst», «Mangler bilde» eller «Mangler tekst». **Har bilde og tekst** betyr at alt er på plass.",
+    "Arrangementene står etter dato, måned for måned. Knappene øverst viser **Kommende**, **Mangler bilde og tekst**, **Offentlig**, **Kun intern**, **Fremhevet** eller **Tidligere**.",
     "Trykk **Bilde og tekst**. Velg et liggende bilde, og skriv en kort ingress. Trykk **Lagre endringer**.",
-    "**Fremhev** løfter arrangementet fram på forsiden. **Offentlig** viser det i kalenderen. **Kun intern** skjuler det fra nettsiden.",
+    "Trykk på merket under **På nettsiden** for å velge: **Fremhevet** løfter arrangementet fram på forsiden, **Offentlig** viser det i kalenderen, og **Kun intern** skjuler det fra nettsiden.",
     "Er arrangementet laget fra en mal med bilde: **Bruk malens bilde**, eller **Gi dem bildet fra malen** for alle på en gang.",
   ],
   godt: "Bildet vises på kortet på forsiden og på arrangementets egen side. Hvert arrangement i en serie har sitt eget bilde.",
@@ -390,7 +390,7 @@ const innstillinger: HelpArticle = {
   hvor: "Nettside → Nettside-innstillinger",
   intro: "Det som gjelder hele nettsiden: navn, logo, kontakt, gaver og sosiale medier.",
   steg: [
-    "Navn og velkomst: navn, slagord, overskrift og ingress på forsiden.",
+    "Navn: menighetens navn, navnet på appen og slagordet. Overskriften og ingressen på forsiden endrer du på selve forsiden: trykk **Åpne Forsiden i Sider & Innhold**.",
     "Logo: **Velg logo**, og eventuelt **Velg lys logo** for menyen over toppbildet.",
     "Kontakt og gaver: adresse, telefon, e-post, kontortid, Vipps, kontonummer og organisasjonsnummer.",
     "Sosiale medier: lim inn lenkene. Trykk **Lagre alle innstillinger**.",
