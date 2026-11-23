@@ -1739,6 +1739,10 @@ Bestilt av produkteier. Backloggen og kartleggingen (WordPress, Squarespace, Wix
 | **Tekstblokken direkte** | Et trykk på tittelen eller teksten i en blokk åpner den. Teksten vises i forhåndsvisningen av seg selv; «Bruk endringer» er borte for tekstblokker |
 | **Nettredaktør** | Fjerde brukernivå, valgt under Tilgang på personkortet (`globalRole: "nettredaktor"`, i `logins` som `nettredaktor`). Ser bare Nettside-delen av admin (`webEditor.ts`): ikke Lederskap & Stab, Planlegging, e-post, moduler eller database, og Hjelp bare for Nettside. Får det et medlem får av data, aldri hele registeret. På arrangementer et eget skjema for bilde og tekst (`GatheringWebsiteDialog`). Reglene (`firestore.rules`, `storage.rules`): skriver sider, nyheter, taler, mediebiblioteket, innstillingene og historikken; på arrangementer bare bilde, tekst, lenke og synlighet. Prøvd med regeltester mot emulatoren. I demoen er Kristine Vik nettredaktør, med egen dør. **Reglene må publiseres av produkteier før rollen virker hos en menighet** |
 
+### Nettsiden på mobil uten toppbilde (23. november 2026)
+
+Bestilt av produkteier: på mobil tok toppbildet og bildet på det fremhevede kortet nesten hele skjermen. Under bredden for nettbrett (`sm`, 640 px) vises ikke det store toppbildet; overskriften står i en tynn hvit linje under menyen, med knappene små under. Menyen er da alltid den vanlige hvite linjen, også der den ellers ligger over bildet. Kortet «Neste gudstjeneste» får et lavere bilde, og dato, tid og sted på én linje rett under tittelen; den grå boksen med det samme skjules på mobil. Fra nettbrett og opp er nettsiden uendret (sjekket piksel for piksel på PC).
+
 ### Oversikt, status og ett sted per felt (23. november 2026)
 
 Bestilt av produkteier etter en vurdering av CMS-et med monday.com som målestokk: alle skal se hva som må gjøres, og hvor.

@@ -148,7 +148,7 @@ describe("Hero-knapper og hovedbilde", () => {
     );
 
     const publicImg = document.querySelector(
-      `[data-cms-preview-target="${CMS_PREVIEW_TARGET_HERO}"] img`
+      `section[data-cms-preview-target="${CMS_PREVIEW_TARGET_HERO}"] img`
     ) as HTMLImageElement | null;
     expect(publicImg?.getAttribute("src")).toBe(heroImage);
   });

@@ -244,12 +244,31 @@ export const PublicHomePage: React.FC<PublicHomePageProps> = ({
 
 
 
+      {/* On a phone (below sm) there is no big picture: the headline and its buttons sit in a thin band under the menu */}
+      <div
+        data-cms-preview-target={CMS_PREVIEW_TARGET_HERO}
+        className="sm:hidden bg-white px-4 py-3 border-b border-stone-200"
+      >
+        <h1 className="text-xl font-black text-stone-900">{heroHeadline}</h1>
+        <HeroButtons
+          size="compact"
+          tone="on-light"
+          align="start"
+          showPrimary={showPrimaryCta}
+          showSecondary={showSecondaryCta}
+          primaryText={primaryText}
+          primaryLink={primaryLink || undefined}
+          secondaryText={secondaryText}
+          secondaryLink={secondaryLink || undefined}
+        />
+      </div>
+
       <section
 
         data-cms-preview-target={CMS_PREVIEW_TARGET_HERO}
 
-        className={`relative overflow-hidden bg-gradient-to-b from-stone-900 via-primary-950 to-stone-900 text-white py-16 sm:py-24 lg:py-28 px-4 sm:px-6 lg:px-8 ${
-          heroImages.length > 0 ? `${HERO_MIN_HEIGHT[heroHeight]} flex items-center` : ""
+        className={`${heroImages.length > 0 ? "hidden sm:flex" : "hidden sm:block"} relative overflow-hidden bg-gradient-to-b from-stone-900 via-primary-950 to-stone-900 text-white py-16 sm:py-24 lg:py-28 px-4 sm:px-6 lg:px-8 ${
+          heroImages.length > 0 ? `${HERO_MIN_HEIGHT[heroHeight]} items-center` : ""
         } ${menuOnHero ? "pt-32 sm:pt-40 lg:pt-44" : ""}`}
 
       >
