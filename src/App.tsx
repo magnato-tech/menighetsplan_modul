@@ -289,8 +289,13 @@ function AppContent() {
  * has turned away is not asked again.
  */
 function WebsiteContent({ onPublicPath, children }: { onPublicPath: boolean; children: React.ReactNode }) {
-  const { session } = useFirebase();
-  return <CmsProvider publicPagesOnly={onPublicPath || session.status !== "member"}>{children}</CmsProvider>;
+  const { session, currentUser } = useFirebase();
+  // Who saves a page or article is the person logged in; nobody (no id) when no one is
+  return (
+    <CmsProvider publicPagesOnly={onPublicPath || session.status !== "member"} editorId={currentUser.id || undefined}>
+      {children}
+    </CmsProvider>
+  );
 }
 
 function DataProviders({ children }: { children: React.ReactNode }) {

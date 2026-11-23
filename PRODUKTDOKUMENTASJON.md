@@ -1739,6 +1739,26 @@ Bestilt av produkteier. Backloggen og kartleggingen (WordPress, Squarespace, Wix
 | **Tekstblokken direkte** | Et trykk på tittelen eller teksten i en blokk åpner den. Teksten vises i forhåndsvisningen av seg selv; «Bruk endringer» er borte for tekstblokker |
 | **Nettredaktør** | Fjerde brukernivå, valgt under Tilgang på personkortet (`globalRole: "nettredaktor"`, i `logins` som `nettredaktor`). Ser bare Nettside-delen av admin (`webEditor.ts`): ikke Lederskap & Stab, Planlegging, e-post, moduler eller database, og Hjelp bare for Nettside. Får det et medlem får av data, aldri hele registeret. På arrangementer et eget skjema for bilde og tekst (`GatheringWebsiteDialog`). Reglene (`firestore.rules`, `storage.rules`): skriver sider, nyheter, taler, mediebiblioteket, innstillingene og historikken; på arrangementer bare bilde, tekst, lenke og synlighet. Prøvd med regeltester mot emulatoren. I demoen er Kristine Vik nettredaktør, med egen dør. **Reglene må publiseres av produkteier før rollen virker hos en menighet** |
 
+### Denne uka, papirkurv og enklere toppbilde (23. november 2026)
+
+Bestilt av produkteier etter fjerde runde med monday.com som målestokk.
+
+| Del | Hva som er levert |
+|---|---|
+| **Oversikt «Denne uka på nettsiden»** | Øverst på Oversikt under Nettside (`weekOnWebsite.ts`, `WeekOnWebsiteCard.tsx`): «Mangler før søndag» (offentlige arrangementer resten av uka, med «Bilde og tekst»), «Publiseres» og «Går ut» (nyheter denne uka), og «Sist endret» (sider og nyheter, med hvem). De fire tallene står som en liten linje nederst. På mobil (under `md`) ligger kortet bak en bjelle øverst ved menyknappen, med antallet som mangler før søndag; den åpner «Denne uka» i et eget panel (`WeekBell.tsx`), og menyen på Oversikt står som før |
+| **Papirkurv** | Sider (med undersider), nyheter og taler som slettes, tas vare på i 30 dager og kan hentes tilbake under Nettside → Papirkurv (`trash.ts`). Kopien lagres i `cms_settings` som en `contentVersion` med `deleted: true`, samme sted som historikken, så reglene trengte ingen endring. Historikken og beskjæringen av gamle versjoner tar ikke med det som ligger i papirkurven. Feiler kopien, slettes ingenting |
+| **Toppbildet** | Bilder (opptil tre som små ruter), overskrift og høyde på datamaskin står først; resten (meny, slør, utsnitt, zoom, skrift, ingress, knapper, beskrivelse for skjermleser) ligger under «Flere valg». Bare skjermbildet er endret |
+
+### Nyheter med status, søk i taler og «Endret … av …» (23. november 2026)
+
+Bestilt av produkteier etter tredje runde med monday.com som målestokk.
+
+| Del | Hva som er levert |
+|---|---|
+| **Aktuelt & Nyheter** | En tabell med miniatyrbilde, kategori, status og «Sist endret» (`newsStatus.ts`). Status: Kladd, Planlagt (publiseringsdato fram i tid), Går ut (siste dag innen 14 dager), Gått ut og Publisert. Knapper øverst: Alle, Publisert, Kladd, Planlagt og Går snart ut |
+| **Taler & Prekener** | Søk i tittel, taler og bibeltekst (uten hensyn til store bokstaver og aksenter), og valg for serie, taler og år (`sermonFilter.ts`). Tabell med nyeste først |
+| **«Endret … av …»** | Sider og nyheter lagrer `updatedAt` og `updatedBy` når de lagres i admin (`lastEdited.ts`). `updatedBy` er personens id i registeret, aldri navnet, fordi sider og nyheter kan leses av alle; navnet slås opp i admin. Sidestruktur viser «Endret 22. nov. kl. 14:05 av …» på hovedfaner og kort på underfaner. Det som ble lagret før, viser bare tidspunkt (sider) eller publiseringsdato (nyheter). Reglene er ikke endret |
+
 ### Nettsiden på mobil uten toppbilde (23. november 2026)
 
 Bestilt av produkteier: på mobil tok toppbildet og bildet på det fremhevede kortet nesten hele skjermen. Under bredden for nettbrett (`sm`, 640 px) vises ikke det store toppbildet; overskriften står i en tynn hvit linje under menyen, med knappene små under. Menyen er da alltid den vanlige hvite linjen, også der den ellers ligger over bildet. Kortet «Neste gudstjeneste» får et lavere bilde, og dato, tid og sted på én linje rett under tittelen; den grå boksen med det samme skjules på mobil. Fra nettbrett og opp er nettsiden uendret (sjekket piksel for piksel på PC).
@@ -1935,6 +1955,8 @@ git push origin origin/main:stabil
 * Filer med personopplysninger (registeret, bemanningen) ligger utenfor repoet og skal aldri inn i det.
 
 **Sluppet til Lillesand 23. november 2026** (`stabil` = `b87db87`, `main` `337f7d2` slått sammen inn etter beskjed fra produkteier): ledige oppgaver gruppert etter dato, Min side på PC og nettbrett (trinn 1–7), oppgavebordet for medlemskap med søknader fra Min side og protokoll-logg, Gi en gave med Vipps 524887, enklere ord i side-redigeringen, bilde på nyheter, linjen «Oversikt» med bryteren «Vis i menyen», og Sider & Innhold som alltid åpner Sidestruktur med «››» for Seksjoner. **Databasereglene er endret** (medlemskap: `isMembershipClerk`, `membershipApplications`, `membershipClerkTasks`, og `membershipLog` på egen person). `firestore.rules` må limes inn i Lillesands Firebase før medlemskapsdelen virker der. Alt som virket før, virker uten de nye reglene.
+
+**Sluppet til Lillesand 23. november 2026, andre gang** (`stabil` = `90921cd`, `main` `a2554f3` slått sammen inn etter beskjed fra produkteier): Arrangementer på nettsiden som tabell etter dato med filter, Sjekk nettsiden med serier og «Ikke nå», overskriften og ingressen på forsiden bare på selve forsiden («Navnet på appen» i innstillingene), og nettsiden på mobil uten toppbilde. Databasereglene er ikke endret.
 
 ### Brukernivåer som holder i databasen *(avtalt 12. oktober 2026; lesetilgangen er i koden, ikke publisert i databasen ennå)*
 

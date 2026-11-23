@@ -213,10 +213,9 @@ const siderHero: HelpArticle = {
   hvor: "Nettside → Sider & Innhold → Forside → Rediger → Toppbilde",
   intro: "Toppbildet er det første besøkende ser: bilde, tittel og meny.",
   steg: [
-    "**Menyen øverst** står først: over bildet, eller som en hvit linje med bildet under. Den kan velges når forsiden har et bakgrunnsbilde.",
-    "Velg bakgrunnsbildet. Under **Endre utsnitt** drar du rammen dit bildet skal vises, og **Zoom** går nærmere. **Tilbakestill** gir hele bildet igjen. **Høyde på toppbildet** og **Slør over bildet** står rett under, og bilde 2 og 3 kan få egen tittel.",
-    "Skriv **Tittel i Hero**, og velg **Tekststørrelse på tittelen**, **Skrift på tittelen** og hvordan **Tittelen på bildet** skal stå.",
-    "Undertittel og knapper kommer til slutt, i samme rekkefølge som på forsiden.",
+    "Under **Bilder** velger du opptil tre bilder. De toner over i hverandre.",
+    "Skriv overskriften i **Tittel i Hero**, og velg høyden under **Høyde på datamaskin**: **Lav**, **Middels** eller **Hele skjermen**. På mobil vises bare overskriften i en tynn linje.",
+    "Resten ligger under **Flere valg**: utsnitt og zoom, **Menyen øverst**, **Slør over bildet**, rolig zoom, titler på bilde 2 og 3, størrelse, skrift og stil på overskriften, undertittel, knapper og beskrivelse for skjermleser.",
   ],
   godt: "Undertittel og knapper er av til du huker av **Vis på siden**. Prikker under bildet kommer av seg selv, piler slår du på.",
   passPa: "Et bilde med tekst på kan kuttes i kantene. Bruk helst bilder uten tekst i toppbildet.",
@@ -285,6 +284,21 @@ const siderSok: HelpArticle = {
 
 // ---------------------------------------------------------------- Nettside: de andre fanene
 
+const papirkurv: HelpArticle = {
+  id: "papirkurv",
+  title: "Papirkurv",
+  hvor: "Nettside → Papirkurv",
+  intro: "En side, nyhet eller tale du sletter, legges i papirkurven i 30 dager, så den kan hentes tilbake.",
+  steg: [
+    "Når du sletter, blir du spurt om å flytte den til papirkurven. Den forsvinner fra nettsiden med en gang.",
+    "Åpne **Papirkurv** for å se det som er slettet, når og av hvem, og når det går for godt.",
+    "Trykk **Hent tilbake**. Den kommer tilbake med samme adresse og innhold. En side som ble slettet med undersider, kommer tilbake med dem.",
+  ],
+  godt: "Etter 30 dager slettes det for godt.",
+  seOgsa: ["sider-sidetre", "nyheter"],
+  tabs: ["cms-papirkurv"],
+};
+
 const forside: HelpArticle = {
   id: "forside",
   title: "Arrangementer på nettsiden",
@@ -310,7 +324,7 @@ const nyheter: HelpArticle = {
     "Trykk **Ny artikkel**. Skriv tittel, ingress og tekst, og velg kategori og bilde.",
     "Handler nyheten om et arrangement i kalenderen, velg det under **Hører til arrangement (valgfritt)**. Da går nyheten ut dagen etter.",
     "Ellers: sett siste dag i **Vises til og med (valgfritt)**.",
-    "Trykk **Lagre artikkel**. **Historikk** viser tidligere versjoner.",
+    "Trykk **Lagre artikkel**. I listen viser **Status** om nyheten er publisert, kladd, planlagt eller snart går ut, og knappene øverst viser bare de nyhetene. **Sist endret** sier når og av hvem, og **Historikk** viser tidligere versjoner.",
   ],
   godt: "Lagrer du uten siste dag og uten arrangement, spør admin når nyheten skal gå ut, og foreslår datoen teksten nevner. En nyhet som er gått ut, er merket **Utløpt** i listen, og lenken virker fortsatt.",
   passPa: "En nyhet uten siste dag blir stående på forsiden til noen fjerner den. Velg **Lagre uten siste dag** bare for saker som skal stå.",
@@ -327,7 +341,7 @@ const taler: HelpArticle = {
     "Trykk **Legg til tale**. Skriv tittel, taler, dato og bibeltekst.",
     "Legg inn lydfil, Spotify-lenke eller video. Én er nok.",
     "Velg gjerne et bilde og en serie, og skriv et kort sammendrag.",
-    "Trykk **Lagre tale**.",
+    "Trykk **Lagre tale**. Over listen kan du søke i tittel, taler og bibeltekst, og velge **Serie**, **Taler** eller **År**.",
   ],
   godt: "Den nyeste talen vises på forsiden. YouTube vises uten sporing. En serie gjør det lett å finne taler som hører sammen.",
   seOgsa: ["sider-moduler"],
@@ -720,6 +734,7 @@ export const helpSections: HelpSection[] = [
       { kind: "article", article: tema },
       { kind: "article", article: innstillinger },
       { kind: "article", article: besok },
+      { kind: "article", article: papirkurv },
     ],
   },
   {

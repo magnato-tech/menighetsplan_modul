@@ -1,4 +1,4 @@
-import { Badge, Calendar, CalendarRange, ClipboardList, FileText, FolderKanban, Headphones, Images, LayoutTemplate, ListTodo, Mail, Newspaper, Palette, Sliders, Star, Users, type LucideIcon } from "lucide-react";
+import { Badge, Calendar, CalendarRange, ClipboardList, FileText, FolderKanban, Headphones, Images, LayoutTemplate, ListTodo, Mail, Newspaper, Palette, Sliders, Star, Trash2, Users, type LucideIcon } from "lucide-react";
 import { useCms } from "../../context/CmsContext";
 import { useLevel } from "../../hooks/useLevel";
 import { useStockImageCount } from "../../hooks/useStockImageCount";
@@ -103,6 +103,7 @@ export function useStudioMenuEntries(studio: StudioData, area: StudioArea, optio
     { tab: "cms-design", label: "Tema & Designsystem", icon: Palette, iconClass: "text-pink-400" },
     { tab: "cms-innstillinger", label: "Nettside-innstillinger", icon: Sliders, iconClass: "" },
     { tab: "cms-overstyringer", label: "Arrangementer på nettsiden", icon: Star, iconClass: "text-amber-400" },
+    { tab: "cms-papirkurv", label: "Papirkurv", icon: Trash2, iconClass: "" },
   ];
 
   return area === "nettside" ? website : planning;

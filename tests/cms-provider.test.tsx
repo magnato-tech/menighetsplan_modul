@@ -9,6 +9,11 @@ import { clearCollections, offline, seed, stored, storedIds } from "./support/of
 
 // Same setup as data-provider.test.tsx: the real Firestore client, kept offline
 vi.mock("../src/firebase", async () => (await import("./support/offlineFirestore")).firebaseModuleMock);
+// Deleted content is first stored in the recycle bin. Offline a write is never acknowledged, so that step is stood in for here
+vi.mock("../src/services/contentVersions", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../src/services/contentVersions")>()),
+  moveToTrash: vi.fn(async () => {}),
+}));
 
 import { CmsProvider, useCms } from "../src/context/CmsContext";
 

@@ -58,7 +58,7 @@ const SET_ON_SAVE: (keyof CmsPage)[] = [
   "status", // follows from isPublished and publishAt
   "showHero", // always on
   "blocks", // the blocks are stored as the page text (content)
-  "updatedBy", // not kept
+  "updatedBy", // set by the saving, from who is logged in (see editorId)
 ];
 
 describe("Når en side lagres", () => {

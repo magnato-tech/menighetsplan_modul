@@ -81,14 +81,16 @@ describe("Bilde på nyhetsartikler i admin", () => {
         <NewsTab studio={studio} showFeedback={vi.fn()} createRequested={false} onCreateHandled={() => {}} />
       </MemoryRouter>
     );
-  const row = (title: string) => screen.getByRole("heading", { name: title }).closest("div.rounded-2xl") as HTMLElement;
+  const row = (title: string) => screen.getByText(title).closest("tr") as HTMLElement;
 
   test("redaktøren ser feltet «Bilde» og beskrivelsen for skjermleser, og begge lagres", () => {
     cms.news = [article("n1", "Dugnad", { imageUrl: "https://example.org/dugnad.png", imageAlt: "Folk pakker kasser", expiresAt: "2027-01-31" })];
     show();
     fireEvent.click(within(row("Dugnad")).getByRole("button", { name: "Rediger" }));
 
-    expect(screen.getByText("Bilde")).toBeTruthy();
+    // The table has a column called «Bilde» too, so the editor is looked at by itself
+    const editor = screen.getByRole("button", { name: "Lagre artikkel" }).closest("form") as HTMLElement;
+    expect(within(editor).getByText("Bilde")).toBeTruthy();
     const description = screen.getByLabelText(DESCRIPTION_LABEL) as HTMLInputElement;
     expect(description.value).toBe("Folk pakker kasser");
 

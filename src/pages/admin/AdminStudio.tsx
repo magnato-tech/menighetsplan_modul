@@ -16,6 +16,7 @@ import { useLevel } from "../../hooks/useLevel";
 import { useTimedMessage } from "../../hooks/useTimedMessage";
 
 import { StudioSidebar } from "./StudioSidebar";
+import { WeekBell } from "./WeekBell";
 import { useStudioMenuFold } from "./studioMenuFold";
 import { UnsavedChangesContext, useUnsavedRegistry } from "../../hooks/useUnsavedChanges";
 import { UnsavedChangesDialog } from "./tabs/pages/UnsavedChangesDialog";
@@ -50,6 +51,7 @@ import {
 
   LazyAnalyticsTab,
   LazySiteTrafficTab,
+  LazyTrashTab,
 
   LazyDemoSetupTab,
 
@@ -488,6 +490,7 @@ function AdminStudioContent() {
         membershipClerkOnly={membershipClerkOnly}
 
         onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+        topBarExtra={<WeekBell studio={studio} onTabChange={handleTabChange} />}
 
       />
 
@@ -728,6 +731,12 @@ function AdminStudioContent() {
         <StudioTabPanel tab="nettsidebesok" activeTab={activeTab} visited={mayShow("nettsidebesok")}>
 
           <LazySiteTrafficTab showFeedback={showFeedback} />
+
+        </StudioTabPanel>
+
+        <StudioTabPanel tab="cms-papirkurv" activeTab={activeTab} visited={mayShow("cms-papirkurv")}>
+
+          <LazyTrashTab studio={studio} showFeedback={showFeedback} />
 
         </StudioTabPanel>
 

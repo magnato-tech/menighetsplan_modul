@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { lastEditedText } from "../../../../utils/lastEdited";
+import { useFirebase } from "../../../../context/FirebaseDataContext";
 import { CmsPage } from "../../../../data/cmsData";
 import { PageNode, pageUrl, getMenuOrder, buildMenuBar, showsMenuOverview } from "../../../../utils/menu";
 import { useTimedMessage } from "../../../../hooks/useTimedMessage";
@@ -61,6 +63,14 @@ export const PageTreeList: React.FC<PageTreeListProps> = ({
 }) => {
   const { pages } = useCms();
   const linkContext = useMemo(() => buildLinkContext(pages), [pages]);
+  // The name of who last saved a page is looked up among the persons this editor can see. Without the
+  // provider, or without that person, the line says only when it was saved.
+  const { allPersons } = useFirebase();
+  const nameOf = (personId: string) => allPersons?.find((person) => person.id === personId)?.name;
+  const editedLine = (page: CmsPage, withTime: boolean, className: string) => {
+    const text = lastEditedText(page, nameOf, Date.now(), { withTime });
+    return text ? <p className={className}>{text}</p> : null;
+  };
 
   // Drag and drop state
   const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -638,6 +648,7 @@ export const PageTreeList: React.FC<PageTreeListProps> = ({
                     )}
                   </div>
 
+                  {editedLine(parent, true, "text-[11px] text-[var(--studio-muted)] pl-1")}
                   {parent.summary && (
                     <p className="text-xs text-[var(--studio-muted)] line-clamp-1 pl-1">{parent.summary}</p>
                   )}
@@ -860,6 +871,7 @@ export const PageTreeList: React.FC<PageTreeListProps> = ({
                               </span>
                             )}
                           </div>
+                          {editedLine(child, false, "text-[11px] text-[var(--studio-muted)] text-right")}
                           {child.summary && (
                             <p className="text-xs text-[var(--studio-muted)] line-clamp-1 pl-1">{child.summary}</p>
                           )}

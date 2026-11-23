@@ -139,16 +139,16 @@ describe("Toppbildet på forsiden i redigeringen", () => {
       </MemoryRouter>
     );
 
-  test("feltene står i samme rekkefølge som på forsiden: menyen, bildet, tittelen, undertittelen", () => {
-    const { getByLabelText } = rediger(forside);
+  test("feltene står i samme rekkefølge som på forsiden: bildene, overskriften, høyden, og så flere valg", () => {
+    const { getByLabelText, getByRole, getByText } = rediger(forside);
     const span = (text: string) => [...document.querySelectorAll("span, label")].find((element) => element.textContent?.trim() === text)!;
     const order = [
-      getByLabelText("Menyen øverst"),
-      span("Bakgrunnsbilde"),
-      span("Toppbildet: høyde, slør og flere bilder"),
-      getByLabelText("Høyde på toppbildet"),
-      getByLabelText("Slør over bildet"),
+      span("Bilder"),
       span("Tittel i Hero"),
+      getByRole("radiogroup", { name: "Høyde på datamaskin" }),
+      getByText("Flere valg"),
+      getByLabelText("Menyen øverst"),
+      getByLabelText("Slør over bildet"),
       getByLabelText("Tekststørrelse på tittelen"),
       getByLabelText("Skrift på tittelen"),
       getByLabelText("Tittelen på bildet"),
@@ -161,12 +161,14 @@ describe("Toppbildet på forsiden i redigeringen", () => {
 
   test("uten toppbilde er valget for menyen stengt, og det står hvorfor", () => {
     const { getByLabelText, getByText } = rediger({ ...forside, heroImage: "" });
+    getByText("Flere valg").closest("details")!.open = true;
     expect((getByLabelText("Menyen øverst") as HTMLSelectElement).disabled).toBe(true);
     expect(getByText(/Velg et bakgrunnsbilde først/)).toBeTruthy();
   });
 
   test("tittelfeltet for toppbilde 2 og 3 står der alltid, og kan brukes når bildet er valgt", () => {
-    const { getByLabelText } = rediger({ ...forside, heroImages: ["https://example.org/to.jpg"] });
+    const { getByLabelText, getByText } = rediger({ ...forside, heroImages: ["https://example.org/to.jpg"] });
+    getByText("Flere valg").closest("details")!.open = true;
     const to = getByLabelText("Tittel på toppbilde 2") as HTMLInputElement;
     const tre = getByLabelText("Tittel på toppbilde 3") as HTMLInputElement;
     expect(to.disabled).toBe(false);

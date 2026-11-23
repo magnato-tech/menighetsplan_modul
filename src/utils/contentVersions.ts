@@ -1,8 +1,9 @@
 // Earlier versions of a page or a news article, kept so a save that went wrong can be undone.
 // Each time a page or an article is saved with a change, the version it replaces is kept as a copy.
-// No database: the copies are stored by services/contentVersions.ts.
+// No database: the copies are stored by services/contentVersions.ts. A deleted page, article or talk
+// is kept in the same place, but as a trash record (see utils/trash.ts), never as a version.
 
-export type ContentKind = "page" | "news";
+export type ContentKind = "page" | "news" | "sermon";
 
 /** A version as it was stored before it was replaced. */
 export interface ContentVersion {
@@ -61,6 +62,17 @@ export function versionOf(
 /** Newest first. */
 export function byNewest(a: Pick<ContentVersion, "replacedAt">, b: Pick<ContentVersion, "replacedAt">): number {
   return b.replacedAt.localeCompare(a.replacedAt);
+}
+
+/**
+ * The kept versions of one page or article, newest first, out of the stored records. Trash records
+ * (marked `deleted`) are never versions, so they are not listed and pruning never removes them.
+ */
+export function keptVersionsOf(records: Record<string, unknown>[], kind: ContentKind, targetId: string): ContentVersion[] {
+  return records
+    .filter((r) => r.kind === kind && r.targetId === targetId && typeof r.replacedAt === "string" && r.deleted !== true)
+    .map(({ recordType: _mark, ...version }) => version as unknown as ContentVersion)
+    .sort(byNewest);
 }
 
 /** The versions to remove so no more than MAX_VERSIONS are kept, the oldest first. */
