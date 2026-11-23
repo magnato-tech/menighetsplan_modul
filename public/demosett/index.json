@@ -16,7 +16,8 @@
     "fetchedAt": "2026-10-12T08:24:23.941Z",
     "documents": 167,
     "listed": true,
-    "asPublished": true
+    "asPublished": true,
+    "exampleEvents": true
   },
   {
     "id": "salem",

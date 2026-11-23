@@ -1,3 +1,4 @@
+import { MinSideFrame } from "../components/minSide/MinSideFrame";
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Lock, Plus, Printer } from "lucide-react";
@@ -96,7 +97,7 @@ export const GatheringRunSheetPage: React.FC = () => {
 
   if (!gathering || !allowed) {
     return (
-      <div className="w-full max-w-md mx-auto bg-slate-50 sm:my-4 sm:rounded-3xl sm:border sm:border-slate-200/80 overflow-hidden">
+      <MinSideFrame>
         <div className="p-8 text-center space-y-4">
           <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto text-slate-500 border border-slate-200">
             <Lock className="w-6 h-6" />
@@ -119,7 +120,7 @@ export const GatheringRunSheetPage: React.FC = () => {
             Tilbake til kalenderen
           </Link>
         </div>
-      </div>
+      </MinSideFrame>
     );
   }
 

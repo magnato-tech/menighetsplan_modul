@@ -76,7 +76,7 @@ export const NewsPreviewDialog: React.FC<NewsPreviewDialogProps> = ({ article, c
                 <span className="text-stone-400">{churchName}</span>
               </div>
             </header>
-            {image && <img src={image} alt="" className="w-full max-h-[28rem] object-cover rounded-2xl border border-stone-200" />}
+            {image && <img src={image} alt={article.imageAlt || ""} className="w-full max-h-[28rem] object-cover rounded-2xl border border-stone-200" />}
             <article className="text-sm sm:text-base">
               <CmsContentRenderer content={article.content || ""} />
             </article>

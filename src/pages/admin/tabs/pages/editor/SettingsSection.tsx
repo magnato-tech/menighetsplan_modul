@@ -85,7 +85,7 @@ export const SettingsSection: React.FC<SettingsSectionProps> = ({
             <option value="">Ingen (Dette er en topp-nivå hovedfane)</option>
             {availableParentPages.map((parent) => (
               <option key={parent.id} value={parent.id}>
-                📁 Underfane under: {parent.title} (/{parent.slug})
+                Underfane under: {parent.title} (/{parent.slug})
               </option>
             ))}
           </select>

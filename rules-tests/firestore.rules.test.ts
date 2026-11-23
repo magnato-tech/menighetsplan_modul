@@ -53,6 +53,8 @@ const ola = () => signedIn("ola@eksempel.no");
 const kari = () => signedIn("kari@menigheten.no");
 /** Web editor (nettredaktør) */
 const kristine = () => signedIn("kristine@eksempel.no");
+/** Protokollansvarlig */
+const protokoll = () => signedIn("protokoll@eksempel.no");
 
 const TODAY = "2026-10-12";
 
@@ -76,6 +78,13 @@ beforeEach(async () => {
       put("persons/kari", { name: "Kari Nordmann", email: "kari@menigheten.no", phone: "99 00 11 22", globalRole: "admin" }),
       put("persons/ola", { name: "Ola Hansen", email: "ola@eksempel.no", globalRole: "member" }),
       put("persons/hakon", { name: "Håkon Tveit", email: "hakon@eksempel.no", globalRole: "member" }),
+      put("persons/protokoll", {
+        name: "Pia Protokoll",
+        email: "protokoll@eksempel.no",
+        globalRole: "member",
+        membershipClerk: true,
+      }),
+      put("logins/protokoll@eksempel.no", { personId: "protokoll", role: "member" }),
       put("persons/liv", { name: "Liv Pastor", email: "liv.privat@eksempel.no", globalRole: "member", isPublicProfile: true }),
       put("logins/kari@menigheten.no", { personId: "kari", role: "admin" }),
       put("logins/ola@eksempel.no", { personId: "ola", role: "member" }),
@@ -255,6 +264,22 @@ describe("Den som logger inn uten å stå i registeret", () => {
     await assertSucceeds(getDoc(doc(db, "persons/ola")));
     await assertFails(getDoc(doc(db, "persons/kari")));
     await assertSucceeds(getDoc(doc(db, "logins/ola@eksempel.no")));
+  });
+});
+
+describe("Protokollansvarlig", () => {
+  test("leser og oppdaterer medlemskap i registeret, ikke navn", async () => {
+    const db = protokoll();
+    await assertSucceeds(getDocs(collection(db, "persons")));
+    await assertSucceeds(getDoc(doc(db, "persons/hakon")));
+    await assertSucceeds(
+      updateDoc(doc(db, "persons/hakon"), {
+        congregationMember: true,
+        congregationJoinedAt: "2005-09-01",
+      })
+    );
+    await assertFails(updateDoc(doc(db, "persons/hakon"), { name: "Nytt navn" }));
+    await assertFails(setDoc(doc(db, "persons/ny"), { name: "Ny", email: "ny@eksempel.no", globalRole: "member" }));
   });
 });
 

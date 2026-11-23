@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useCms } from "../../context/CmsContext";
 import { CmsPage } from "../../data/cmsData";
-import { buildMenuBar, buildPageTree, findOrphanPages, getParentId } from "../../utils/menu";
+import { buildMenuBar, buildPageTree, findOrphanPages, getParentId, showsMenuOverview } from "../../utils/menu";
 import { pageFingerprint } from "../../utils/pageRecord";
 import { pageCopyOf } from "../../utils/pageCopy";
 import { useReportUnsaved, useSaveShortcut } from "../../hooks/useUnsavedChanges";
@@ -20,7 +20,6 @@ import { PageUnpublishDialog } from "../../pages/admin/tabs/pages/PageUnpublishD
 
 // The two views of the panel, chosen with the switch at the top
 type PagesView = "rediger" | "struktur";
-const VIEW_KEY = "menighetsplan:sider-visning";
 const LAST_OPENED_KEY = "menighetsplan:sider-sist-apnet";
 
 // Storage can be blocked (private mode, settings), so every access is guarded
@@ -57,6 +56,8 @@ export interface AdminCmsPanelProps {
   onCreateHandled?: () => void;
   /** Tells the admin whether a page is open in the editor, so the side menu can fold to icons. */
   onEditorOpenChange?: (open: boolean) => void;
+  /** Counts the presses on «Sider & Innhold» in the admin menu. Each new press shows Sidestruktur. */
+  showTreeRequest?: number;
 }
 
 /**
@@ -68,13 +69,14 @@ export const AdminCmsPanel: React.FC<AdminCmsPanelProps> = ({
   createRequested = false,
   onCreateHandled,
   onEditorOpenChange,
+  showTreeRequest,
 }) => {
   const { pages, savePage, deletePage, reorderPages } = useCms();
 
   const [editingPage, setEditingPage] = useState<Partial<CmsPage> | null>(null);
-  // Editor or tree: one at a time, so the page is not split in two parts. Remembered between visits.
-  const [view, setView] = useState<PagesView>(() => (readStoredText(VIEW_KEY) === "struktur" ? "struktur" : "rediger"));
-  useEffect(() => writeStoredText(VIEW_KEY, view), [view]);
+  // Editor or tree: one at a time, so the page is not split in two parts. Every visit starts on the tree.
+  // Opening a page (or asking for a new one) switches to the editor, see openEditor and the createRequested effect.
+  const [view, setView] = useState<PagesView>("struktur");
   // A page that is taken off the website is only asked about here, before it is saved as a draft
   const [unpublishPage, setUnpublishPage] = useState<CmsPage | null>(null);
 
@@ -159,6 +161,16 @@ export const AdminCmsPanel: React.FC<AdminCmsPanelProps> = ({
       setView("struktur");
     });
   };
+
+  // A press on «Sider & Innhold» in the admin menu shows Sidestruktur, also when the panel is open already.
+  // Unsaved changes are asked about first, as with the switch at the top.
+  const lastTreeRequest = useRef(showTreeRequest);
+  useEffect(() => {
+    if (showTreeRequest === lastTreeRequest.current) return;
+    lastTreeRequest.current = showTreeRequest;
+    handleSwitchView("struktur");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showTreeRequest]);
 
   const handleOpenEditPage = (page: CmsPage) => {
     if (editingPage?.id === page.id) return;
@@ -334,6 +346,23 @@ export const AdminCmsPanel: React.FC<AdminCmsPanelProps> = ({
     }
   };
 
+  // Shows or hides the page's own line («Oversikt») in the menu. Off: the page is only a heading for its sub-pages.
+  const handleToggleOverview = async (page: CmsPage) => {
+    const overviewOn = showsMenuOverview(page);
+    const success = await savePage(
+      overviewOn ? { ...page, menuOnly: true } : { ...page, menuOnly: false, overviewInMenu: true }
+    );
+    if (success) {
+      showFeedback(
+        overviewOn
+          ? `«${page.title}» er nå bare en overskrift i menyen. Siden selv vises ikke.`
+          : `«Oversikt: ${page.title}» vises igjen i menyen`
+      );
+    } else {
+      showFeedback("Kunne ikke oppdatere menyen", "error");
+    }
+  };
+
   // Every page is listed here, drafts and pages hidden from the menu included
   const hierarchicalPages = useMemo(() => buildPageTree(pages), [pages]);
   // The website's menu over the editor, on a large screen: a page in it opens in the editor
@@ -501,6 +530,7 @@ export const AdminCmsPanel: React.FC<AdminCmsPanelProps> = ({
           onReorder={handleReorder}
           onTogglePublish={handleTogglePublish}
           onToggleNavMenu={handleToggleNavMenu}
+          onToggleOverview={handleToggleOverview}
         />
       )}
 

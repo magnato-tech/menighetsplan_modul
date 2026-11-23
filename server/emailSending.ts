@@ -10,6 +10,7 @@ import { emailRecipients, firstNameOf, isNewsletter, toEmailAudience, usableEmai
 import { TEST_UNSUBSCRIBE_TOKEN, isNewsletterToken, newNewsletterToken, newsletterBannerOf, newsletterBannerUrlOf, optedOutPersonIds, unsubscribeUrlOf } from "../src/utils/newsletter";
 import type { Group, Person } from "../src/types";
 import { FirestoreRestError, readAll, readDocument, setTextFields, signedInAs, type Fetch } from "./firestoreRest";
+import { sendWithdrawalAttestationEmail, type WithdrawalAttestationEmailOutcome } from "./withdrawalAttestationEmail";
 
 // The names in src/data/collections.ts and src/data/settingsRecords.ts, written out: those files
 // are the browser's (tests/email-sending.test.ts holds them together)
@@ -49,7 +50,7 @@ export interface EmailRequest {
 
 export interface EmailResponse {
   status: number;
-  body: EmailOutcome;
+  body: EmailOutcome | WithdrawalAttestationEmailOutcome;
 }
 
 const MESSAGES: Record<Exclude<EmailRefusal, "unreachable">, [number, string]> = {
@@ -108,6 +109,9 @@ export async function sendEmail({ env, siteUrl, idToken, body, ask, wait = pause
   if (!idToken || !caller) return refuse("not-signed-in");
 
   const request = (body && typeof body === "object" ? body : {}) as Record<string, unknown>;
+  if (request.mode === "withdrawalAttestation") {
+    return sendWithdrawalAttestationEmail({ env, siteUrl, idToken, body: request, ask, wait });
+  }
   const mode = request.mode === "test" ? "test" : request.mode === "send" ? "send" : null;
   const draft: EmailDraft | null = toEmailDraft(request);
   const audience = toEmailAudience(request.audience);

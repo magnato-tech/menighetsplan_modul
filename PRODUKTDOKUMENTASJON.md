@@ -443,8 +443,11 @@ Felles begrep for enhver samling: gudstjeneste, ungdomsmøte, bønnemøte, dugna
 | `publishedAt` | ISO 8601 | Ja | Publiseringstidspunkt. Nyeste vises først |
 | `isPublished` | `boolean` | Ja | Kladd eller publisert |
 | `imageUrl` | `string` | Nei | Bilde |
+| `imageAlt` | `string` | Nei | Beskrivelse av bildet for skjermleser. Tom når bildet er dekor |
 | `expiresAt` | `YYYY-MM-DD` | Nei | «Vises til og med»: siste dag artikkelen står i listene på nettsiden |
 | `gatheringRefId` | `string` | Nei | Arrangementet artikkelen hører til. Uten dato vises artikkelen til og med dagen arrangementet holdes |
+
+En nyhet kan få et bilde med beskrivelse for skjermleser, og bildet vises på nyhetskortet og øverst i artikkelen.
 
 **Hvor lenge en nyhet vises** *(levert 12. oktober 2026)*. En artikkel står til den tas ut, med to unntak:
 
@@ -557,6 +560,7 @@ En person vises bare når «Vis offentlig» er satt **og** et samtykke er regist
 * Menyen har to nivåer: hovedfaner og underfaner. Rekkefølgen endres med dra og slipp.
 * Den offentlige menyen og sidelisten i admin bygges av samme sidetre.
 * Slettes en hovedfane, flyttes underfanene opp til toppnivå i samme lagring, slik at ingen side blir uten vei inn.
+* En hovedfane med undersider har en linje «Oversikt» først i undermenyen. Den slås av og på med bryteren «Vis i menyen» på linjen i Sidestruktur. Av gjør siden til bare en overskrift i menyen (`menuOnly`), og siden selv vises ikke.
 * Et menyvalg kan peke på en innebygd side (`/hva-skjer`, `/taler`, `/fellesskap`) i stedet for en egen tekstside.
 
 ### 8.2 Kladd, publisert og planlagt
@@ -1314,6 +1318,8 @@ Bestilt av produkteier: en som er med i mange grupper, fikk 68 saker i én liste
 | **Flere kan trykkes inn** | Det som vises, har én av rollene som er trykket inn. Uten noen trykket inn vises alt. «Vis alle» nullstiller |
 | **Rolle, ikke gruppe** | Produkteier valgte det: noen er interessert i bare én rolle i en gruppe. En oppgave uten rolle står med sin egen tittel |
 | **Overskriften** | Viser «N av M» når listen er snevret inn |
+| **Datoer** | Oppgavene står under datoen sin. De tre første datoene vises, og «Vis flere datoer» viser resten |
+| **Lukke** | Escape lukker vinduet |
 | **Vises ikke** | Når listen bare har én rolle, er det ingenting å velge mellom |
 | **Boksen på Min side** | Med tre saker eller flere står bare tallet oppe til høyre. Overskriften «N saker venter på deg» er tatt ut: den ble for voldsom med mange saker |
 | **Prøvd** | 5 sjekker. Sett i nettleseren i telefonbredde med demoens oppdiktede personer: seks tagger, to trykket inn, og listen viste de to |
@@ -2069,6 +2075,26 @@ Bryterne virker på Min side, ikke på nettsiden. Om «Grupper» av også skal t
 3. ~~Ser admin bare egne grupper på Min side?~~ **Lagt til grunn 9. november 2026:** ja. Min side viste allerede bare egne grupper. *(trinn 2)*
 4. ~~Er Gruppechat en egen modul, eller følger den alltid Grupper?~~ **Avgjort 9. november 2026:** begge deler. Gruppechat er en egen modul som krever Grupper. Er den på, har alle gruppene chat. Er Grupper av, er også chatten borte. *(trinn 1)*
 5. ~~Beholder Min side fanene nederst, uten nettsidens meny?~~ **Avgjort 10. november 2026:** ja, som anbefalt. *(trinn 6)*
+
+### Min side på mobil, nettbrett og PC *(bestemt av produkteier 11. november 2026, bygget samme dag, ikke sluppet til menighetene)*
+
+**Hvorfor.** Min side er låst til en mobilkolonne på 448 punkter (`max-w-md`) på alle skjermer. På PC og nettbrett står den som en smal stripe midt på skjermen. Den samme rammen er skrevet åtte steder.
+
+**Skjermstørrelser.** Mobil under 640 punkter (som i dag), nettbrett 640–1023, PC fra 1024.
+
+**Trinnene.** Hvert trinn sendes inn for seg og prøves i 375, 768 og 1280 punkters bredde. Alle sju trinn er sendt inn til `main` 11. november 2026, ikke sluppet til menighetene. På PC står menyen til venstre uten å følge med når man ruller: rammen klipper innholdet, så en meny som står fast, ville blitt skjøvet ned.
+
+| Trinn | Hva | Mobil | Nettbrett | PC |
+|---|---|---|---|---|
+| 1 | Felles ramme og meny: én ramme i stedet for de åtte | Som i dag, menyen nederst | Bredere kolonne, fanene øverst | Bred side med menyen i en kolonne til venstre |
+| 2 | Mine grupper og Gudstjenester | Én kolonne | To kolonner med kort | Tre kolonner med kort |
+| 3 | Mine oppgaver | Som i dag | Én bredere kolonne | Én kolonne, like bred som på nettbrett *(endret av produkteier 11. november 2026: ikke to kolonner)* |
+| 4 | Kalender | Liste | Månedsvisning | Månedsvisning med dagens arrangementer ved siden av |
+| 5 | Grupperom og kjøreplan | Som i dag | Bredere | Grupperom: aktiviteter, og chat og deltakere ved siden av. Kjøreplan: programmet, og bemanningen ved siden av |
+| 6 | Vinduer og tekst | Ark nedenfra | Vindu midt på skjermen | Vindu midt på skjermen, litt større tekst |
+| 7 | Hjelpen og skjermbildene | Hjelpeartiklene, skjermbildene og presentasjonene oppdateres | | |
+
+Semesterplanen (ett kort om gangen) og siden for én oppgave forblir smale og midtstilt: én beslutning om gangen er poenget.
 
 ### Fase 1 – Trygg i drift *(trinn 2 og 4 over)*
 1. Innlogging med Google-konto. Første administrator er produkteierens konto.

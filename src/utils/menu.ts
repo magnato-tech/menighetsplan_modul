@@ -38,6 +38,16 @@ export function buildPageTree(pages: CmsPage[]): PageNode[] {
     }));
 }
 
+/** The "Oversikt" line under a menu heading. A heading that is only a menu has none, and a page can leave it out. */
+export function showsMenuOverview(page: Pick<CmsPage, "overviewInMenu" | "menuOnly">): boolean {
+  return page.menuOnly !== true && page.overviewInMenu !== false;
+}
+
+/** A page a visitor can open. A menu heading holds its sub-pages and is not a page of its own. */
+export function isPublicArticle(page: CmsPage, now = new Date()): boolean {
+  return isPagePublished(page, now) && page.menuOnly !== true;
+}
+
 /** Returns true if a page is currently published and not held back by a future scheduled publish date. */
 export function isPagePublished(page: CmsPage, now = new Date()): boolean {
   if (page.isPublished === false || page.status === "draft") {

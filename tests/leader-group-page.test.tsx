@@ -43,7 +43,11 @@ function renderAt(url: string) {
   );
 }
 
-const shown = (id: string) => !document.getElementById(id)!.hidden;
+// Below lg (mobile and tablet) a tab is shown when it is not hidden by the attribute or by the class
+const shown = (id: string) => {
+  const el = document.getElementById(id)!;
+  return !el.hidden && !el.classList.contains("hidden");
+};
 
 afterEach(cleanup);
 
@@ -53,7 +57,8 @@ describe("Gruppekortet på siden", () => {
 
     expect(screen.getByRole("heading", { name: "Lovsang" })).toBeTruthy();
     expect(shown("section-group-aktiviteter-tab")).toBe(true);
-    expect(screen.queryByTestId("group-chat")).toBeNull();
+    // The chat is mounted on the page (it shows beside the activities on PC) but hidden below lg
+    expect(shown("section-group-chat-tab")).toBe(false);
   });
 
   test("?tab=chat åpner gruppechatten for den gruppen", () => {

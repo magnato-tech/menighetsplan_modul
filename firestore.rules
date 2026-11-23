@@ -54,6 +54,11 @@ service cloud.firestore {
       return signedIn() && get(loginPath()).data.role == 'nettredaktor';
     }
 
+    function isMembershipClerk() {
+      return isMember()
+        && get(/databases/$(database)/documents/persons/$(me())).data.get('membershipClerk', false) == true;
+    }
+
     // Who writes the website: an administrator, and a web editor
     function writesWebsite() {
       return isAdmin() || isWebEditor();
@@ -185,13 +190,15 @@ service cloud.firestore {
     // ---------- The register and the planning ----------
 
     match /persons/{personId} {
-      allow get: if isAdmin() || (isMember() && personId == me());
-      allow list: if isAdmin();
+      allow get: if isAdmin() || isMembershipClerk() || (isMember() && personId == me());
+      allow list: if isAdmin() || isMembershipClerk();
       allow create, delete: if isAdmin();
       // A member changes nothing about themselves but how their own analysis board is laid out,
       // and the key to their own calendar subscription (src/services/personalCalendarFeed.ts)
       allow update: if isAdmin()
-        || (isMember() && personId == me() && changedOnly(['analyticsHiddenModules', 'calendarFeedToken']));
+        || (isMembershipClerk()
+            && changedOnly(['congregationMember', 'denominationMember', 'congregationJoinedAt', 'denominationJoinedAt', 'denominationEnrollmentType', 'denominationGEndedAt', 'congregationEndedAt', 'denominationEndedAt', 'membershipLog']))
+        || (isMember() && personId == me() && changedOnly(['analyticsHiddenModules', 'calendarFeedToken', 'membershipLog']));
     }
 
     // Name and phone for the people in one group. A member reads only the groups they belong to.
@@ -330,6 +337,35 @@ service cloud.firestore {
     }
 
     // A name a leader asks an administrator to add. No phone, e-mail or person id.
+    // Confidential membership forms from Min side (see utils/membershipApplication.ts).
+    match /membershipApplications/{applicationId} {
+      allow get: if isAdmin() || isMembershipClerk()
+        || (isMember() && resource.data.personId == me());
+      allow list: if isAdmin() || isMembershipClerk()
+        || (isMember() && resource.data.personId == me());
+      allow create: if isMember()
+        && request.resource.data.personId == me()
+        && request.resource.data.status == 'submitted'
+        && request.resource.data.submittedAt is string
+        && request.resource.data.kind in ['congregationApply', 'denominationAdultEnroll', 'denominationChildEnroll', 'denominationGToA']
+        && request.resource.data.lastName is string
+        && request.resource.data.firstNames is string
+        && request.resource.data.notOtherDenomination is bool;
+      allow update: if isAdmin()
+        || (isMembershipClerk()
+            && changedOnly(['status', 'receivedAt', 'receivedBy', 'cornerstoneAt', 'cornerstoneBy', 'completedAt', 'completedBy', 'dismissedAt', 'dismissedBy', 'transitionGEndedAt', 'transitionAStartedAt']));
+      allow delete: if isAdmin();
+    }
+
+    match /membershipClerkTasks/{taskId} {
+      allow get, list: if isAdmin() || isMembershipClerk();
+      allow create: if isAdmin() || isMembershipClerk();
+      allow update: if isAdmin()
+        || (isMembershipClerk()
+            && changedOnly(['status', 'comment', 'doneAt', 'doneBy', 'correctedEnrollmentDate', 'instruction', 'cornerstoneUpdated', 'applicationArchiveConfirmed', 'attestationSent', 'attestationPosted', 'attestationEmailedAt', 'attestationEmailedBy']));
+      allow delete: if isAdmin();
+    }
+
     match /memberProposals/{proposalId} {
       allow get, list: if isAdmin() || leads(resource.data.groupId);
       allow create: if leads(request.resource.data.groupId)

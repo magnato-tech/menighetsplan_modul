@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { CmsPage } from "../../../../data/cmsData";
-import { PageNode, pageUrl, getMenuOrder, buildMenuBar } from "../../../../utils/menu";
+import { PageNode, pageUrl, getMenuOrder, buildMenuBar, showsMenuOverview } from "../../../../utils/menu";
 import { useTimedMessage } from "../../../../hooks/useTimedMessage";
 import { PageMenuBar } from "./PageMenuBar";
 import { useMediaQuery } from "../../../../hooks/useMediaQuery";
@@ -23,6 +23,7 @@ import {
   Eye,
   Image as ImageIcon,
   Clock,
+  List,
 } from "lucide-react";
 import { formatNorwegianDateTime } from "../../../../utils/dates";
 import { useCms } from "../../../../context/CmsContext";
@@ -41,6 +42,8 @@ interface PageTreeListProps {
   onTogglePublish?: (page: CmsPage) => void;
   /** Puts the page in the website menu, or takes it out. */
   onToggleNavMenu?: (page: CmsPage) => void;
+  /** Shows or hides the page's own line («Oversikt») in the website menu. */
+  onToggleOverview?: (page: CmsPage) => void;
 }
 
 export const PageTreeList: React.FC<PageTreeListProps> = ({
@@ -54,6 +57,7 @@ export const PageTreeList: React.FC<PageTreeListProps> = ({
   onPreviewPage,
   onTogglePublish,
   onToggleNavMenu,
+  onToggleOverview,
 }) => {
   const { pages } = useCms();
   const linkContext = useMemo(() => buildLinkContext(pages), [pages]);
@@ -573,6 +577,15 @@ export const PageTreeList: React.FC<PageTreeListProps> = ({
 
                     {renderNavMenuToggle(parent, "top")}
 
+                    {parent.menuOnly === true && (
+                      <span
+                        className="text-[10px] font-bold text-[var(--studio-accent-text)] bg-[var(--studio-accent-bg)] border border-[var(--studio-accent-border)]/60 px-2 py-0.5 rounded"
+                        title="Siden er bare en overskrift i menyen. Den selv vises ikke, bare undersidene."
+                      >
+                        Bare overskrift
+                      </span>
+                    )}
+
                     {pageHasBrokenLinks(parent, linkContext) && (
                       <span
                         className="text-[10px] font-semibold text-amber-300 bg-amber-950/40 border border-amber-700/50 px-2 py-0.5 rounded inline-flex items-center gap-1"
@@ -694,6 +707,51 @@ export const PageTreeList: React.FC<PageTreeListProps> = ({
                 className="ml-3 sm:ml-6 pl-3 sm:pl-6 border-l-2 border-indigo-500/30 space-y-2 pt-1 pb-1"
                 onDoubleClick={(e) => e.stopPropagation()}
               >
+                {/* The page's own line in the menu («Oversikt»): a switch decides whether it is shown */}
+                {(() => {
+                  const overviewOn = showsMenuOverview(parent);
+                  const fade = overviewOn ? "" : "opacity-50";
+                  return (
+                    <div className="p-3 rounded-xl border border-dashed border-[var(--studio-border)] bg-[var(--studio-bg)] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 relative before:absolute before:-left-3 sm:before:-left-6 before:top-1/2 before:w-3 sm:before:w-6 before:h-0.5 before:bg-indigo-500/30">
+                      <div className="flex items-start gap-2 flex-1 min-w-0">
+                        <List className={`w-3.5 h-3.5 mt-0.5 text-[var(--studio-icon)] shrink-0 ${fade}`} aria-hidden="true" />
+                        <div className="space-y-0.5 min-w-0">
+                          <h4 className={`font-semibold text-[var(--studio-text)] text-sm truncate ${fade}`}>Oversikt: {parent.title}</h4>
+                          <p className={`text-xs text-[var(--studio-muted)] ${fade}`}>
+                            Første linje i undermenyen. Åpner selve siden «{parent.title}».
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={overviewOn}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onToggleOverview?.(parent);
+                        }}
+                        onDoubleClick={(e) => e.stopPropagation()}
+                        className="flex items-center gap-2 shrink-0 self-end sm:self-auto cursor-pointer text-xs font-semibold text-[var(--studio-text)]"
+                        title={overviewOn ? "Klikk for å gjøre siden til bare en overskrift i menyen" : "Klikk for å vise linjen Oversikt i menyen igjen"}
+                      >
+                        <span className={fade}>Vis i menyen</span>
+                        <span
+                          aria-hidden="true"
+                          className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
+                            overviewOn ? "bg-indigo-600" : "bg-[var(--studio-border)]"
+                          }`}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${
+                              overviewOn ? "translate-x-4" : "translate-x-0.5"
+                            }`}
+                          />
+                        </span>
+                      </button>
+                    </div>
+                  );
+                })()}
+
                 {item.children.map((child, cIdx) => {
                   const childOrder = getMenuOrder(child);
                   const childUrl = pageUrl(child);

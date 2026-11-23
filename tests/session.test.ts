@@ -8,6 +8,7 @@ import {
   destinationAfterSignIn,
   isAdministrator,
   isWebEditor,
+  mayEnterAdmin,
   mayOpenStudio,
   personsWithEmail,
   roleOf,
@@ -91,6 +92,9 @@ describe("Rollen følger av personen, ikke av kontoen", () => {
     expect(isWebEditor(kristine)).toBe(true);
     expect(mayOpenStudio(kristine)).toBe(true);
     expect(mayOpenStudio(anne)).toBe(false);
+    const clerk = { id: "clerk", globalRole: "member" as const, membershipClerk: true as const };
+    expect(mayEnterAdmin(clerk)).toBe(true);
+    expect(mayOpenStudio(clerk)).toBe(false);
   });
 });
 

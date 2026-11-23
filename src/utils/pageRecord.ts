@@ -47,6 +47,8 @@ export function buildPageRecord(
     menuOrder: resolvedOrder,
     navOrder: resolvedOrder, // dual compatibility alias
     inNavMenu: pageData.inNavMenu !== false,
+    overviewInMenu: pageData.overviewInMenu !== false,
+    menuOnly: pageData.menuOnly === true,
     // Left out of the stored document when the page has no link of its own
     linkUrl: pageData.linkUrl || undefined,
     updatedAt: now.toISOString(),

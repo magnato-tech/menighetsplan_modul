@@ -1,3 +1,4 @@
+import { MinSideFrame } from "./minSide/MinSideFrame";
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
@@ -168,7 +169,7 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
   // Access check
   if (!gathering || !hasAccess) {
     return (
-      <div className="w-full max-w-md mx-auto bg-slate-50 min-h-screen shadow-md sm:my-4 sm:rounded-3xl sm:border sm:border-slate-200/80 overflow-hidden">
+      <MinSideFrame>
         <div className="p-8 text-center space-y-4">
           <div className="w-14 h-14 bg-amber-50 rounded-2xl flex items-center justify-center mx-auto text-amber-600 border border-amber-200">
             <AlertTriangle className="w-7 h-7" />
@@ -193,7 +194,7 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
             </Link>
           </div>
         </div>
-      </div>
+      </MinSideFrame>
     );
   }
 

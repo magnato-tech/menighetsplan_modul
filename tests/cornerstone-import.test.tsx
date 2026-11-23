@@ -53,7 +53,16 @@ describe("Filen fra Cornerstone", () => {
     expect(error).toBeNull();
     expect(rows).toBe(2);
     expect(persons.map(personInputOf)).toEqual([
-      { name: "Kari Eksempel", email: "kari@eksempel.no", phone: "900 00 001", birthDate: "1980-03-12", congregationMember: true, denominationMember: true },
+      {
+        name: "Kari Eksempel",
+        email: "kari@eksempel.no",
+        phone: "900 00 001",
+        birthDate: "1980-03-12",
+        congregationMember: true,
+        denominationMember: true,
+        congregationJoinedAt: "2005-09-01",
+        denominationJoinedAt: "2005-09-01",
+      },
       // Ola has left the congregation, and was never registered in the denomination
       { name: "Ola Test Eksempel", email: "ola@eksempel.no", phone: "", birthDate: "1978-11-02" },
     ]);
@@ -63,7 +72,16 @@ describe("Filen fra Cornerstone", () => {
     const { persons } = readCornerstoneFile(csv([kari, child]), [], today);
     const stored = JSON.stringify(persons);
     for (const left of ["12038012345", "05061350012", "Storgata", "Lillevik", "Lærer", "Gift", "Ring etter", "1001", "1996"]) expect(stored).not.toContain(left);
-    expect(Object.keys(personInputOf(persons[0])).sort()).toEqual(["birthDate", "congregationMember", "denominationMember", "email", "name", "phone"]);
+    expect(Object.keys(personInputOf(persons[0])).sort()).toEqual([
+      "birthDate",
+      "congregationJoinedAt",
+      "congregationMember",
+      "denominationJoinedAt",
+      "denominationMember",
+      "email",
+      "name",
+      "phone",
+    ]);
     // The columns that are read, are these and no others
     expect(Object.values(CORNERSTONE_COLUMNS)).toHaveLength(12);
   });
@@ -203,7 +221,16 @@ describe("Skjemaet «Hent inn fra Cornerstone»", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Hent inn 2 personer" }));
     expect(planner.addPersons).toHaveBeenCalledWith([
-      { name: "Kari Eksempel", email: "kari@eksempel.no", phone: "900 00 001", birthDate: "1980-03-12", congregationMember: true, denominationMember: true },
+      {
+        name: "Kari Eksempel",
+        email: "kari@eksempel.no",
+        phone: "900 00 001",
+        birthDate: "1980-03-12",
+        congregationMember: true,
+        denominationMember: true,
+        congregationJoinedAt: "2005-09-01",
+        denominationJoinedAt: "2005-09-01",
+      },
       { name: "Liten Eksempel", email: "", phone: "", birthDate: "2013-06-05" },
     ]);
     expect(onDone).toHaveBeenCalledWith(2);

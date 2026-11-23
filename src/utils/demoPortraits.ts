@@ -101,7 +101,7 @@ export function withoutStaffPictures(collections: Collections): Collections {
     result[CMS_COLLECTIONS.NEWS] = collections[CMS_COLLECTIONS.NEWS].map((article) => {
       const withText: DatasetDocument = { ...article, content: withoutPictures(text(article.content), isPortrait) };
       if (!portraits.has(samePicture(text(article.imageUrl)))) return withText;
-      const { imageUrl: _picture, ...withoutPicture } = withText;
+      const { imageUrl: _picture, imageAlt: _description, ...withoutPicture } = withText;
       return withoutPicture as DatasetDocument;
     });
   }

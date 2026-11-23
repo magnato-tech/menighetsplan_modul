@@ -1,7 +1,7 @@
 import { useLocation } from "react-router-dom";
 import type { StudioTab } from "../pages/admin/studio";
 
-export type AdminDetailKind = "person" | "group" | "gathering" | "task";
+export type AdminDetailKind = "person" | "group" | "gathering" | "task" | "membershipApplication";
 
 export interface AdminDetailRoute {
   kind: AdminDetailKind;
@@ -45,6 +45,13 @@ const DETAIL_ROUTES: Array<{
     backTab: "planlegger-oppgaver",
     backLabel: "Tilbake til oppgaver",
     badge: "Oppgavekort",
+  },
+  {
+    kind: "membershipApplication",
+    pattern: /^\/admin\/medlemskap\/([^/]+)$/,
+    backTab: "planlegger-medlemskap",
+    backLabel: "Tilbake til Medlemskap",
+    badge: "Medlemskap – arkiv",
   },
 ];
 

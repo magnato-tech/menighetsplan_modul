@@ -306,10 +306,10 @@ function decodeValue(value) {
 function decodeFields(fields) {
   return Object.fromEntries(Object.entries(fields ?? {}).map(([key, value]) => [key, decodeValue(value)]));
 }
-function decodeDocument(document) {
-  const data = decodeFields(document.fields);
+function decodeDocument(document2) {
+  const data = decodeFields(document2.fields);
   const stored = typeof data.id === "string" && data.id ? data.id : null;
-  return { ...data, id: stored ?? document.name.slice(document.name.lastIndexOf("/") + 1) };
+  return { ...data, id: stored ?? document2.name.slice(document2.name.lastIndexOf("/") + 1) };
 }
 var signedInAs = (idToken) => ({ Authorization: `Bearer ${idToken}` });
 var wholeCollectionQuery = (collectionId) => ({ structuredQuery: { from: [{ collectionId }] } });
@@ -345,6 +345,300 @@ async function readDocument(database, path, ask, headers) {
   const response = await ask(`${documentsOf(database)}/${path}`, headers ? { headers } : void 0);
   if (!response.ok) return null;
   return decodeDocument(await response.json());
+}
+
+// src/utils/birthDate.ts
+var DAY = /^(\d{4})-(\d{2})-(\d{2})$/;
+var MONTHS = ["januar", "februar", "mars", "april", "mai", "juni", "juli", "august", "september", "oktober", "november", "desember"];
+function partsOf(value) {
+  const match = (value ?? "").match(DAY);
+  if (!match) return null;
+  const [year, month, day] = [Number(match[1]), Number(match[2]), Number(match[3])];
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day ? { year, month, day } : null;
+}
+function formatBirthDate(birthDate) {
+  const born = partsOf(birthDate);
+  return born ? `${born.day}. ${MONTHS[born.month - 1]} ${born.year}` : "";
+}
+
+// src/utils/withdrawalAttestation.ts
+var escapeXml = (text) => text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+function buildWithdrawalAttestationDocx(input) {
+  const scope = [
+    input.withdrawCongregation ? "menigheten" : null,
+    input.withdrawDenomination ? "trossamfunnet" : null
+  ].filter(Boolean).join(" og ");
+  const birth = input.person.birthDate ? formatBirthDate(input.person.birthDate) : "–";
+  const withdrawn = formatBirthDate(input.withdrawalDate);
+  const lines = [
+    "Utmeldingsattest",
+    "",
+    input.churchName,
+    "",
+    `Navn: ${input.person.name}`,
+    `Fødselsdato: ${birth}`,
+    "",
+    `Meldt ut av ${scope} med virkning fra ${withdrawn}.`,
+    "",
+    "Bekreftelse og attest bør sendes til vedkommende. Brev er sterkt anbefalt.",
+    "",
+    `Sted, dato: _______________________`,
+    "",
+    `Signatur protokollansvarlig: _______________________`
+  ];
+  const body = lines.map(
+    (line) => `<w:p><w:r><w:t xml:space="preserve">${escapeXml(line)}</w:t></w:r></w:p>`
+  ).join("");
+  const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>${body}</w:body>
+</w:document>`;
+  const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+</Types>`;
+  const rels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+</Relationships>`;
+  return buildDocxZip({
+    "[Content_Types].xml": contentTypes,
+    "_rels/.rels": rels,
+    "word/document.xml": documentXml
+  });
+}
+function buildDocxZip(files) {
+  const parts = [];
+  for (const [name, content] of Object.entries(files)) {
+    parts.push({ name, data: new TextEncoder().encode(content) });
+  }
+  return new Blob([zipStore(parts)], {
+    type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  });
+}
+function zipStore(files) {
+  const chunks = [];
+  let offset = 0;
+  const central = [];
+  for (const file of files) {
+    const nameBytes = new TextEncoder().encode(file.name);
+    const crc = crc32(file.data);
+    const local = new Uint8Array(30 + nameBytes.length + file.data.length);
+    const view = new DataView(local.buffer);
+    view.setUint32(0, 67324752, true);
+    view.setUint16(4, 20, true);
+    view.setUint16(26, nameBytes.length, true);
+    view.setUint32(18, crc, true);
+    view.setUint32(22, file.data.length, true);
+    view.setUint32(14, file.data.length, true);
+    local.set(nameBytes, 30);
+    local.set(file.data, 30 + nameBytes.length);
+    chunks.push(local);
+    offset += local.length;
+    const centralHeader = new Uint8Array(46 + nameBytes.length);
+    const cview = new DataView(centralHeader.buffer);
+    cview.setUint32(0, 33639248, true);
+    cview.setUint16(4, 20, true);
+    cview.setUint16(6, 20, true);
+    cview.setUint16(28, nameBytes.length, true);
+    cview.setUint32(20, crc, true);
+    cview.setUint32(24, file.data.length, true);
+    cview.setUint32(16, file.data.length, true);
+    cview.setUint32(42, offset - local.length, true);
+    centralHeader.set(nameBytes, 46);
+    central.push(centralHeader);
+  }
+  const centralSize = central.reduce((n, part) => n + part.length, 0);
+  const end = new Uint8Array(22);
+  const eview = new DataView(end.buffer);
+  eview.setUint32(0, 101010256, true);
+  eview.setUint16(8, files.length, true);
+  eview.setUint16(10, files.length, true);
+  eview.setUint32(12, centralSize, true);
+  eview.setUint32(16, offset, true);
+  const total = new Uint8Array(offset + centralSize + 22);
+  let pos = 0;
+  for (const chunk of chunks) {
+    total.set(chunk, pos);
+    pos += chunk.length;
+  }
+  for (const chunk of central) {
+    total.set(chunk, pos);
+    pos += chunk.length;
+  }
+  total.set(end, pos);
+  return total;
+}
+var CRC_TABLE = (() => {
+  const table = new Uint32Array(256);
+  for (let i = 0; i < 256; i++) {
+    let c = i;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 3988292384 ^ c >>> 1 : c >>> 1;
+    table[i] = c;
+  }
+  return table;
+})();
+function crc32(data) {
+  let c = 4294967295;
+  for (let i = 0; i < data.length; i++) c = CRC_TABLE[(c ^ data[i]) & 255] ^ c >>> 8;
+  return (c ^ 4294967295) >>> 0;
+}
+async function withdrawalAttestationDocxBase64(input) {
+  const blob = buildWithdrawalAttestationDocx(input);
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  let binary = "";
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
+}
+var withdrawalAttestationEmailSubject = (personName) => `Utmeldingsattest – ${personName}`;
+function withdrawalAttestationEmailText(churchName) {
+  return [
+    "Hei,",
+    "",
+    "Vedlagt følger utmeldingsattest.",
+    "",
+    "Ta kontakt med menigheten hvis noe skulle være feil.",
+    "",
+    `Med vennlig hilsen`,
+    churchName
+  ].join("\n");
+}
+
+// server/withdrawalAttestationEmail.ts
+var MEMBERSHIP_CLERK_TASKS = "membershipClerkTasks";
+var pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+async function sendWithdrawalAttestationEmail({
+  env,
+  siteUrl,
+  idToken,
+  body,
+  ask,
+  wait = pause
+}) {
+  const refuse2 = (reason, message, status = 400) => ({ status, body: { ok: false, reason, message } });
+  if (readDemoInstallation(env) !== null) {
+    return { status: 403, body: { ok: false, reason: "demo", message: "Demoen sender ikke e-post." } };
+  }
+  const installation = readInstallationConfig(env);
+  const apiKeyValue = env[EMAIL_SETTINGS.apiKey];
+  const apiKey = typeof apiKeyValue === "string" ? apiKeyValue.trim() : "";
+  if (!installation || !apiKey || !siteUrl) {
+    return { status: 503, body: { ok: false, reason: "not-configured", message: "E-post er ikke satt opp for denne installasjonen ennå." } };
+  }
+  const caller = idToken ? emailOfToken(idToken) : null;
+  if (!idToken || !caller) {
+    return { status: 401, body: { ok: false, reason: "not-signed-in", message: "Du må være logget inn for å sende attest." } };
+  }
+  const request = body && typeof body === "object" ? body : {};
+  const taskId = typeof request.taskId === "string" ? request.taskId.trim() : "";
+  if (!taskId) return refuse2("bad-request", "Mangler oppgave å sende for.");
+  const database = { projectId: installation.projectId, databaseId: installation.firestoreDatabaseId };
+  const as = signedInAs(idToken);
+  let task;
+  let member;
+  try {
+    const login = await readDocument(database, `logins/${caller}`, ask, as).catch(() => null);
+    const clerkPersonId = typeof login?.personId === "string" ? login.personId : null;
+    if (!clerkPersonId) return { status: 401, body: { ok: false, reason: "not-signed-in", message: "Fant ikke innloggingen din." } };
+    const clerk = await readDocument(database, `${PERSONS}/${clerkPersonId}`, ask, as);
+    if (!clerk) return refuse2("bad-request", "Fant ikke deg i registeret.");
+    const maySend = clerk.globalRole === "admin" || clerk.membershipClerk === true;
+    if (!maySend) {
+      return {
+        status: 403,
+        body: { ok: false, reason: "not-admin", message: "Bare protokollansvarlig eller administrator kan sende attest." }
+      };
+    }
+    const rawTask = await readDocument(database, `${MEMBERSHIP_CLERK_TASKS}/${taskId}`, ask, as);
+    if (!rawTask) return refuse2("bad-request", "Fant ikke oppgaven.");
+    task = rawTask;
+    if (task.kind !== "withdrawal" || task.status !== "open") return refuse2("bad-request", "Oppgaven er ikke en åpen utmelding.");
+    if (task.cornerstoneUpdated !== true) return refuse2("bad-request", "Bekreft at Cornerstone er oppdatert først.");
+    if (task.attestationEmailedAt) return refuse2("bad-request", "Attest er allerede sendt på e-post.");
+    member = await readDocument(database, `${PERSONS}/${task.personId}`, ask, as) ?? void 0;
+    if (!member) return refuse2("bad-request", "Fant ikke personen.");
+  } catch (error) {
+    const status = error instanceof FirestoreRestError ? error.status : 0;
+    if (status === 401 || status === 403) {
+      return { status, body: { ok: false, reason: status === 401 ? "not-signed-in" : "not-admin", message: "Ingen tilgang." } };
+    }
+    console.error("Utmeldingsattest fikk ikke lest databasen:", error instanceof Error ? error.message : error);
+    return { status: 502, body: { ok: false, reason: "database", message: "Registeret kunne ikke leses akkurat nå. Prøv igjen." } };
+  }
+  const to = usableEmail(member.email);
+  if (!to) return refuse2("no-recipients", "Personen har ingen e-postadresse i registeret.");
+  const [settings, record] = await Promise.all([
+    readDocument(database, SETTINGS_DOCUMENT, ask, as).catch(() => null),
+    readDocument(database, EMAIL_DOCUMENT, ask, as).catch(() => null)
+  ]);
+  const churchName = typeof settings?.churchName === "string" && settings.churchName.trim() || "Menigheten";
+  const replyTo = usableEmail(record?.replyTo) ?? usableEmail(typeof settings?.email === "string" ? settings.email : void 0);
+  if (!replyTo) {
+    return {
+      status: 400,
+      body: { ok: false, reason: "no-reply-to", message: "Legg inn svaradresse under Send e-post før du sender attest." }
+    };
+  }
+  const attestationInput = {
+    churchName,
+    person: { name: task.personName, birthDate: member.birthDate },
+    withdrawCongregation: task.withdrawCongregation === true,
+    withdrawDenomination: task.withdrawDenomination === true,
+    withdrawalDate: task.withdrawalDate ?? (/* @__PURE__ */ new Date()).toISOString().slice(0, 10)
+  };
+  let attachmentBase64;
+  try {
+    attachmentBase64 = await withdrawalAttestationDocxBase64(attestationInput);
+  } catch (error) {
+    console.error("Kunne ikke lage attest:", error instanceof Error ? error.message : error);
+    return { status: 500, body: { ok: false, reason: "unreachable", message: "Attesten kunne ikke lages." } };
+  }
+  const fromValue = env[EMAIL_SETTINGS.from];
+  const fromAddress = typeof fromValue === "string" && fromValue.trim() || DEFAULT_FROM_ADDRESS;
+  const from = senderOf(churchName, fromAddress);
+  const subject = withdrawalAttestationEmailSubject(task.personName);
+  const text = withdrawalAttestationEmailText(churchName);
+  const filename = `utmeldingsattest-${task.personName.replace(/\s+/g, "-")}.docx`;
+  const payload = {
+    from,
+    to: [to],
+    cc: [replyTo],
+    reply_to: replyTo,
+    subject,
+    text,
+    attachments: [{ filename, content: attachmentBase64 }]
+  };
+  await wait(0);
+  try {
+    const response = await ask(SEND_URL, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify([payload])
+    });
+    if (!response.ok) {
+      const answer = await response.json().catch(() => null);
+      const detail = typeof answer?.message === "string" ? answer.message.slice(0, 300) : void 0;
+      console.error("E-posttjenesten tok ikke imot utmeldingsattest:", response.status, detail ?? "");
+      return {
+        status: 200,
+        body: {
+          ok: false,
+          reason: "unreachable",
+          message: detail ? `E-posten ble ikke sendt: ${detail}` : "E-posten ble ikke sendt. Prøv igjen."
+        }
+      };
+    }
+  } catch (error) {
+    console.error("E-posttjenesten svarte ikke på utmeldingsattest:", error instanceof Error ? error.message : error);
+    return { status: 200, body: { ok: false, reason: "unreachable", message: "Fikk ikke kontakt med e-postutsendingen." } };
+  }
+  return {
+    status: 200,
+    body: { ok: true, mode: "send", sent: 1, withoutEmail: 0, to, copyTo: replyTo }
+  };
 }
 
 // server/emailSending.ts
@@ -396,8 +690,8 @@ function senderOf(churchName, address) {
   const name = churchName.replace(/["<>\r\n]/g, "").trim();
   return name ? `"${name}" <${address}>` : address;
 }
-var pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-async function sendEmail({ env, siteUrl, idToken, body, ask, wait = pause }) {
+var pause2 = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+async function sendEmail({ env, siteUrl, idToken, body, ask, wait = pause2 }) {
   if (readDemoInstallation(env) !== null) return refuse("demo");
   const installation = readInstallationConfig(env);
   const apiKey = settingOf(env, EMAIL_SETTINGS.apiKey);
@@ -405,6 +699,9 @@ async function sendEmail({ env, siteUrl, idToken, body, ask, wait = pause }) {
   const caller = idToken ? emailOfToken(idToken) : null;
   if (!idToken || !caller) return refuse("not-signed-in");
   const request = body && typeof body === "object" ? body : {};
+  if (request.mode === "withdrawalAttestation") {
+    return sendWithdrawalAttestationEmail({ env, siteUrl, idToken, body: request, ask, wait });
+  }
   const mode = request.mode === "test" ? "test" : request.mode === "send" ? "send" : null;
   const draft = toEmailDraft(request);
   const audience = toEmailAudience(request.audience);

@@ -63,10 +63,16 @@ describe("Medlemskap i registeret", () => {
       email: "kari@example.com",
       congregationMember: true,
       denominationMember: true,
+      congregationJoinedAt: "2005-09-01",
+      denominationJoinedAt: "2005-09-01",
+      membershipClerk: true,
     });
     const copy = publicCopyOf(withConsent(person));
     expect(JSON.stringify(copy)).not.toContain("congregationMember");
     expect(JSON.stringify(copy)).not.toContain("denominationMember");
+    expect(JSON.stringify(copy)).not.toContain("denominationEnrollmentType");
+    expect(JSON.stringify(copy)).not.toContain("congregationJoinedAt");
+    expect(JSON.stringify(copy)).not.toContain("membershipClerk");
     const stored = sanitizeForFirestore(documentFields(buildAssignment("t", person.id, "pending", {
       personName: person.name,
       gatheringId: "g",
