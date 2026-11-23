@@ -1763,6 +1763,10 @@ Bestilt av produkteier etter tredje runde med monday.com som målestokk.
 
 Bestilt av produkteier: på mobil tok toppbildet og bildet på det fremhevede kortet nesten hele skjermen. Under bredden for nettbrett (`sm`, 640 px) vises ikke det store toppbildet; overskriften står i en tynn hvit linje under menyen, med knappene små under. Menyen er da alltid den vanlige hvite linjen, også der den ellers ligger over bildet. Kortet «Neste gudstjeneste» får et lavere bilde, og dato, tid og sted på én linje rett under tittelen; den grå boksen med det samme skjules på mobil. Fra nettbrett og opp er nettsiden uendret (sjekket piksel for piksel på PC).
 
+### Infoskjerm, trinn 1 (23. november 2026)
+
+Bestilt av produkteier: en egen skjerm i vestibylen med det som skjer i menigheten. Adressen `/skjerm` åpnes i nettleseren på en TV i fullskjerm. Den har ingen meny og ingen lenker, og følger fargene som er valgt i «Tema & Designsystem». Øverst står logoen (eller forbokstaven) og navnet, klokka og dagens dato. Under står tre kolonner: **I dag** (et stort kort med dagens gudstjeneste, ellers det første som ikke er avlyst, og resten av dagen under), **Denne uka** (de neste seks dagene, høyst fem) og **Kommende** (høyst fire, fremhevede først, med farget kant). Bare arrangementer åpne for alle vises, aldri interne eller gruppesamlinger. Et avlyst arrangement står overstreket med «AVLYST». Et arrangement som starter ved midnatt (heldags eller over flere dager), vises uten klokkeslett. Nederst står Vipps-nummeret når det er fylt inn, og adressen. Listene følger databasen med en gang, klokka oppdateres hvert halve minutt, og siden lastes på nytt hver sjette time så en skjerm som står i uker, får nye versjoner. Skjermen trenger ingen innlogging og telles ikke som besøk på nettsiden. Utvalget regnes ut i `src/utils/infoScreen.ts`. Planen videre står i kapittel 14.
+
 ### Oversikt, status og ett sted per felt (23. november 2026)
 
 Bestilt av produkteier etter en vurdering av CMS-et med monday.com som målestokk: alle skal se hva som må gjøres, og hvor.
@@ -1910,6 +1914,19 @@ Trinnene tas i rekkefølge. Et trinn er ferdig når det er prøvd, testene er gr
 * **Menighetsplattform tilbys etter invitasjon.** Det er gratis for menigheten, men oppsett og drift koster leverandøren per menighet.
 
 Trinn 2 og 4 er det samme som fase 1 under. Fase 2–4 fortsetter som før når trinnene er på plass.
+
+### Infoskjerm i vestibylen *(avtalt 23. november 2026, pågår)*
+
+En egen skjerm i vestibylen som henter innholdet fra nettsiden og planleggingen, med sin egen redigering i admin («Infoskjerm», adskilt fra Nettside). Lyst tema med menighetens farger. Bestemt sammen med planen: administratorer og webredaktører redigerer, interne ting vises aldri, ingen lyd eller video, én runde først, og skjermen blir et tillegg under Moduler. Hvert trinn vises produkteier før det sendes inn.
+
+| Trinn | Hva | Status |
+|:---|:---|:---|
+| 1 | **Skjermsiden** `/skjerm` med I dag, Denne uka og Kommende, som oppdaterer seg selv | **Bygget 23. november**, ikke sendt inn |
+| 2 | **Runden:** sidene skifter av seg selv, med nyheter (én om gangen, med QR-kode), neste gudstjeneste og siste tale | |
+| 3 | **«Infoskjerm» i admin** som tillegg: sider av og på, rekkefølge, sekunder per side, ta bort en nyhet bare fra skjermen, forhåndsvisning | |
+| 4 | **Egne lysbilder:** Velkommen, kunngjøring og bilde, med sluttdato | |
+| 5 | **Reglene:** skjermens oppsett i `cms_settings` må kunne leses uten innlogging og lagres av webredaktør. Limes inn hos Lillesand av produkteier | |
+| 6 | **Flere skjermer**, svart skjerm om natta og «sist sett» i admin | Kan vente |
 
 ### Arrangement, maler og serier *(avtalt 12. oktober 2026, pågår)*
 

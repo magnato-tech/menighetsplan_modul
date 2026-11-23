@@ -71,6 +71,8 @@ Ved utdatert JavaScript etter deploy: `ChunkErrorBoundary` prøver én automatis
 | Min side | `/minside`, `/leder` (går til Min side) og `/leder/samling/:id` (planleggingen), `/oppgave/:id`, `/gruppe/:id`, `/samling/:id`, `/husfellesskap`, og detaljsidene under `/admin/…` | `src/pages/` |
 | Admin Studio | `/admin` (faner via `?tab=`) | `src/pages/admin/` |
 
+Infoskjermen i vestibylen (`/skjerm`, `src/pages/InfoScreenPage.tsx`) er ingen av flatene: den tegnes uten meny og topp/bunn, er ikke en offentlig adresse (`isInfoScreenPath` i `src/utils/routes.ts`, så den telles ikke som besøk og har ingen tittel i `seoForPath`), og leser bare det en besøkende kan lese. Den kan vises i en ramme, så admin kan forhåndsvise den.
+
 Hvilke adresser som er interne, står i `MIN_SIDE_SECTIONS` i `src/utils/routes.ts`. Sammenligningen gjelder hele ledd i adressen, slik at `/leder` ikke fanger den offentlige siden `/lederskap`. Samme fil avgjør hva som er en offentlig adresse (`isPublicPath`), og brukes av både nettleseren og serveren.
 
 Admin Studio er delt slik: `AdminStudio.tsx` er et skall som eier fanevalg og tilbakemeldinger, `StudioSidebar.tsx` er menyen, og hver fane ligger i `tabs/` med sin egen tilstand og sine egne dialoger. Hvilken del av admin en fane hører til, Planlegging eller Nettside, står ett sted: `TAB_AREAS` i `src/pages/admin/studioAreas.ts`, nøklet på fane, så en ny fane ikke kan legges til uten å plasseres. Skallet viser delen til fanen som er åpen (`areaToShow`), ellers den som sist ble valgt, og sender den til menyen, Oversikt og Hjelp. En fane monteres første gang den åpnes og skjules deretter bare, slik at et utkast overlever et fanebytte.
