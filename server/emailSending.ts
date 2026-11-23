@@ -10,7 +10,7 @@ import { emailRecipients, firstNameOf, isNewsletter, toEmailAudience, usableEmai
 import { TEST_UNSUBSCRIBE_TOKEN, isNewsletterToken, newNewsletterToken, newsletterBannerOf, newsletterBannerUrlOf, optedOutPersonIds, unsubscribeUrlOf } from "../src/utils/newsletter";
 import type { Group, Person } from "../src/types";
 import { FirestoreRestError, readAll, readDocument, setTextFields, signedInAs, type Fetch } from "./firestoreRest";
-import { sendWithdrawalAttestationEmail } from "./withdrawalAttestationEmail";
+import { sendWithdrawalAttestationEmail, type WithdrawalAttestationEmailOutcome } from "./withdrawalAttestationEmail";
 
 // The names in src/data/collections.ts and src/data/settingsRecords.ts, written out: those files
 // are the browser's (tests/email-sending.test.ts holds them together)
@@ -50,7 +50,7 @@ export interface EmailRequest {
 
 export interface EmailResponse {
   status: number;
-  body: EmailOutcome;
+  body: EmailOutcome | WithdrawalAttestationEmailOutcome;
 }
 
 const MESSAGES: Record<Exclude<EmailRefusal, "unreachable">, [number, string]> = {

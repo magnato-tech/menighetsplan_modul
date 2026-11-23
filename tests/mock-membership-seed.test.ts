@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { getMockDocuments } from "../src/data/mockDocuments";
 import { COLLECTIONS } from "../src/data/collections";
-import type { Person } from "../src/types";
+import type { Assignment, Group, Person } from "../src/types";
 import {
   DEMO_LEGACY_PROTOCOL_PERSON_IDS,
   DEMO_MEMBERSHIP_JOINED,
@@ -15,8 +15,8 @@ describe("Demomedlemskap i registeret", () => {
   test("ledere og tjenestefrivillige er medlem i menighet og trossamfunn", () => {
     const docs = getMockDocuments();
     const people = docs.filter((d) => d.collection === COLLECTIONS.PERSONS).map((d) => d.data as Person);
-    const groups = docs.filter((d) => d.collection === COLLECTIONS.GROUPS).map((d) => d.data as (typeof import("../src/types").Group));
-    const assignments = docs.filter((d) => d.collection === COLLECTIONS.ASSIGNMENTS).map((d) => d.data as (typeof import("../src/types").Assignment));
+    const groups = docs.filter((d) => d.collection === COLLECTIONS.GROUPS).map((d) => d.data as Group);
+    const assignments = docs.filter((d) => d.collection === COLLECTIONS.ASSIGNMENTS).map((d) => d.data as Assignment);
     const should = personIdsWithMockMembership(groups, assignments);
 
     const enrolled = people.filter(
@@ -86,7 +86,7 @@ describe("Demomedlemskap i registeret", () => {
 describe("Hvem som telles med", () => {
   test("husgruppeleder uten tjeneste telles med som leder", () => {
     const docs = getMockDocuments();
-    const groups = docs.filter((d) => d.collection === COLLECTIONS.GROUPS).map((d) => d.data as (typeof import("../src/types").Group));
+    const groups = docs.filter((d) => d.collection === COLLECTIONS.GROUPS).map((d) => d.data as Group);
     const hus = groups.find((g) => g.category === "husgruppe" && g.leaderIds.length > 0);
     expect(hus).toBeTruthy();
     const leaderId = hus!.leaderIds[0];
