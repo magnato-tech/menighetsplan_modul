@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useCms } from "../../../context/CmsContext";
 import { draftFingerprint, useLeaveGuard, useReportUnsaved, useSaveShortcut } from "../../../hooks/useUnsavedChanges";
@@ -17,16 +17,60 @@ import { StudioData, ShowFeedback } from "../studio";
 import { CmsMediaPicker } from "../../../components/admin/CmsMediaPicker";
 import { useMediaMap } from "../../../hooks/useMediaMap";
 import { resolveMediaUrl } from "../../../utils/media";
+import { filterSermons, sermonFilterOptions, sermonSpeakerOf } from "../../../utils/sermonFilter";
 
 interface SermonsTabProps {
   studio: StudioData;
   showFeedback: ShowFeedback;
 }
 
+interface FilterSelectProps {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: string[];
+}
+
+/** A dropdown for one filter. The first choice, «Alle», means no filter. */
+const FilterSelect: React.FC<FilterSelectProps> = ({ label, value, onChange, options }) => (
+  <label className="flex flex-col gap-1 min-w-0 flex-1 sm:flex-none sm:w-44 text-xs">
+    <span className="font-semibold text-[var(--studio-muted)]">{label}</span>
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="w-full px-3 py-2 rounded-xl bg-[var(--studio-input)] border border-[var(--studio-border)] text-[var(--studio-input-text)]"
+    >
+      <option value="">Alle</option>
+      {options.map((option) => (
+        <option key={option} value={option}>{option}</option>
+      ))}
+    </select>
+  </label>
+);
+
 export const SermonsTab: React.FC<SermonsTabProps> = ({ studio, showFeedback }) => {
   const { currentUser } = studio;
   const { sermons, saveSermon, deleteSermon } = useCms();
   const mediaById = useMediaMap();
+
+  // Search and filters above the list
+  const [query, setQuery] = useState("");
+  const [seriesFilter, setSeriesFilter] = useState("");
+  const [speakerFilter, setSpeakerFilter] = useState("");
+  const [yearFilter, setYearFilter] = useState("");
+  const filterOptions = useMemo(() => sermonFilterOptions(sermons), [sermons]);
+  const visibleSermons = useMemo(
+    () => filterSermons(sermons, { query, series: seriesFilter, speaker: speakerFilter, year: yearFilter }),
+    [sermons, query, seriesFilter, speakerFilter, yearFilter],
+  );
+  const filtersActive = query.trim() !== "" || seriesFilter !== "" || speakerFilter !== "" || yearFilter !== "";
+  const countText = visibleSermons.length === 1 ? "1 tale" : visibleSermons.length + " taler";
+  const resetFilters = () => {
+    setQuery("");
+    setSeriesFilter("");
+    setSpeakerFilter("");
+    setYearFilter("");
+  };
 
   const [editingSermon, setEditingSermon] = useState<Partial<CmsSermon> | null>(null);
   const [isNewSermon, setIsNewSermon] = useState(false);
@@ -234,86 +278,148 @@ export const SermonsTab: React.FC<SermonsTabProps> = ({ studio, showFeedback }) 
         </form>
       )}
 
-      {/* List of Sermons */}
+      {/* Search and filters */}
       <div className="space-y-3">
-        {sermons.map((s) => (
-          <div
-            key={s.id}
-            className="p-5 rounded-2xl bg-[var(--studio-surface)] border border-[var(--studio-border)] flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-          >
-            {resolveMediaUrl(s.imageUrl, mediaById, "thumb") && (
-              <img
-                src={resolveMediaUrl(s.imageUrl, mediaById, "thumb")}
-                alt=""
-                loading="lazy"
-                className="w-24 aspect-video object-cover rounded-lg shrink-0 bg-[var(--studio-bg)]"
-              />
-            )}
-            <div className="space-y-1 flex-1 min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h3 className="font-bold text-[var(--studio-text)] text-base">{s.title}</h3>
-                {s.series && (
-                  <span className="text-[10px] font-bold text-amber-300 bg-amber-950/80 px-2 py-0.5 rounded">
-                    {s.series}
-                  </span>
-                )}
-                {s.videoUrl && (
-                  <span className="text-[10px] font-bold text-[var(--studio-accent-text)] bg-[var(--studio-accent-bg)] border border-[var(--studio-accent-border)] px-2 py-0.5 rounded flex items-center gap-1">
-                    <Play className="w-3 h-3 text-[var(--studio-icon)]" />
-                    Video (nocookie)
-                  </span>
-                )}
-                {s.audioUrl && (
-                  <span className="text-[10px] font-bold text-amber-300 bg-amber-950/80 border border-amber-800 px-2 py-0.5 rounded flex items-center gap-1">
-                    <Headphones className="w-3 h-3 text-amber-400" />
-                    Lyd
-                  </span>
-                )}
-                {!s.videoUrl && !s.audioUrl && (
-                  <span className="text-[10px] text-[var(--studio-muted)] bg-[var(--studio-bg)] px-2 py-0.5 rounded">
-                    Kun notat
-                  </span>
-                )}
-              </div>
-              <div className="text-xs text-[var(--studio-muted)] flex flex-wrap gap-3">
-                <span>Taler: <strong className="text-slate-200">{s.speaker || s.guestSpeakerName || "Ikke oppgitt"}</strong></span>
-                {s.bibleText && <span>Bibel: {s.bibleText}</span>}
-                <span>Dato: {new Date(s.date).toLocaleDateString("no-NO")}</span>
-              </div>
-            </div>
+        <input
+          type="search"
+          aria-label="Søk i talene"
+          placeholder="Søk i tittel, taler eller bibeltekst …"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="w-full px-3 py-2 rounded-xl bg-[var(--studio-input)] border border-[var(--studio-border)] text-[var(--studio-input-text)] text-xs"
+        />
+        <div className="flex flex-wrap gap-3">
+          <FilterSelect label="Serie" value={seriesFilter} onChange={setSeriesFilter} options={filterOptions.series} />
+          <FilterSelect label="Taler" value={speakerFilter} onChange={setSpeakerFilter} options={filterOptions.speakers} />
+          <FilterSelect label="År" value={yearFilter} onChange={setYearFilter} options={filterOptions.years} />
+        </div>
+        <div className="flex items-center justify-between gap-3 text-xs text-[var(--studio-muted)]">
+          <span>{countText}</span>
+          {filtersActive && (
+            <button
+              type="button"
+              onClick={resetFilters}
+              className="font-semibold text-amber-400 hover:text-amber-300 hover:underline underline-offset-2"
+            >
+              Nullstill
+            </button>
+          )}
+        </div>
+      </div>
 
-            <div className="flex items-center gap-2 text-xs">
-              <Link
-                to="/taler"
-                target="_blank"
-                className="p-2 rounded-lg bg-[var(--studio-bg)] hover:bg-[var(--studio-hover)] text-[var(--studio-muted)] hover:text-[var(--studio-text)]"
-                title="Hør i arkiv"
-              >
-                <ExternalLink className="w-4 h-4" />
-              </Link>
-              <button
-                type="button"
-                onClick={() => handleOpenEditSermon(s)}
-                className="px-3 py-1.5 rounded-lg bg-amber-500/80 hover:bg-amber-500 text-slate-950 font-bold flex items-center gap-1.5"
-              >
-                <Edit2 className="w-3.5 h-3.5" />
-                <span>Rediger</span>
-              </button>
-              <button
-                type="button"
-                onClick={async () => {
-                  if (confirm(`Vil du slette talen "${s.title}"?`)) {
-                    if (await deleteSermon(s.id)) showFeedback("Talen ble slettet");
-                  }
-                }}
-                className="p-2 rounded-lg bg-[var(--studio-bg)] hover:bg-red-950 text-[var(--studio-muted)] hover:text-red-400"
-                title="Slett tale"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        ))}
+      {/* List of Sermons */}
+      <div className="overflow-x-auto rounded-2xl border border-[var(--studio-border)] bg-[var(--studio-surface)]">
+        <table className="w-full min-w-[52rem] text-xs table-fixed">
+          <thead>
+            <tr className="text-left text-[10px] font-bold uppercase tracking-wide text-[var(--studio-muted)] border-b border-[var(--studio-border)]">
+              <th className="px-3 py-2 w-[30%]">Tale</th>
+              <th className="px-3 py-2 w-[14%]">Serie</th>
+              <th className="px-3 py-2 w-[14%]">Taler</th>
+              <th className="px-3 py-2 w-[12%]">Bibel</th>
+              <th className="px-3 py-2 w-[10%]">Dato</th>
+              <th className="px-3 py-2 w-[20%] text-right">
+                <span className="sr-only">Handlinger</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {visibleSermons.length === 0 && (
+              <tr>
+                <td colSpan={6} className="px-3 py-6 text-center text-[var(--studio-muted)]">
+                  {sermons.length === 0 ? "Ingen taler ennå." : "Ingen taler passer til søket."}
+                </td>
+              </tr>
+            )}
+            {visibleSermons.map((s) => {
+              const speaker = sermonSpeakerOf(s);
+              const thumb = resolveMediaUrl(s.imageUrl, mediaById, "thumb");
+              return (
+                <tr key={s.id} className="border-b border-[var(--studio-border)] last:border-b-0 align-middle">
+                  <td className="px-3 py-2">
+                    <div className="flex items-center gap-3 min-w-0">
+                      {thumb && (
+                        <img
+                          src={thumb}
+                          alt=""
+                          loading="lazy"
+                          className="w-16 h-10 object-cover rounded-md shrink-0 bg-[var(--studio-bg)]"
+                        />
+                      )}
+                      <div className="space-y-1 min-w-0">
+                        <span className="block font-bold text-[var(--studio-text)] text-sm truncate" title={s.title}>
+                          {s.title}
+                        </span>
+                        <div className="flex flex-wrap items-center gap-1">
+                          {s.videoUrl && (
+                            <span className="text-[10px] font-bold text-[var(--studio-accent-text)] bg-[var(--studio-accent-bg)] border border-[var(--studio-accent-border)] px-2 py-0.5 rounded flex items-center gap-1">
+                              <Play className="w-3 h-3 text-[var(--studio-icon)]" />
+                              Video (nocookie)
+                            </span>
+                          )}
+                          {s.audioUrl && (
+                            <span className="text-[10px] font-bold text-amber-300 bg-amber-950/80 border border-amber-800 px-2 py-0.5 rounded flex items-center gap-1">
+                              <Headphones className="w-3 h-3 text-amber-400" />
+                              Lyd
+                            </span>
+                          )}
+                          {!s.videoUrl && !s.audioUrl && (
+                            <span className="text-[10px] text-[var(--studio-muted)] bg-[var(--studio-bg)] px-2 py-0.5 rounded">
+                              Kun notat
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-3 py-2 text-[var(--studio-muted)] truncate" title={s.series || undefined}>
+                    {s.series || "–"}
+                  </td>
+                  <td className="px-3 py-2 text-[var(--studio-text)] truncate" title={speaker || undefined}>
+                    {speaker || "Ikke oppgitt"}
+                  </td>
+                  <td className="px-3 py-2 text-[var(--studio-muted)] truncate" title={s.bibleText || undefined}>
+                    {s.bibleText || "–"}
+                  </td>
+                  <td className="px-3 py-2 text-[var(--studio-muted)] whitespace-nowrap">
+                    {new Date(s.date).toLocaleDateString("no-NO")}
+                  </td>
+                  <td className="px-3 py-2">
+                    <div className="flex items-center justify-end gap-2 text-xs">
+                      <Link
+                        to="/taler"
+                        target="_blank"
+                        className="p-2 rounded-lg bg-[var(--studio-bg)] hover:bg-[var(--studio-hover)] text-[var(--studio-muted)] hover:text-[var(--studio-text)]"
+                        title="Hør i arkiv"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEditSermon(s)}
+                        className="px-3 py-1.5 rounded-lg bg-amber-500/80 hover:bg-amber-500 text-slate-950 font-bold flex items-center gap-1.5"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                        <span>Rediger</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (confirm(`Vil du slette talen "${s.title}"?`)) {
+                            if (await deleteSermon(s.id)) showFeedback("Talen ble slettet");
+                          }
+                        }}
+                        className="p-2 rounded-lg bg-[var(--studio-bg)] hover:bg-red-950 text-[var(--studio-muted)] hover:text-red-400"
+                        title="Slett tale"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
 
       <UnsavedChangesDialog {...dialog} pageTitle={editingSermon?.title} what="talen" />

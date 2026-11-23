@@ -164,7 +164,7 @@ describe("Nyhetene i admin", () => {
         <NewsTab studio={studio} showFeedback={showFeedback} createRequested={false} onCreateHandled={() => {}} />
       </MemoryRouter>
     );
-  const row = (title: string) => screen.getByRole("heading", { name: title }).closest("div.rounded-2xl") as HTMLElement;
+  const row = (title: string) => screen.getByText(title).closest("tr") as HTMLElement;
 
   test("en utløpt nyhet står i listen, merket med ord, og de andre sier hvor lenge de vises", () => {
     cms.news = [

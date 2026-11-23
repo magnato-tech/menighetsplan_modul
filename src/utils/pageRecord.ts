@@ -13,13 +13,15 @@ import { heroExtrasOf, heroHeightOf, heroMenuStyleOf, heroTitleFontOf, heroTitle
  */
 export function pageFingerprint(pageData: Partial<CmsPage> & { id?: string }): string {
   const record = buildPageRecord(pageData, new Date(0), () => "");
-  return JSON.stringify({ ...record, updatedAt: "" });
+  return JSON.stringify({ ...record, updatedAt: "", updatedBy: undefined });
 }
 
+/** `editorId` is the person in the register who saves the page (see CmsContext); left out, nobody is named. */
 export function buildPageRecord(
   pageData: Partial<CmsPage> & { id?: string },
   now: Date,
-  makeId: () => string
+  makeId: () => string,
+  editorId?: string
 ): CmsPage {
   const resolvedParent =
     pageData.parentPageId !== undefined ? pageData.parentPageId : pageData.parentId || null;
@@ -52,6 +54,7 @@ export function buildPageRecord(
     // Left out of the stored document when the page has no link of its own
     linkUrl: pageData.linkUrl || undefined,
     updatedAt: now.toISOString(),
+    updatedBy: editorId || undefined,
     heroImage: pageData.heroImage || "",
     heroImageAlt: pageData.heroImageAlt?.trim() || undefined,
     heroFocus: pageData.heroImage ? pageData.heroFocus?.trim() || undefined : undefined,

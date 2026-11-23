@@ -109,6 +109,10 @@ export interface CmsNewsArticle {
   imageAlt?: string;
   gatheringRefId?: string;
   expiresAt?: string;
+  /** When the article was last saved. Missing on articles saved before 23 November 2026. */
+  updatedAt?: string;
+  /** The person in the register who saved it last: a reference, never the name (news can be read by anyone). */
+  updatedBy?: string;
 }
 
 export interface CmsSermon {

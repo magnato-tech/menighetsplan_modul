@@ -17,8 +17,6 @@ import {
   ExternalLink,
   X,
   Newspaper,
-  Clock,
-  CalendarClock,
 } from "lucide-react";
 import { StudioData, ShowFeedback } from "../studio";
 import { AlertTriangle, Eye, History } from "lucide-react";
@@ -27,6 +25,11 @@ import { restoredFields } from "../../../utils/contentVersions";
 import { formatNorwegianDateTime } from "../../../utils/dates";
 import { isGroupGathering } from "../../../utils/gatherings";
 import { daysStandingLong, isNewsExpired, lastDayOf, needsLastDay, suggestedLastDay, type LastDay } from "../../../utils/news";
+import { useFirebase } from "../../../context/FirebaseDataContext";
+import { useMediaMap } from "../../../hooks/useMediaMap";
+import { resolveMediaUrl } from "../../../utils/media";
+import { lastEditedText } from "../../../utils/lastEdited";
+import { countNewsByFilter, filterNews, newsStatusOf, type NewsFilter } from "../../../utils/newsStatus";
 
 /** A day ("2026-10-11") as it is written out: «11. oktober 2026». */
 const writtenDay = (day: string): string =>
@@ -40,6 +43,26 @@ const shownUntil = (last: LastDay | null): string =>
       ? `Vises til og med ${writtenDay(last.day)}.`
       : `Vises til og med ${writtenDay(last.day)}, dagen for arrangementet.`;
 
+const NEWS_FILTERS: { value: NewsFilter; label: string }[] = [
+  { value: "alle", label: "Alle" },
+  { value: "publisert", label: "Publisert" },
+  { value: "kladd", label: "Kladd" },
+  { value: "planlagt", label: "Planlagt" },
+  { value: "gar-ut", label: "Går snart ut" },
+];
+
+// The pill colour of each status. Each one also says what it is in words, so colour is not the only sign.
+const NEWS_STATUS_PILL: Record<"kladd" | "planlagt" | "gar-ut" | "gatt-ut" | "publisert", string> = {
+  publisert: "bg-emerald-950/80 text-emerald-300 border border-emerald-800",
+  kladd: "bg-slate-800 text-slate-200 border border-slate-600",
+  planlagt: "bg-blue-950/90 text-blue-300 border border-blue-800",
+  "gar-ut": "bg-amber-950/80 text-amber-300 border border-amber-800",
+  "gatt-ut": "bg-red-950/80 text-red-300 border border-red-900",
+};
+
+// Below this width the table scrolls inside its own box, the page itself does not
+const TABLE_MIN_WIDTH = "min-w-[48rem]";
+
 interface NewsTabProps {
   studio: StudioData;
   showFeedback: ShowFeedback;
@@ -51,7 +74,10 @@ interface NewsTabProps {
 export const NewsTab: React.FC<NewsTabProps> = ({ studio, showFeedback, createRequested, onCreateHandled }) => {
   const { currentUser, adminGatherings } = studio;
   const { news, saveNews, deleteNews, settings } = useCms();
+  const { allPersons } = useFirebase();
+  const mediaById = useMediaMap();
   const [previewing, setPreviewing] = useState(false);
+  const [filter, setFilter] = useState<NewsFilter>("alle");
 
   // The events an article can belong to: those open to the congregation that lie ahead, the nearest first
   const now = Date.now();
@@ -59,6 +85,11 @@ export const NewsTab: React.FC<NewsTabProps> = ({ studio, showFeedback, createRe
   const comingEvents = allEvents
     .filter((event) => !isGroupGathering(event) && new Date(event.startsAt).getTime() >= now)
     .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
+
+  // The list: the articles the filter shows, and how many each filter has
+  const counts = countNewsByFilter(news, allEvents, now);
+  const shownNews = filterNews(news, filter, allEvents, now);
+  const nameOf = (personId: string) => allPersons.find((person) => person.id === personId)?.name;
 
   const [editingNews, setEditingNews] = useState<Partial<CmsNewsArticle> | null>(null);
   const [isNewNews, setIsNewNews] = useState(false);
@@ -360,85 +391,138 @@ export const NewsTab: React.FC<NewsTabProps> = ({ studio, showFeedback, createRe
         </form>
       )}
 
-      {/* List of News */}
-      <div className="space-y-3">
-        {news.map((item) => {
-          const last = lastDayOf(item, allEvents);
-          const expired = isNewsExpired(item, allEvents, now);
-          const standing = daysStandingLong(item, allEvents, now);
+      {/* List of News: a filter row, then one table */}
+      <div role="group" aria-label="Vis nyheter" className="flex flex-wrap gap-2">
+        {NEWS_FILTERS.map((option) => {
+          const active = filter === option.value;
           return (
-          <div
-            key={item.id}
-            className="p-5 rounded-2xl bg-[var(--studio-surface)] border border-[var(--studio-border)] flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-[var(--studio-border)] transition-all"
-          >
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--studio-icon)] bg-[var(--studio-accent-bg)] px-2 py-0.5 rounded">
-                  {item.category}
-                </span>
-                <h3 className="font-bold text-[var(--studio-text)] text-base">{item.title}</h3>
-              </div>
-              <p className="text-xs text-[var(--studio-muted)] line-clamp-1">{item.summary}</p>
-              <div className="text-[11px] text-[var(--studio-muted)]">
-                Av {item.author} · {new Date(item.publishedAt).toLocaleDateString("no-NO")}
-              </div>
-              {/* Said with an icon and in words, never by colour alone */}
-              {expired ? (
-                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-300 bg-amber-950/80 border border-amber-800 px-2 py-0.5 rounded">
-                  <Clock className="w-3.5 h-3.5 text-amber-400" aria-hidden="true" />
-                  Utløpt {writtenDay(last!.day)}. Vises ikke lenger på forsiden
-                </span>
-              ) : (
-                last && (
-                  <span className="inline-flex items-center gap-1 text-[11px] text-[var(--studio-muted)]">
-                    <CalendarClock className="w-3.5 h-3.5 text-[var(--studio-icon)]" aria-hidden="true" />
-                    {shownUntil(last)}
-                  </span>
-                )
-              )}
-              {/* An article without a last day that has stood long may be about something that is over */}
-              {standing !== null && (
-                <span data-news-standing className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-800 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded">
-                  <AlertTriangle className="w-3.5 h-3.5 text-amber-600" aria-hidden="true" />
-                  Ingen siste dag, og har stått i {standing} dager. Er den fortsatt aktuell?
-                </span>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2 text-xs">
-              <Link
-                to={`/artikkel/${item.id}`}
-                target="_blank"
-                className="p-2 rounded-lg bg-[var(--studio-bg)] hover:bg-[var(--studio-hover)] text-[var(--studio-muted)] hover:text-[var(--studio-text)]"
-                title="Les artikkel"
-              >
-                <ExternalLink className="w-4 h-4" />
-              </Link>
-              <button
-                type="button"
-                onClick={() => handleOpenEditNews(item)}
-                className="px-3 py-1.5 rounded-lg bg-indigo-600/80 hover:bg-indigo-600 text-white font-semibold flex items-center gap-1.5"
-              >
-                <Edit2 className="w-3.5 h-3.5" />
-                <span>Rediger</span>
-              </button>
-              <button
-                type="button"
-                onClick={async () => {
-                  if (confirm(`Vil du slette artikkelen "${item.title}"?`)) {
-                    if (await deleteNews(item.id)) showFeedback("Artikkelen ble slettet");
-                  }
-                }}
-                className="p-2 rounded-lg bg-[var(--studio-bg)] hover:bg-red-950 text-[var(--studio-muted)] hover:text-red-400"
-                title="Slett artikkel"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
+            <button
+              key={option.value}
+              type="button"
+              aria-pressed={active}
+              onClick={() => setFilter(option.value)}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors ${
+                active
+                  ? "bg-indigo-600 text-white"
+                  : "bg-[var(--studio-bg)] text-[var(--studio-text)] border border-[var(--studio-border)] hover:bg-[var(--studio-hover)]"
+              }`}
+            >
+              <span>{option.label}</span>
+              <span className={active ? "text-white/85" : "text-[var(--studio-muted)]"}>{counts[option.value]}</span>
+            </button>
           );
         })}
       </div>
+
+      {shownNews.length === 0 ? (
+        <p className="p-5 rounded-2xl bg-[var(--studio-surface)] border border-[var(--studio-border)] text-sm text-[var(--studio-muted)]">
+          Ingen nyheter her.
+        </p>
+      ) : (
+        <div className="overflow-x-auto rounded-2xl border border-[var(--studio-border)] bg-[var(--studio-surface)]">
+          <table className={`w-full ${TABLE_MIN_WIDTH} text-xs table-fixed`}>
+            <colgroup>
+              <col style={{ width: "6.5rem" }} />
+              <col style={{ width: "30%" }} />
+              <col style={{ width: "14%" }} />
+              <col style={{ width: "14%" }} />
+              <col style={{ width: "16%" }} />
+              <col style={{ width: "10rem" }} />
+            </colgroup>
+            <thead>
+              <tr className="border-b border-[var(--studio-border)] text-left text-[var(--studio-muted)]">
+                <th scope="col" className="px-3 py-2 font-bold">
+                  <span className="sr-only">Bilde</span>
+                </th>
+                <th scope="col" className="px-3 py-2 font-bold">Artikkel</th>
+                <th scope="col" className="px-3 py-2 font-bold">Kategori</th>
+                <th scope="col" className="px-3 py-2 font-bold">Status</th>
+                <th scope="col" className="px-3 py-2 font-bold">Sist endret</th>
+                <th scope="col" className="px-3 py-2 font-bold">
+                  <span className="sr-only">Handlinger</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {shownNews.map((item) => {
+                const last = lastDayOf(item, allEvents);
+                const expired = isNewsExpired(item, allEvents, now);
+                const standing = daysStandingLong(item, allEvents, now);
+                const status = newsStatusOf(item, allEvents, now);
+                const thumbnail = resolveMediaUrl(item.imageUrl, mediaById, "thumb");
+                const edited = lastEditedText(item, nameOf, now);
+                return (
+                  <tr key={item.id} className="border-b border-[var(--studio-border)] last:border-b-0 align-middle">
+                    <td className="px-3 py-2">
+                      {thumbnail ? (
+                        <img src={thumbnail} alt="" loading="lazy" className="w-16 h-10 object-cover rounded-md bg-[var(--studio-bg)]" />
+                      ) : (
+                        <div aria-hidden="true" className="w-16 h-10 rounded-md border border-dashed border-[var(--studio-border)]" />
+                      )}
+                    </td>
+                    <td className="px-3 py-2 min-w-0">
+                      <span className="block font-bold text-[var(--studio-text)] text-sm break-words">{item.title}</span>
+                      <span className="block text-[var(--studio-muted)]">Av {item.author}</span>
+                      {/* How long the article is shown, or that it is over */}
+                      {expired ? (
+                        <span className="block text-[var(--studio-muted)]">Utløpt {writtenDay(last!.day)}. Vises ikke lenger på forsiden</span>
+                      ) : (
+                        last && <span className="block text-[var(--studio-muted)]">{shownUntil(last)}</span>
+                      )}
+                      {/* An article without a last day that has stood long may be about something that is over */}
+                      {standing !== null && (
+                        <span data-news-standing className="mt-1 inline-flex items-center gap-1 text-[10px] font-bold text-amber-800 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded">
+                          <AlertTriangle className="w-3.5 h-3.5 text-amber-600" aria-hidden="true" />
+                          Ingen siste dag, og har stått i {standing} dager. Er den fortsatt aktuell?
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2 text-[var(--studio-muted)] break-words">{item.category ? item.category.charAt(0).toUpperCase() + item.category.slice(1) : ""}</td>
+                    <td className="px-3 py-2">
+                      <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-bold whitespace-nowrap ${NEWS_STATUS_PILL[status.kind]}`}>
+                        {status.label}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-[var(--studio-muted)]">{edited ?? `Publisert ${new Date(item.publishedAt).toLocaleDateString("no-NO")}`}</td>
+                    <td className="px-3 py-2">
+                      <div className="flex items-center justify-end gap-2 text-xs">
+                        <Link
+                          to={`/artikkel/${item.id}`}
+                          target="_blank"
+                          className="p-2 rounded-lg bg-[var(--studio-bg)] hover:bg-[var(--studio-hover)] text-[var(--studio-muted)] hover:text-[var(--studio-text)]"
+                          title="Les artikkel"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditNews(item)}
+                          className="px-3 py-1.5 rounded-lg bg-indigo-600/80 hover:bg-indigo-600 text-white font-semibold flex items-center gap-1.5"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                          <span>Rediger</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (confirm(`Vil du slette artikkelen "${item.title}"?`)) {
+                              if (await deleteNews(item.id)) showFeedback("Artikkelen ble slettet");
+                            }
+                          }}
+                          className="p-2 rounded-lg bg-[var(--studio-bg)] hover:bg-red-950 text-[var(--studio-muted)] hover:text-red-400"
+                          title="Slett artikkel"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       <UnsavedChangesDialog {...dialog} pageTitle={editingNews?.title} what="artikkelen" />
       {previewing && editingNews && <NewsPreviewDialog article={editingNews} churchName={settings.churchName} onClose={() => setPreviewing(false)} />}

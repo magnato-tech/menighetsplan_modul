@@ -7,6 +7,7 @@ import { buildPageTree, findOrphanPages } from "../src/utils/menu";
 import type { CmsPage } from "../src/data/cmsData";
 
 vi.mock("../src/context/CmsContext", () => ({ useCms: () => ({ pages: [] }) }));
+vi.mock("../src/context/FirebaseDataContext", () => ({ useFirebase: () => ({ allPersons: [] }) }));
 
 const page = (id: string, extra: Partial<CmsPage> = {}): CmsPage => ({
   id,

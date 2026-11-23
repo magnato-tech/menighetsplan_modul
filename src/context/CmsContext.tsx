@@ -273,12 +273,13 @@ const writes = {
     attempt(on ? "slå på modulen" : "slå av modulen", () => saveAddonChoice(id, on)),
   setMinSideModule: (id: MinSideModuleId, on: boolean) =>
     attempt(on ? "slå på modulen" : "slå av modulen", () => saveMinSideModule(id, on)),
-  savePage: (pageData: Partial<CmsPage> & { id?: string }) => {
-    const page = buildPageRecord(pageData, new Date(), () => newId("page"));
+  savePage: (pageData: Partial<CmsPage> & { id?: string }, editorId?: string) => {
+    const page = buildPageRecord(pageData, new Date(), () => newId("page"), editorId);
     return attempt("lagre siden", () => createDocument(CMS_COLLECTIONS.PAGES, page));
   },
 
-  saveNews: (newsData: Partial<CmsNewsArticle> & { id?: string }) => {
+  saveNews: (newsData: Partial<CmsNewsArticle> & { id?: string }, editorId?: string) => {
+    const now = new Date();
     const article: CmsNewsArticle = {
       id: newsData.id || newId("news"),
       title: newsData.title || "Nyhetsartikkel",
@@ -294,6 +295,9 @@ const writes = {
       // How long the article is shown (see utils/news.ts). Left out, it stands until it is taken out
       ...(newsData.expiresAt?.trim() ? { expiresAt: newsData.expiresAt.trim() } : {}),
       ...(newsData.gatheringRefId ? { gatheringRefId: newsData.gatheringRefId } : {}),
+      // When it was saved, and by whom: the id of the person, never the name (news can be read by anyone)
+      updatedAt: now.toISOString(),
+      ...(editorId ? { updatedBy: editorId } : {}),
     };
     return attempt("lagre nyhetsartikkelen", () => createDocument(CMS_COLLECTIONS.NEWS, article));
   },
@@ -336,9 +340,10 @@ const writes = {
 
 const normalizeSlug = (slug: string) => slug.toLowerCase().replace(/^\//, "").trim();
 
-export const CmsProvider: React.FC<{ children: React.ReactNode; publicPagesOnly?: boolean }> = ({
+export const CmsProvider: React.FC<{ children: React.ReactNode; publicPagesOnly?: boolean; editorId?: string }> = ({
   children,
   publicPagesOnly = false,
+  editorId,
 }) => {
   const [pages, pagesAnswered] = useCmsCollection<CmsPage>(
     CMS_COLLECTIONS.PAGES,
@@ -361,7 +366,6 @@ export const CmsProvider: React.FC<{ children: React.ReactNode; publicPagesOnly?
   const minSideModules = DEMO ? ALL_MIN_SIDE_MODULES_ON : storedMinSideModules;
   const { surfaces, surfacesState } = useCmsSurfaces();
   const contentReady = pagesAnswered && newsAnswered;
-
   const value: CmsContextValue = useMemo(
     () => ({
       pages,
@@ -381,7 +385,7 @@ export const CmsProvider: React.FC<{ children: React.ReactNode; publicPagesOnly?
       // A save that changes a page or an article keeps the version it replaces (see utils/contentVersions.ts)
       savePage: async (pageData) => {
         const previous = pageData.id ? pages.find((page) => page.id === pageData.id) : undefined;
-        const saved = await writes.savePage(pageData);
+        const saved = await writes.savePage(pageData, editorId);
         if (saved && previous) {
           const stored = buildPageRecord(pageData, new Date(), () => pageData.id || "");
           if (contentChanged(previous as unknown as Record<string, unknown>, stored as unknown as Record<string, unknown>)) {
@@ -392,7 +396,7 @@ export const CmsProvider: React.FC<{ children: React.ReactNode; publicPagesOnly?
       },
       saveNews: async (newsData) => {
         const previous = newsData.id ? news.find((article) => article.id === newsData.id) : undefined;
-        const saved = await writes.saveNews(newsData);
+        const saved = await writes.saveNews(newsData, editorId);
         if (saved && previous && contentChanged(previous as unknown as Record<string, unknown>, { ...previous, ...newsData } as Record<string, unknown>)) {
           void keepVersion(versionOf("news", previous as CmsNewsArticle & Record<string, unknown>, new Date(), () => newId("versjon")));
         }
@@ -478,7 +482,7 @@ export const CmsProvider: React.FC<{ children: React.ReactNode; publicPagesOnly?
       getNewsById: (id: string) => news.find((n) => n.id === id),
       getNewsBySlug: (slug: string) => news.find((n) => n.slug.toLowerCase() === slug.toLowerCase()),
     }),
-    [pages, news, sermons, staff, media, settings, contentReady, addons, addonsState, minSideModules, surfaces, surfacesState]
+    [pages, news, sermons, staff, media, settings, contentReady, addons, addonsState, minSideModules, surfaces, surfacesState, editorId]
   );
 
   return <CmsContext.Provider value={value}>{children}</CmsContext.Provider>;

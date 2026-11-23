@@ -21,6 +21,7 @@ vi.mock("../src/context/CmsContext", () => ({
 afterEach(() => {
   cleanup();
 });
+vi.mock("../src/context/FirebaseDataContext", () => ({ useFirebase: () => ({ allPersons: [] }) }));
 
 const bliMed: CmsPage = {
   id: "bli-med",

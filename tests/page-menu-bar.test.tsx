@@ -21,6 +21,7 @@ const page = (id: string, extra: Partial<CmsPage> = {}): CmsPage => ({
   updatedAt: "2026-01-01T00:00:00.000Z",
   ...extra,
 });
+vi.mock("../src/context/FirebaseDataContext", () => ({ useFirebase: () => ({ allPersons: [] }) }));
 
 const pages = [
   page("forside", { title: "Forside", navOrder: 1 }),
