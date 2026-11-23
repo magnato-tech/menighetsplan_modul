@@ -148,7 +148,7 @@ const siderSidetre: HelpArticle = {
     "Dra en side for å flytte den, eller bruk pilene opp og ned.",
     "Den runde **+** øverst lager en ny hovedfane. **+ Underfane** på en fane lager en side under den. Kopier-knappen lager en kopi som kladd. Den nye siden åpnes i Rediger.",
     "Trykk på statusen for å publisere en side eller sette den til kladd. Før en side tas bort fra nettsiden, blir du spurt.",
-    "Trykk **I toppmeny** eller **I meny** for å ta siden ut av menyen, og trykk igjen for å vise den. Siden finnes fortsatt på sin adresse.",
+    "Trykk **I toppmeny** eller **I meny** for å ta siden ut av menyen, og trykk igjen for å vise den. Siden finnes fortsatt på sin adresse. Under en side med undersider står linjen «Oversikt»: slå av **Vis i menyen** der, så blir siden bare en overskrift som åpner listen med undersidene.",
     "**Rediger** på en rad åpner siden i Rediger. Øyet viser siden i ny fane, også en kladd.",
   ],
   godt: "Menylinjen øverst er nettsidens meny: trykk en fane, så ruller listen dit. **Kollaps alle** og **Utvid alle** viser eller skjuler underfanene.",

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useCms } from "../../context/CmsContext";
 import { CmsPage } from "../../data/cmsData";
-import { buildMenuBar, buildPageTree, findOrphanPages, getParentId } from "../../utils/menu";
+import { buildMenuBar, buildPageTree, findOrphanPages, getParentId, showsMenuOverview } from "../../utils/menu";
 import { pageFingerprint } from "../../utils/pageRecord";
 import { pageCopyOf } from "../../utils/pageCopy";
 import { useReportUnsaved, useSaveShortcut } from "../../hooks/useUnsavedChanges";
@@ -334,6 +334,23 @@ export const AdminCmsPanel: React.FC<AdminCmsPanelProps> = ({
     }
   };
 
+  // Shows or hides the page's own line («Oversikt») in the menu. Off: the page is only a heading for its sub-pages.
+  const handleToggleOverview = async (page: CmsPage) => {
+    const overviewOn = showsMenuOverview(page);
+    const success = await savePage(
+      overviewOn ? { ...page, menuOnly: true } : { ...page, menuOnly: false, overviewInMenu: true }
+    );
+    if (success) {
+      showFeedback(
+        overviewOn
+          ? `«${page.title}» er nå bare en overskrift i menyen. Siden selv vises ikke.`
+          : `«Oversikt: ${page.title}» vises igjen i menyen`
+      );
+    } else {
+      showFeedback("Kunne ikke oppdatere menyen", "error");
+    }
+  };
+
   // Every page is listed here, drafts and pages hidden from the menu included
   const hierarchicalPages = useMemo(() => buildPageTree(pages), [pages]);
   // The website's menu over the editor, on a large screen: a page in it opens in the editor
@@ -501,6 +518,7 @@ export const AdminCmsPanel: React.FC<AdminCmsPanelProps> = ({
           onReorder={handleReorder}
           onTogglePublish={handleTogglePublish}
           onToggleNavMenu={handleToggleNavMenu}
+          onToggleOverview={handleToggleOverview}
         />
       )}
 

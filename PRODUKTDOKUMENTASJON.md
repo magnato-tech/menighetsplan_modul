@@ -560,6 +560,7 @@ En person vises bare når «Vis offentlig» er satt **og** et samtykke er regist
 * Menyen har to nivåer: hovedfaner og underfaner. Rekkefølgen endres med dra og slipp.
 * Den offentlige menyen og sidelisten i admin bygges av samme sidetre.
 * Slettes en hovedfane, flyttes underfanene opp til toppnivå i samme lagring, slik at ingen side blir uten vei inn.
+* En hovedfane med undersider har en linje «Oversikt» først i undermenyen. Den slås av og på med bryteren «Vis i menyen» på linjen i Sidestruktur. Av gjør siden til bare en overskrift i menyen (`menuOnly`), og siden selv vises ikke.
 * Et menyvalg kan peke på en innebygd side (`/hva-skjer`, `/taler`, `/fellesskap`) i stedet for en egen tekstside.
 
 ### 8.2 Kladd, publisert og planlagt
