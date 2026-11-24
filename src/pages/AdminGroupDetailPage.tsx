@@ -691,7 +691,6 @@ export const AdminGroupDetailPage: React.FC = () => {
               <Calendar className="w-4 h-4 text-emerald-600" />
               Konkrete samlinger for gruppen ({groupGatherings.length})
             </span>
-            <span className="text-[10px] text-[var(--studio-muted)] font-medium">Eksisterende Gathering</span>
           </div>
 
           <p className="text-[11px] text-[var(--studio-muted)] leading-relaxed">
@@ -711,8 +710,9 @@ export const AdminGroupDetailPage: React.FC = () => {
                   className="p-3 bg-[var(--studio-row)] rounded-xl border border-[var(--studio-border)] space-y-2"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <h5 className="text-xs font-bold text-[var(--studio-text)]">{gathering.title}</h5>
+                    {/* The meeting opens the same admin page as in Kalender, where it can be changed */}
+                    <Link to={`/admin/samling/${gathering.id}`} className="min-w-0 group">
+                      <h5 className="text-xs font-bold text-[var(--studio-text)] group-hover:underline">{gathering.title}</h5>
                       <div className="flex items-center gap-2 text-[11px] text-[var(--studio-muted)] mt-0.5">
                         <span className="flex items-center gap-1">
                           <Clock className="w-3 h-3 text-[var(--studio-muted)]" />
@@ -725,8 +725,9 @@ export const AdminGroupDetailPage: React.FC = () => {
                           </span>
                         )}
                       </div>
-                    </div>
+                    </Link>
 
+                    <div className="flex items-center gap-2 shrink-0">
                     <span
                       className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
                         staffing.color === "red"
@@ -738,6 +739,13 @@ export const AdminGroupDetailPage: React.FC = () => {
                     >
                       {staffing.badgeText} ({staffing.coveredCount}/{staffing.totalTasks})
                     </span>
+                    <Link
+                      to={`/admin/samling/${gathering.id}`}
+                      className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 underline-offset-2 hover:underline"
+                    >
+                      Endre
+                    </Link>
+                    </div>
                   </div>
 
                   {/* Task list preview */}

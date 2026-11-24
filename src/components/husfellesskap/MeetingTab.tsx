@@ -50,9 +50,9 @@ export const MeetingTab: React.FC<MeetingTabProps> = ({ model, showToast, onCrea
     const res = await sendInvitation(activeMeeting.id);
     setSubmitting(false);
     if (res.success) {
-      showToast("Møteinnkalling er sendt ut til alle deltakerne!");
+      showToast("Møtet er synlig for gruppa.");
     } else {
-      showToast(res.error || "Kunne ikke sende innkalling.", "info");
+      showToast(res.error || "Kunne ikke gjøre møtet synlig.", "info");
     }
   };
 
@@ -76,7 +76,7 @@ export const MeetingTab: React.FC<MeetingTabProps> = ({ model, showToast, onCrea
             {allGroupMeetings.map((m) => (
               <option key={m.id} value={m.id}>
                 {m.title} ({new Date(m.startsAt).toLocaleDateString("no-NO", { day: "numeric", month: "short" })})
-                {m.invitationSent ? " • Sendt" : " • Utkast"}
+                {m.invitationSent ? " • Synlig" : " • Utkast"}
               </option>
             ))}
           </select>
@@ -99,7 +99,7 @@ export const MeetingTab: React.FC<MeetingTabProps> = ({ model, showToast, onCrea
                     className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-100 px-2.5 py-0.8 rounded-full border border-emerald-200"
                   >
                     <Check className="w-3 h-3 text-emerald-700" />
-                    <span>Innkalling sendt</span>
+                    <span>Synlig for gruppa</span>
                   </span>
                 ) : (
                   <span
@@ -107,7 +107,7 @@ export const MeetingTab: React.FC<MeetingTabProps> = ({ model, showToast, onCrea
                     className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-100 px-2.5 py-0.8 rounded-full border border-amber-200"
                   >
                     <AlertCircle className="w-3 h-3 text-amber-700" />
-                    <span>Utkast • Ikke sendt ennå</span>
+                    <span>Utkast • Bare lederne ser den</span>
                   </span>
                 )}
               </div>
@@ -186,26 +186,27 @@ export const MeetingTab: React.FC<MeetingTabProps> = ({ model, showToast, onCrea
             )}
           </div>
 
-          {/* GRUPPELEDER-FLYTKORT: SEND INNKALLING */}
+          {/* GRUPPELEDER-FLYTKORT: VIS FOR GRUPPA (makes the meeting visible on Min side; sends nothing) */}
           {(isLeader || isDeputyLeader) && (
             <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-800 to-teal-900 text-white space-y-2.5 shadow-xs">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-200 flex items-center gap-1.5">
                   <Send className="w-3.5 h-3.5 text-emerald-300" />
-                  <span>Lederhandling: Møteinnkalling</span>
+                  <span>Synlig for gruppa?</span>
                 </span>
                 <span className="text-[10px] font-semibold text-emerald-300">
-                  {activeMeeting.invitationSent ? "Innkalling er aktiv" : "Klar til utsending"}
+                  {activeMeeting.invitationSent ? "Synlig" : "Utkast"}
                 </span>
               </div>
 
               <p className="text-xs text-emerald-100 leading-relaxed">
                 {activeMeeting.invitationSent
-                  ? "Innkallingen er sendt til gruppen. Deltakernes svar oppdateres fortløpende nedenfor."
-                  : "Møtet er opprettet som et utkast. Trykk på knappen under for å sende innkalling til alle deltakerne."}
+                  ? "Møtet står i kalenderen til alle i gruppa på Min side, og de kan svare om de kommer. Det sendes ingen e-post eller SMS."
+                  : "Møtet er et utkast som bare lederne ser. Trykk «Vis for gruppa» når det skal stå i kalenderen til alle i gruppa."}
               </p>
 
               <div className="flex items-center gap-2 pt-1">
+                {!activeMeeting.invitationSent && (
                 <button
                   type="button"
                   id="btn-send-invitation"
@@ -214,10 +215,9 @@ export const MeetingTab: React.FC<MeetingTabProps> = ({ model, showToast, onCrea
                   className="px-4 py-2.5 bg-white hover:bg-emerald-50 active:bg-emerald-100 text-emerald-900 text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-2 cursor-pointer"
                 >
                   <Send className="w-3.5 h-3.5 text-emerald-700" />
-                  <span>
-                    {activeMeeting.invitationSent ? "Send innkalling på nytt" : "SEND INNKALLING"}
-                  </span>
+                  <span>Vis for gruppa</span>
                 </button>
+                )}
 
                 <button
                   type="button"
@@ -402,7 +402,7 @@ export const MeetingTab: React.FC<MeetingTabProps> = ({ model, showToast, onCrea
                 </div>
               ) : (
                 <p className="text-xs text-emerald-700 font-semibold">
-                  Alle deltakerne har svart på innkallingen!
+                  Alle i gruppa har svart.
                 </p>
               )}
             </div>

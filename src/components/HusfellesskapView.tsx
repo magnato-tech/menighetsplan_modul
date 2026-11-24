@@ -105,7 +105,7 @@ export const HusfellesskapView: React.FC<{
           }`}
         >
           <Calendar className="w-3.5 h-3.5 text-emerald-600" />
-          <span>Samling & Innkalling</span>
+          <span>Samlinger</span>
         </button>
 
         {chatOn && (

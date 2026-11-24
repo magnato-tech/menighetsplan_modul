@@ -103,7 +103,7 @@ export const CreateMeetingDialog: React.FC<CreateMeetingDialogProps> = ({ model,
     if (res.success) {
       onClose();
       if (res.created > 1) showToast(`${res.created} samlinger er opprettet.`);
-      else showToast(formSendImmediately ? "Nytt møte opprettet og innkalling sendt!" : "Nytt møte opprettet som utkast.");
+      else showToast(formSendImmediately ? "Nytt møte er lagt inn og er synlig for gruppa." : "Nytt møte opprettet som utkast.");
     } else {
       showToast(
         res.created > 0 ? `${res.created} samlinger ble opprettet før det stoppet: ${res.error || "ukjent feil"}` : res.error || "Kunne ikke opprette møte",
@@ -351,7 +351,7 @@ export const CreateMeetingDialog: React.FC<CreateMeetingDialogProps> = ({ model,
                 className="mt-0.5 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
               />
               <label htmlFor="check-send-immediately" className="text-xs text-emerald-950 font-medium cursor-pointer">
-                <span className="font-bold block">{repeats ? "Send innkalling" : "Send innkalling med en gang"}</span>
+                <span className="font-bold block">Vis for gruppa med en gang</span>
                 {repeats
                   ? "Deltakerne blir spurt om de kommer til den neste samlingen. De senere står i kalenderen til det er deres tur."
                   : "Deltakerne vil umiddelbart kunne svare KOMMER / KOMMER IKKE."}

@@ -3,7 +3,7 @@ import { useFirebase } from "../context/FirebaseDataContext";
 import { useCms } from "../context/CmsContext";
 import { AnalyticsPeriodId, buildChurchAnalytics } from "../utils/churchAnalytics";
 import { visitCounting } from "../utils/siteTraffic";
-import { Task, Group, Gathering } from "../types";
+import { Assignment, Task, Group, Gathering } from "../types";
 import { validateGathering } from "../utils/validation";
 import { isInGroup } from "../utils/groups";
 import { clerkOnlyInAdmin, isAdministrator } from "../utils/session";
@@ -40,6 +40,51 @@ export interface AdminTaskItem {
   isFullyCovered: boolean;
   missingCount: number;
   taskStaffing: TaskStaffingStatus;
+}
+
+// The admin view of a list of gatherings. Used for both the normal list and the house-group meetings.
+function buildAdminGatheringItems(
+  items: Gathering[],
+  tasks: Task[],
+  assignments: Assignment[],
+  getGroupById: (groupId: string) => Group | undefined
+): AdminGatheringItem[] {
+  return items.map((gathering) => {
+    validateGathering(gathering);
+    const group = getGroupById(gathering.groupId);
+    const gatheringTasks = tasks.filter((t) => t.gatheringId === gathering.id);
+    const staffing = getStaffingStatus(gatheringTasks, assignments);
+
+    // Detailed counts for admin gathering overview
+    const totalTasks = gatheringTasks.length;
+    let coveredTasksCount = 0;
+    let missingStaffingCount = 0;
+
+    const tasksWithStaffing = gatheringTasks.map((task) => {
+      const taskAssignments = assignments.filter((a) => a.taskId === task.id);
+      const taskStaffing = calculateTaskStaffingStatus(task, taskAssignments);
+      if (taskStaffing.isFullyCovered) {
+        coveredTasksCount++;
+      } else {
+        missingStaffingCount += taskStaffing.missingCount;
+      }
+      return {
+        task,
+        taskStaffing,
+      };
+    });
+
+    return {
+      gathering,
+      group,
+      tasks: gatheringTasks,
+      tasksWithStaffing,
+      totalTasks,
+      coveredTasksCount,
+      missingStaffingCount,
+      staffing,
+    };
+  });
 }
 
 // 9. Hook: useAdminDashboard
@@ -104,49 +149,16 @@ export function useAdminDashboard() {
     });
   }, [groups, allPersons, tasks]);
 
+  // Everything except house-group meetings: dashboard, menu count, calendar import and conflict check use this.
   const adminGatherings = useMemo<AdminGatheringItem[]>(() => {
-    return gatherings
-      .filter((gathering) => {
-        const group = getGroupById(gathering.groupId);
-        // Exclude Husfellesskap from Admin -> Arrangementer list
-        return group?.category !== "husgruppe";
-      })
-      .map((gathering) => {
-        validateGathering(gathering);
-        const group = getGroupById(gathering.groupId);
-        const gatheringTasks = tasks.filter((t) => t.gatheringId === gathering.id);
-        const staffing = getStaffingStatus(gatheringTasks, assignments);
+    const items = gatherings.filter((gathering) => getGroupById(gathering.groupId)?.category !== "husgruppe");
+    return buildAdminGatheringItems(items, tasks, assignments, getGroupById);
+  }, [gatherings, tasks, assignments, getGroupById]);
 
-        // Detailed counts for admin gathering overview
-        const totalTasks = gatheringTasks.length;
-        let coveredTasksCount = 0;
-        let missingStaffingCount = 0;
-
-        const tasksWithStaffing = gatheringTasks.map((task) => {
-          const taskAssignments = assignments.filter((a) => a.taskId === task.id);
-          const taskStaffing = calculateTaskStaffingStatus(task, taskAssignments);
-          if (taskStaffing.isFullyCovered) {
-            coveredTasksCount++;
-          } else {
-            missingStaffingCount += taskStaffing.missingCount;
-          }
-          return {
-            task,
-            taskStaffing,
-          };
-        });
-
-        return {
-          gathering,
-          group,
-          tasks: gatheringTasks,
-          tasksWithStaffing,
-          totalTasks,
-          coveredTasksCount,
-          missingStaffingCount,
-          staffing,
-        };
-      });
+  // House-group meetings, built the same way. Shown only in admin → Kalender under «Husgrupper».
+  const adminHouseGroupGatherings = useMemo<AdminGatheringItem[]>(() => {
+    const items = gatherings.filter((gathering) => getGroupById(gathering.groupId)?.category === "husgruppe");
+    return buildAdminGatheringItems(items, tasks, assignments, getGroupById);
   }, [gatherings, tasks, assignments, getGroupById]);
 
   const adminTasks = useMemo<AdminTaskItem[]>(() => {
@@ -188,6 +200,7 @@ export function useAdminDashboard() {
     adminVolunteerRoles,
     adminGroups,
     adminGatherings,
+    adminHouseGroupGatherings,
     adminTasks,
     updateGroupName,
     updateGroup,
