@@ -5,12 +5,15 @@
 
 import { readDemoInstallation, readInstallationConfig, type InstallationEnv } from "../src/installation";
 import { SEMESTER_PLAN_RECORD } from "../src/data/settingsRecords";
-import { renderEmail, toEmailDraft, type EmailDraft } from "../src/utils/emailMessage";
+import { emailButtonUrl, renderEmail, toEmailDraft, type EmailDraft } from "../src/utils/emailMessage";
+import { loginLinkUrl } from "../src/utils/loginLink";
 import type { EmailOutcome, EmailRefusal, EmailStop } from "../src/utils/emailOutcome";
 import { emailRecipients, firstNameOf, isNewsletter, toEmailAudience, usableEmail, type EmailRecipient } from "../src/utils/emailRecipients";
 import { TEST_UNSUBSCRIBE_TOKEN, isNewsletterToken, newNewsletterToken, newsletterBannerOf, newsletterBannerUrlOf, optedOutPersonIds, unsubscribeUrlOf } from "../src/utils/newsletter";
 import type { Group, Person } from "../src/types";
 import { FirestoreRestError, readAll, readDocument, setTextFields, signedInAs, type Fetch } from "./firestoreRest";
+import { makeLoginToken } from "./loginLinkToken";
+import { readServiceAccount } from "./serviceAccount";
 import { sendWithdrawalAttestationEmail, type WithdrawalAttestationEmailOutcome } from "./withdrawalAttestationEmail";
 
 // The names in src/data/collections.ts and src/data/settingsRecords.ts, written out: those files
@@ -65,6 +68,7 @@ const MESSAGES: Record<Exclude<EmailRefusal, "unreachable">, [number, string]> =
   "no-plan": [400, "Semesterplanen som knappen skal åpne, finnes ikke lenger. Velg en annen plan."],
   database: [502, "Registeret kunne ikke leses akkurat nå. Prøv igjen."],
   "rules-outdated": [409, "Databasen har ikke fått reglene for nyhetsbrev ennå. Lim inn de nye reglene i Firebase, og prøv igjen."],
+  "no-login-links": [503, "Innloggingslenker er ikke satt opp for denne installasjonen ennå."],
 };
 
 const refuse = (reason: Exclude<EmailRefusal, "unreachable">, message?: string): EmailResponse => ({
@@ -122,6 +126,14 @@ export async function sendEmail({ env, siteUrl, idToken, body, ask, wait = pause
   // A test may name the one address it goes to. Without one, it goes to the one who asks, as before.
   const testTo = mode === "test" && request.to !== undefined ? usableEmail(request.to) : null;
   if (!mode || !draft || (mode === "send" && !audience) || (mode === "test" && request.to !== undefined && !testTo)) return refuse("bad-request");
+
+  // A login link signs the one who gets it in, so it is only made for the button of a plain e-mail: never a newsletter, never without a button
+  const loginLinks = request.loginLinks === true;
+  if (request.loginLinks !== undefined && typeof request.loginLinks !== "boolean") return refuse("bad-request");
+  if (loginLinks && (newsletter || draft.link === "ingen")) return refuse("bad-request");
+  // The service account is the one of this installation's own project, or there are no login links
+  const account = loginLinks ? readServiceAccount(env) : null;
+  if (loginLinks && (!account || account.project_id !== installation.projectId)) return refuse("no-login-links");
 
   // The register, read as the one who asks. Only an administrator may list it.
   const database = { projectId: installation.projectId, databaseId: installation.firestoreDatabaseId };
@@ -212,6 +224,27 @@ export async function sendEmail({ env, siteUrl, idToken, body, ask, wait = pause
     }
   }
 
+  // With login links, the button of each one who is in the register under the address, and is not an administrator or
+  // web editor, signs that person in (see server/loginLinkRedeem.ts). Anyone else keeps the ordinary button. A shared
+  // address gets the ordinary button too: the link is for one person, and the session refuses a shared address anyway.
+  const loginUrls = new Map<string, string>();
+  if (account) {
+    const base = siteUrl.replace(/\/+$/, "");
+    const buttonPath = emailButtonUrl(draft, siteUrl)?.slice(base.length);
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    const addressCount = new Map<string, number>();
+    for (const person of persons) {
+      const address = usableEmail(person.email);
+      if (address) addressCount.set(address, (addressCount.get(address) ?? 0) + 1);
+    }
+    for (const recipient of recipients) {
+      const owner = recipient.personIds.length === 1 ? persons.find((person) => person.id === recipient.personIds[0]) : undefined;
+      if (!owner || !buttonPath || addressCount.get(recipient.email) !== 1) continue;
+      if (owner.globalRole === "admin" || owner.globalRole === "nettredaktor") continue;
+      loginUrls.set(recipient.email, loginLinkUrl(siteUrl, buttonPath, makeLoginToken(account, owner.id, recipient.email, nowSeconds)));
+    }
+  }
+
   const from = senderOf(churchName, settingOf(env, EMAIL_SETTINGS.from) ?? DEFAULT_FROM_ADDRESS);
   let sent = 0;
   let stopped: EmailStop | null = null;
@@ -221,7 +254,15 @@ export async function sendEmail({ env, siteUrl, idToken, body, ask, wait = pause
     if (start > 0) await wait(600);
     const batch = recipients.slice(start, start + BATCH_SIZE).map((recipient) => {
       const unsubscribeUrl = newsletter ? unsubscribeUrlOf(siteUrl, tokens.get(recipient.email)!) : null;
-      const rendered = renderEmail({ draft, churchName, siteUrl, firstName: recipient.firstName, ...(unsubscribeUrl ? { newsletter: { unsubscribeUrl, bannerUrl } } : {}) });
+      const loginUrl = loginUrls.get(recipient.email);
+      const rendered = renderEmail({
+        draft,
+        churchName,
+        siteUrl,
+        firstName: recipient.firstName,
+        ...(unsubscribeUrl ? { newsletter: { unsubscribeUrl, bannerUrl } } : {}),
+        ...(loginUrl ? { buttonUrl: loginUrl, loginLink: true } : {}),
+      });
       return {
         from,
         to: [recipient.email],
@@ -254,5 +295,7 @@ export async function sendEmail({ env, siteUrl, idToken, body, ask, wait = pause
   }
 
   const remainingPersonIds = stopped ? recipients.slice(sent).flatMap((recipient) => recipient.personIds) : [];
-  return { status: 200, body: { ok: true, mode, sent, withoutEmail, stopped, remainingPersonIds, ...(detail ? { detail } : {}) } };
+  // Those who were sent to are the first `sent` of the recipients, in the order they were sent
+  const loginLinksSent = recipients.slice(0, sent).filter((recipient) => loginUrls.has(recipient.email)).length;
+  return { status: 200, body: { ok: true, mode, sent, withoutEmail, stopped, remainingPersonIds, loginLinks: loginLinksSent, ...(detail ? { detail } : {}) } };
 }

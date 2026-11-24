@@ -1,9 +1,12 @@
 // @vitest-environment jsdom
 import { readFileSync } from "node:fs";
+import { generateKeyPairSync } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { BATCH_SIZE, DEFAULT_FROM_ADDRESS, EMAIL_DOCUMENT, GROUPS, PERSONS, SEND_URL, SETTINGS_DOCUMENT, emailOfToken, sendEmail, senderOf } from "../server/emailSending";
 import type { Fetch, RestFields, RestValue } from "../server/firestoreRest";
+import { readLoginToken } from "../server/loginLinkToken";
+import { readServiceAccount } from "../server/serviceAccount";
 import { CMS_COLLECTIONS, CMS_SETTINGS_DOC_ID, COLLECTIONS } from "../src/data/collections";
 import { EMAIL_DOC_ID, EMAIL_RECORD } from "../src/data/settingsRecords";
 import { EMAIL_TEMPLATES, emailButtonUrl, emailDraftError, isPlanIdText, renderEmail, toEmailDraft } from "../src/utils/emailMessage";
@@ -204,7 +207,7 @@ describe("Utsendingen der installasjonen kjører", () => {
     const place = world();
     const { status, body } = await send(place, request());
     expect(status).toBe(200);
-    expect(body).toEqual({ ok: true, mode: "send", sent: 2, withoutEmail: 0, stopped: null, remainingPersonIds: [] });
+    expect(body).toEqual({ ok: true, mode: "send", sent: 2, withoutEmail: 0, stopped: null, remainingPersonIds: [], loginLinks: 0 });
 
     expect(place.mails).toHaveLength(1);
     expect(place.sentTo()).toEqual(["lars@example.org", "nora@example.org"]);
@@ -535,6 +538,88 @@ vi.mock("../src/services/newsletter", () => ({
 
 import { EmailTab } from "../src/pages/admin/tabs/EmailTab";
 
+// ---------- Innloggingslenker i e-posten ----------
+
+const loginKey = generateKeyPairSync("rsa", { modulusLength: 2048, publicKeyEncoding: { type: "spki", format: "pem" }, privateKeyEncoding: { type: "pkcs8", format: "pem" } }).privateKey;
+const keyFile = JSON.stringify({ type: "service_account", project_id: "menigheten", client_email: "tjeneste@menigheten.iam.example", private_key: loginKey });
+const loginEnv = { ...env, FIREBASE_SERVICE_ACCOUNT: keyFile };
+const loginAccount = readServiceAccount(loginEnv)!;
+/** The address of the login link in the html of an e-mail, or null when there is none. */
+const linkIn = (html: string): string | null => html.match(/href="(https:\/\/menigheten\.example\/lenke[^"]*)"/)?.[1] ?? null;
+
+describe("Innloggingslenker i e-posten", () => {
+  beforeEach(() => vi.stubGlobal("console", { ...console, error: vi.fn() }));
+  afterEach(() => vi.unstubAllGlobals());
+  const sendWith = (place: ReturnType<typeof world>, body: unknown, more: Partial<Parameters<typeof sendEmail>[0]> = {}) => send(place, body, { env: loginEnv, ...more });
+
+  test("en medlem får en knapp som logger vedkommende inn, og de andre får vanlig knapp", async () => {
+    const place = world();
+    const { body } = await sendWith(place, request({ audience: { kind: "serviceGroups" }, link: "minside", loginLinks: true }));
+    expect(body).toMatchObject({ ok: true, sent: 4, loginLinks: 3 });
+
+    const byAddress = new Map(place.mails.flat().map((mail) => [mail.to[0], mail]));
+    const frida = byAddress.get("frida@example.org")!;
+    const link = linkIn(frida.html)!;
+    expect(link).toMatch(/^https:\/\/menigheten\.example\/lenke\?til=%2Fminside#/);
+    expect(frida.html).toContain("Knappen logger deg rett inn og virker i 14 dager. Ikke send e-posten videre.");
+    expect(frida.text).toContain("Knappen logger deg rett inn og virker i 14 dager.");
+    expect(frida.text).toContain(`Åpne Min side: ${link}`);
+
+    // The link carries the one it is for, and nothing that shows the address
+    const url = new URL(link);
+    expect(url.searchParams.get("til")).toBe("/minside");
+    expect(readLoginToken(loginAccount, url.hash.slice(1), Math.floor(Date.now() / 1000))).toMatchObject({ personId: "frivillig" });
+    expect(link).not.toContain("frida");
+
+    // A shared address gets the ordinary button, as it is shared
+    expect(byAddress.get("familien@example.org")!.html).not.toContain("/lenke");
+    expect(byAddress.get("familien@example.org")!.html).toContain('href="https://menigheten.example/minside"');
+    expect(byAddress.get("lars@example.org")!.html).toContain("/lenke?til=");
+  });
+
+  test("en administrator og en nettredaktør får vanlig knapp, også når de står i gruppen", async () => {
+    const place = world({
+      persons: [...persons, person("redaktor", "Rolf Redaktør", "rolf@example.org", "nettredaktor")],
+      groups: [...groups, group("styret", "Styret", "tjenestegruppe", [], ["admin", "redaktor"])],
+    });
+    const { body } = await sendWith(place, request({ audience: { kind: "group", groupId: "styret" }, link: "minside", loginLinks: true }));
+    expect(body).toMatchObject({ ok: true, sent: 2, loginLinks: 0 });
+    for (const mail of place.mails.flat()) expect(mail.html).not.toContain("/lenke");
+  });
+
+  test("nyhetsbrev, og en e-post uten knapp, får ikke innloggingslenker", async () => {
+    const place = world();
+    expect((await sendWith(place, request({ audience: { kind: "members" }, link: "minside", loginLinks: true }))).body).toMatchObject({ ok: false, reason: "bad-request" });
+    expect((await sendWith(place, request({ link: "ingen", loginLinks: true }))).body).toMatchObject({ ok: false, reason: "bad-request" });
+    expect((await sendWith(place, request({ loginLinks: "ja" }))).body).toMatchObject({ ok: false, reason: "bad-request" });
+    expect(place.mails).toEqual([]);
+  });
+
+  test("uten tjenestekonto, eller med en konto fra et annet prosjekt, sies det at lenkene ikke er satt opp", async () => {
+    const place = world();
+    expect((await sendWith(place, request({ loginLinks: true }), { env })).body).toMatchObject({ ok: false, reason: "no-login-links" });
+    const other = JSON.stringify({ ...JSON.parse(keyFile), project_id: "annet" });
+    expect((await sendWith(place, request({ loginLinks: true }), { env: { ...env, FIREBASE_SERVICE_ACCOUNT: other } })).status).toBe(503);
+    expect(place.mails).toEqual([]);
+    // Without the wish for login links, the e-mail goes as before
+    expect((await send(place, request(), { env })).body).toMatchObject({ ok: true, loginLinks: 0 });
+  });
+
+  test("en prøve med innloggingslenke går til den som er nevnt, og til ingen andre", async () => {
+    const place = world();
+    const { body } = await sendWith(place, { mode: "test", subject: "Prøve", text: "Hei", link: "minside", to: "frida@example.org", loginLinks: true });
+    expect(body).toMatchObject({ ok: true, mode: "test", sent: 1, loginLinks: 1 });
+    expect(place.sentTo()).toEqual(["frida@example.org"]);
+    expect(place.mails[0][0].html).toContain("/lenke?til=%2Fminside#");
+  });
+
+  test("en utsending som stoppes, teller bare dem som fikk e-posten", async () => {
+    const place = world({ mail: [429] });
+    const { body } = await sendWith(place, request({ audience: { kind: "serviceGroups" }, link: "minside", loginLinks: true }));
+    expect(body).toMatchObject({ ok: true, sent: 0, stopped: "quota", loginLinks: 0 });
+  });
+});
+
 describe("Siden «Send e-post» i admin", () => {
   const showFeedback = vi.fn();
   const studio = { adminPersons: persons.map((one) => ({ person: one })), adminGroups: groups.map((one) => ({ group: one })) } as unknown as Parameters<typeof EmailTab>[0]["studio"];
@@ -585,6 +670,33 @@ describe("Siden «Send e-post» i admin", () => {
     expect(service.requestEmail).toHaveBeenCalledWith({ mode: "test", subject: EMAIL_TEMPLATES[0].subject, text: EMAIL_TEMPLATES[0].text, link: "leder" });
     expect(confirm).not.toHaveBeenCalled();
     expect(service.saveEmailLog).not.toHaveBeenCalled();
+  });
+
+  test("innloggingslenkene er et valg for en vanlig e-post med knapp, sendes bare når det er krysset av, og tas med i svaret", async () => {
+    service.requestEmail.mockResolvedValueOnce(sent()).mockResolvedValueOnce(sent({ loginLinks: 2 }));
+    show();
+    const box = screen.getByLabelText("Logg mottakerne rett inn med knappen") as HTMLInputElement;
+    expect(box.checked).toBe(false);
+    fireEvent.click(screen.getByRole("button", { name: "Send til 2 personer" }));
+    await waitFor(() => expect(screen.getByRole("status").textContent).toBe("E-posten er sendt til 2 personer."));
+    expect(service.requestEmail.mock.calls[0][0]).not.toHaveProperty("loginLinks");
+
+    fireEvent.click(box);
+    expect(document.getElementById("email-preview")?.getAttribute("srcdoc")).toContain("Knappen logger deg rett inn og virker i 14 dager. Ikke send e-posten videre.");
+    fireEvent.click(screen.getByRole("button", { name: "Send til 2 personer" }));
+    await waitFor(() => expect(service.requestEmail).toHaveBeenCalledTimes(2));
+    expect(service.requestEmail.mock.calls[1][0]).toMatchObject({ mode: "send", loginLinks: true });
+    await waitFor(() => expect(screen.getByRole("status").textContent).toBe("E-posten er sendt til 2 personer. 2 av dem fikk knapp som logger dem rett inn."));
+  });
+
+  test("valget vises ikke for et nyhetsbrev eller en e-post uten knapp", () => {
+    show();
+    expect(screen.queryByLabelText("Logg mottakerne rett inn med knappen")).not.toBeNull();
+    fireEvent.change(screen.getByLabelText("Knappen fører til"), { target: { value: "ingen" } });
+    expect(screen.queryByLabelText("Logg mottakerne rett inn med knappen")).toBeNull();
+    fireEvent.change(screen.getByLabelText("Knappen fører til"), { target: { value: "minside" } });
+    fireEvent.change(screen.getByLabelText("Hvem skal ha den"), { target: { value: "members" } });
+    expect(screen.queryByLabelText("Logg mottakerne rett inn med knappen")).toBeNull();
   });
 
   test("en utsending må bekreftes med antallet, og føres i loggen uten navn og adresser", async () => {

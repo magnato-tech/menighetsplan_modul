@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from "
 import { FirebaseDataProvider } from "./context/FirebaseDataContext";
 import { CmsProvider, useCms } from "./context/CmsContext";
 import { SITE_THEME_CLASS, getThemeCssVariables } from "./utils/themeUtils";
-import { isAdminStudioPath, isInfoScreenPath, isMinSidePath, isPublicPath, isSignInPath, isUnsubscribePath } from "./utils/routes";
+import { isAdminStudioPath, isInfoScreenPath, isLoginLinkPath, isMinSidePath, isPublicPath, isSignInPath, isUnsubscribePath } from "./utils/routes";
 import { decidePublicEntry } from "./utils/surfaces";
 import { MinSideUnavailablePage } from "./pages/MinSideUnavailablePage";
 import { PreviewQueryPersist } from "./components/public/PreviewQueryPersist";
@@ -77,6 +77,7 @@ const HusfellesskapPage = lazy(() =>
 );
 const SignInPage = lazy(() => import("./pages/SignInPage").then((m) => ({ default: m.SignInPage })));
 const UnsubscribePage = lazy(() => import("./pages/UnsubscribePage").then((m) => ({ default: m.UnsubscribePage })));
+const LoginLinkPage = lazy(() => import("./pages/LoginLinkPage").then((m) => ({ default: m.LoginLinkPage })));
 const InfoScreenPage = lazy(() => import("./pages/InfoScreenPage"));
 function LazyRouteFallback() {
   return <p className="p-6 text-sm text-slate-500">Laster…</p>;
@@ -177,6 +178,17 @@ function AppContent() {
             <Route path="/avmelding/:key" element={<UnsubscribePage />} />
             <Route path="*" element={<UnsubscribePage />} />
           </Routes>
+        </Suspense>
+      </ChunkErrorBoundary>
+    );
+  }
+
+  // The link from an e-mail signs one in. Not behind sign-in: the token in the link is the proof.
+  if (isLoginLinkPath(location.pathname)) {
+    return (
+      <ChunkErrorBoundary>
+        <Suspense fallback={<LazyRouteFallback />}>
+          <LoginLinkPage />
         </Suspense>
       </ChunkErrorBoundary>
     );

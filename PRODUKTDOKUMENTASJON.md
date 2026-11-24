@@ -1771,6 +1771,19 @@ Bestilt av produkteier: administrator må kunne se at utsendingen virker. Under 
 
 På «Send e-post» kan knappen i e-posten føre til en semesterplan. Velg «Semesterplan» under «Knappen fører til», og velg planen under «Hvilken plan». Knappen heter «Planlegg semesteret» og åpner planen. Den ferdige teksten «Semesterplanen er åpen: til de frivillige» velger knappen av seg selv. Bare planer som ikke er lukket, kan velges. Serveren sjekker at planen finnes før noe sendes, også ved prøven. Ingenting er sluppet til en menighet ennå.
 
+### Innloggingslenke i e-posten (24. november 2026)
+
+Bestilt av produkteier: den som får e-posten, skal kunne komme inn med knappen, uten Google og uten e-post med innloggingslenke. På «Send e-post» krysser administrator av **«Logg mottakerne rett inn med knappen»**, under «Knappen fører til». Hver mottaker får da sin egen knapp. Den åpner `/lenke`, logger personen inn og fører videre til siden knappen viser, for eksempel `/minside/semesterplan/<id>`. Lenken virker i 14 dager. Den står etter `#` i adressen, så den ikke havner i serverloggen.
+
+Administratorer og nettredaktører, og de som deler e-postadresse med andre, får vanlig knapp. Nyhetsbrev og e-post uten knapp får aldri en innloggingslenke. Prøven «Send prøve til meg» følger valget. Demoen har ingen innloggingslenker.
+
+Administrator gjør dette én gang for hver menighet:
+
+1. I Firebase: Prosjektinnstillinger → Tjenestekontoer → «Generer ny privat nøkkel». Det lastes ned en JSON-fil.
+2. Lim hele innholdet i filen inn i Vercel som `FIREBASE_SERVICE_ACCOUNT` for installasjonen, og publiser på nytt.
+
+Byttes nøkkelen, blir alle lenker som er sendt, ugyldige. Det er med vilje: nøkkelen er det som signerer lenkene. Databasereglene er ikke endret.
+
 ### Forfall, Gudstjenester-fanen og tre prikker (24. november 2026)
 
 Meldt av produkteier etter at en frivillig i Lillesand sto med flere forfall på samme oppgave, og prøvd av ham på localhost før innsending.
@@ -2002,6 +2015,8 @@ git push origin origin/main:stabil
 **Sluppet til Lillesand 24. november 2026, andre gang** (etter beskjed fra produkteier): testboksen for e-postutsendingen på «Send e-post». Databasereglene er ikke endret.
 
 **Bygget 24. november 2026, ikke sluppet** (e-post): knappen i e-posten kan føre til en semesterplan («Planlegg semesteret»), med den ferdige teksten «Semesterplanen er åpen: til de frivillige». Se «Semesterplan som knapp i e-posten» i kapittel 13.
+
+**Bygget 24. november 2026, ikke sluppet** (innloggingslenke i e-posten): administrator kan krysse av for at knappen i e-posten logger mottakeren inn i 14 dager. Administratorer, nettredaktører og delte adresser får vanlig knapp. Krever at `FIREBASE_SERVICE_ACCOUNT` settes i Vercel først, se «Innloggingslenke i e-posten» i kapittel 13. Databasereglene er ikke endret.
 
 **Bygget 24. november 2026, ikke sluppet** (kalenderen på Min side): filtrene er Alle, Gudstjenester og Mine grupper. «Menigheten» og «Jeg leder» er tatt ut. «Mine grupper» vises bare for den som er med i en gruppe, og en leder ser som før en rød eller gul prikk der gruppen mangler folk. Databasereglene er ikke endret.
 

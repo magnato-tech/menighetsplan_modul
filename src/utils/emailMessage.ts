@@ -1,4 +1,5 @@
 import type { EmailAudience } from "./emailRecipients";
+import { LOGIN_LINK_DAYS } from "./loginLink";
 
 // The e-mail an administrator sends to leaders, volunteers and, as a newsletter, to the members:
 // what it may hold, the ready-made texts, and how it looks in the inbox. Used by the admin page,
@@ -201,6 +202,10 @@ export interface EmailToRender {
    * own: the administrator writes them.
    */
   newsletter?: { unsubscribeUrl: string; bannerUrl: string | null };
+  /** The button's address when it is not the page's own (a personal login link, see utils/loginLink.ts). */
+  buttonUrl?: string;
+  /** Set when the button is a personal login link: a line under it says that it signs one in for a while. */
+  loginLink?: boolean;
 }
 
 export interface RenderedEmail {
@@ -210,9 +215,10 @@ export interface RenderedEmail {
 }
 
 /** The e-mail as it is sent: once as plain text, once dressed for the inbox. Nothing the administrator wrote is read as HTML. */
-export function renderEmail({ draft, churchName, siteUrl, firstName, newsletter }: EmailToRender): RenderedEmail {
+export function renderEmail({ draft, churchName, siteUrl, firstName, newsletter, buttonUrl, loginLink }: EmailToRender): RenderedEmail {
   const link = EMAIL_LINKS[draft.link];
-  const url = emailButtonUrl(draft, siteUrl);
+  const url = buttonUrl ?? emailButtonUrl(draft, siteUrl);
+  const loginNote = loginLink && url ? `Knappen logger deg rett inn og virker i ${LOGIN_LINK_DAYS} dager. Ikke send e-posten videre.` : null;
   const greeting = newsletter ? null : firstName ? `Hei ${firstName}!` : "Hei!";
   const closing = newsletter ? null : `Hilsen ${churchName}`;
   const blocks = emailBlocksOf(draft.text);
@@ -224,6 +230,7 @@ export function renderEmail({ draft, churchName, siteUrl, firstName, newsletter 
     greeting,
     ...blocks.map(blockText),
     url ? `${link.button}: ${url}` : null,
+    loginNote,
     closing,
     newsletter ? `${footer} Meld deg av: ${newsletter.unsubscribeUrl}` : footer,
   ]
@@ -247,7 +254,9 @@ ${greeting ? `<p style="margin:12px 0;">${escapeHtml(greeting)}</p>\n` : ""}${bl
 ${
   url
     ? `<tr><td style="padding:8px 28px 24px 28px;">
-<a href="${escapeHtml(url)}" style="display:inline-block;background:#047857;color:#ffffff;text-decoration:none;font-size:15px;font-weight:bold;padding:12px 22px;border-radius:10px;">${escapeHtml(link.button)}</a>
+<a href="${escapeHtml(url)}" style="display:inline-block;background:#047857;color:#ffffff;text-decoration:none;font-size:15px;font-weight:bold;padding:12px 22px;border-radius:10px;">${escapeHtml(link.button)}</a>${
+        loginNote ? `<p style="margin:10px 0 0 0;font-size:13px;line-height:18px;color:#64748b;">${escapeHtml(loginNote)}</p>` : ""
+      }
 </td></tr>
 `
     : ""

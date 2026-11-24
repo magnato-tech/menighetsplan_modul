@@ -1,4 +1,5 @@
 import { UNSUBSCRIBE_PATH } from "./newsletter";
+import { LOGIN_LINK_PATH } from "./loginLink";
 
 // Which part of the solution an address belongs to. The layout, the data that is loaded,
 // and what search engines are told all follow from this, in the browser and on the server.
@@ -38,11 +39,16 @@ export function isUnsubscribePath(pathname: string): boolean {
   return isUnder(pathname, UNSUBSCRIBE_PATH);
 }
 
+/** Where the link in an e-mail signs one in (see utils/loginLink.ts). Not part of the website, and not behind sign-in. */
+export function isLoginLinkPath(pathname: string): boolean {
+  return isUnder(pathname, LOGIN_LINK_PATH);
+}
+
 export function isMinSidePath(pathname: string): boolean {
   return MIN_SIDE_SECTIONS.some((section) => isUnder(pathname, section));
 }
 
 /** Whether the address is part of the website visitors see, and not of Min side, admin or the API. */
 export function isPublicPath(pathname: string): boolean {
-  return !isMinSidePath(pathname) && !isSignInPath(pathname) && !isUnsubscribePath(pathname) && !isInfoScreenPath(pathname) && !isUnder(pathname, "/admin") && !isUnder(pathname, "/api");
+  return !isMinSidePath(pathname) && !isSignInPath(pathname) && !isUnsubscribePath(pathname) && !isLoginLinkPath(pathname) && !isInfoScreenPath(pathname) && !isUnder(pathname, "/admin") && !isUnder(pathname, "/api");
 }
