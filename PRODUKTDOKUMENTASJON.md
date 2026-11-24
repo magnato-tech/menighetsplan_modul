@@ -2026,6 +2026,8 @@ git push origin origin/main:stabil
 
 **Sluppet til Lillesand 24. november 2026, «Til nettsiden»** (`stabil` = `10662f3`, `main` `e3a019f` slått sammen inn etter beskjed fra produkteier): lenken «Til nettsiden» på siden for innloggingslenken og på avmeldingssiden for nyhetsbrevet følger samme regel som innloggingssiden: adressen for «Tilbake til nettsiden», ellers den andre nettsiden når den er valgt, ellers nettsiden her. Databasereglene er ikke endret.
 
+**Sluppet til Lillesand 24. november 2026, varighet for innloggingslenken** (`stabil` = `b2f2beb`, `main` `9e12230` slått sammen inn etter beskjed fra produkteier): i Send e-post velges hvor lenge innloggingslenken virker: 14 dager, 30 dager eller til og med en dato, høyst 120 dager (serveren sjekker). E-posten sier hvilken dag. Valget huskes i nettleseren. Lenker som alt er sendt, beholder 14 dager. Databasereglene er ikke endret.
+
 **Sluppet til Lillesand 24. november 2026** (etter beskjed fra produkteier, som prøvde endringene på localhost først): bare siste status per person og oppgave (forfall vises ikke flere ganger), Gudstjenester-fanen med ˅ og knappene Kjøreplan og Planlegg, tilbakeknappen fra kjøreplanen, tre vertikale prikker for «mer», og infoskjermen trinn 1 (`/skjerm`). Databasereglene er ikke endret.
 
 **Sluppet til Lillesand 24. november 2026, andre gang** (etter beskjed fra produkteier): testboksen for e-postutsendingen på «Send e-post». Databasereglene er ikke endret.
