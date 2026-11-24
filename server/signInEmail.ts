@@ -19,6 +19,8 @@ import { accessToken, identityRequest, readServiceAccount } from "./serviceAccou
 
 // The names in src/data/collections.ts, written out here (see emailSending.ts for why)
 const LOGINS = "logins";
+/** The choices of what the installation shows (src/data/settingsRecords.ts SURFACES_DOC_ID). */
+const SURFACES_DOCUMENT = "cms_settings/surfaces";
 const LOGIN_REQUESTS = "loginRequests";
 const ONE_EMAIL_URL = "https://api.resend.com/emails";
 const IDENTITY_URL = "https://identitytoolkit.googleapis.com/v1/projects";
@@ -115,6 +117,18 @@ interface Delivery {
 }
 
 /** Makes the link when the address is in the register, and sends the one e-mail. True when the e-mail service took it. Never throws. */
+/** Where «Til nettsiden» leads: the address set for the sign-in page, else the congregation's own website when the one here is off, else here. */
+async function websiteOf(database: RestDatabase, ask: Fetch, bearer: string, siteOrigin: string): Promise<string> {
+  const surfaces = await readDocument(database, SURFACES_DOCUMENT, ask, { Authorization: `Bearer ${bearer}` }).catch(() => null);
+  // The same test as utils/surfaces.ts makes, kept here so the server does not pull in the app's settings
+  const web = (value: unknown): string => (typeof value === "string" && /^https?:\/\//i.test(value.trim()) ? value.trim() : "");
+  const set = web(surfaces?.signInBackUrl);
+  if (set) return set;
+  const own = surfaces?.ownWebsite !== false;
+  const external = web(surfaces?.externalSiteUrl);
+  return !own && external ? external : siteOrigin;
+}
+
 async function deliver({ ask, database, bearer, projectId, apiKey, fromAddress, address, inRegister, continueUrl, siteOrigin }: Delivery): Promise<boolean> {
   try {
     const settings = await readDocument(database, SETTINGS_DOCUMENT, ask, { Authorization: `Bearer ${bearer}` });
@@ -146,7 +160,7 @@ async function deliver({ ask, database, bearer, projectId, apiKey, fromAddress, 
         { text: "Hei!" },
         { text: `Noen ba om å logge inn på Min side hos ${churchName} med denne adressen, men den står ikke i menighetens register.` },
         { text: "Kanskje er du registrert med en annen e-postadresse? Prøv den, eller ta kontakt med menigheten, så hjelper vi deg." },
-        { button: { label: "Til nettsiden", url: siteOrigin } },
+        { button: { label: "Til nettsiden", url: await websiteOf(database, ask, bearer, siteOrigin) } },
         { text: `Vennlig hilsen ${churchName}` },
       ];
     }

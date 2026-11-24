@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Copy, Globe, LayoutDashboard, Loader2 } from "lucide-react";
 import { useCms } from "../../context/CmsContext";
-import { homepageError, icalImportOn, normalizeExternalCalendarUrl } from "../../utils/surfaces";
+import { homepageError, icalImportOn, normalizeExternalCalendarUrl, validHttpsUrl } from "../../utils/surfaces";
 import type { ShowFeedback } from "../../pages/admin/studio";
 import { studioSecondaryButton } from "../../pages/admin/studioTheme";
 
@@ -20,6 +20,7 @@ export const InstallationSurfacesPanel: React.FC<InstallationSurfacesPanelProps>
   const [minSide, setMinSide] = useState(surfaces.minSide);
   const [ownWebsite, setOwnWebsite] = useState(surfaces.ownWebsite);
   const [externalSiteUrl, setExternalSiteUrl] = useState(surfaces.externalSiteUrl);
+  const [backUrl, setBackUrl] = useState(surfaces.signInBackUrl);
   const [externalCalendarUrl, setExternalCalendarUrl] = useState(surfaces.externalCalendarUrl);
   const [importNewAutomatically, setImportNewAutomatically] = useState(surfaces.importNewAutomatically);
   const [working, setWorking] = useState(false);
@@ -28,6 +29,7 @@ export const InstallationSurfacesPanel: React.FC<InstallationSurfacesPanelProps>
     setMinSide(surfaces.minSide);
     setOwnWebsite(surfaces.ownWebsite);
     setExternalSiteUrl(surfaces.externalSiteUrl);
+    setBackUrl(surfaces.signInBackUrl);
     setExternalCalendarUrl(surfaces.externalCalendarUrl);
     setImportNewAutomatically(surfaces.importNewAutomatically);
   }, [surfaces]);
@@ -51,12 +53,18 @@ export const InstallationSurfacesPanel: React.FC<InstallationSurfacesPanelProps>
       showFeedback(problem, "error");
       return;
     }
+    const back = backUrl.trim();
+    if (back !== "" && !validHttpsUrl(back)) {
+      showFeedback("Adressen for «Tilbake til nettsiden» må begynne med https://.", "error");
+      return;
+    }
     const calendarUrl = normalizeExternalCalendarUrl(externalCalendarUrl);
     setWorking(true);
     const ok = await saveSurfaces({
       minSide,
       ownWebsite,
       externalSiteUrl: siteUrl,
+      signInBackUrl: back,
       externalCalendarUrl: calendarUrl,
       importNewAutomatically,
     });
@@ -145,6 +153,22 @@ export const InstallationSurfacesPanel: React.FC<InstallationSurfacesPanelProps>
               </span>
             </label>
           </fieldset>
+
+          <label className="block space-y-1">
+            <span className="text-xs font-bold text-[var(--studio-text)]">«Tilbake til nettsiden» på innloggingssiden går til (valgfritt)</span>
+            <input
+              type="text"
+              inputMode="url"
+              autoComplete="url"
+              value={backUrl}
+              onChange={(e) => setBackUrl(e.target.value)}
+              placeholder="https://…"
+              className="w-full px-3 py-2 rounded-xl border border-[var(--studio-border)] bg-[var(--studio-bg)] text-sm text-[var(--studio-text)]"
+            />
+            <span className="block text-[11px] text-[var(--studio-muted)]">
+              For eksempel menighetens egen nettside, der lenken til Min side ligger. Tomt: lenken går til nettsiden som før. Gjelder også knappen i e-posten til den som ikke står i registeret.
+            </span>
+          </label>
 
           {!ownWebsite && (
             <div className="space-y-3 pl-7 border-l-2 border-[var(--studio-border)]">

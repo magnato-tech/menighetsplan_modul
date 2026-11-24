@@ -23,6 +23,7 @@ export type SurfacesPatch = Partial<
     | "minSide"
     | "ownWebsite"
     | "externalSiteUrl"
+    | "signInBackUrl"
     | "externalCalendarUrl"
     | "importNewAutomatically"
   >

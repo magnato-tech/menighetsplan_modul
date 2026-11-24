@@ -10,7 +10,7 @@ import { DEMO } from "../demo";
 import { DemoDoor } from "./DemoDoor";
 import { whereDoorLeads } from "../utils/demoDoor";
 import { logoOf } from "../utils/logo";
-import { churchSiteUrl, hasChurchSite } from "../utils/surfaces";
+import { churchSiteUrl, hasChurchSite, signInBackUrl } from "../utils/surfaces";
 
 const card = "w-full max-w-sm mx-auto bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-5";
 const primaryButton =
@@ -220,7 +220,14 @@ export const SignInPage: React.FC = () => {
           </label>
         )}
 
-        {hasChurchSite(surfaces) && (
+        {signInBackUrl(surfaces) ? (
+          // A set address wins here only: the congregation's own website, where the link to Min side is
+          <p className="pt-1 text-center">
+            <a href={signInBackUrl(surfaces) ?? undefined} className="text-xs font-bold text-slate-600 hover:text-slate-900">
+              Tilbake til nettsiden
+            </a>
+          </p>
+        ) : hasChurchSite(surfaces) && (
           <p className="pt-1 text-center">
             <ChurchSiteLink className="text-xs font-bold text-slate-600 hover:text-slate-900">
               {!surfaces.ownWebsite && churchSiteUrl(surfaces) ? "Til kirkens nettside" : "Tilbake til nettsiden"}
