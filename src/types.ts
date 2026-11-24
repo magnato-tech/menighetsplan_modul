@@ -81,6 +81,9 @@ export interface MeetingSchedule {
   frequency: "hver uke" | "annenhver uke" | "hver måned";
 }
 
+/** «Spør om oppmøte»: never, or this many days before a meeting. */
+export type AttendanceQuestion = "off" | 2 | 3 | 7 | 14;
+
 export interface Group {
   id: string;
   name: string;
@@ -92,6 +95,11 @@ export interface Group {
   leaderIds: string[];
   deputyLeaderIds?: string[];
   meetingSchedule?: MeetingSchedule;
+  /**
+   * Whether the participants are asked on Min side if they are coming to a meeting, and how many days
+   * before: "off" never, a number of days before the meeting. Absent: ATTENDANCE_QUESTION_DAYS (utils/meetingPlan.ts).
+   */
+  attendanceQuestion?: AttendanceQuestion;
   memberJoinedAt?: Record<string, string>; // ISO date when person joined group
   notificationPreferences?: Record<string, boolean>; // personId -> true/false
 }

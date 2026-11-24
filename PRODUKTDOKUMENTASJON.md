@@ -2036,6 +2036,8 @@ git push origin origin/main:stabil
 
 **Sluppet til Lillesand 24. november 2026, «Møter» på gruppekortet** (etter beskjed fra produkteier, uten forhåndsvisning på localhost): fast møtetid og de planlagte møtene står i én seksjon, «Møter». Fast møtetid vises som én linje med Endre og brukes som forslag i «Planlegg møter». Databasereglene er ikke endret.
 
+**Sluppet til Lillesand 24. november 2026, bekreftelse på siden**: Send e-post spør «Vil du sende?» inne på siden (Send/Avbryt) i stedet for i nettleserens boks, som nettleseren kan stoppe slik at knappen gjorde ingenting. Gjelder også gjentatt utsending, send til de som gjenstår, sletting av lister, banner og avmeldte. Knappen sier alltid fra når noe stopper den. Databasereglene er ikke endret.
+
 **Sluppet til Lillesand 24. november 2026** (etter beskjed fra produkteier, som prøvde endringene på localhost først): bare siste status per person og oppgave (forfall vises ikke flere ganger), Gudstjenester-fanen med ˅ og knappene Kjøreplan og Planlegg, tilbakeknappen fra kjøreplanen, tre vertikale prikker for «mer», og infoskjermen trinn 1 (`/skjerm`). Databasereglene er ikke endret.
 
 **Sluppet til Lillesand 24. november 2026, andre gang** (etter beskjed fra produkteier): testboksen for e-postutsendingen på «Send e-post». Databasereglene er ikke endret.
