@@ -24,12 +24,12 @@ describe("Taggene i «Dette trenger din handling»", () => {
   test("én for hver rolle det er en oppgave for, etter navn, med antall; innkallinger har sin egen", () => {
     expect(attentionTags(items)).toEqual([
       { tag: "Forbønn", count: 1 },
-      { tag: "Innkalling", count: 1 },
+      { tag: "Kommer du?", count: 1 },
       { tag: "Lyd", count: 2 },
       { tag: "Møteleder", count: 1 },
       { tag: "Rigging", count: 2 },
     ]);
-    expect(attentionTagOf(items[6])).toBe("Innkalling");
+    expect(attentionTagOf(items[6])).toBe("Kommer du?");
     // A task is found by its role, also when the task has been given a title of its own
     expect(attentionTagOf({ ...items[1], title: "Lyd på julaften", role: "Lyd" })).toBe("Lyd");
     expect(attentionTagOf({ ...items[1], title: "Bake kake" })).toBe("Bake kake");
@@ -38,7 +38,7 @@ describe("Taggene i «Dette trenger din handling»", () => {
   test("det som vises, har én av taggene som er trykket inn; uten noen vises alt", () => {
     expect(withAttentionTags(items, new Set())).toHaveLength(7);
     expect(withAttentionTags(items, new Set(["Lyd"])).map((item) => item.id)).toEqual(["2", "6"]);
-    expect(withAttentionTags(items, new Set(["Lyd", "Forbønn", "Innkalling"])).map((item) => item.id)).toEqual(["2", "3", "6", "7"]);
+    expect(withAttentionTags(items, new Set(["Lyd", "Forbønn", "Kommer du?"])).map((item) => item.id)).toEqual(["2", "3", "6", "7"]);
   });
 });
 

@@ -43,7 +43,7 @@ export function attentionText(item: AttentionItem): AttentionText {
     case "task_request":
       return { label: "Forespørsel til deg", note: item.taskDescription, yes: "Ja, jeg kan", no: "Kan ikke" };
     case "unanswered_invitation":
-      return { label: "Innkalling", note: item.theme ? `Tema: ${item.theme}` : undefined, yes: "Kommer", no: "Kan ikke" };
+      return { label: "Kommer du?", note: item.theme ? `Tema: ${item.theme}` : undefined, yes: "Kommer", no: "Kan ikke" };
     case "open_task":
       return {
         // "Vikar" only when someone has pulled out at short notice; otherwise the task was simply never filled
@@ -67,7 +67,7 @@ export function attentionText(item: AttentionItem): AttentionText {
 // them. With none pressed, everything is shown.
 
 /** The tag for the gatherings one is called to, which have no role. */
-export const INVITATION_TAG = "Innkalling";
+export const INVITATION_TAG = "Kommer du?";
 
 /** The tag for a gathering of a group the user leads that needs a dropout filled. */
 export const LEAD_DROPOUT_TAG = "Må fylles";

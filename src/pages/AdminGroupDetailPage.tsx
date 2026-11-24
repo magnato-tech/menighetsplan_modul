@@ -8,7 +8,7 @@ import {
   WEEKDAYS,
   formatNorwegianDateTime,
 } from "../hooks/useAppHooks";
-import { GroupCategory } from "../types";
+import { GroupCategory, type AttendanceQuestion } from "../types";
 import { isGroupPublic } from "../utils/visibility";
 import { useTimedMessage } from "../hooks/useTimedMessage";
 import { AdminAccessRequired } from "../components/AdminAccessRequired";
@@ -26,6 +26,7 @@ import {
 import { reportWriteError } from "../services/writeErrors";
 import { useFirebase } from "../context/FirebaseDataContext";
 import { useHusfellesskap } from "../hooks/useHusfellesskap";
+import { ATTENDANCE_QUESTION_CHOICES, ATTENDANCE_QUESTION_DAYS } from "../utils/meetingPlan";
 import { CreateMeetingDialog } from "../components/husfellesskap/CreateMeetingDialog";
 import { useGatheringTemplates } from "../hooks/useGatheringTemplates";
 import { deleteGroupWithTraces } from "../services/groupDeletion";
@@ -626,6 +627,26 @@ export const AdminGroupDetailPage: React.FC = () => {
               {editingSchedule ? "Lukk" : "Endre"}
             </button>
           </div>
+          <label className="flex flex-wrap items-center gap-2 text-xs text-[var(--studio-text)]">
+            <strong>Spør deltakerne om de kommer:</strong>
+            <select
+              id="select-attendance-question"
+              value={String(group.attendanceQuestion ?? ATTENDANCE_QUESTION_DAYS)}
+              onChange={(event) => {
+                const value = event.target.value === "off" ? "off" : (Number(event.target.value) as AttendanceQuestion);
+                const res = updateGroup(group.id, { attendanceQuestion: value });
+                if (res.success) showFeedback(value === "off" ? "Deltakerne blir ikke spurt om de kommer." : `Deltakerne blir spurt ${value} dager før hvert møte.`);
+                else showFeedback(res.error || "Kunne ikke lagre valget.", "error");
+              }}
+              className={studioDetailInput + " w-auto py-1"}
+            >
+              {ATTENDANCE_QUESTION_CHOICES.map((choice) => (
+                <option key={String(choice)} value={String(choice)}>
+                  {choice === "off" ? "Nei, aldri" : `${choice} dager før`}
+                </option>
+              ))}
+            </select>
+          </label>
           {editingSchedule && (
             <div className="p-3 rounded-xl border border-[var(--studio-border)] space-y-3">
               <div className="space-y-3">

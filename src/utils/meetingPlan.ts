@@ -1,4 +1,4 @@
-import type { Gathering, MeetingSchedule } from "../types";
+import type { AttendanceQuestion, Gathering, Group, MeetingSchedule } from "../types";
 import { norwegianDayOf } from "./news";
 import { seriesDays } from "./series";
 
@@ -95,4 +95,21 @@ export function nextGatheringOf<T extends Pick<Gathering, "startsAt" | "cancelle
  */
 export function asksForAnswerNow(gathering: Pick<Gathering, "id" | "seriesId">, next: Pick<Gathering, "id"> | undefined): boolean {
   return !gathering.seriesId || gathering.id === next?.id;
+}
+
+/** How many days before a meeting the participants are asked, when the group says nothing else. */
+export const ATTENDANCE_QUESTION_DAYS = 7;
+
+/** The choices on the group's card in admin: never, or so many days before. */
+export const ATTENDANCE_QUESTION_CHOICES: readonly AttendanceQuestion[] = ["off", 2, 3, 7, 14];
+
+/**
+ * Whether the group asks about this meeting yet: never when it is set to "off", and otherwise only
+ * when the meeting is at most the group's number of days away. A question weeks ahead is only noise.
+ */
+export function asksAttendanceYet(group: Pick<Group, "attendanceQuestion">, startsAt: string, now: number = Date.now()): boolean {
+  const setting = group.attendanceQuestion ?? ATTENDANCE_QUESTION_DAYS;
+  if (setting === "off") return false;
+  const start = new Date(startsAt).getTime();
+  return !Number.isNaN(start) && start - now <= setting * 24 * 60 * 60 * 1000;
 }
