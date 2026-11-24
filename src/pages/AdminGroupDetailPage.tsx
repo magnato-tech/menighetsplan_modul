@@ -57,6 +57,7 @@ import {
   Tag,
   Repeat,
   Plus,
+  Check,
 } from "lucide-react";
 
 export const AdminGroupDetailPage: React.FC = () => {
@@ -80,6 +81,13 @@ export const AdminGroupDetailPage: React.FC = () => {
   const meetingModel = useHusfellesskap(groupId || undefined);
   const [planningMeetings, setPlanningMeetings] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState(false);
+  // The save button itself says that it saved: the message at the top of the page is out of sight from down here
+  const [justSaved, setJustSaved] = useState(false);
+  useEffect(() => {
+    if (!justSaved) return;
+    const timer = window.setTimeout(() => setJustSaved(false), 3000);
+    return () => window.clearTimeout(timer);
+  }, [justSaved]);
   const proposals = useGroupProposals(groupId || "", isAdmin && groupId !== "");
 
   // Form states
@@ -173,6 +181,7 @@ export const AdminGroupDetailPage: React.FC = () => {
 
     if (res.success) {
       showFeedback("Gruppeinformasjon og møteplan ble lagret!");
+      setJustSaved(true);
     } else {
       showFeedback(res.error || "Kunne ikke lagre gruppe.", "error");
     }
@@ -407,8 +416,8 @@ export const AdminGroupDetailPage: React.FC = () => {
                 id="btn-save-group-detail"
                 className={studioPrimaryButton}
               >
-                <Save className="w-4 h-4" />
-                Lagre endringer for gruppen
+                {justSaved ? <Check className="w-4 h-4" aria-hidden="true" /> : <Save className="w-4 h-4" aria-hidden="true" />}
+                {justSaved ? "Lagret" : "Lagre endringer for gruppen"}
               </button>
             </div>
           </div>
