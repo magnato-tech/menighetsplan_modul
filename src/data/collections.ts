@@ -43,6 +43,13 @@ const CMS_NAMES = {
 export const LOGINS_COLLECTION = "logins";
 
 /**
+ * Every request for a sign-in link: one document per request, written by the installation's
+ * function (server/signInEmail.ts) and read by an administrator in the Innlogging tab. Kept for 90
+ * days. Not content, like the logins.
+ */
+export const LOGIN_REQUESTS_COLLECTION = "loginRequests";
+
+/**
  * What the website shows of the register: one document for each person who has consented to a
  * public profile, holding the public fields and nothing else (see publicCopyOf in
  * utils/publicProfile.ts). Anyone may read it, and nobody but those in the register may read

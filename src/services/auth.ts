@@ -68,10 +68,43 @@ export async function signInWithGoogle(): Promise<void> {
   countSignIn("innlogging-google");
 }
 
+/** Where the installation sends the sign-in link itself, with its own e-mail service (see server/signInEmail.ts). */
+export const SIGN_IN_EMAIL_PATH = "/api/innloggingsepost";
+
+// What a refusal from the server is given, so that describeSignInError says the server's own words
+const REFUSED_CODE = "innlogging/epost-avvist";
+
+/**
+ * Asks the installation to send the link. True when it is sent. False when this installation does
+ * not send it that way, or the function cannot be reached (a developer's machine): then Firebase
+ * sends it. Throws with the server's words when the server refuses, such as for a bad address.
+ */
+async function askForOwnSignInEmail(address: string, returnTo: string): Promise<boolean> {
+  let response: Response;
+  try {
+    response = await fetch(SIGN_IN_EMAIL_PATH, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: address, returnTo }),
+    });
+  } catch {
+    return false;
+  }
+  // Without the function, the page is not JSON
+  const answer = (await response.json().catch(() => null)) as { ok?: unknown; reason?: unknown; message?: unknown } | null;
+  if (answer && answer.ok === true) return true;
+  if (answer && (answer.reason === "bad-email" || answer.reason === "failed") && typeof answer.message === "string") {
+    throw Object.assign(new Error(answer.message), { code: REFUSED_CODE });
+  }
+  return false;
+}
+
 /** Sends a sign-in link to the address. `returnTo` is the address in the app the link leads back to. */
 export async function sendSignInLink(email: string, returnTo: string): Promise<void> {
   const address = email.trim();
-  await sendSignInLinkToEmail(auth, address, { url: returnTo, handleCodeInApp: true });
+  if (!(await askForOwnSignInEmail(address, returnTo))) {
+    await sendSignInLinkToEmail(auth, address, { url: returnTo, handleCodeInApp: true });
+  }
   rememberEmailForLink(address);
 }
 
@@ -130,6 +163,7 @@ export async function signOut(): Promise<void> {
 /** What went wrong at sign-in, said so that the one signing in knows what to do. */
 export function describeSignInError(error: unknown): string {
   const code = typeof error === "object" && error !== null && "code" in error ? String((error as { code: unknown }).code) : "";
+  if (code === REFUSED_CODE && error instanceof Error) return error.message;
   switch (code) {
     case "auth/popup-closed-by-user":
     case "auth/cancelled-popup-request":
@@ -152,6 +186,8 @@ export function describeSignInError(error: unknown): string {
       return "Denne innloggingsmåten er ikke slått på for denne installasjonen ennå. Ta kontakt med den som har satt opp løsningen.";
     case "auth/too-many-requests":
       return "For mange forsøk. Vent litt, og prøv igjen.";
+    case "auth/quota-exceeded":
+      return "Innloggingen er midlertidig sperret fordi for mange har bedt om lenke i dag. Prøv igjen senere, eller logg inn med Google.";
     default:
       return "Innloggingen gikk ikke. Prøv igjen.";
   }

@@ -1144,3 +1144,16 @@ describe("Semesterplanen", () => {
     await assertSucceeds(deleteDoc(doc(kari(), "cms_settings/semester-answer-semester-1-ola")));
   });
 });
+
+describe("Loggen over forespørsler om innloggingslenke", () => {
+  test("bare en administrator leser den, og ingen skriver i den", async () => {
+    await env.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore() as unknown as Firestore, "loginRequests/r1"), { email: "ola@eksempel.no", at: "2026-11-20T10:00:00.000Z", inRegister: true, result: "sent" });
+    });
+    await assertSucceeds(getDocs(collection(kari(), "loginRequests")));
+    await assertFails(getDocs(collection(hakon(), "loginRequests")));
+    await assertFails(getDocs(collection(visitor(), "loginRequests")));
+    await assertFails(setDoc(doc(kari(), "loginRequests/ny"), { email: "fremmed@eksempel.no", at: "2026-11-21T10:00:00.000Z", inRegister: false, result: "sent" }));
+    await assertFails(deleteDoc(doc(kari(), "loginRequests/r1")));
+  });
+});

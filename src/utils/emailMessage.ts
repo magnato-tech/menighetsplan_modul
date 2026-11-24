@@ -126,7 +126,7 @@ export function toEmailDraft(value: { subject?: unknown; text?: unknown; link?: 
   return draft;
 }
 
-const escapeHtml = (value: string): string =>
+export const escapeHtml = (value: string): string =>
   value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 
 // ---------- The marks in the text ----------

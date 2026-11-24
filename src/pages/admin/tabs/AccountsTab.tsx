@@ -2,10 +2,12 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
 import { requestAccountList } from "../../../services/accountList";
 import { inPeriod, overviewOf, type AccountListAnswer, type AccountPeriod, type AccountOverview, type AccountProvider, type AccountRefusal } from "../../../utils/accountOverview";
+import { useLoginRequests } from "../../../hooks/useLoginRequests";
 import { formatNorwegianDateTime } from "../../../utils/dates";
+import { requestOverviewOf, requestTotalsOf } from "../../../utils/loginRequests";
 import type { StudioData } from "../studio";
 import { studioBadge, studioCardPadded, studioMuted, studioSecondaryButton } from "../studioTheme";
-import { LoginCountsSection } from "./LoginCountsSection";
+import { LOGIN_COUNT_ALL_DAYS, LoginCountsSection } from "./LoginCountsSection";
 
 interface AccountsTabProps {
   studio: Pick<StudioData, "adminPersons" | "adminGroups">;
@@ -25,6 +27,14 @@ const Count: React.FC<{ value: number; label: string; note?: string }> = ({ valu
     {note && <p className={`text-[11px] mt-0.5 ${studioMuted}`}>{note}</p>}
   </div>
 );
+
+/** What the sign-in link lists say while they cannot be shown: the rules are not published again yet, or the log is still coming. */
+const requestNote = (problem: "denied" | "failed" | null): string =>
+  problem === "denied"
+    ? "Loggen kan ikke leses ennå. Databasereglene må publiseres på nytt i Firebase."
+    : problem === "failed"
+      ? "Loggen over innloggingslenker kunne ikke hentes akkurat nå."
+      : "Henter innloggingslenkene …";
 
 const PERIODS: { value: AccountPeriod; label: string }[] = [
   { value: 7, label: "Siste 7 dager" },
@@ -72,6 +82,11 @@ export const AccountsTab: React.FC<AccountsTabProps> = ({ studio }) => {
   const newcomers = period === null ? 0 : signedIn.filter((row) => inPeriod(row.account.createdAt, period, now)).length;
   const stopped = overview ? overview.notInRegister.filter((row) => inPeriod(row.account.lastLoginAt, period, now)) : [];
   const inThePeriod = period === null ? "" : ` (${PERIODS.find((p) => p.value === period)?.label.toLowerCase()})`;
+  // The requests for a sign-in link; «Alt» shows the 90 days the log keeps
+  const requestState = useLoginRequests(period ?? LOGIN_COUNT_ALL_DAYS);
+  const requestPeriod = period === null ? ` (siste ${LOGIN_COUNT_ALL_DAYS} dager)` : inThePeriod;
+  const requestTotals = requestState.requests ? requestTotalsOf(requestState.requests) : null;
+  const asked = overview && answer && answer.ok && requestState.requests ? requestOverviewOf(requestState.requests, persons, answer.accounts, groups) : null;
 
   return (
     <div className="space-y-5">
@@ -121,7 +136,7 @@ export const AccountsTab: React.FC<AccountsTabProps> = ({ studio }) => {
             ))}
           </div>
 
-          <LoginCountsSection days={period} />
+          <LoginCountsSection days={period} requestTotals={requestTotals} />
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <Count value={signedIn.length} label={period === null ? "Har logget inn" : "Logget inn"} note={period === null ? undefined : `${newcomers} av dem for første gang`} />
@@ -148,6 +163,47 @@ export const AccountsTab: React.FC<AccountsTabProps> = ({ studio }) => {
               </li>
             ))}
           </Section>
+
+          {asked ? (
+            <>
+              <Section
+                title={`Ba om lenke, men har ikke logget inn${requestPeriod}`}
+                help="De fikk e-post med innloggingslenke, men har ikke brukt den. Kanskje havnet den i søppelpost? Ta kontakt, eller send dem en innloggingslenke fra Send e-post."
+                empty={asked.askedNotSignedIn.length === 0}
+              >
+                {asked.askedNotSignedIn.map((row) => (
+                  <li key={row.address} className="py-2.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <span className="text-xs font-bold text-[var(--studio-text)]">{row.person.name}</span>
+                    <span className={`text-[11px] break-all ${studioMuted}`}>{row.address}</span>
+                    {row.isLeader && <Tag>Gruppeleder</Tag>}
+                    <span className={`text-[11px] ${studioMuted}`}>
+                      ba om lenke {when(row.latest)}
+                      {row.count > 1 ? ` (${row.count} ganger)` : ""}
+                    </span>
+                  </li>
+                ))}
+              </Section>
+              <Section
+                title={`Ba om lenke med en adresse som ikke er i registeret${requestPeriod}`}
+                help="De fikk beskjed om at adressen ikke står i registeret."
+                empty={asked.askedNotInRegister.length === 0}
+              >
+                {asked.askedNotInRegister.map((row) => (
+                  <li key={row.address} className="py-2.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <span className="text-xs font-bold text-[var(--studio-text)] break-all">{row.address}</span>
+                    <span className={`text-[11px] ${studioMuted}`}>
+                      ba om lenke {when(row.latest)}
+                      {row.count > 1 ? ` (${row.count} ganger)` : ""}
+                    </span>
+                  </li>
+                ))}
+              </Section>
+            </>
+          ) : (
+            <p role={requestState.problem ? "status" : undefined} className={`text-xs ${studioMuted}`}>
+              {requestNote(requestState.problem)}
+            </p>
+          )}
 
           <Section title="Står i registeret, men har aldri logget inn" empty={overview.neverSignedIn.length === 0}>
             {overview.neverSignedIn.map(({ person, isLeader }) => (

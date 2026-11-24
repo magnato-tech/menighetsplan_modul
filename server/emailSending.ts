@@ -76,7 +76,7 @@ const refuse = (reason: Exclude<EmailRefusal, "unreachable">, message?: string):
   body: { ok: false, reason, message: message ?? MESSAGES[reason][1] },
 });
 
-const settingOf = (env: InstallationEnv, name: string): string | undefined => {
+export const settingOf = (env: InstallationEnv, name: string): string | undefined => {
   const value = env[name];
   return typeof value === "string" && value.trim() !== "" ? value.trim() : undefined;
 };

@@ -147,3 +147,72 @@ export async function readDocument(database: RestDatabase, path: string, ask: Fe
   if (!response.ok) return null;
   return decodeDocument((await response.json()) as RestDocument);
 }
+
+/** Whether the document exists. Unlike readDocument, an error is thrown, not taken as a missing document. */
+export async function documentExists(database: RestDatabase, path: string, ask: Fetch, headers?: Record<string, string>): Promise<boolean> {
+  const response = await ask(`${documentsOf(database)}/${path}`, headers ? { headers } : undefined);
+  if (response.status === 404) return false;
+  if (!response.ok) throw new FirestoreRestError(`Dokumentet kunne ikke leses (${response.status})`, response.status);
+  return true;
+}
+
+/** One condition on a field: the field is equal to the text, or from or before it. Times are kept as text, which sorts as they do. */
+export interface FieldFilter {
+  field: string;
+  op: "EQUAL" | "GREATER_THAN_OR_EQUAL" | "LESS_THAN";
+  value: string;
+}
+
+/** What is sent to ask for the documents of a collection that meet one condition, at most `limit` of them. */
+export function filterQuery(collectionId: string, filter: FieldFilter, limit?: number) {
+  return {
+    structuredQuery: {
+      from: [{ collectionId }],
+      where: { fieldFilter: { field: { fieldPath: filter.field }, op: filter.op, value: { stringValue: filter.value } } },
+      ...(limit ? { limit } : {}),
+    },
+  };
+}
+
+/**
+ * The documents of a collection that meet one condition, read as the one the headers say is asking.
+ * Thrown as a FirestoreRestError when the database refuses.
+ */
+export async function queryDocuments(database: RestDatabase, collectionId: string, filter: FieldFilter, ask: Fetch, headers: Record<string, string> = {}, limit?: number): Promise<(Record<string, unknown> & { id: string })[]> {
+  const response = await ask(`${documentsOf(database)}:runQuery`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...headers },
+    body: JSON.stringify(filterQuery(collectionId, filter, limit)),
+  });
+  if (!response.ok) throw new FirestoreRestError(`Databasen svarte ${response.status} for ${collectionId}`, response.status);
+  const rows = (await response.json()) as { document?: RestDocument; error?: { code?: number; message?: string } }[];
+  if (!Array.isArray(rows)) throw new FirestoreRestError(`Databasen svarte ikke med en liste for ${collectionId}`, 502);
+  const failed = rows.find((row) => row.error);
+  if (failed?.error) throw new FirestoreRestError(failed.error.message || `Databasen svarte med en feil for ${collectionId}`, failed.error.code ?? 502);
+  return rows.flatMap((row) => (row.document ? [decodeDocument(row.document)] : []));
+}
+
+/**
+ * Adds a document to a collection, with an id the database chooses. Text and true or false are the
+ * only values sent. Thrown as a FirestoreRestError when the database refuses.
+ */
+export async function addDocument(database: RestDatabase, collectionId: string, fields: Record<string, string | boolean>, ask: Fetch, headers: Record<string, string> = {}): Promise<void> {
+  const encoded = Object.fromEntries(Object.entries(fields).map(([key, value]) => [key, typeof value === "boolean" ? { booleanValue: value } : { stringValue: value }]));
+  const response = await ask(`${documentsOf(database)}/${collectionId}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...headers },
+    body: JSON.stringify({ fields: encoded }),
+  });
+  if (!response.ok) throw new FirestoreRestError(`Databasen svarte ${response.status} da ${collectionId} skulle få et dokument`, response.status);
+}
+
+/** Deletes documents by their places, such as "loginRequests/abc", in one write. Thrown when the database refuses. */
+export async function deleteDocuments(database: RestDatabase, paths: readonly string[], ask: Fetch, headers: Record<string, string> = {}): Promise<void> {
+  if (paths.length === 0) return;
+  const response = await ask(`${documentsOf(database)}:commit`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...headers },
+    body: JSON.stringify({ writes: paths.map((path) => ({ delete: documentNameOf(database, path) })) }),
+  });
+  if (!response.ok) throw new FirestoreRestError(`Databasen svarte ${response.status} på slettingen`, response.status);
+}

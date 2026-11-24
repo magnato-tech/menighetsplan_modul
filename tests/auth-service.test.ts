@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 const { api, authInstance } = vi.hoisted(() => {
   const authInstance = { languageCode: null as string | null };
@@ -147,5 +147,78 @@ describe("Det som går galt, sies slik at en vet hva en skal gjøre", () => {
     for (const unknown of [said("auth/noe-nytt"), describeSignInError(new Error("boom")), describeSignInError("tekst"), describeSignInError(null)]) {
       expect(unknown).toBe("Innloggingen gikk ikke. Prøv igjen.");
     }
+  });
+});
+
+describe("Lenke sendt av menigheten selv, eller av Firebase", () => {
+  const SIGN_IN = "https://kirken.example/logg-inn";
+  // What the server answers, as the browser's fetch gives it; a page that is not JSON cannot be read
+  const reply = (status: number, body: unknown, json = true) => ({
+    ok: status >= 200 && status < 300,
+    status,
+    json: async () => {
+      if (!json) throw new SyntaxError("Unexpected token '<'");
+      return body;
+    },
+  });
+  let fetchMock: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  test("ber menigheten sende lenken, med adressen og stedet å komme tilbake til", async () => {
+    fetchMock.mockResolvedValueOnce(reply(200, { ok: true }));
+    await sendSignInLink(" ola@eksempel.no ", SIGN_IN);
+
+    expect(fetchMock).toHaveBeenCalledWith("/api/innloggingsepost", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "ola@eksempel.no", returnTo: SIGN_IN }),
+    });
+    expect(api.sendSignInLinkToEmail).not.toHaveBeenCalled();
+    expect(localStorage.getItem("menighetsplan_epost_for_lenke")).toBe("ola@eksempel.no");
+  });
+
+  test("faller tilbake til Firebase når installasjonen ikke kan sende selv", async () => {
+    fetchMock.mockResolvedValueOnce(reply(503, { ok: false, reason: "not-available" }));
+    await sendSignInLink("ola@eksempel.no", SIGN_IN);
+
+    expect(api.sendSignInLinkToEmail).toHaveBeenCalledWith(authInstance, "ola@eksempel.no", { url: SIGN_IN, handleCodeInApp: true });
+  });
+
+  test("faller tilbake til Firebase når svaret ikke er JSON, eller nettet svikter", async () => {
+    fetchMock.mockResolvedValueOnce(reply(404, null, false));
+    await sendSignInLink("ola@eksempel.no", SIGN_IN);
+    fetchMock.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+    await sendSignInLink("kari@eksempel.no", SIGN_IN);
+
+    expect(api.sendSignInLinkToEmail).toHaveBeenCalledTimes(2);
+    expect(api.sendSignInLinkToEmail).toHaveBeenLastCalledWith(authInstance, "kari@eksempel.no", { url: SIGN_IN, handleCodeInApp: true });
+  });
+
+  test("når menigheten avviser adressen, sier den det den selv skriver, og ingen lenke sendes", async () => {
+    fetchMock.mockResolvedValueOnce(reply(400, { ok: false, reason: "bad-email", message: "E-postadressen ser ikke riktig ut." }));
+
+    const failure = await sendSignInLink("ikke-en-adresse", SIGN_IN).catch((error: unknown) => error);
+    expect(describeSignInError(failure)).toBe("E-postadressen ser ikke riktig ut.");
+    expect(api.sendSignInLinkToEmail).not.toHaveBeenCalled();
+  });
+
+  test("når e-posttjenesten svikter, sies serverens melding, og Firebase sender ikke i stedet", async () => {
+    fetchMock.mockResolvedValueOnce(reply(502, { ok: false, reason: "failed", message: "E-posten kunne ikke sendes akkurat nå. Prøv igjen om litt." }));
+
+    const failure = await sendSignInLink("ola@eksempel.no", SIGN_IN).catch((error: unknown) => error);
+    expect(describeSignInError(failure)).toBe("E-posten kunne ikke sendes akkurat nå. Prøv igjen om litt.");
+    expect(api.sendSignInLinkToEmail).not.toHaveBeenCalled();
+  });
+
+  test("har Firebase stoppet for mange lenker i dag, sies det på norsk", () => {
+    const said = describeSignInError(Object.assign(new Error("Firebase: Error"), { code: "auth/quota-exceeded" }));
+    expect(said).toBe("Innloggingen er midlertidig sperret fordi for mange har bedt om lenke i dag. Prøv igjen senere, eller logg inn med Google.");
   });
 });
