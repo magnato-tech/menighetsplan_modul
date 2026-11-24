@@ -657,7 +657,7 @@ const innlogging: HelpArticle = {
   intro: "Se hvem i registeret som har kommet inn på Min side, og hvem som trenger hjelp til å komme inn.",
   steg: [
     "Trykk **Oppdater** for å hente kontoene på nytt.",
-    "Under **Kom inn, men finnes ikke i registeret**: adressen er ikke den som står på personen. Rett adressen under **Personer**, så kommer de inn.",
+    "Under **Ble stoppet – feil e-post?**: de prøvde å logge inn, men adressen de brukte, står ikke på noen person i registeret. Rett adressen under **Personer**, så kommer de inn.",
     "Under **Står i registeret, men har aldri logget inn**: de kan logge inn, men har ikke gjort det. Gruppeledere står først.",
     "Under **Kan ikke logge inn**: de mangler e-post, eller deler adressen med noen andre i registeret.",
     "**Har logget inn** viser alle som har kommet inn. Trykk på overskriften for å åpne listen.",

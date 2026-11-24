@@ -37,7 +37,7 @@ describe("Innlogging-fanen", () => {
     );
     render(<AccountsTab studio={studio} />);
 
-    expect(await screen.findByText("Kom inn, men finnes ikke i registeret")).toBeTruthy();
+    expect(await screen.findByText("Ble stoppet – feil e-post?")).toBeTruthy();
     const notInRegister = screen.getByText("gjest@example.org").closest("li") as HTMLElement;
     expect(within(notInRegister).getByText("Ikke bekreftet")).toBeTruthy();
 
@@ -67,6 +67,6 @@ describe("Innlogging-fanen", () => {
 
     const message = await screen.findByRole("status");
     expect(message.textContent).toContain("Tjenestenøkkelen");
-    expect(screen.queryByText("Kom inn, men finnes ikke i registeret")).toBeNull();
+    expect(screen.queryByText("Ble stoppet – feil e-post?")).toBeNull();
   });
 });

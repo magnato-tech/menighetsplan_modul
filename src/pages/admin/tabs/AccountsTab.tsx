@@ -93,20 +93,21 @@ export const AccountsTab: React.FC<AccountsTabProps> = ({ studio }) => {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <Count value={overview.signedIn.length} label="Har logget inn" />
             <Count value={overview.neverSignedIn.length} label="Aldri logget inn" />
-            <Count value={overview.notInRegister.length} label="Kom inn, men ikke i registeret" />
+            <Count value={overview.notInRegister.length} label="Ble stoppet" />
             <Count value={overview.cannotSignIn.length} label="Kan ikke logge inn" />
           </div>
 
           <Section
-            title="Kom inn, men finnes ikke i registeret"
-            help="Som regel en annen adresse enn den som står i registeret. Rett adressen på personen under Personer, så kommer de inn."
+            title="Ble stoppet – feil e-post?"
+            help="De prøvde å logge inn, men adressen de brukte, står ikke i registeret. Som regel har personen en annen adresse der. Rett adressen under Personer, så kommer de inn."
             empty={overview.notInRegister.length === 0}
           >
             {overview.notInRegister.map(({ address, account, shared }) => (
               <li key={address} className="py-2.5 flex flex-wrap items-center gap-x-3 gap-y-1">
                 <span className="text-xs font-bold text-[var(--studio-text)] break-all">{address}</span>
                 <span className={`text-[11px] ${studioMuted}`}>
-                  {PROVIDER_LABEL[account.provider]}, sist innlogget {when(account.lastLoginAt)}
+                  {PROVIDER_LABEL[account.provider]}, prøvde første gang {when(account.createdAt)}
+                  {account.lastLoginAt && when(account.lastLoginAt) !== when(account.createdAt) ? `, sist ${when(account.lastLoginAt)}` : ""}
                 </span>
                 {shared && <Tag tone="amber">Delt adresse</Tag>}
                 {!account.emailVerified && <Tag>Ikke bekreftet</Tag>}
