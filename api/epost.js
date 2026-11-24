@@ -61,6 +61,25 @@ var SEMESTER_PLAN_RECORD = "semesterPlan";
 
 // src/utils/loginLink.ts
 var LOGIN_LINK_DAYS = 14;
+var LOGIN_LINK_MAX_DAYS = 120;
+var DATE_TEXT = /^\d{4}-\d{2}-\d{2}$/;
+function daysAfter(day, days) {
+  const date = /* @__PURE__ */ new Date(`${day}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+function loginLinkUntilError(until, today) {
+  if (typeof until !== "string" || !DATE_TEXT.test(until) || Number.isNaN(Date.parse(`${until}T12:00:00Z`))) return "Velg hvor lenge innloggingslenken skal virke.";
+  if (until < today) return "Innloggingslenken kan ikke slutte å virke før i dag.";
+  if (until > daysAfter(today, LOGIN_LINK_MAX_DAYS)) return `Innloggingslenken kan virke i høyst ${LOGIN_LINK_MAX_DAYS} dager. Velg en tidligere dato.`;
+  return null;
+}
+function loginLinkEndSeconds(until) {
+  return Math.floor(Date.parse(`${until}T23:59:59+01:00`) / 1e3);
+}
+function formatLoginLinkUntil(until) {
+  return (/* @__PURE__ */ new Date(`${until}T12:00:00Z`)).toLocaleDateString("nb-NO", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+}
 var LOGIN_LINK_PATH = "/lenke";
 function loginLinkUrl(siteUrl, destinationPath, token) {
   const base = siteUrl.replace(/\/+$/, "");
@@ -188,10 +207,11 @@ var blockText = (block) => {
   if (block.kind === "list") return block.items.map((item) => `- ${inlineText(item)}`).join("\n");
   return block.lines.map(inlineText).join("\n");
 };
-function renderEmail({ draft, churchName, siteUrl, firstName, newsletter, buttonUrl, loginLink }) {
+function renderEmail({ draft, churchName, siteUrl, firstName, newsletter, buttonUrl, loginLink, loginLinkUntil }) {
   const link = EMAIL_LINKS[draft.link];
   const url = buttonUrl ?? emailButtonUrl(draft, siteUrl);
-  const loginNote = loginLink && url ? `Knappen logger deg rett inn og virker i ${LOGIN_LINK_DAYS} dager. Ikke send e-posten videre.` : null;
+  const lasts = loginLinkUntil ? `til og med ${formatLoginLinkUntil(loginLinkUntil)}` : `i ${LOGIN_LINK_DAYS} dager`;
+  const loginNote = loginLink && url ? `Knappen logger deg rett inn og virker ${lasts}. Ikke send e-posten videre.` : null;
   const greeting = newsletter ? null : firstName ? `Hei ${firstName}!` : "Hei!";
   const closing = newsletter ? null : `Hilsen ${churchName}`;
   const blocks = emailBlocksOf(draft.text);
@@ -416,8 +436,8 @@ var DAY_SECONDS = 86400;
 var keyOf = (account) => createHash("sha256").update(`menighetsplan-innloggingslenke:${account.private_key}`).digest();
 var sign = (key, text) => createHmac("sha256", key).update(text, "utf8").digest("base64url");
 var emailHashOf = (email) => createHash("sha256").update(email.trim().toLowerCase(), "utf8").digest("base64url").slice(0, 22);
-function makeLoginToken(account, personId, email, nowSeconds) {
-  const payload = Buffer.from(JSON.stringify({ p: personId, e: emailHashOf(email), x: nowSeconds + LOGIN_LINK_DAYS * DAY_SECONDS }), "utf8").toString("base64url");
+function makeLoginToken(account, personId, email, nowSeconds, endSeconds) {
+  const payload = Buffer.from(JSON.stringify({ p: personId, e: emailHashOf(email), x: endSeconds ?? nowSeconds + LOGIN_LINK_DAYS * DAY_SECONDS }), "utf8").toString("base64url");
   return `${payload}.${sign(keyOf(account), payload)}`;
 }
 
@@ -811,6 +831,13 @@ async function sendEmail({ env, siteUrl, idToken, body, ask, wait = pause2 }) {
   if (loginLinks && (newsletter || draft.link === "ingen")) return refuse("bad-request");
   const account = loginLinks ? readServiceAccount(env) : null;
   if (loginLinks && (!account || account.project_id !== installation.projectId)) return refuse("no-login-links");
+  const loginLinkUntil = loginLinks && request.loginLinkUntil !== void 0 ? request.loginLinkUntil : void 0;
+  if (loginLinkUntil !== void 0) {
+    const today = (/* @__PURE__ */ new Date()).toLocaleDateString("sv-SE", { timeZone: "Europe/Oslo" });
+    const problem = loginLinkUntilError(loginLinkUntil, today);
+    if (problem) return refuse("bad-request", problem);
+  }
+  const loginLinkEnd = typeof loginLinkUntil === "string" ? loginLinkEndSeconds(loginLinkUntil) : void 0;
   const database = { projectId: installation.projectId, databaseId: installation.firestoreDatabaseId };
   const as = signedInAs(idToken);
   let persons;
@@ -901,7 +928,7 @@ async function sendEmail({ env, siteUrl, idToken, body, ask, wait = pause2 }) {
       const owner = recipient.personIds.length === 1 ? persons.find((person) => person.id === recipient.personIds[0]) : void 0;
       if (!owner || !buttonPath || loginCount.get(recipient.email) !== 1 || !loginAddressesOf(owner).includes(recipient.email)) continue;
       if (owner.globalRole === "admin" || owner.globalRole === "nettredaktor") continue;
-      loginUrls.set(recipient.email, loginLinkUrl(siteUrl, buttonPath, makeLoginToken(account, owner.id, recipient.email, nowSeconds)));
+      loginUrls.set(recipient.email, loginLinkUrl(siteUrl, buttonPath, makeLoginToken(account, owner.id, recipient.email, nowSeconds, loginLinkEnd)));
     }
   }
   const from = senderOf(churchName, settingOf(env, EMAIL_SETTINGS.from) ?? DEFAULT_FROM_ADDRESS);
@@ -919,7 +946,7 @@ async function sendEmail({ env, siteUrl, idToken, body, ask, wait = pause2 }) {
         siteUrl,
         firstName: recipient.firstName,
         ...unsubscribeUrl ? { newsletter: { unsubscribeUrl, bannerUrl } } : {},
-        ...loginUrl ? { buttonUrl: loginUrl, loginLink: true } : {}
+        ...loginUrl ? { buttonUrl: loginUrl, loginLink: true, ...typeof loginLinkUntil === "string" ? { loginLinkUntil } : {} } : {}
       });
       return {
         from,

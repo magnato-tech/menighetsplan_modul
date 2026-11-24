@@ -13,7 +13,7 @@ import { EMAIL_LINKS, EMAIL_SUBJECT_MAX, EMAIL_TEMPLATES, EMAIL_TEXT_MAX, emailD
 import { recentSameSending, stopMessage, testStopMessage, withLogEntry, withRestSent, type EmailLogEntry, type EmailOutcome, type EmailRecord, type EmailStop } from "../../../utils/emailOutcome";
 import { audienceKey, audienceLabel, emailRecipients, isNewsletter, toEmailAudience, usableEmail, type EmailAudience } from "../../../utils/emailRecipients";
 import { TEST_UNSUBSCRIBE_TOKEN, optedOutPersonIds, unsubscribeUrlOf } from "../../../utils/newsletter";
-import { LOGIN_LINK_DAYS } from "../../../utils/loginLink";
+import { LOGIN_LINK_MAX_DAYS, daysAfter, formatLoginLinkUntil, loginLinkUntilError } from "../../../utils/loginLink";
 import { testDraftFor } from "../../../utils/emailTest";
 import { isServiceGroup } from "../../../utils/personDirectory";
 import type { ShowFeedback, StudioData } from "../studio";
@@ -36,6 +36,25 @@ const draftOf = ({ subject, text, link, planId }: EmailDraft): EmailDraft =>
   link === "semesterplan" && planId !== undefined ? { subject, text, link, planId } : { subject, text, link };
 /** The draft with another button. Only a semester plan's button has a plan; every other link leaves it out. */
 const withLink = (current: EmailDraft, link: EmailLink, planId: string | undefined): EmailDraft => draftOf({ ...current, link, planId });
+/** Where this browser keeps the last choice of how long login links work. Only a convenience: anything unreadable gives 30 days. */
+const LINK_CHOICE_KEY = "menighetsplan_innloggingslenke_varighet";
+function readLinkChoice(): { span: "14" | "30" | "dato"; date: string | null } {
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(LINK_CHOICE_KEY) ?? "null") as { span?: unknown; date?: unknown } | null;
+    const span = saved?.span === "14" || saved?.span === "30" || saved?.span === "dato" ? saved.span : "30";
+    return { span, date: typeof saved?.date === "string" ? saved.date : null };
+  } catch {
+    return { span: "30", date: null };
+  }
+}
+function keepLinkChoice(span: string, date: string): void {
+  try {
+    window.localStorage.setItem(LINK_CHOICE_KEY, JSON.stringify({ span, date }));
+  } catch {
+    // Blocked storage only means the choice is asked again next time
+  }
+}
+
 const people = (count: number): string => (count === 1 ? "1 person" : `${count} personer`);
 const label = "block text-[11px] font-bold text-[var(--studio-muted)] mb-1";
 
@@ -64,6 +83,13 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
   const [testResult, setTestResult] = useState<{ good: boolean; text: string } | null>(null);
   // Whether the button of each recipient is a personal login link (see utils/loginLink.ts). Off unless ticked.
   const [loginLinks, setLoginLinks] = useState(false);
+  // How long the login links work: 14 or 30 days, or through a chosen day. The choice is kept in this browser.
+  const today = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Oslo" });
+  const [linkSpan, setLinkSpan] = useState<"14" | "30" | "dato">(() => readLinkChoice().span);
+  const [linkDate, setLinkDate] = useState(() => readLinkChoice().date ?? daysAfter(today, 30));
+  const loginLinkUntil = linkSpan === "dato" ? linkDate : daysAfter(today, Number(linkSpan));
+  const loginLinkProblem = loginLinkUntilError(loginLinkUntil, today);
+  useEffect(() => keepLinkChoice(linkSpan, linkDate), [linkSpan, linkDate]);
 
   useEffect(
     () =>
@@ -117,9 +143,9 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
         siteUrl: window.location.origin,
         firstName: "Kari",
         ...(newsletter ? { newsletter: { unsubscribeUrl: unsubscribeUrlOf(window.location.origin, TEST_UNSUBSCRIBE_TOKEN), bannerUrl: banner ?? null } } : {}),
-        ...(loginLinksOn ? { loginLink: true } : {}),
+        ...(loginLinksOn ? { loginLink: true, ...(loginLinkProblem ? {} : { loginLinkUntil }) } : {}),
       }),
-    [draft, churchName, newsletter, banner, loginLinksOn]
+    [draft, churchName, newsletter, banner, loginLinksOn, loginLinkUntil, loginLinkProblem]
   );
 
   // The semester plans the button may open: those not yet closed, in the order they come
@@ -161,6 +187,7 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
   const testBlocked = (): string | null => {
     if (!canSend) return "Demoen sender ikke e-post.";
     if (storedReplyTo === "") return "Lagre adressen svar skal gå til, før du sender.";
+    if (loginLinksOn && loginLinkProblem) return loginLinkProblem;
     return null;
   };
 
@@ -185,7 +212,7 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
     if (wrong) return;
     setBusy("test");
     setResult(null);
-    const outcome = await requestEmail(newsletter ? { ...draft, mode: "test", audience } : { ...draft, mode: "test", ...(loginLinksOn ? { loginLinks: true as const } : {}) });
+    const outcome = await requestEmail(newsletter ? { ...draft, mode: "test", audience } : { ...draft, mode: "test", ...(loginLinksOn ? { loginLinks: true as const, loginLinkUntil } : {}) });
     setBusy(null);
     tell(outcome, "Prøven er sendt til e-postadressen du er logget inn med. Sjekk innboksen, og søppelposten.");
   };
@@ -200,7 +227,7 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
     setTestBusy(true);
     setTestResult(null);
     // With the box ticked, the test carries a login link too, when the address is a member's (see server/emailSending.ts)
-    const testLoginLinks = loginLinksOn && testDraft.link !== "ingen" ? { loginLinks: true as const } : {};
+    const testLoginLinks = loginLinksOn && testDraft.link !== "ingen" ? { loginLinks: true as const, loginLinkUntil } : {};
     const outcome = await requestEmail({ ...testDraft, mode: "test", to: address, ...testLoginLinks });
     setTestBusy(false);
     if (outcome.ok && record) {
@@ -262,7 +289,7 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
     if (!confirm(`Du sender «${draft.subject.trim()}» til ${people(entry.remainingPersonIds.length)} som gjenstår (${entry.audienceLabel}). Teksten er den som står i skjemaet nå. Vil du sende?`)) return;
     setBusy("send");
     setResult(null);
-    const restLoginLinks = loginLinksOn && !isNewsletter(entry.audience) ? { loginLinks: true as const } : {};
+    const restLoginLinks = loginLinksOn && !isNewsletter(entry.audience) ? { loginLinks: true as const, loginLinkUntil } : {};
     const outcome = await requestEmail({ ...draft, mode: "send", audience: entry.audience, onlyPersonIds: entry.remainingPersonIds, ...restLoginLinks });
     setBusy(null);
     if (outcome.ok) {
@@ -440,8 +467,38 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
                 <span>Logg mottakerne rett inn med knappen</span>
               </label>
               <p className="text-[11px] text-[var(--studio-muted)] mt-1 ml-6">
-                Hver mottaker får sin egen knapp som logger dem inn i {LOGIN_LINK_DAYS} dager, uten Google eller innloggings-e-post. Administratorer, nettredaktører og de som deler e-postadresse med andre, får vanlig knapp.
+                Hver mottaker får sin egen knapp som logger dem inn, uten Google eller innloggings-e-post. Administratorer, nettredaktører og de som deler e-postadresse med andre, får vanlig knapp.
               </p>
+              {loginLinks && (
+                <fieldset className="mt-2 ml-6 space-y-1.5">
+                  <legend className="text-[11px] font-bold text-[var(--studio-text)] mb-1">Lenken virker</legend>
+                  {(["14", "30"] as const).map((span) => (
+                    <label key={span} className="flex items-center gap-2 text-xs text-[var(--studio-text)] cursor-pointer">
+                      <input type="radio" name="email-login-link-span" checked={linkSpan === span} onChange={() => setLinkSpan(span)} className="accent-indigo-600" />
+                      {span} dager
+                    </label>
+                  ))}
+                  <label className="flex flex-wrap items-center gap-2 text-xs text-[var(--studio-text)] cursor-pointer">
+                    <input type="radio" name="email-login-link-span" checked={linkSpan === "dato"} onChange={() => setLinkSpan("dato")} className="accent-indigo-600" />
+                    til og med
+                    <input
+                      type="date"
+                      aria-label="Siste dag lenken virker"
+                      value={linkDate}
+                      min={today}
+                      max={daysAfter(today, LOGIN_LINK_MAX_DAYS)}
+                      onChange={(event) => {
+                        setLinkDate(event.target.value);
+                        setLinkSpan("dato");
+                      }}
+                      className="px-2 py-1 rounded-lg border border-[var(--studio-border)] bg-[var(--studio-bg)] text-xs"
+                    />
+                  </label>
+                  <p id="email-login-link-until" className={`text-[11px] ${loginLinkProblem ? "text-red-500" : "text-[var(--studio-muted)]"}`}>
+                    {loginLinkProblem ?? `Knappen virker til og med ${formatLoginLinkUntil(loginLinkUntil)}. Høyst ${LOGIN_LINK_MAX_DAYS} dager.`}
+                  </p>
+                </fieldset>
+              )}
             </div>
           )}
 

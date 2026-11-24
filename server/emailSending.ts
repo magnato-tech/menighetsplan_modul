@@ -6,7 +6,7 @@
 import { readDemoInstallation, readInstallationConfig, type InstallationEnv } from "../src/installation";
 import { SEMESTER_PLAN_RECORD } from "../src/data/settingsRecords";
 import { emailButtonUrl, renderEmail, toEmailDraft, type EmailDraft } from "../src/utils/emailMessage";
-import { loginLinkUrl } from "../src/utils/loginLink";
+import { loginLinkEndSeconds, loginLinkUntilError, loginLinkUrl } from "../src/utils/loginLink";
 import { loginAddressesOf } from "../src/utils/personEmails";
 import type { EmailOutcome, EmailRefusal, EmailStop } from "../src/utils/emailOutcome";
 import { emailRecipients, firstNameOf, isNewsletter, toEmailAudience, usableEmail, type EmailRecipient } from "../src/utils/emailRecipients";
@@ -135,6 +135,14 @@ export async function sendEmail({ env, siteUrl, idToken, body, ask, wait = pause
   // The service account is the one of this installation's own project, or there are no login links
   const account = loginLinks ? readServiceAccount(env) : null;
   if (loginLinks && (!account || account.project_id !== installation.projectId)) return refuse("no-login-links");
+  // How long the links work: through a chosen day, at most LOGIN_LINK_MAX_DAYS ahead, or LOGIN_LINK_DAYS when no day is given
+  const loginLinkUntil = loginLinks && request.loginLinkUntil !== undefined ? request.loginLinkUntil : undefined;
+  if (loginLinkUntil !== undefined) {
+    const today = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Oslo" });
+    const problem = loginLinkUntilError(loginLinkUntil, today);
+    if (problem) return refuse("bad-request", problem);
+  }
+  const loginLinkEnd = typeof loginLinkUntil === "string" ? loginLinkEndSeconds(loginLinkUntil) : undefined;
 
   // The register, read as the one who asks. Only an administrator may list it.
   const database = { projectId: installation.projectId, databaseId: installation.firestoreDatabaseId };
@@ -242,7 +250,7 @@ export async function sendEmail({ env, siteUrl, idToken, body, ask, wait = pause
       const owner = recipient.personIds.length === 1 ? persons.find((person) => person.id === recipient.personIds[0]) : undefined;
       if (!owner || !buttonPath || loginCount.get(recipient.email) !== 1 || !loginAddressesOf(owner).includes(recipient.email)) continue;
       if (owner.globalRole === "admin" || owner.globalRole === "nettredaktor") continue;
-      loginUrls.set(recipient.email, loginLinkUrl(siteUrl, buttonPath, makeLoginToken(account, owner.id, recipient.email, nowSeconds)));
+      loginUrls.set(recipient.email, loginLinkUrl(siteUrl, buttonPath, makeLoginToken(account, owner.id, recipient.email, nowSeconds, loginLinkEnd)));
     }
   }
 
@@ -262,7 +270,7 @@ export async function sendEmail({ env, siteUrl, idToken, body, ask, wait = pause
         siteUrl,
         firstName: recipient.firstName,
         ...(unsubscribeUrl ? { newsletter: { unsubscribeUrl, bannerUrl } } : {}),
-        ...(loginUrl ? { buttonUrl: loginUrl, loginLink: true } : {}),
+        ...(loginUrl ? { buttonUrl: loginUrl, loginLink: true, ...(typeof loginLinkUntil === "string" ? { loginLinkUntil } : {}) } : {}),
       });
       return {
         from,

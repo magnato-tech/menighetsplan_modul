@@ -1,5 +1,5 @@
 import type { EmailAudience } from "./emailRecipients";
-import { LOGIN_LINK_DAYS } from "./loginLink";
+import { LOGIN_LINK_DAYS, formatLoginLinkUntil } from "./loginLink";
 
 // The e-mail an administrator sends to leaders, volunteers and, as a newsletter, to the members:
 // what it may hold, the ready-made texts, and how it looks in the inbox. Used by the admin page,
@@ -204,6 +204,8 @@ export interface EmailToRender {
   newsletter?: { unsubscribeUrl: string; bannerUrl: string | null };
   /** The button's address when it is not the page's own (a personal login link, see utils/loginLink.ts). */
   buttonUrl?: string;
+  /** The last day the personal login link works («2027-01-31»), when one was chosen; else LOGIN_LINK_DAYS. */
+  loginLinkUntil?: string;
   /** Set when the button is a personal login link: a line under it says that it signs one in for a while. */
   loginLink?: boolean;
 }
@@ -215,10 +217,11 @@ export interface RenderedEmail {
 }
 
 /** The e-mail as it is sent: once as plain text, once dressed for the inbox. Nothing the administrator wrote is read as HTML. */
-export function renderEmail({ draft, churchName, siteUrl, firstName, newsletter, buttonUrl, loginLink }: EmailToRender): RenderedEmail {
+export function renderEmail({ draft, churchName, siteUrl, firstName, newsletter, buttonUrl, loginLink, loginLinkUntil }: EmailToRender): RenderedEmail {
   const link = EMAIL_LINKS[draft.link];
   const url = buttonUrl ?? emailButtonUrl(draft, siteUrl);
-  const loginNote = loginLink && url ? `Knappen logger deg rett inn og virker i ${LOGIN_LINK_DAYS} dager. Ikke send e-posten videre.` : null;
+  const lasts = loginLinkUntil ? `til og med ${formatLoginLinkUntil(loginLinkUntil)}` : `i ${LOGIN_LINK_DAYS} dager`;
+  const loginNote = loginLink && url ? `Knappen logger deg rett inn og virker ${lasts}. Ikke send e-posten videre.` : null;
   const greeting = newsletter ? null : firstName ? `Hei ${firstName}!` : "Hei!";
   const closing = newsletter ? null : `Hilsen ${churchName}`;
   const blocks = emailBlocksOf(draft.text);
