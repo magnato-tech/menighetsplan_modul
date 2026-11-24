@@ -650,6 +650,25 @@ const epost: HelpArticle = {
   tabs: ["epost"],
 };
 
+const innlogging: HelpArticle = {
+  id: "innlogging",
+  title: "Innlogging",
+  hvor: "Planlegging → Innlogging",
+  intro: "Se hvem i registeret som har kommet inn på Min side, og hvem som trenger hjelp til å komme inn.",
+  steg: [
+    "Trykk **Oppdater** for å hente kontoene på nytt.",
+    "Under **Kom inn, men finnes ikke i registeret**: adressen er ikke den som står på personen. Rett adressen under **Personer**, så kommer de inn.",
+    "Under **Står i registeret, men har aldri logget inn**: de kan logge inn, men har ikke gjort det. Gruppeledere står først.",
+    "Under **Kan ikke logge inn**: de mangler e-post, eller deler adressen med noen andre i registeret.",
+    "**Har logget inn** viser alle som har kommet inn. Trykk på overskriften for å åpne listen.",
+  ],
+  godt: "Ingenting lagres her. Kontoene hentes fra innloggingen hver gang siden åpnes, og sammenlignes med registeret. Bare en administrator ser denne fanen.",
+  passPa: "Oversikten virker bare i menighetens egen installasjon, der nøkkelen til innloggingen (FIREBASE_SERVICE_ACCOUNT) er lagt inn hos Vercel. Uten den vises en melding i stedet for listene.",
+  tabs: ["innlogging"],
+  // No picture yet: the demo has no real accounts to show. Take it in the congregation's installation, then remove this line.
+  utenBilde: true,
+};
+
 // ---------------------------------------------------------------- Innsikt og moduler
 
 const analysebord: HelpArticle = {
@@ -752,6 +771,7 @@ export const helpSections: HelpSection[] = [
       { kind: "article", article: semesterplan },
       { kind: "article", article: arshjul },
       { kind: "article", article: epost },
+      { kind: "article", article: innlogging },
       { kind: "article", article: roller },
     ],
   },

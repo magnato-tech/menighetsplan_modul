@@ -1,4 +1,4 @@
-import { Badge, Calendar, CalendarRange, ClipboardList, FileText, FolderKanban, Headphones, Images, LayoutTemplate, ListTodo, Mail, Newspaper, Palette, Sliders, Star, Trash2, Users, type LucideIcon } from "lucide-react";
+import { Badge, Calendar, CalendarRange, ClipboardList, FileText, FolderKanban, Headphones, Images, KeyRound, LayoutTemplate, ListTodo, Mail, Newspaper, Palette, Sliders, Star, Trash2, Users, type LucideIcon } from "lucide-react";
 import { useCms } from "../../context/CmsContext";
 import { useLevel } from "../../hooks/useLevel";
 import { useStockImageCount } from "../../hooks/useStockImageCount";
@@ -72,6 +72,8 @@ export function useStudioMenuEntries(studio: StudioData, area: StudioArea, optio
         ]
       : []),
     { tab: "planlegger-personer", label: "Personer", icon: Users, iconClass: "", count: adminPersons.length },
+    // The sign-ins are the administrator's alone: a web editor or a membership clerk does not see them
+    ...(currentUser.globalRole === "admin" ? [{ tab: "innlogging" as const, label: "Innlogging", icon: KeyRound, iconClass: "" }] : []),
     ...(membershipManage
       ? [
           {

@@ -2012,6 +2012,8 @@ git push origin origin/main:stabil
 
 **Sluppet til Lillesand 24. november 2026, innloggingslenken** (`stabil` = `ce3d96d`, `main` `0f2d905` slått sammen inn etter beskjed fra produkteier): haken «Logg mottakerne rett inn med knappen» i Send e-post. Databasereglene er ikke endret. Virker først når `FIREBASE_SERVICE_ACCOUNT` er lagt inn hos Vercel for Lillesand; ikke prøvd mot Google ennå.
 
+**Sluppet til Lillesand 24. november 2026, husgruppene** (`stabil` = `a70964b`, `main` `d492814` slått sammen inn etter beskjed fra produkteier): husgruppemøtene i admin → Kalender under Husgrupper, Endre på gruppesiden i admin, og «Vis for gruppa» i stedet for «Send innkalling». Databasereglene er ikke endret.
+
 **Sluppet til Lillesand 24. november 2026** (etter beskjed fra produkteier, som prøvde endringene på localhost først): bare siste status per person og oppgave (forfall vises ikke flere ganger), Gudstjenester-fanen med ˅ og knappene Kjøreplan og Planlegg, tilbakeknappen fra kjøreplanen, tre vertikale prikker for «mer», og infoskjermen trinn 1 (`/skjerm`). Databasereglene er ikke endret.
 
 **Sluppet til Lillesand 24. november 2026, andre gang** (etter beskjed fra produkteier): testboksen for e-postutsendingen på «Send e-post». Databasereglene er ikke endret.
