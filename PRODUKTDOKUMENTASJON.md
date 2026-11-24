@@ -2032,6 +2032,8 @@ git push origin origin/main:stabil
 
 **Sluppet til Lillesand 24. november 2026, filtre og e-postlister** (`stabil` = `3011b4a`, `main` `49234bf` slått sammen inn etter beskjed fra produkteier): Personer har filtrene Rolle (leder, nestleder, deltaker), Gruppetype og Gruppe; rolle og gruppetype gjelder samme gruppe. Fra et utvalg: «Send e-post til utvalget» og «Lagre som liste» (oppdateres av seg selv: listen husker filteret; eller fast utvalg: listen husker personene). Listene vises i Send e-post under Lister og som forslag i Til. **Databasereglene er endret** (`emailLists`, bare administrator): listene kan ikke lagres før `firestore.rules` er limt inn i Lillesands Firebase. Produkteier publiserte reglene samme kveld.
 
+**Sluppet til Lillesand 24. november 2026, møter fra gruppekortet**: gruppekortet i admin har «+ Planlegg møter» under «Konkrete samlinger for gruppen», som åpner samme planleggingsvindu som gruppelederne har under «Mine grupper» på Min side (dato, klokkeslett, gjentakelse, siste dato, dagene, vert, sted). Nyttig når Grupper-modulen er av på Min side. Databasereglene er ikke endret.
+
 **Sluppet til Lillesand 24. november 2026** (etter beskjed fra produkteier, som prøvde endringene på localhost først): bare siste status per person og oppgave (forfall vises ikke flere ganger), Gudstjenester-fanen med ˅ og knappene Kjøreplan og Planlegg, tilbakeknappen fra kjøreplanen, tre vertikale prikker for «mer», og infoskjermen trinn 1 (`/skjerm`). Databasereglene er ikke endret.
 
 **Sluppet til Lillesand 24. november 2026, andre gang** (etter beskjed fra produkteier): testboksen for e-postutsendingen på «Send e-post». Databasereglene er ikke endret.
