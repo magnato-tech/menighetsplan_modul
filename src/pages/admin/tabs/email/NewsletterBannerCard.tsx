@@ -4,6 +4,7 @@ import { removeNewsletterBanner, saveNewsletterBanner } from "../../../../servic
 import { compressImageFile } from "../../../../utils/imageUpload";
 import { uploadStoredImage } from "../../../../services/mediaStorage";
 import type { ShowFeedback } from "../../studio";
+import type { Ask } from "./chips";
 import { studioCardPadded, studioSecondaryButton } from "../../studioTheme";
 
 interface NewsletterBannerCardProps {
@@ -11,10 +12,12 @@ interface NewsletterBannerCardProps {
   banner: string | null | undefined;
   churchName: string;
   showFeedback: ShowFeedback;
+  /** Asks before the banner is taken away, in the page. */
+  ask: Ask;
 }
 
 /** The banner at the top of every newsletter: uploaded once, here. Without one, the congregation's name stands there. */
-export const NewsletterBannerCard: React.FC<NewsletterBannerCardProps> = ({ banner, churchName, showFeedback }) => {
+export const NewsletterBannerCard: React.FC<NewsletterBannerCardProps> = ({ banner, churchName, showFeedback, ask }) => {
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
 
@@ -34,8 +37,8 @@ export const NewsletterBannerCard: React.FC<NewsletterBannerCardProps> = ({ bann
     }
   };
 
-  const remove = () => {
-    if (!confirm("Vil du ta bort toppbildet? Nyhetsbrevet får da menighetens navn øverst.")) return;
+  const remove = async () => {
+    if (!(await ask("Vil du ta bort toppbildet? Nyhetsbrevet får da menighetens navn øverst.", "Ta bort"))) return;
     removeNewsletterBanner().then(
       () => showFeedback("Toppbildet er tatt bort."),
       () => showFeedback("Toppbildet kunne ikke tas bort. Prøv igjen.", "error")
@@ -64,7 +67,7 @@ export const NewsletterBannerCard: React.FC<NewsletterBannerCardProps> = ({ bann
           <span>{busy ? "Lagrer …" : banner ? "Bytt toppbilde" : "Last opp toppbilde"}</span>
         </button>
         {banner && (
-          <button type="button" onClick={remove} className={`${studioSecondaryButton} flex items-center justify-center gap-1.5`}>
+          <button type="button" onClick={() => void remove()} className={`${studioSecondaryButton} flex items-center justify-center gap-1.5`}>
             <Trash2 className="w-4 h-4" aria-hidden="true" />
             <span>Ta bort</span>
           </button>

@@ -10,18 +10,18 @@ import { EmailWriting } from "./EmailWriting";
 import { NewsletterBannerCard } from "./NewsletterBannerCard";
 import { NewsletterOptOutsCard } from "./NewsletterOptOutsCard";
 import { TestPanel } from "./TestPanel";
-import { countOf, people, type NewsletterKind } from "./chips";
+import { countOf, people, type Ask, type NewsletterKind } from "./chips";
 import { fieldLabel, hint } from "./emailStyles";
 
 export interface NewsletterViewProps {
   canSend: boolean;
-  /** False while what is stored is being read: nothing is sent then. */
-  ready: boolean;
   churchName: string;
   banner: string | null | undefined;
   /** Who has unsubscribed, for the card under the newsletter. Undefined or null while it is read or cannot be read. */
   optedOut: Pick<Person, "id" | "name" | "newsletterToken">[] | null | undefined;
   showFeedback: ShowFeedback;
+  /** Asks in the page before the banner or an opt-out is changed. */
+  ask: Ask;
   draft: EmailDraft;
   setDraft: React.Dispatch<React.SetStateAction<EmailDraft>>;
   kind: NewsletterKind;
@@ -40,7 +40,7 @@ export interface NewsletterViewProps {
 
 /** «Nyhetsbrev»: the same writing as an e-mail, to the members or everyone with an address, with the banner and the unsubscribe link. */
 export const NewsletterView: React.FC<NewsletterViewProps> = (props) => {
-  const { canSend, ready, churchName, banner, optedOut, showFeedback, draft, setDraft, kind, onKind, counts, recipients, sending, testing, onSend, testAddress, onTestAddress, testResult, onSendTest } = props;
+  const { canSend, churchName, banner, optedOut, showFeedback, ask, draft, setDraft, kind, onKind, counts, recipients, sending, testing, onSend, testAddress, onTestAddress, testResult, onSendTest } = props;
   const [previewing, setPreviewing] = useState(false);
   const [testOpen, setTestOpen] = useState(false);
   const { personCount, addressNote } = countOf(recipients);
@@ -51,7 +51,7 @@ export const NewsletterView: React.FC<NewsletterViewProps> = (props) => {
     <div className="space-y-6">
       <section aria-label="Nyhetsbrev" className={`${studioCardPadded} space-y-4`}>
         <div className="flex flex-wrap items-center gap-2">
-          <button type="button" onClick={onSend} disabled={sending || testing || !canSend || !ready} className={`${studioPrimaryButton} flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs disabled:opacity-50`}>
+          <button type="button" onClick={onSend} disabled={sending || testing || !canSend} className={`${studioPrimaryButton} flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs disabled:opacity-50`}>
             <Send className="w-4 h-4" aria-hidden="true" />
             <span>{sending ? "Sender …" : `Send til ${people(personCount)}`}</span>
           </button>
@@ -101,8 +101,8 @@ export const NewsletterView: React.FC<NewsletterViewProps> = (props) => {
       </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <NewsletterBannerCard banner={banner} churchName={churchName} showFeedback={showFeedback} />
-        <NewsletterOptOutsCard optedOut={optedOut} showFeedback={showFeedback} />
+        <NewsletterBannerCard banner={banner} churchName={churchName} showFeedback={showFeedback} ask={ask} />
+        <NewsletterOptOutsCard optedOut={optedOut} showFeedback={showFeedback} ask={ask} />
       </div>
     </div>
   );

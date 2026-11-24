@@ -2,19 +2,22 @@ import React from "react";
 import { optBackIn } from "../../../../services/newsletter";
 import type { Person } from "../../../../types";
 import type { ShowFeedback } from "../../studio";
+import type { Ask } from "./chips";
 import { studioCardPadded, studioSecondaryButton } from "../../studioTheme";
 
 interface NewsletterOptOutsCardProps {
   /** The persons who have unsubscribed. Undefined while it is being read; null when it cannot be read. */
   optedOut: Pick<Person, "id" | "name" | "newsletterToken">[] | null | undefined;
   showFeedback: ShowFeedback;
+  /** Asks before the person gets the newsletter again, in the page. */
+  ask: Ask;
 }
 
 /** Who has unsubscribed from the newsletter, and the way to let it go to them again. */
-export const NewsletterOptOutsCard: React.FC<NewsletterOptOutsCardProps> = ({ optedOut, showFeedback }) => {
-  const backIn = (person: Pick<Person, "name" | "newsletterToken">) => {
+export const NewsletterOptOutsCard: React.FC<NewsletterOptOutsCardProps> = ({ optedOut, showFeedback, ask }) => {
+  const backIn = async (person: Pick<Person, "name" | "newsletterToken">) => {
     if (!person.newsletterToken) return;
-    if (!confirm(`Skal ${person.name} få nyhetsbrevet igjen? Gjør det bare når personen selv har bedt om det.`)) return;
+    if (!(await ask(`Skal ${person.name} få nyhetsbrevet igjen? Gjør det bare når personen selv har bedt om det.`, "Meld på igjen"))) return;
     optBackIn(person.newsletterToken).then(
       () => showFeedback(`${person.name} får nyhetsbrevet igjen.`),
       () => showFeedback("Det gikk ikke å melde på igjen. Prøv igjen.", "error")
@@ -35,7 +38,7 @@ export const NewsletterOptOutsCard: React.FC<NewsletterOptOutsCardProps> = ({ op
           {optedOut.map((person) => (
             <li key={person.id} className="py-2 flex items-center justify-between gap-2">
               <span className="text-xs font-bold text-[var(--studio-text)]">{person.name}</span>
-              <button type="button" onClick={() => backIn(person)} className={`${studioSecondaryButton} shrink-0`}>
+              <button type="button" onClick={() => void backIn(person)} className={`${studioSecondaryButton} shrink-0`}>
                 Meld på igjen
               </button>
             </li>
