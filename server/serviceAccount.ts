@@ -90,7 +90,7 @@ export async function accessToken(account: ServiceAccount, ask: Fetch, nowSecond
 }
 
 /** One request to the Identity Toolkit, as the service account. Thrown when Google refuses. */
-async function identityRequest(url: string, token: string, body: unknown, ask: Fetch): Promise<Record<string, unknown>> {
+export async function identityRequest(url: string, token: string, body: unknown, ask: Fetch): Promise<Record<string, unknown>> {
   const response = await ask(url, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },

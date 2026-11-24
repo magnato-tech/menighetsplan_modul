@@ -13,6 +13,7 @@ export const API_FUNCTIONS = {
   "kalender-innhold": "server/vercel/kalender-innhold.ts",
   epost: "server/vercel/epost.ts",
   innlogging: "server/vercel/innlogging.ts",
+  innloggingsepost: "server/vercel/innloggingsepost.ts",
   kontoer: "server/vercel/kontoer.ts",
   nyhetsbrevbilde: "server/vercel/nyhetsbrevbilde.ts",
 } as const;

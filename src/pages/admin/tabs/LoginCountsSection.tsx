@@ -1,6 +1,7 @@
 import React from "react";
 import { useLoginCounts } from "../../../hooks/useLoginCounts";
 import { formatLongDayLabel, type LoginCountSummary } from "../../../utils/loginCounts";
+import type { RequestTotals } from "../../../utils/loginRequests";
 import { LOGIN_COUNTS, countOf } from "../../../utils/siteTraffic";
 import { studioCardPadded, studioMuted } from "../studioTheme";
 
@@ -36,8 +37,12 @@ const BarDay: React.FC<{ summary: LoginCountSummary }> = ({ summary }) => {
   );
 };
 
-/** The sign-ins and openings of Min side per day, for the period the Innlogging tab shows. Sums only, no names. */
-export const LoginCountsSection: React.FC<{ days: number | null }> = ({ days }) => {
+/**
+ * The sign-ins and openings of Min side per day, for the period the Innlogging tab shows. Sums only,
+ * no names. `requestTotals` is the count of the requests for a sign-in link, or null when the log
+ * cannot be read: then its line is left out.
+ */
+export const LoginCountsSection: React.FC<{ days: number | null; requestTotals?: RequestTotals | null }> = ({ days, requestTotals }) => {
   const span = days ?? LOGIN_COUNT_ALL_DAYS;
   const { summary, error } = useLoginCounts(span);
   const since = summary?.countingSince ? formatLongDayLabel(summary.countingSince) : "i dag";
@@ -74,6 +79,11 @@ export const LoginCountsSection: React.FC<{ days: number | null }> = ({ days }) 
               </div>
               <BarDay summary={summary} />
             </>
+          )}
+          {requestTotals && (
+            <p className={`text-xs mt-3 ${studioMuted}`}>
+              {`Ba om lenke: ${requestTotals.requests} (sendt ${requestTotals.sent}, stoppet av sperren ${requestTotals.limited}, feilet ${requestTotals.failed})`}
+            </p>
           )}
         </>
       )}

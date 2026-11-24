@@ -181,6 +181,13 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // The log of requests for a sign-in link (server/signInEmail.ts). The installation's functions
+    // write it with the service account, which these rules do not stop; only an administrator reads it.
+    match /loginRequests/{requestId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
     // What the website shows of persons: public fields only
     match /publicProfiles/{personId} {
       allow read: if true;
