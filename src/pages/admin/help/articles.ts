@@ -643,12 +643,13 @@ const epost: HelpArticle = {
   hvor: "Planlegging → Send e-post",
   intro: "Si fra til ledere og frivillige, eller send nyhetsbrev til medlemmene.",
   steg: [
-    "Under **Start med**: velg en ferdig tekst, for eksempel **Nyhetsbrev**, eller **Tom e-post**.",
-    "Under **Hvem skal ha den**: velg mottakere. Antallet står under listen.",
+    "Under **Ny e-post** velger du en ferdig tekst under **Mal ▾**, og skriver mottakerne i **Til**: et navn, en gruppe eller en adresse, og Enter.",
+    "Under **Knapp** ved verktøylinjen velger du hvor knappen i e-posten skal føre, og om den skal logge mottakerne rett inn.",
     "Skriv emne og tekst. Merk ord og bruk knappene over feltet.",
-    "Trykk **Send prøve til meg** først, og så **Send til** med antallet mottakere.",
+    "Trykk **Send prøve**, skriv en adresse og trykk **Send**. Trykk så **Forhåndsvis**, og til slutt **Send til** med antallet mottakere.",
+    "**Sendte** viser det som er sendt. **Nyhetsbrev** har egen tekst til medlemmene eller til alle, og **Innstillinger** har adressen svarene går til.",
   ],
-  godt: "Hver person får sin egen e-post, og ingen ser de andres adresser. **Slik ser den ut** viser e-posten før du sender.",
+  godt: "Hver person får sin egen e-post, og ingen ser de andres adresser. **Forhåndsvis** viser e-posten før du sender.",
   passPa: "Sendt e-post kan ikke kalles tilbake. Les prøven før du sender til alle.",
   tabs: ["epost"],
 };

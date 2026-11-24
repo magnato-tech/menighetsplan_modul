@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, CheckCircle2, Mail, Send } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { Newspaper, PenLine, SendHorizontal, Settings, type LucideIcon } from "lucide-react";
 import { useCms } from "../../../context/CmsContext";
 import { useMinSideModules } from "../../../hooks/useMinSideModules";
 import { useSemesterPlans } from "../../../hooks/useSemesterPlans";
@@ -9,18 +10,20 @@ import { subscribeNewsletterBanner, subscribeNewsletterOptOuts } from "../../../
 import { formatNorwegianDateTime } from "../../../utils/dates";
 import { PLAN_STATUS_LABELS, planStatus } from "../../../utils/semesterPlan";
 import { newId } from "../../../utils/id";
-import { EMAIL_LINKS, EMAIL_SUBJECT_MAX, EMAIL_TEMPLATES, EMAIL_TEXT_MAX, emailDraftError, renderEmail, type EmailDraft, type EmailLink } from "../../../utils/emailMessage";
+import { EMAIL_TEMPLATES, emailDraftError, type EmailDraft, type EmailLink } from "../../../utils/emailMessage";
 import { recentSameSending, stopMessage, testStopMessage, withLogEntry, withRestSent, type EmailLogEntry, type EmailOutcome, type EmailRecord, type EmailStop } from "../../../utils/emailOutcome";
-import { audienceKey, audienceLabel, emailRecipients, isNewsletter, toEmailAudience, usableEmail, type EmailAudience } from "../../../utils/emailRecipients";
-import { TEST_UNSUBSCRIBE_TOKEN, optedOutPersonIds, unsubscribeUrlOf } from "../../../utils/newsletter";
-import { LOGIN_LINK_MAX_DAYS, daysAfter, formatLoginLinkUntil, loginLinkUntilError } from "../../../utils/loginLink";
+import { audienceKey, audienceLabel, emailRecipients, isNewsletter, usableEmail, type EmailAudience, type EmailRecipients } from "../../../utils/emailRecipients";
+import { optedOutPersonIds } from "../../../utils/newsletter";
+import { daysAfter, formatLoginLinkUntil, loginLinkUntilError } from "../../../utils/loginLink";
 import { testDraftFor } from "../../../utils/emailTest";
-import { isServiceGroup } from "../../../utils/personDirectory";
 import type { ShowFeedback, StudioData } from "../studio";
-import { studioCardPadded, studioInputFull, studioPrimaryButton, studioSecondaryButton } from "../studioTheme";
-import { EmailTextToolbar } from "./email/EmailTextToolbar";
-import { NewsletterBannerCard } from "./email/NewsletterBannerCard";
-import { NewsletterOptOutsCard } from "./email/NewsletterOptOutsCard";
+import { EmailComposer } from "./email/EmailComposer";
+import { EmailSettings } from "./email/EmailSettings";
+import { NewsletterView } from "./email/NewsletterView";
+import { SentList } from "./email/SentList";
+import type { ButtonOptionsProps, LinkSpan } from "./email/ButtonOptions";
+import { audienceChip, countOf, newsletterAudience, people, resolveChips, type NewsletterKind, type RecipientChip } from "./email/chips";
+import { navItem, resultBox } from "./email/emailStyles";
 
 interface EmailTabProps {
   studio: Pick<StudioData, "adminPersons" | "adminGroups" | "currentUser">;
@@ -30,12 +33,27 @@ interface EmailTabProps {
   now?: () => Date;
 }
 
+/** The four views: the e-mail being written, what has been sent, the newsletter, and the settings. */
+type EmailView = "ny" | "sendte" | "nyhetsbrev" | "innstillinger";
+/** How a view is named in the address, as `&vis=`. «Ny e-post» is the page's own address. */
+const VIEW_PARAM: Record<EmailView, string | null> = { ny: null, sendte: "sendte", nyhetsbrev: "nyhetsbrev", innstillinger: "innstillinger" };
+const viewOf = (param: string | null): EmailView => (param === "sendte" || param === "nyhetsbrev" || param === "innstillinger" ? param : "ny");
+const MAIN_VIEWS: { view: EmailView; label: string; icon: LucideIcon }[] = [
+  { view: "ny", label: "Ny e-post", icon: PenLine },
+  { view: "sendte", label: "Sendte", icon: SendHorizontal },
+  { view: "nyhetsbrev", label: "Nyhetsbrev", icon: Newspaper },
+];
+
+type Notice = { good: boolean; text: string };
+
 const EMPTY: EmailDraft = { subject: "", text: "", link: "minside" };
 /** Only what is sent: a ready-made text has a name and an audience too, which the draft has not. */
 const draftOf = ({ subject, text, link, planId }: EmailDraft): EmailDraft =>
   link === "semesterplan" && planId !== undefined ? { subject, text, link, planId } : { subject, text, link };
 /** The draft with another button. Only a semester plan's button has a plan; every other link leaves it out. */
 const withLink = (current: EmailDraft, link: EmailLink, planId: string | undefined): EmailDraft => draftOf({ ...current, link, planId });
+/** Nobody, for a composer with no recipients chosen. */
+const NOBODY: EmailRecipients = { recipients: [], withoutEmail: [], optedOut: [] };
 /** Where this browser keeps the last choice of how long login links work. Only a convenience: anything unreadable gives 30 days. */
 const LINK_CHOICE_KEY = "menighetsplan_innloggingslenke_varighet";
 function readLinkChoice(): { span: "14" | "30" | "dato"; date: string | null } {
@@ -55,37 +73,49 @@ function keepLinkChoice(span: string, date: string): void {
   }
 }
 
-const people = (count: number): string => (count === 1 ? "1 person" : `${count} personer`);
-const label = "block text-[11px] font-bold text-[var(--studio-muted)] mb-1";
+/** One sending, as the page has it: the text, who it goes to, and what the log calls them. */
+interface Sending {
+  draft: EmailDraft;
+  audience: EmailAudience;
+  onlyPersonIds?: string[];
+  label: string;
+  recipients: EmailRecipients;
+  loginLinks: boolean;
+}
 
 /** E-mail from the administration to the leaders and the volunteers, and the newsletter, with a log of what has been sent. */
 export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSend = DEMO === null, now = () => new Date() }) => {
   const persons = useMemo(() => studio.adminPersons.map((row) => row.person), [studio.adminPersons]);
   const groups = useMemo(() => studio.adminGroups.map((row) => row.group), [studio.adminGroups]);
   const churchName = useCms().settings.churchName?.trim() || "Menigheten";
+  // The view is kept in the address, as the other sub-views of the admin are (see studio.ts)
+  const [searchParams, setSearchParams] = useSearchParams();
+  const view = viewOf(searchParams.get("vis"));
 
   // undefined while what is stored is being read
   const [record, setRecord] = useState<EmailRecord | undefined>(undefined);
   const [replyTo, setReplyTo] = useState("");
-  const [templateId, setTemplateId] = useState<string>(EMAIL_TEMPLATES[0].id);
-  const [audience, setAudience] = useState<EmailAudience>(EMAIL_TEMPLATES[0].audience);
-  const [draft, setDraft] = useState<EmailDraft>(draftOf(EMAIL_TEMPLATES[0]));
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState<"test" | "send" | null>(null);
-  const [result, setResult] = useState<{ good: boolean; text: string } | null>(null);
   // The keys that have unsubscribed: undefined while they are read, null when the database refuses them
   const [optOutKeys, setOptOutKeys] = useState<string[] | null | undefined>(undefined);
   const [banner, setBanner] = useState<string | null | undefined>(undefined);
-  const textField = useRef<HTMLTextAreaElement>(null);
-  // The box that tests the sending: its own address and its own result, apart from the page's
+  // The e-mail and the newsletter each keep their own text and recipients
+  const [chips, setChips] = useState<RecipientChip[]>(() => [audienceChip(EMAIL_TEMPLATES[0].audience, groups)]);
+  const [draft, setDraft] = useState<EmailDraft>(draftOf(EMAIL_TEMPLATES[0]));
+  const [newsDraft, setNewsDraft] = useState<EmailDraft>(draftOf(EMAIL_TEMPLATES.find((template) => isNewsletter(template.audience)) ?? EMPTY));
+  const [newsKind, setNewsKind] = useState<NewsletterKind>("members");
+  // Shown above the view, so a stopped sending is told wherever it was started
+  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<Notice | null>(null);
+  const [sending, setSending] = useState(false);
+  // The panel «Send prøve»: its own address and its own result, apart from the sending
   const [testAddressText, setTestAddressText] = useState(() => studio.currentUser?.email ?? "");
-  const [testBusy, setTestBusy] = useState(false);
-  const [testResult, setTestResult] = useState<{ good: boolean; text: string } | null>(null);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<Notice | null>(null);
   // Whether the button of each recipient is a personal login link (see utils/loginLink.ts). Off unless ticked.
   const [loginLinks, setLoginLinks] = useState(false);
   // How long the login links work: 14 or 30 days, or through a chosen day. The choice is kept in this browser.
   const today = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Oslo" });
-  const [linkSpan, setLinkSpan] = useState<"14" | "30" | "dato">(() => readLinkChoice().span);
+  const [linkSpan, setLinkSpan] = useState<LinkSpan>(() => readLinkChoice().span);
   const [linkDate, setLinkDate] = useState(() => readLinkChoice().date ?? daysAfter(today, 30));
   const loginLinkUntil = linkSpan === "dato" ? linkDate : daysAfter(today, Number(linkSpan));
   const loginLinkProblem = loginLinkUntilError(loginLinkUntil, today);
@@ -124,34 +154,36 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
     []
   );
 
-  const newsletter = isNewsletter(audience);
-  // The checkbox is only there for a plain e-mail with a button; a newsletter never gets login links
-  const showLoginLinks = draft.link !== "ingen" && !newsletter;
-  const loginLinksOn = loginLinks && showLoginLinks;
-  const optedOutIds = useMemo(() => optedOutPersonIds(persons, optOutKeys ?? []), [persons, optOutKeys]);
-  const optedOutPersons = useMemo(() => (optOutKeys === undefined || optOutKeys === null ? optOutKeys : persons.filter((person) => optedOutIds.has(person.id))), [optOutKeys, persons, optedOutIds]);
-  const { recipients, withoutEmail, optedOut } = useMemo(() => emailRecipients(audience, persons, groups, undefined, optedOutIds), [audience, persons, groups, optedOutIds]);
-  // One e-mail per address: with copies, or a shared address, the addresses and the persons are not the same number
-  const personCount = useMemo(() => new Set(recipients.flatMap((recipient) => recipient.personIds)).size, [recipients]);
-  const addressNote = recipients.length !== personCount ? ` (${recipients.length} e-postadresser)` : "";
   const storedReplyTo = record?.replyTo ?? "";
-  const preview = useMemo(
-    () =>
-      renderEmail({
-        draft,
-        churchName,
-        siteUrl: window.location.origin,
-        firstName: "Kari",
-        ...(newsletter ? { newsletter: { unsubscribeUrl: unsubscribeUrlOf(window.location.origin, TEST_UNSUBSCRIBE_TOKEN), bannerUrl: banner ?? null } } : {}),
-        ...(loginLinksOn ? { loginLink: true, ...(loginLinkProblem ? {} : { loginLinkUntil }) } : {}),
-      }),
-    [draft, churchName, newsletter, banner, loginLinksOn, loginLinkUntil, loginLinkProblem]
+  const optedOutIds = useMemo(() => optedOutPersonIds(persons, optOutKeys ?? []), [persons, optOutKeys]);
+  const optedOutPersons = useMemo(
+    () => (optOutKeys === undefined || optOutKeys === null ? optOutKeys : persons.filter((person) => optedOutIds.has(person.id))),
+    [optOutKeys, persons, optedOutIds]
   );
+
+  // Who the e-mail goes to: the chips in «Til» as one audience, and the newsletter's audience as chosen
+  const target = useMemo(() => resolveChips(chips, persons, groups), [chips, persons, groups]);
+  const composerRecipients = useMemo(
+    () => (target ? emailRecipients(target.audience, persons, groups, target.onlyPersonIds, optedOutIds) : NOBODY),
+    [target, persons, groups, optedOutIds]
+  );
+  const newsRecipients = useMemo(() => emailRecipients(newsletterAudience(newsKind), persons, groups, undefined, optedOutIds), [newsKind, persons, groups, optedOutIds]);
+  const newsCounts = useMemo(
+    () => ({
+      members: countOf(emailRecipients(newsletterAudience("members"), persons, groups, undefined, optedOutIds)),
+      everyone: countOf(emailRecipients(newsletterAudience("everyone"), persons, groups, undefined, optedOutIds)),
+    }),
+    [persons, groups, optedOutIds]
+  );
+
+  const loginLinksOn = loginLinks && draft.link !== "ingen";
+  const loginNote = loginLinksOn ? (loginLinkProblem ?? `Logger mottakerne inn, til og med ${formatLoginLinkUntil(loginLinkUntil)}`) : null;
 
   // The semester plans the button may open: those not yet closed, in the order they come
   const semesterOn = useMinSideModules().isOn("semesterplan");
   const { plans, ready: plansReady } = useSemesterPlans(semesterOn);
   const choosablePlans = plans.filter((plan) => planStatus(plan, now()) !== "lukket");
+  const planChoices = choosablePlans.map((plan) => ({ id: plan.id, text: `${plan.name} (${PLAN_STATUS_LABELS[planStatus(plan, now())]})` }));
   /** The plan a semester button opens: the one given if it can still be chosen, else the first that can. */
   const planFor = (current: string | undefined): string | undefined => (current !== undefined && choosablePlans.some((plan) => plan.id === current) ? current : choosablePlans[0]?.id);
   const chosenPlan = planFor(draft.planId);
@@ -161,18 +193,57 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
     setDraft((current) => withLink(current, "semesterplan", chosenPlan));
   }, [draft.link, draft.planId, chosenPlan]);
 
-  const choose = (id: string) => {
-    setTemplateId(id);
+  const chooseTemplate = (id: string) => {
     setError(null);
     setResult(null);
     const template = EMAIL_TEMPLATES.find((candidate) => candidate.id === id);
     if (template) {
       setDraft(withLink(template, template.link, template.link === "semesterplan" ? planFor(undefined) : undefined));
-      setAudience(template.audience);
+      setChips([audienceChip(template.audience, groups)]);
     } else setDraft(EMPTY);
   };
-
   const chooseLink = (link: EmailLink) => setDraft((current) => withLink(current, link, link === "semesterplan" ? planFor(current.planId) : undefined));
+  const choosePlan = (planId: string) => setDraft((current) => withLink(current, "semesterplan", planId));
+
+  /** The address and the link choice, as the «Knapp» panel shows them. */
+  const buttonProps: ButtonOptionsProps = {
+    link: draft.link,
+    onLink: chooseLink,
+    semesterOn,
+    plans: planChoices,
+    plansReady,
+    plan: chosenPlan,
+    onPlan: choosePlan,
+    loginLinks,
+    onLoginLinks: setLoginLinks,
+    span: linkSpan,
+    onSpan: setLinkSpan,
+    date: linkDate,
+    onDate: (value) => {
+      setLinkDate(value);
+      setLinkSpan("dato");
+    },
+    today,
+    until: loginLinkUntil,
+    problem: loginLinkProblem,
+  };
+
+  /** Moves to another view. Notices belong to the view they were made in, so they are cleared. */
+  const showView = (next: EmailView) => {
+    setError(null);
+    setResult(null);
+    setTestResult(null);
+    setSearchParams(
+      (previous) => {
+        const params = new URLSearchParams(previous);
+        const value = VIEW_PARAM[next];
+        if (value === null) params.delete("vis");
+        else params.set("vis", value);
+        return params;
+      },
+      { replace: true }
+    );
+  };
 
   const storeReplyTo = () => {
     const address = usableEmail(replyTo);
@@ -184,15 +255,15 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
   };
 
   /** What stands in the way of a test, or null. The draft is not looked at: a test sends a fixed one when the page's is not valid. */
-  const testBlocked = (): string | null => {
+  const testBlocked = (withLoginLinks: boolean): string | null => {
     if (!canSend) return "Demoen sender ikke e-post.";
     if (storedReplyTo === "") return "Lagre adressen svar skal gå til, før du sender.";
-    if (loginLinksOn && loginLinkProblem) return loginLinkProblem;
+    if (withLoginLinks && loginLinkProblem) return loginLinkProblem;
     return null;
   };
 
-  /** What stands in the way of sending, or null. */
-  const blocked = (): string | null => testBlocked() ?? emailDraftError(draft);
+  /** What stands in the way of sending a text, or null. */
+  const preflight = (source: EmailDraft, withLoginLinks: boolean): string | null => testBlocked(withLoginLinks) ?? emailDraftError(source);
 
   /** What a sending that stopped is told with. */
   const stopText = (sent: number, stopped: EmailStop, left: number, detail?: string): string => `${sent > 0 ? `${people(sent)} fikk e-posten. ` : ""}${stopMessage(stopped, left, detail)}`;
@@ -206,30 +277,20 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
     setResult({ good: true, text: done });
   };
 
-  const sendTest = async () => {
-    const wrong = blocked();
-    setError(wrong);
-    if (wrong) return;
-    setBusy("test");
-    setResult(null);
-    const outcome = await requestEmail(newsletter ? { ...draft, mode: "test", audience } : { ...draft, mode: "test", ...(loginLinksOn ? { loginLinks: true as const, loginLinkUntil } : {}) });
-    setBusy(null);
-    tell(outcome, "Prøven er sendt til e-postadressen du er logget inn med. Sjekk innboksen, og søppelposten.");
-  };
-
-  /** Sends the test to the one address the box names, and logs that it was sent. */
-  const sendOwnTest = async () => {
+  /** Sends the test to the one address the panel names, and logs that it was sent. A newsletter test gets its audience too. */
+  const sendTestMail = async (source: EmailDraft, newsletter: NewsletterKind | null) => {
     const address = usableEmail(testAddressText);
     if (!address) return setTestResult({ good: false, text: "Skriv en gyldig e-postadresse." });
-    const wrong = testBlocked();
+    const withLoginLinks = newsletter === null && loginLinksOn;
+    const wrong = testBlocked(withLoginLinks);
     if (wrong) return setTestResult({ good: false, text: wrong });
-    const testDraft = testDraftFor(draft, churchName);
-    setTestBusy(true);
+    const testDraft = testDraftFor(source, churchName);
+    setTesting(true);
     setTestResult(null);
     // With the box ticked, the test carries a login link too, when the address is a member's (see server/emailSending.ts)
-    const testLoginLinks = loginLinksOn && testDraft.link !== "ingen" ? { loginLinks: true as const, loginLinkUntil } : {};
-    const outcome = await requestEmail({ ...testDraft, mode: "test", to: address, ...testLoginLinks });
-    setTestBusy(false);
+    const testLoginLinks = withLoginLinks && testDraft.link !== "ingen" ? { loginLinks: true as const, loginLinkUntil } : {};
+    const outcome = await requestEmail({ ...testDraft, mode: "test", to: address, ...(newsletter ? { audience: newsletterAudience(newsletter) } : {}), ...testLoginLinks });
+    setTesting(false);
     if (outcome.ok && record) {
       const entry: EmailLogEntry = {
         id: newId("epost"),
@@ -251,26 +312,35 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
     setTestResult({ good: true, text: `Sendt til ${address} kl. ${clock}. Utsendingen virker. Kom den ikke fram, sjekk søppelposten.` });
   };
 
-  const send = async () => {
-    const wrong = blocked() ?? (recipients.length === 0 ? "Ingen av mottakerne har en e-postadresse." : null);
+  /** Sends an e-mail to all of its recipients, after the questions the administrator is asked, and logs it. */
+  const sendMail = async (sendingNow: Sending) => {
+    const { personCount, addressNote } = countOf(sendingNow.recipients);
+    const wrong = preflight(sendingNow.draft, sendingNow.loginLinks) ?? (sendingNow.recipients.recipients.length === 0 ? "Ingen av mottakerne har en e-postadresse." : null);
     setError(wrong);
     if (wrong || !record) return;
-    const to = audienceLabel(audience, groups);
-    const before = recentSameSending(record.log, audienceKey, audience, draft.subject, now());
+    const to = sendingNow.label;
+    const subject = sendingNow.draft.subject.trim();
+    const before = recentSameSending(record.log, audienceKey, sendingNow.audience, sendingNow.draft.subject, now());
     if (before && !confirm(`Denne e-posten ble sendt til «${to}» ${formatNorwegianDateTime(before.sentAt)}. Vil du sende den en gang til?`)) return;
-    if (!confirm(`Du sender «${draft.subject.trim()}» til ${people(personCount)}${addressNote} (${to}). Vil du sende?`)) return;
+    if (!confirm(`Du sender «${subject}» til ${people(personCount)}${addressNote} (${to}). Vil du sende?`)) return;
 
-    setBusy("send");
+    setSending(true);
     setResult(null);
-    const outcome = await requestEmail({ ...draft, mode: "send", audience, ...(loginLinksOn ? { loginLinks: true as const } : {}) });
-    setBusy(null);
+    const outcome = await requestEmail({
+      ...sendingNow.draft,
+      mode: "send",
+      audience: sendingNow.audience,
+      ...(sendingNow.onlyPersonIds ? { onlyPersonIds: sendingNow.onlyPersonIds } : {}),
+      ...(sendingNow.loginLinks ? { loginLinks: true as const, loginLinkUntil } : {}),
+    });
+    setSending(false);
     if (outcome.ok) {
       const entry: EmailLogEntry = {
         id: newId("epost"),
         sentAt: now().toISOString(),
-        audience,
+        audience: sendingNow.audience,
         audienceLabel: to,
-        subject: draft.subject.trim(),
+        subject,
         sent: outcome.sent,
         withoutEmail: outcome.withoutEmail,
         stopped: outcome.stopped,
@@ -281,17 +351,37 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
     tell(outcome, `E-posten er sendt til ${people(outcome.ok ? outcome.sent : 0)}.${loginLinksText(outcome)}`);
   };
 
-  /** Sends to those a stopped sending left: the same e-mail as stands in the form now. */
+  /** «Send til» in «Ny e-post»: the chips as they stand. */
+  const sendComposer = () => {
+    if (!target) return setError(preflight(draft, loginLinksOn) ?? "Legg til minst én mottaker.");
+    void sendMail({ draft, audience: target.audience, onlyPersonIds: target.onlyPersonIds, label: target.label, recipients: composerRecipients, loginLinks: loginLinksOn });
+  };
+
+  /** «Send til» in «Nyhetsbrev»: the newsletter as it stands. Never with login links. */
+  const sendNewsletter = () => {
+    const audience = newsletterAudience(newsKind);
+    void sendMail({ draft: newsDraft, audience, label: audienceLabel(audience, groups), recipients: newsRecipients, loginLinks: false });
+  };
+
+  /** Sends to those a stopped sending left: the same e-mail as stands in the form now, with the text of its kind. */
   const sendRest = async (entry: EmailLogEntry) => {
-    const wrong = blocked();
+    const newsletter = isNewsletter(entry.audience);
+    const source = newsletter ? newsDraft : draft;
+    const withLoginLinks = loginLinksOn && !newsletter;
+    const wrong = preflight(source, withLoginLinks);
     setError(wrong);
     if (wrong || !record) return;
-    if (!confirm(`Du sender «${draft.subject.trim()}» til ${people(entry.remainingPersonIds.length)} som gjenstår (${entry.audienceLabel}). Teksten er den som står i skjemaet nå. Vil du sende?`)) return;
-    setBusy("send");
+    if (!confirm(`Du sender «${source.subject.trim()}» til ${people(entry.remainingPersonIds.length)} som gjenstår (${entry.audienceLabel}). Teksten er den som står i skjemaet nå. Vil du sende?`)) return;
+    setSending(true);
     setResult(null);
-    const restLoginLinks = loginLinksOn && !isNewsletter(entry.audience) ? { loginLinks: true as const, loginLinkUntil } : {};
-    const outcome = await requestEmail({ ...draft, mode: "send", audience: entry.audience, onlyPersonIds: entry.remainingPersonIds, ...restLoginLinks });
-    setBusy(null);
+    const outcome = await requestEmail({
+      ...source,
+      mode: "send",
+      audience: entry.audience,
+      onlyPersonIds: entry.remainingPersonIds,
+      ...(withLoginLinks ? { loginLinks: true as const, loginLinkUntil } : {}),
+    });
+    setSending(false);
     if (outcome.ok) {
       const next = withRestSent(record.log, entry.id, outcome.remainingPersonIds, outcome.stopped).map((other) => (other.id === entry.id ? { ...other, sent: other.sent + outcome.sent } : other));
       saveEmailLog(next).catch(() => showFeedback("E-posten er sendt, men loggen kunne ikke lagres.", "error"));
@@ -299,12 +389,11 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
     tell(outcome, `E-posten er sendt til ${people(outcome.ok ? outcome.sent : 0)} som gjensto.${loginLinksText(outcome)}`);
   };
 
-  const audienceValue = audience.kind === "group" ? `group:${audience.groupId}` : audience.kind;
-  const chooseAudience = (value: string) => {
-    const next = toEmailAudience(value.startsWith("group:") ? { kind: "group", groupId: value.slice(6) } : { kind: value });
-    if (next) setAudience(next);
-  };
-  const sortedGroups = [...groups].sort((a, b) => a.name.localeCompare(b.name, "nb"));
+  const templates = [
+    ...EMAIL_TEMPLATES.filter((template) => !isNewsletter(template.audience)).map((template) => ({ id: template.id, label: template.label })),
+    { id: "tom", label: "Tom e-post" },
+  ];
+  const busy = sending || testing;
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -321,296 +410,94 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
         </p>
       )}
 
-      <section aria-label="Svaradresse" className={studioCardPadded}>
-        <label htmlFor="email-reply-to" className={label}>
-          Svar går til
-        </label>
-        <div className="flex flex-col sm:flex-row gap-2">
-          <input
-            id="email-reply-to"
-            type="email"
-            value={replyTo}
-            onChange={(event) => setReplyTo(event.target.value)}
-            placeholder="post@menigheten.no"
-            className={`${studioInputFull} sm:max-w-sm`}
-          />
-          <button type="button" onClick={storeReplyTo} disabled={record === undefined || (usableEmail(replyTo) ?? "") === storedReplyTo} className={`${studioSecondaryButton} disabled:opacity-50`}>
-            Lagre
-          </button>
-        </div>
-        <p className="text-[11px] text-[var(--studio-muted)] mt-2">
-          E-posten sendes fra en adresse ingen leser. Den som svarer, når denne adressen.
-          {record !== undefined && storedReplyTo === "" && <strong className="text-amber-500"> Ingen adresse er lagret ennå.</strong>}
-        </p>
-      </section>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <section aria-label="E-posten" className={`${studioCardPadded} space-y-4`}>
-          <div>
-            <span className={label}>Start med</span>
-            <div className="flex flex-wrap gap-2">
-              {[...EMAIL_TEMPLATES.map((template) => ({ id: template.id, text: template.label })), { id: "tom", text: "Tom e-post" }].map((choice) => (
-                <button
-                  key={choice.id}
-                  type="button"
-                  aria-pressed={templateId === choice.id}
-                  onClick={() => choose(choice.id)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer border transition-colors ${
-                    templateId === choice.id ? "bg-indigo-600 border-indigo-600 text-white" : "border-[var(--studio-border)] text-[var(--studio-muted)] hover:text-[var(--studio-text)]"
-                  }`}
-                >
-                  {choice.text}
-                </button>
-              ))}
-            </div>
+      <div className="grid grid-cols-1 lg:grid-cols-[13rem_minmax(0,1fr)] gap-6">
+        <nav aria-label="Visning" className="flex flex-row flex-wrap lg:flex-col gap-1">
+          {MAIN_VIEWS.map((item) => (
+            <button key={item.view} type="button" aria-current={view === item.view ? "page" : undefined} onClick={() => showView(item.view)} className={navItem(view === item.view)}>
+              <item.icon className="w-4 h-4 shrink-0" aria-hidden="true" />
+              <span>{item.label}</span>
+            </button>
+          ))}
+          <div className="lg:mt-auto lg:pt-4">
+            <button type="button" aria-current={view === "innstillinger" ? "page" : undefined} onClick={() => showView("innstillinger")} className={navItem(view === "innstillinger")}>
+              <Settings className="w-4 h-4 shrink-0" aria-hidden="true" />
+              <span>Innstillinger</span>
+            </button>
           </div>
+        </nav>
 
-          <div>
-            <label htmlFor="email-audience" className={label}>
-              Hvem skal ha den
-            </label>
-            <select id="email-audience" value={audienceValue} onChange={(event) => chooseAudience(event.target.value)} className={studioInputFull}>
-              <optgroup label="Nyhetsbrev">
-                <option value="members">Medlemmer av menigheten</option>
-                <option value="everyone">Alle i registeret med e-post</option>
-              </optgroup>
-              <option value="leaders">Ledere og nestledere i tjenestegruppene</option>
-              <option value="serviceGroups">Alle i tjenestegruppene</option>
-              <optgroup label="Én gruppe">
-                {sortedGroups.map((group) => (
-                  <option key={group.id} value={`group:${group.id}`}>
-                    {group.name}
-                    {isServiceGroup(group) ? "" : " (ikke tjenestegruppe)"}
-                  </option>
-                ))}
-              </optgroup>
-            </select>
-            <p id="email-recipient-count" className="text-[11px] text-[var(--studio-muted)] mt-2">
-              <strong className="text-[var(--studio-text)]">{people(personCount)}</strong> får e-posten{addressNote}.
-              {withoutEmail.length > 0 && (
-                <>
-                  {" "}
-                  {people(withoutEmail.length)} mangler e-postadresse og får den ikke: {withoutEmail.map((person) => person.name).join(", ")}.
-                </>
-              )}
-              {optedOut.length > 0 && ` ${people(optedOut.length)} har meldt seg av nyhetsbrevet.`}
-            </p>
-            {newsletter && (
-              <p className="text-[11px] text-[var(--studio-muted)] mt-1">
-                Et nyhetsbrev får toppbildet øverst og en lenke nederst der mottakeren kan melde seg av. Medlemmer er de som er merket som medlem av menigheten i personregisteret.
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label htmlFor="email-subject" className={label}>
-              Emne
-            </label>
-            <input id="email-subject" type="text" maxLength={EMAIL_SUBJECT_MAX} value={draft.subject} onChange={(event) => setDraft({ ...draft, subject: event.target.value })} className={studioInputFull} />
-          </div>
-
-          <div>
-            <label htmlFor="email-text" className={label}>
-              Tekst
-            </label>
-            <EmailTextToolbar field={textField} onChange={(text) => setDraft((current) => ({ ...current, text }))} />
-            <textarea ref={textField} id="email-text" rows={newsletter ? 16 : 9} maxLength={EMAIL_TEXT_MAX} value={draft.text} onChange={(event) => setDraft({ ...draft, text: event.target.value })} className={`${studioInputFull} leading-relaxed`} />
-            <p className="text-[11px] text-[var(--studio-muted)] mt-1">
-              En tom linje gir nytt avsnitt. Merk tekst og trykk på en knapp over feltet for overskrift, fet skrift, lenke eller punktliste.{" "}
-              {newsletter ? "Toppbildet og lenken til avmelding legges til av seg selv." : "Hilsenen med fornavn og knappen legges til av seg selv."}
-            </p>
-          </div>
-
-          <div>
-            <label htmlFor="email-link" className={label}>
-              Knappen fører til
-            </label>
-            <select id="email-link" value={draft.link} onChange={(event) => chooseLink(event.target.value as EmailLink)} className={studioInputFull}>
-              {(Object.keys(EMAIL_LINKS) as EmailLink[])
-                .filter((link) => link !== "semesterplan" || semesterOn || draft.link === "semesterplan")
-                .map((link) => (
-                  <option key={link} value={link}>
-                    {EMAIL_LINKS[link].label}
-                  </option>
-                ))}
-            </select>
-          </div>
-
-          {draft.link === "semesterplan" && (
-            <div>
-              <label htmlFor="email-plan" className={label}>
-                Hvilken plan
-              </label>
-              {choosablePlans.length > 0 ? (
-                <>
-                  <select id="email-plan" value={chosenPlan ?? ""} onChange={(event) => setDraft((current) => withLink(current, "semesterplan", event.target.value))} className={studioInputFull}>
-                    {choosablePlans.map((plan) => (
-                      <option key={plan.id} value={plan.id}>
-                        {`${plan.name} (${PLAN_STATUS_LABELS[planStatus(plan, now())]})`}
-                      </option>
-                    ))}
-                  </select>
-                  <p className="text-[11px] text-[var(--studio-muted)] mt-1">Knappen «Planlegg semesteret» åpner planen. Den som ikke er logget inn, kommer dit rett etter innloggingen.</p>
-                </>
-              ) : (
-                <p className="text-[11px] text-amber-500">
-                  {plansReady || !semesterOn ? "Det finnes ingen åpen eller planlagt semesterplan. Lag en under Semesterplan først." : "Henter semesterplanene …"}
-                </p>
-              )}
-            </div>
-          )}
-
-          {showLoginLinks && (
-            <div>
-              <label className="flex items-start gap-2 text-xs font-bold text-[var(--studio-text)] cursor-pointer">
-                <input id="email-login-links" type="checkbox" checked={loginLinks} onChange={(event) => setLoginLinks(event.target.checked)} className="mt-0.5 accent-indigo-600" />
-                <span>Logg mottakerne rett inn med knappen</span>
-              </label>
-              <p className="text-[11px] text-[var(--studio-muted)] mt-1 ml-6">
-                Hver mottaker får sin egen knapp som logger dem inn, uten Google eller innloggings-e-post. Administratorer, nettredaktører og de som deler e-postadresse med andre, får vanlig knapp.
-              </p>
-              {loginLinks && (
-                <fieldset className="mt-2 ml-6 space-y-1.5">
-                  <legend className="text-[11px] font-bold text-[var(--studio-text)] mb-1">Lenken virker</legend>
-                  {(["14", "30"] as const).map((span) => (
-                    <label key={span} className="flex items-center gap-2 text-xs text-[var(--studio-text)] cursor-pointer">
-                      <input type="radio" name="email-login-link-span" checked={linkSpan === span} onChange={() => setLinkSpan(span)} className="accent-indigo-600" />
-                      {span} dager
-                    </label>
-                  ))}
-                  <label className="flex flex-wrap items-center gap-2 text-xs text-[var(--studio-text)] cursor-pointer">
-                    <input type="radio" name="email-login-link-span" checked={linkSpan === "dato"} onChange={() => setLinkSpan("dato")} className="accent-indigo-600" />
-                    til og med
-                    <input
-                      type="date"
-                      aria-label="Siste dag lenken virker"
-                      value={linkDate}
-                      min={today}
-                      max={daysAfter(today, LOGIN_LINK_MAX_DAYS)}
-                      onChange={(event) => {
-                        setLinkDate(event.target.value);
-                        setLinkSpan("dato");
-                      }}
-                      className="px-2 py-1 rounded-lg border border-[var(--studio-border)] bg-[var(--studio-bg)] text-xs"
-                    />
-                  </label>
-                  <p id="email-login-link-until" className={`text-[11px] ${loginLinkProblem ? "text-red-500" : "text-[var(--studio-muted)]"}`}>
-                    {loginLinkProblem ?? `Knappen virker til og med ${formatLoginLinkUntil(loginLinkUntil)}. Høyst ${LOGIN_LINK_MAX_DAYS} dager.`}
-                  </p>
-                </fieldset>
-              )}
-            </div>
-          )}
-
+        <div className="min-w-0 space-y-4">
           {error && (
             <p role="alert" className="text-xs font-bold text-red-400">
               {error}
             </p>
           )}
-
-          <div className="flex flex-col sm:flex-row gap-2 pt-1">
-            <button type="button" onClick={sendTest} disabled={busy !== null || !canSend} className={`${studioSecondaryButton} flex items-center justify-center gap-1.5 disabled:opacity-50`}>
-              <Mail className="w-4 h-4" aria-hidden="true" />
-              <span>{busy === "test" ? "Sender prøven …" : "Send prøve til meg"}</span>
-            </button>
-            <button type="button" onClick={send} disabled={busy !== null || !canSend || record === undefined} className={`${studioPrimaryButton} flex items-center justify-center gap-1.5 disabled:opacity-50`}>
-              <Send className="w-4 h-4" aria-hidden="true" />
-              <span>{busy === "send" ? "Sender …" : `Send til ${people(personCount)}`}</span>
-            </button>
-          </div>
-
           {result && (
-            <p role="status" className={`p-3 rounded-xl border text-xs flex items-start gap-2 ${result.good ? "border-emerald-500/40 bg-emerald-500/10" : "border-red-500/40 bg-red-500/10"} text-[var(--studio-text)]`}>
-              {result.good ? <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" aria-hidden="true" /> : <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" aria-hidden="true" />}
+            <p role="status" className={resultBox(result.good)}>
               <span>{result.text}</span>
             </p>
           )}
 
-          <section aria-labelledby="email-test-title" className="p-4 rounded-xl border border-[var(--studio-border)] space-y-3">
-            <h3 id="email-test-title" className="text-xs font-black text-[var(--studio-text)]">
-              Test e-postutsendingen
-            </h3>
-            <p className="text-[11px] text-[var(--studio-muted)]">Sender en kort prøve til én adresse, med teksten over, eller en fast prøvetekst når den er tom. Går ikke til noen andre. Er «Logg mottakerne rett inn med knappen» krysset av, og adressen er et vanlig medlems, logger knappen i prøven inn som det medlemmet.</p>
-            <div>
-              <label htmlFor="email-test-address" className={label}>
-                Send prøve til
-              </label>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <input id="email-test-address" type="email" value={testAddressText} onChange={(event) => setTestAddressText(event.target.value)} placeholder="din@adresse.no" className={`${studioInputFull} sm:max-w-sm`} />
-                <button type="button" onClick={sendOwnTest} disabled={testBusy || busy !== null || !canSend} className={`${studioSecondaryButton} flex items-center justify-center gap-1.5 shrink-0 disabled:opacity-50`}>
-                  <Send className="w-4 h-4" aria-hidden="true" />
-                  <span>{testBusy ? "Sender testen …" : "Send testen"}</span>
-                </button>
-              </div>
-            </div>
-            {testResult && (
-              <p role={testResult.good ? "status" : "alert"} className={`p-3 rounded-xl border text-xs flex items-start gap-2 ${testResult.good ? "border-emerald-500/40 bg-emerald-500/10" : "border-red-500/40 bg-red-500/10"} text-[var(--studio-text)]`}>
-                {testResult.good ? <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" aria-hidden="true" /> : <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" aria-hidden="true" />}
-                <span>{testResult.text}</span>
-              </p>
-            )}
-          </section>
-        </section>
+          {view === "ny" && (
+            <EmailComposer
+              canSend={canSend}
+              ready={record !== undefined}
+              churchName={churchName}
+              storedReplyTo={storedReplyTo}
+              persons={persons}
+              groups={groups}
+              chips={chips}
+              onChips={setChips}
+              recipients={composerRecipients}
+              draft={draft}
+              setDraft={setDraft}
+              templates={templates}
+              onTemplate={chooseTemplate}
+              buttonProps={buttonProps}
+              loginNote={loginNote}
+              previewLogin={{ loginLink: loginLinksOn, loginLinkUntil: loginLinkProblem ? undefined : loginLinkUntil }}
+              sending={sending}
+              testing={testing}
+              onSend={sendComposer}
+              testAddress={testAddressText}
+              onTestAddress={setTestAddressText}
+              testResult={testResult}
+              onSendTest={() => void sendTestMail(draft, null)}
+              onOpenSettings={() => showView("innstillinger")}
+            />
+          )}
 
-        <section aria-label="Slik ser den ut" className={`${studioCardPadded} space-y-3`}>
-          <h3 className="text-[11px] font-black uppercase tracking-wider text-[var(--studio-muted)]">Slik ser den ut</h3>
-          <dl className="text-[11px] text-[var(--studio-muted)] space-y-0.5">
-            <div>
-              <dt className="inline font-bold">Fra: </dt>
-              <dd className="inline">{churchName}</dd>
-            </div>
-            <div>
-              <dt className="inline font-bold">Emne: </dt>
-              <dd className="inline text-[var(--studio-text)]">{preview.subject || "–"}</dd>
-            </div>
-          </dl>
-          <iframe
-            id="email-preview"
-            title="Slik ser e-posten ut"
-            srcDoc={preview.html}
-            // No scripts can run in it; the same origin only lets the browser draw it as a frame of the page
-            sandbox="allow-same-origin"
-            className="w-full h-[560px] rounded-xl bg-white border border-[var(--studio-border)]"
-          />
-          <p className="text-[11px] text-[var(--studio-muted)]">
-            {newsletter ? "Lenkene virker ikke her, bare i e-posten." : "«Kari» står her for fornavnet til den som får e-posten. Lenkene virker ikke her, bare i e-posten."}
-          </p>
-        </section>
+          {view === "sendte" && <SentList record={record} busy={busy} canSend={canSend} onSendRest={(entry) => void sendRest(entry)} />}
+
+          {view === "nyhetsbrev" && (
+            <NewsletterView
+              canSend={canSend}
+              ready={record !== undefined}
+              churchName={churchName}
+              banner={banner}
+              optedOut={optedOutPersons}
+              showFeedback={showFeedback}
+              draft={newsDraft}
+              setDraft={setNewsDraft}
+              kind={newsKind}
+              onKind={setNewsKind}
+              counts={newsCounts}
+              recipients={newsRecipients}
+              sending={sending}
+              testing={testing}
+              onSend={sendNewsletter}
+              testAddress={testAddressText}
+              onTestAddress={setTestAddressText}
+              testResult={testResult}
+              onSendTest={() => void sendTestMail(newsDraft, newsKind)}
+            />
+          )}
+
+          {view === "innstillinger" && (
+            <EmailSettings replyTo={replyTo} onReplyTo={setReplyTo} storedReplyTo={storedReplyTo} loaded={record !== undefined} onSave={storeReplyTo} />
+          )}
+        </div>
       </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <NewsletterBannerCard banner={banner} churchName={churchName} showFeedback={showFeedback} />
-        <NewsletterOptOutsCard optedOut={optedOutPersons} showFeedback={showFeedback} />
-      </div>
-
-      <section aria-label="Sendt" className={studioCardPadded}>
-        <h3 className="text-[11px] font-black uppercase tracking-wider text-[var(--studio-muted)] mb-3">Sendt</h3>
-        {record === undefined ? (
-          <p className="text-xs text-[var(--studio-muted)]">Henter loggen …</p>
-        ) : record.log.length === 0 ? (
-          <p className="text-xs text-[var(--studio-muted)] italic">Ingen e-post er sendt herfra ennå.</p>
-        ) : (
-          <ul className="divide-y divide-[var(--studio-border)]">
-            {record.log.map((entry) => (
-              <li key={entry.id} className="py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-[var(--studio-text)] break-words">{entry.subject}</p>
-                  <p className="text-[11px] text-[var(--studio-muted)]">
-                    {formatNorwegianDateTime(entry.sentAt)} · {entry.audienceLabel} · sendt til {people(entry.sent)}
-                    {entry.withoutEmail > 0 && ` · ${entry.withoutEmail} uten e-postadresse`}
-                  </p>
-                  {entry.remainingPersonIds.length > 0 && <p className="text-[11px] font-bold text-amber-500">Stoppet før alle hadde fått den: {people(entry.remainingPersonIds.length)} gjenstår.</p>}
-                </div>
-                {entry.remainingPersonIds.length > 0 && (
-                  <button type="button" onClick={() => sendRest(entry)} disabled={busy !== null || !canSend} className={`${studioSecondaryButton} shrink-0 disabled:opacity-50`}>
-                    Send til dem som gjenstår
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
     </div>
   );
 };
