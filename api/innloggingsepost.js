@@ -319,6 +319,7 @@ function senderOf(churchName, address) {
 
 // server/signInEmail.ts
 var LOGINS = "logins";
+var SURFACES_DOCUMENT = "cms_settings/surfaces";
 var LOGIN_REQUESTS = "loginRequests";
 var ONE_EMAIL_URL = "https://api.resend.com/emails";
 var IDENTITY_URL = "https://identitytoolkit.googleapis.com/v1/projects";
@@ -363,6 +364,15 @@ async function logRequest(database, address, at, inRegister, result, ask, header
   } catch {
   }
 }
+async function websiteOf(database, ask, bearer, siteOrigin) {
+  const surfaces = await readDocument(database, SURFACES_DOCUMENT, ask, { Authorization: `Bearer ${bearer}` }).catch(() => null);
+  const web = (value) => typeof value === "string" && /^https?:\/\//i.test(value.trim()) ? value.trim() : "";
+  const set = web(surfaces?.signInBackUrl);
+  if (set) return set;
+  const own = surfaces?.ownWebsite !== false;
+  const external = web(surfaces?.externalSiteUrl);
+  return !own && external ? external : siteOrigin;
+}
 async function deliver({ ask, database, bearer, projectId, apiKey, fromAddress, address, inRegister, continueUrl, siteOrigin }) {
   try {
     const settings = await readDocument(database, SETTINGS_DOCUMENT, ask, { Authorization: `Bearer ${bearer}` });
@@ -392,7 +402,7 @@ async function deliver({ ask, database, bearer, projectId, apiKey, fromAddress, 
         { text: "Hei!" },
         { text: `Noen ba om å logge inn på Min side hos ${churchName} med denne adressen, men den står ikke i menighetens register.` },
         { text: "Kanskje er du registrert med en annen e-postadresse? Prøv den, eller ta kontakt med menigheten, så hjelper vi deg." },
-        { button: { label: "Til nettsiden", url: siteOrigin } },
+        { button: { label: "Til nettsiden", url: await websiteOf(database, ask, bearer, siteOrigin) } },
         { text: `Vennlig hilsen ${churchName}` }
       ];
     }

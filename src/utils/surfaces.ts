@@ -7,6 +7,8 @@ export interface InstallationSurfaces {
   minSide: boolean;
   ownWebsite: boolean;
   externalSiteUrl: string;
+  /** Where «Tilbake til nettsiden» on the sign-in page leads, when it is not the website here. Empty: as the other links. */
+  signInBackUrl: string;
   externalCalendarUrl: string;
   /** When on, new rows from the iCal feed are created with the proposed template at each sync. */
   importNewAutomatically: boolean;
@@ -18,6 +20,7 @@ export const defaultSurfaces = (): InstallationSurfaces => ({
   minSide: true,
   ownWebsite: true,
   externalSiteUrl: "",
+  signInBackUrl: "",
   externalCalendarUrl: "",
   importNewAutomatically: false,
   dismissedUids: [],
@@ -72,6 +75,11 @@ export function churchSiteUrl(surfaces: InstallationSurfaces): string | null {
   return url || null;
 }
 
+/** The address «Tilbake til nettsiden» on the sign-in page leads to, when one is set; else null and the link is as the others. */
+export function signInBackUrl(surfaces: Pick<InstallationSurfaces, "signInBackUrl">): string | null {
+  return validHttpsUrl(surfaces.signInBackUrl) || null;
+}
+
 export function icalFeedUrl(surfaces: InstallationSurfaces): string | null {
   const url = validHttpsUrl(normalizeExternalCalendarUrl(surfaces.externalCalendarUrl));
   return url || null;
@@ -98,6 +106,7 @@ export function parseSurfaces(data: Record<string, unknown> | undefined): Instal
     minSide: data.minSide === false ? false : true,
     ownWebsite: data.ownWebsite === false ? false : true,
     externalSiteUrl: typeof data.externalSiteUrl === "string" ? data.externalSiteUrl : "",
+    signInBackUrl: typeof data.signInBackUrl === "string" ? data.signInBackUrl : "",
     externalCalendarUrl: typeof data.externalCalendarUrl === "string" ? data.externalCalendarUrl : "",
     importNewAutomatically: data.importNewAutomatically === true,
     dismissedUids: strings(data.dismissedUids),

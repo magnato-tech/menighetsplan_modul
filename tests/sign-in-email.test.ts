@@ -207,6 +207,17 @@ describe("Lenken på e-post, sendt av menigheten selv", () => {
     expect(asked.some((call) => call.url.includes("api.resend.com"))).toBe(false);
   });
 
+  test("knappen «Til nettsiden» går til adressen som er satt for innloggingssiden", async () => {
+    const { ask: inner, asked } = serve({ logins: [] });
+    const ask: Fetch = async (url, init) =>
+      url.endsWith("/documents/cms_settings/surfaces")
+        ? { ok: true, status: 200, json: async () => ({ name: "x/cms_settings/surfaces", fields: { signInBackUrl: { stringValue: "https://kirken.example" } } }) }
+        : inner(url, init);
+    await sendSignInEmail({ env, siteUrl: SITE, body: BODY, ask, now: NOW });
+    const sent = asked.find((call) => call.url.includes("api.resend.com"));
+    expect(String(sent?.body?.html ?? JSON.parse(String((sent as any)?.body ?? "{}")).html)).toContain("https://kirken.example");
+  });
+
   test("loggen heter det samme i serveren som i appen", () => {
     expect(LOGIN_REQUESTS_COLLECTION).toBe("loginRequests");
   });
