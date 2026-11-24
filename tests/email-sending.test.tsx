@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { readFileSync } from "node:fs";
+import { daysAfter, formatLoginLinkUntil, loginLinkEndSeconds } from "../src/utils/loginLink";
 import { generateKeyPairSync } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
@@ -579,6 +580,27 @@ describe("Innloggingslenker i e-posten", () => {
     expect(byAddress.get("lars@example.org")!.html).toContain("/lenke?til=");
   });
 
+  test("lenken kan virke til og med en valgt dag, og e-posten sier hvilken", async () => {
+    const place = world();
+    const today = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Oslo" });
+    const until = daysAfter(today, 60);
+    const { body } = await sendWith(place, request({ audience: { kind: "serviceGroups" }, link: "minside", loginLinks: true, loginLinkUntil: until }));
+    expect(body).toMatchObject({ ok: true, loginLinks: 3 });
+    const frida = place.mails.flat().find((mail) => mail.to[0] === "frida@example.org")!;
+    expect(frida.html).toContain(`virker til og med ${formatLoginLinkUntil(until)}. Ikke send e-posten videre.`);
+    const token = new URL(linkIn(frida.html)!).hash.slice(1);
+    expect(readLoginToken(loginAccount, token, loginLinkEndSeconds(until) - 1)).toMatchObject({ personId: "frivillig" });
+    expect(readLoginToken(loginAccount, token, loginLinkEndSeconds(until))).toBe("expired");
+  });
+
+  test("en dag mer enn 120 dager fram, eller før i dag, nektes", async () => {
+    const today = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Oslo" });
+    const tooLate = await sendWith(world(), request({ audience: { kind: "serviceGroups" }, link: "minside", loginLinks: true, loginLinkUntil: daysAfter(today, 121) }));
+    expect(tooLate.body).toMatchObject({ ok: false, reason: "bad-request", message: "Innloggingslenken kan virke i høyst 120 dager. Velg en tidligere dato." });
+    const past = await sendWith(world(), request({ audience: { kind: "serviceGroups" }, link: "minside", loginLinks: true, loginLinkUntil: daysAfter(today, -1) }));
+    expect(past.body).toMatchObject({ ok: false, reason: "bad-request" });
+  });
+
   test("en administrator og en nettredaktør får vanlig knapp, også når de står i gruppen", async () => {
     const place = world({
       persons: [...persons, person("redaktor", "Rolf Redaktør", "rolf@example.org", "nettredaktor")],
@@ -684,7 +706,7 @@ describe("Siden «Send e-post» i admin", () => {
     expect(service.requestEmail.mock.calls[0][0]).not.toHaveProperty("loginLinks");
 
     fireEvent.click(box);
-    expect(document.getElementById("email-preview")?.getAttribute("srcdoc")).toContain("Knappen logger deg rett inn og virker i 14 dager. Ikke send e-posten videre.");
+    expect(document.getElementById("email-preview")?.getAttribute("srcdoc")).toMatch(/Knappen logger deg rett inn og virker til og med \d+\. \p{L}+ \d{4}\. Ikke send e-posten videre\./u);
     fireEvent.click(screen.getByRole("button", { name: "Send til 2 personer" }));
     await waitFor(() => expect(service.requestEmail).toHaveBeenCalledTimes(2));
     expect(service.requestEmail.mock.calls[1][0]).toMatchObject({ mode: "send", loginLinks: true });

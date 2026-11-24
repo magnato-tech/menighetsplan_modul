@@ -19,9 +19,9 @@ const sign = (key: Buffer, text: string): string => createHmac("sha256", key).up
 /** A short hash of the address (lower case, no blanks), so the token does not hold the address itself. */
 export const emailHashOf = (email: string): string => createHash("sha256").update(email.trim().toLowerCase(), "utf8").digest("base64url").slice(0, 22);
 
-/** The token for one person, valid for LOGIN_LINK_DAYS from `nowSeconds`. */
-export function makeLoginToken(account: ServiceAccount, personId: string, email: string, nowSeconds: number): string {
-  const payload = Buffer.from(JSON.stringify({ p: personId, e: emailHashOf(email), x: nowSeconds + LOGIN_LINK_DAYS * DAY_SECONDS }), "utf8").toString("base64url");
+/** The token for one person, valid until `endSeconds`, or for LOGIN_LINK_DAYS from `nowSeconds` when no end is given. */
+export function makeLoginToken(account: ServiceAccount, personId: string, email: string, nowSeconds: number, endSeconds?: number): string {
+  const payload = Buffer.from(JSON.stringify({ p: personId, e: emailHashOf(email), x: endSeconds ?? nowSeconds + LOGIN_LINK_DAYS * DAY_SECONDS }), "utf8").toString("base64url");
   return `${payload}.${sign(keyOf(account), payload)}`;
 }
 
