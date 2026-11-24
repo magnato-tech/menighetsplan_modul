@@ -2014,6 +2014,8 @@ git push origin origin/main:stabil
 
 **Sluppet til Lillesand 24. november 2026, husgruppene** (`stabil` = `a70964b`, `main` `d492814` slått sammen inn etter beskjed fra produkteier): husgruppemøtene i admin → Kalender under Husgrupper, Endre på gruppesiden i admin, og «Vis for gruppa» i stedet for «Send innkalling». Databasereglene er ikke endret.
 
+**Sluppet til Lillesand 24. november 2026, Innlogging-oversikten** (`stabil` = `c4b99ee`, `main` `5d9dd6c` slått sammen inn etter beskjed fra produkteier): ny fane Innlogging i admin, bare for administratorer, med hvem som har logget inn, hvem som aldri har det, hvem som kom inn med en adresse som ikke står i registeret, og hvem som ikke kan logge inn (mangler e-post eller deler adresse). Kontoene hentes ferskt fra Firebase med `FIREBASE_SERVICE_ACCOUNT` (`/api/kontoer`) og lagres ikke. Databasereglene er ikke endret. Samme dag ble Lillesand-prosjektet flyttet til Blaze, fordi Spark bare tillater 5 innloggings-e-poster per døgn.
+
 **Sluppet til Lillesand 24. november 2026** (etter beskjed fra produkteier, som prøvde endringene på localhost først): bare siste status per person og oppgave (forfall vises ikke flere ganger), Gudstjenester-fanen med ˅ og knappene Kjøreplan og Planlegg, tilbakeknappen fra kjøreplanen, tre vertikale prikker for «mer», og infoskjermen trinn 1 (`/skjerm`). Databasereglene er ikke endret.
 
 **Sluppet til Lillesand 24. november 2026, andre gang** (etter beskjed fra produkteier): testboksen for e-postutsendingen på «Send e-post». Databasereglene er ikke endret.
