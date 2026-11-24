@@ -105,6 +105,9 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
   const optedOutIds = useMemo(() => optedOutPersonIds(persons, optOutKeys ?? []), [persons, optOutKeys]);
   const optedOutPersons = useMemo(() => (optOutKeys === undefined || optOutKeys === null ? optOutKeys : persons.filter((person) => optedOutIds.has(person.id))), [optOutKeys, persons, optedOutIds]);
   const { recipients, withoutEmail, optedOut } = useMemo(() => emailRecipients(audience, persons, groups, undefined, optedOutIds), [audience, persons, groups, optedOutIds]);
+  // One e-mail per address: with copies, or a shared address, the addresses and the persons are not the same number
+  const personCount = useMemo(() => new Set(recipients.flatMap((recipient) => recipient.personIds)).size, [recipients]);
+  const addressNote = recipients.length !== personCount ? ` (${recipients.length} e-postadresser)` : "";
   const storedReplyTo = record?.replyTo ?? "";
   const preview = useMemo(
     () =>
@@ -228,7 +231,7 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
     const to = audienceLabel(audience, groups);
     const before = recentSameSending(record.log, audienceKey, audience, draft.subject, now());
     if (before && !confirm(`Denne e-posten ble sendt til «${to}» ${formatNorwegianDateTime(before.sentAt)}. Vil du sende den en gang til?`)) return;
-    if (!confirm(`Du sender «${draft.subject.trim()}» til ${people(recipients.length)} (${to}). Vil du sende?`)) return;
+    if (!confirm(`Du sender «${draft.subject.trim()}» til ${people(personCount)}${addressNote} (${to}). Vil du sende?`)) return;
 
     setBusy("send");
     setResult(null);
@@ -356,7 +359,7 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
               </optgroup>
             </select>
             <p id="email-recipient-count" className="text-[11px] text-[var(--studio-muted)] mt-2">
-              <strong className="text-[var(--studio-text)]">{people(recipients.length)}</strong> får e-posten.
+              <strong className="text-[var(--studio-text)]">{people(personCount)}</strong> får e-posten{addressNote}.
               {withoutEmail.length > 0 && (
                 <>
                   {" "}
@@ -455,7 +458,7 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
             </button>
             <button type="button" onClick={send} disabled={busy !== null || !canSend || record === undefined} className={`${studioPrimaryButton} flex items-center justify-center gap-1.5 disabled:opacity-50`}>
               <Send className="w-4 h-4" aria-hidden="true" />
-              <span>{busy === "send" ? "Sender …" : `Send til ${people(recipients.length)}`}</span>
+              <span>{busy === "send" ? "Sender …" : `Send til ${people(personCount)}`}</span>
             </button>
           </div>
 

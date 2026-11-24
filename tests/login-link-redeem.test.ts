@@ -23,6 +23,8 @@ const nowSeconds = Math.floor(NOW.getTime() / 1000);
 const encode = (value: unknown): RestValue => {
   if (typeof value === "string") return { stringValue: value };
   if (typeof value === "boolean") return { booleanValue: value };
+  if (Array.isArray(value)) return { arrayValue: { values: value.map(encode) } };
+  if (value && typeof value === "object") return { mapValue: { fields: fieldsOf(value) } };
   return { nullValue: null };
 };
 const fieldsOf = (data: object): RestFields => Object.fromEntries(Object.entries(data).map(([key, value]) => [key, encode(value)]));
@@ -149,3 +151,33 @@ function verify(token: string) {
   const ok = createVerify("RSA-SHA256").update(`${header}.${payload}`).verify(publicKey, Buffer.from(signature, "base64url"));
   return { ok, claims: JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as Record<string, unknown> };
 }
+
+describe("Innloggingslenken for en ekstra adresse som kan logge inn", () => {
+  beforeEach(() => vi.stubGlobal("console", { ...console, error: vi.fn() }));
+  afterEach(() => vi.unstubAllGlobals());
+  const withExtra = { id: "p1", name: "Kari Medlem", email: "kari@example.org", globalRole: "member", extraEmails: [{ address: "kari.jobb@example.org", copy: false, login: true }] };
+
+  test("en lenke til en ekstra adresse som kan logge inn, slår opp og logger inn kontoen på den adressen", async () => {
+    const place = world({ person: withExtra });
+    const { status, body } = await redeem(place, { token: linkFor("p1", "kari.jobb@example.org") });
+    expect(status).toBe(200);
+    expect(body).toMatchObject({ ok: true });
+    const looked = JSON.stringify(place.calls("accounts:lookup")[0]?.body);
+    expect(looked).toContain("kari.jobb@example.org");
+    expect(looked).not.toContain("kari@example.org");
+  });
+
+  test("en adresse som bare får kopi, kan ikke brukes til å logge inn", async () => {
+    const place = world({ person: { ...withExtra, extraEmails: [{ address: "kari.jobb@example.org", copy: true, login: false }] } });
+    expect((await redeem(place, { token: linkFor("p1", "kari.jobb@example.org") })).status).toBe(403);
+    expect(place.calls("accounts:lookup")).toHaveLength(0);
+  });
+
+  test("en lenke til en adresse som ikke lenger står på personen, blir avvist", async () => {
+    const place = world({ person: { ...withExtra, extraEmails: [] } });
+    const { status, body } = await redeem(place, { token: linkFor("p1", "kari.jobb@example.org") });
+    expect(status).toBe(403);
+    expect(body).toMatchObject({ ok: false });
+    expect(place.calls("accounts:lookup")).toHaveLength(0);
+  });
+});

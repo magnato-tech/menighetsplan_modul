@@ -78,3 +78,23 @@ describe("Hvem som har bedt om lenke, men ikke logget inn", () => {
     expect(overview.totals).toEqual({ requests: 3, sent: 1, limited: 1, failed: 1 });
   });
 });
+
+describe("Forespørsler når en person har flere innloggingsadresser", () => {
+  const mari: Person = { id: "mari", name: "Mari", email: "mari@eksempel.no", globalRole: "member", extraEmails: [{ address: "mari.privat@eksempel.no", copy: false, login: true }] };
+
+  test("den som har fått lenke til en ekstra adresse og ikke logget inn etter, står på listen med den adressen", () => {
+    const overview = requestOverviewOf([request("mari.privat@eksempel.no", MONDAY, "sent")], [mari], []);
+    expect(overview.askedNotSignedIn.map((row) => [row.person.id, row.address])).toEqual([["mari", "mari.privat@eksempel.no"]]);
+  });
+
+  test("innlogging med den andre adressen etter lenken, teller som innlogget", () => {
+    const overview = requestOverviewOf([request("mari.privat@eksempel.no", MONDAY, "sent")], [mari], [account("mari@eksempel.no", FRIDAY)]);
+    expect(overview.askedNotSignedIn).toEqual([]);
+  });
+
+  test("forespørsler på begge adressene teller sammen, og den siste som ble sendt, er den som vises", () => {
+    const overview = requestOverviewOf([request("mari@eksempel.no", MONDAY, "sent"), request("mari.privat@eksempel.no", WEDNESDAY, "sent")], [mari], []);
+    expect(overview.askedNotSignedIn).toHaveLength(1);
+    expect(overview.askedNotSignedIn[0]).toMatchObject({ address: "mari.privat@eksempel.no", latest: WEDNESDAY, count: 2 });
+  });
+});

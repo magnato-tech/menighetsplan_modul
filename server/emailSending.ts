@@ -7,6 +7,7 @@ import { readDemoInstallation, readInstallationConfig, type InstallationEnv } fr
 import { SEMESTER_PLAN_RECORD } from "../src/data/settingsRecords";
 import { emailButtonUrl, renderEmail, toEmailDraft, type EmailDraft } from "../src/utils/emailMessage";
 import { loginLinkUrl } from "../src/utils/loginLink";
+import { loginAddressesOf } from "../src/utils/personEmails";
 import type { EmailOutcome, EmailRefusal, EmailStop } from "../src/utils/emailOutcome";
 import { emailRecipients, firstNameOf, isNewsletter, toEmailAudience, usableEmail, type EmailRecipient } from "../src/utils/emailRecipients";
 import { TEST_UNSUBSCRIBE_TOKEN, isNewsletterToken, newNewsletterToken, newsletterBannerOf, newsletterBannerUrlOf, optedOutPersonIds, unsubscribeUrlOf } from "../src/utils/newsletter";
@@ -224,22 +225,22 @@ export async function sendEmail({ env, siteUrl, idToken, body, ask, wait = pause
     }
   }
 
-  // With login links, the button of each one who is in the register under the address, and is not an administrator or
-  // web editor, signs that person in (see server/loginLinkRedeem.ts). Anyone else keeps the ordinary button. A shared
-  // address gets the ordinary button too: the link is for one person, and the session refuses a shared address anyway.
+  // With login links, the button of each one who is in the register under an address they can sign in with, and is not an
+  // administrator or web editor, signs that person in (see server/loginLinkRedeem.ts). Anyone else keeps the ordinary
+  // button: a copy address that may not sign in, too. A shared address gets the ordinary button too: the link is for one
+  // person, and the session refuses a shared address anyway.
   const loginUrls = new Map<string, string>();
   if (account) {
     const base = siteUrl.replace(/\/+$/, "");
     const buttonPath = emailButtonUrl(draft, siteUrl)?.slice(base.length);
     const nowSeconds = Math.floor(Date.now() / 1000);
-    const addressCount = new Map<string, number>();
+    const loginCount = new Map<string, number>();
     for (const person of persons) {
-      const address = usableEmail(person.email);
-      if (address) addressCount.set(address, (addressCount.get(address) ?? 0) + 1);
+      for (const address of loginAddressesOf(person)) loginCount.set(address, (loginCount.get(address) ?? 0) + 1);
     }
     for (const recipient of recipients) {
       const owner = recipient.personIds.length === 1 ? persons.find((person) => person.id === recipient.personIds[0]) : undefined;
-      if (!owner || !buttonPath || addressCount.get(recipient.email) !== 1) continue;
+      if (!owner || !buttonPath || loginCount.get(recipient.email) !== 1 || !loginAddressesOf(owner).includes(recipient.email)) continue;
       if (owner.globalRole === "admin" || owner.globalRole === "nettredaktor") continue;
       loginUrls.set(recipient.email, loginLinkUrl(siteUrl, buttonPath, makeLoginToken(account, owner.id, recipient.email, nowSeconds)));
     }

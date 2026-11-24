@@ -1,5 +1,6 @@
 import type { Group, Person } from "../types";
 import { loginIdOf, loginsOf, sharedAddresses } from "./logins";
+import { loginAddressesOf } from "./personEmails";
 
 // The Innlogging tab: who in the register has signed in to Min side, who never has, who signed in
 // with an address that is not in the register, and who cannot sign in at all. The accounts are
@@ -73,8 +74,9 @@ const byName = (a: Person, b: Person): number => a.name.localeCompare(b.name, "n
 /** Matches the accounts against the register, with the login rule of utils/logins.ts. */
 export function overviewOf(persons: readonly Person[], groups: readonly Group[], accounts: readonly AccountRow[]): AccountOverview {
   const logins = loginsOf(persons);
-  // The address each person signs in with, by person id
-  const addressOfPerson = new Map(logins.map((login) => [login.personId, login.id]));
+  // The addresses each person signs in with, by person id: the main one and the extra ones that may sign in
+  const addressesOfPerson = new Map<string, string[]>();
+  for (const login of logins) addressesOfPerson.set(login.personId, [...(addressesOfPerson.get(login.personId) ?? []), login.id]);
   const loginAddresses = new Set(logins.map((login) => login.id));
   const shared = new Set(sharedAddresses(persons));
   const leaderIds = new Set(groups.flatMap((group) => [...group.leaderIds, ...(group.deputyLeaderIds ?? [])]));
@@ -90,13 +92,18 @@ export function overviewOf(persons: readonly Person[], groups: readonly Group[],
   const neverSignedIn: NeverSignedInRow[] = [];
   const cannotSignIn: CannotSignInRow[] = [];
   for (const person of persons) {
-    const address = addressOfPerson.get(person.id);
-    if (address === undefined) {
-      const own = loginIdOf(person.email);
-      cannotSignIn.push(shared.has(own) ? { person, reason: "shared", address: own } : { person, reason: "no-email" });
+    const addresses = addressesOfPerson.get(person.id) ?? [];
+    if (addresses.length === 0) {
+      // Nothing to sign in with: the address that is shared, or no usable address at all
+      const blocked = loginAddressesOf(person).find((address) => shared.has(address));
+      cannotSignIn.push(blocked !== undefined ? { person, reason: "shared", address: blocked } : { person, reason: "no-email" });
       continue;
     }
-    const account = accountOf.get(address);
+    // Signed in when any of the addresses has an account. The newest of them is the one shown.
+    const account = addresses
+      .map((address) => accountOf.get(address))
+      .filter((found): found is AccountRow => found !== undefined)
+      .sort(newestFirst)[0];
     if (account) signedIn.push({ person, account });
     else neverSignedIn.push({ person, isLeader: leaderIds.has(person.id) });
   }

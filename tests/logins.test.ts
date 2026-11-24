@@ -227,3 +227,35 @@ describe("Reglene i databasen", () => {
     expect(demo).not.toContain("isMember()");
   });
 });
+
+describe("Innloggingene når en person har flere adresser", () => {
+  const lise: Person = { id: "lise", name: "Lise Hansen", email: "lise@eksempel.no", globalRole: "member", extraEmails: [{ address: "lise.privat@eksempel.no", copy: false, login: true }] };
+  const pelle: Person = { id: "pelle", name: "Pelle", email: "pelle@eksempel.no", globalRole: "member", extraEmails: [{ address: "pelle.kopi@eksempel.no", copy: true, login: false }] };
+  const vera: Person = { id: "vera", name: "Vera", email: "pelle.kopi@eksempel.no", globalRole: "member" };
+
+  test("en ekstra adresse som kan logge inn, gir en innlogging til den personen", () => {
+    expect(loginsOf([lise])).toEqual<Login[]>([
+      { id: "lise.privat@eksempel.no", personId: "lise", role: "member" },
+      { id: "lise@eksempel.no", personId: "lise", role: "member" },
+    ]);
+  });
+
+  test("en ekstra adresse som bare får kopi, gir ingen innlogging, og er ikke delt", () => {
+    expect(loginsOf([pelle])).toEqual<Login[]>([{ id: "pelle@eksempel.no", personId: "pelle", role: "member" }]);
+    expect(sharedAddresses([pelle])).toEqual([]);
+  });
+
+  test("en kopiadresse som er en annens hovedadresse, gir den andre innloggingen og ingen delt adresse", () => {
+    expect(loginsOf([pelle, vera])).toEqual<Login[]>([
+      { id: "pelle.kopi@eksempel.no", personId: "vera", role: "member" },
+      { id: "pelle@eksempel.no", personId: "pelle", role: "member" },
+    ]);
+    expect(sharedAddresses([pelle, vera])).toEqual([]);
+  });
+
+  test("en ekstra innloggingsadresse som står på en annen person, er delt for begge, og gir ingen innlogging", () => {
+    const ingrid: Person = { id: "ingrid", name: "Ingrid", email: "lise.privat@eksempel.no", globalRole: "member" };
+    expect(loginsOf([lise, ingrid])).toEqual<Login[]>([{ id: "lise@eksempel.no", personId: "lise", role: "member" }]);
+    expect(sharedAddresses([lise, ingrid])).toEqual(["lise.privat@eksempel.no"]);
+  });
+});

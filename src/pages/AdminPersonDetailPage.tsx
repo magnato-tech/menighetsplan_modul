@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { isServiceGroup } from "../utils/personDirectory";
-import type { Person } from "../types";
+import type { ExtraEmail, Person } from "../types";
 import { useFirebase } from "../context/FirebaseDataContext";
+import { ExtraEmailsEditor } from "../components/admin/ExtraEmailsEditor";
+import { extraEmailsOf } from "../utils/personEmails";
 import { groupsToJoin } from "../utils/groupChoice";
 import { personTaskOverview, type PersonTaskRow } from "../utils/personTasks";
 import { personDeletion } from "../utils/personDeletion";
@@ -29,7 +31,7 @@ import { useTimedMessage } from "../hooks/useTimedMessage";
 import { toPublicProfile, publicProfileFields } from "../utils/publicProfile";
 import { compressImageFile } from "../utils/imageUpload";
 import { ageOn, birthDateError, formatBirthDate, todayInNorway } from "../utils/birthDate";
-import { membershipValue } from "../utils/personForm";
+import { extraEmailsError, extraEmailsToStore, membershipValue } from "../utils/personForm";
 import { DENOMINATION_ENROLLMENT_LABELS } from "../utils/membershipView";
 import { PersonMembershipLogSection } from "../components/admin/PersonMembershipLogSection";
 import { canManageMembershipApplications } from "./admin/membershipClerk";
@@ -76,6 +78,7 @@ export const AdminPersonDetailPage: React.FC = () => {
   const [name, setName] = useState<string>("");
   const [phone, setPhone] = useState<string>("");
   const [email, setEmail] = useState<string>("");
+  const [extraEmails, setExtraEmails] = useState<ExtraEmail[]>([]);
   const [birthDate, setBirthDate] = useState<string>("");
   const [congregationMember, setCongregationMember] = useState(false);
   const [denominationMember, setDenominationMember] = useState(false);
@@ -109,6 +112,7 @@ export const AdminPersonDetailPage: React.FC = () => {
       setName(person.name);
       setPhone(person.phone || "");
       setEmail(person.email || "");
+      setExtraEmails(extraEmailsOf(person.extraEmails));
       setBirthDate(person.birthDate || "");
       setCongregationMember(person.congregationMember === true);
       setDenominationMember(person.denominationMember === true);
@@ -276,10 +280,18 @@ export const AdminPersonDetailPage: React.FC = () => {
       return;
     }
 
+    const wrongExtraEmail = extraEmailsError(extraEmails, email);
+    if (wrongExtraEmail) {
+      showFeedback(wrongExtraEmail, "error");
+      return;
+    }
+    const storedExtraEmails = extraEmailsToStore(extraEmails, email);
+
     const res = updatePerson(person.id, {
       name: name.trim(),
       phone: phone.trim() || undefined,
       email: email.trim() || undefined,
+      extraEmails: storedExtraEmails.length > 0 ? storedExtraEmails : undefined,
       birthDate: birthDate || undefined,
       congregationMember: membershipValue(congregationMember),
       denominationMember: membershipValue(denominationMember),
@@ -532,6 +544,13 @@ export const AdminPersonDetailPage: React.FC = () => {
                     ) : (
                       <span>{person.email || "Ingen e-post"}</span>
                     )}
+                    {extraEmailsOf(person.extraEmails).map((item) => (
+                      <span key={item.address} className="rounded bg-slate-100 px-1.5 py-0.5 text-[var(--studio-text)]">
+                        {item.address}
+                        {item.copy && " · kopi"}
+                        {item.login && " · innlogging"}
+                      </span>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -603,6 +622,10 @@ export const AdminPersonDetailPage: React.FC = () => {
                 placeholder="F.eks. kari@eksempel.no"
                 className={studioDetailInput}
               />
+              <p className="text-[11px] text-[var(--studio-muted)]">Får all e-post fra menigheten og kan logge inn.</p>
+              <div className="pt-2">
+                <ExtraEmailsEditor rows={extraEmails} onChange={setExtraEmails} />
+              </div>
             </div>
 
             {/* Fødselsdato */}

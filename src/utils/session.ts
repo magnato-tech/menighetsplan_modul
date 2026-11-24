@@ -1,5 +1,6 @@
 import type { Person } from "../types";
 import { leadsGroup, type GroupRoles } from "./groups";
+import { loginAddressesOf } from "./personEmails";
 
 // Who is using the app.
 //
@@ -47,10 +48,13 @@ export type SessionRole = "administrator" | "nettredaktør" | "gruppeleder" | "m
 
 const normalized = (email: string | null | undefined): string => (email ?? "").trim().toLowerCase();
 
-/** The persons in the register who have the address. Capital letters and blanks around it do not matter. */
+/**
+ * The persons in the register who have the address as a login address (the main one, or an extra
+ * one that may sign in). Capital letters and blanks around it do not matter.
+ */
 export function personsWithEmail(email: string | null | undefined, persons: Person[]): Person[] {
   const wanted = normalized(email);
-  return wanted === "" ? [] : persons.filter((person) => normalized(person.email) === wanted);
+  return wanted === "" ? [] : persons.filter((person) => loginAddressesOf(person).includes(wanted));
 }
 
 /**

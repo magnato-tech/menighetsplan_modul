@@ -1,4 +1,5 @@
 import type { Group, Person } from "../types";
+import { copyAddressesOf } from "./personEmails";
 import { isServiceGroup } from "./personDirectory";
 
 // Who an e-mail from the administration goes to. The same reckoning is done twice: in the
@@ -18,7 +19,7 @@ export type EmailAudience =
   /** Exactly the persons named when it is sent (`onlyPersonIds`), e.g. everyone on a gathering. Never a newsletter. */
   | { kind: "persons" };
 
-type PersonOfRegister = Pick<Person, "id" | "name" | "email" | "congregationMember">;
+type PersonOfRegister = Pick<Person, "id" | "name" | "email" | "congregationMember" | "extraEmails">;
 type GroupOfRegister = Pick<Group, "id" | "name" | "category" | "memberIds" | "leaderIds" | "deputyLeaderIds">;
 
 export interface EmailRecipient {
@@ -78,6 +79,10 @@ export function audiencePersonIds(audience: EmailAudience, groups: readonly Grou
  * A newsletter is not sent to an address where anyone has unsubscribed (`optedOutPersonIds`): a
  * family that shares an address shares the inbox, and the one who unsubscribed would get it anyway.
  * Other e-mail, to leaders and groups, goes out as before.
+ *
+ * A person is reached on the main address and on each extra address that gets copies (see
+ * utils/personEmails.ts). Only a person with neither is in `withoutEmail`. Someone who has
+ * unsubscribed has all their addresses left out, the main one and the copies.
  */
 export function emailRecipients(
   audience: EmailAudience,
@@ -94,18 +99,23 @@ export function emailRecipients(
 
   for (const person of persons) {
     if (!wanted.has(person.id)) continue;
-    const address = usableEmail(person.email);
-    if (!address) withoutEmail.push(person);
-    else byAddress.set(address, [...(byAddress.get(address) ?? []), person]);
+    const addresses = [usableEmail(person.email), ...copyAddressesOf(person)].filter((address): address is string => address !== null);
+    if (addresses.length === 0) withoutEmail.push(person);
+    for (const address of addresses) byAddress.set(address, [...(byAddress.get(address) ?? []), person]);
   }
 
   const optedOut: PersonOfRegister[] = [];
   if (isNewsletter(audience)) {
     // Who has unsubscribed on an address is asked of everyone on it, also those outside the audience
-    const unsubscribed = new Set(persons.filter((person) => optedOutPersonIds.has(person.id)).map((person) => usableEmail(person.email)));
+    const unsubscribed = new Set(
+      persons
+        .filter((person) => optedOutPersonIds.has(person.id))
+        .flatMap((person) => [usableEmail(person.email), ...copyAddressesOf(person)])
+        .filter((address): address is string => address !== null)
+    );
     for (const [address, people] of byAddress) {
       if (!unsubscribed.has(address)) continue;
-      optedOut.push(...people);
+      for (const person of people) if (!optedOut.includes(person)) optedOut.push(person);
       byAddress.delete(address);
     }
   }

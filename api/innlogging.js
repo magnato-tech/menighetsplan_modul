@@ -56,12 +56,24 @@ function readDemoInstallation(env) {
   return demo;
 }
 
-// src/utils/emailRecipients.ts
-var ADDRESS = /^[^\s@<>,;"]+@[^\s@<>,;"]+\.[^\s@<>,;"]+$/;
-function usableEmail(value) {
-  if (typeof value !== "string") return null;
-  const address = value.trim().toLowerCase();
-  return address.length <= 254 && ADDRESS.test(address) ? address : null;
+// src/utils/logins.ts
+var loginIdOf = (email) => (email ?? "").trim().toLowerCase();
+var usableLoginId = (id) => /^[^\s@/]+@[^\s@/]+\.[^\s@/]+$/.test(id);
+
+// src/utils/personEmails.ts
+function extraEmailsOf(value) {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+    const { address, copy, login } = item;
+    if (typeof address !== "string" || typeof copy !== "boolean" || typeof login !== "boolean") return [];
+    return [{ address, copy, login }];
+  });
+}
+function loginAddressesOf(person) {
+  const extra = extraEmailsOf(person.extraEmails).filter((item) => item.login).map((item) => item.address);
+  const addresses = [person.email, ...extra].map((address) => loginIdOf(address)).filter((id) => usableLoginId(id));
+  return [...new Set(addresses)];
 }
 
 // server/firestoreRest.ts
@@ -231,8 +243,8 @@ async function redeemLoginLink({ env, body, ask, now = /* @__PURE__ */ new Date(
     const bearer = await accessToken(account, ask, nowSeconds);
     const database = { projectId: installation.projectId, databaseId: installation.firestoreDatabaseId };
     const person = await readDocument(database, `${PERSONS}/${link.personId}`, ask, { Authorization: `Bearer ${bearer}` });
-    const email = usableEmail(person?.email);
-    if (!person || !email || emailHashOf(email) !== link.emailHash) return refuse(403, NO_LONGER);
+    const email = person ? loginAddressesOf(person).find((address) => emailHashOf(address) === link.emailHash) : void 0;
+    if (!person || !email) return refuse(403, NO_LONGER);
     if (person.globalRole === "admin" || person.globalRole === "nettredaktor") return refuse(403, NO_LONGER);
     const found = await findUserByEmail(installation.projectId, email, bearer, ask);
     if (found?.disabled) return refuse(403, DISABLED);

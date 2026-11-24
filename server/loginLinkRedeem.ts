@@ -5,7 +5,8 @@
 // sign in with. Nothing in the database's rules changes for this.
 
 import { readDemoInstallation, readInstallationConfig, type InstallationEnv } from "../src/installation";
-import { usableEmail } from "../src/utils/emailRecipients";
+import type { Person } from "../src/types";
+import { loginAddressesOf } from "../src/utils/personEmails";
 import { readDocument, type Fetch } from "./firestoreRest";
 import { emailHashOf, readLoginToken } from "./loginLinkToken";
 import { accessToken, createUser, customToken, findUserByEmail, markEmailVerified, readServiceAccount } from "./serviceAccount";
@@ -51,8 +52,9 @@ export async function redeemLoginLink({ env, body, ask, now = new Date() }: Logi
     const bearer = await accessToken(account, ask, nowSeconds);
     const database = { projectId: installation.projectId, databaseId: installation.firestoreDatabaseId };
     const person = await readDocument(database, `${PERSONS}/${link.personId}`, ask, { Authorization: `Bearer ${bearer}` });
-    const email = usableEmail(person?.email);
-    if (!person || !email || emailHashOf(email) !== link.emailHash) return refuse(403, NO_LONGER);
+    // The address the link was sent to: one of the person's login addresses, the main one or an extra one that may sign in
+    const email = person ? loginAddressesOf(person as Pick<Person, "email" | "extraEmails">).find((address) => emailHashOf(address) === link.emailHash) : undefined;
+    if (!person || !email) return refuse(403, NO_LONGER);
     if (person.globalRole === "admin" || person.globalRole === "nettredaktor") return refuse(403, NO_LONGER);
 
     const found = await findUserByEmail(installation.projectId, email, bearer, ask);

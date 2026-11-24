@@ -9,6 +9,7 @@ import {
   personAccess,
   personGroupNames,
 } from "../../../../utils/personDirectory";
+import { extraEmailsOf } from "../../../../utils/personEmails";
 
 interface PersonsTableProps {
   rows: PersonDirectoryRow[];
@@ -108,6 +109,14 @@ export const PersonsTable: React.FC<PersonsTableProps> = ({ rows, sortKey, sortD
                 </td>
                 <td className="px-3 py-3 text-[var(--studio-muted)] whitespace-nowrap">
                   {row.person.email || <span className="text-[var(--studio-muted)]">–</span>}
+                  {extraEmailsOf(row.person.extraEmails).length > 0 && (
+                    <span
+                      title={extraEmailsOf(row.person.extraEmails).map((item) => item.address).join(", ")}
+                      className="ml-1.5 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-[var(--studio-text)]"
+                    >
+                      +{extraEmailsOf(row.person.extraEmails).length}
+                    </span>
+                  )}
                 </td>
                 <td className="px-3 py-3 text-[var(--studio-muted)] whitespace-nowrap">
                   {row.person.phone || <span className="text-[var(--studio-muted)]">–</span>}
