@@ -79,6 +79,7 @@ import {
 
   LazyYearWheelTab,
   LazyEmailTab,
+  LazyAccountsTab,
 
   LazySermonsTab,
 
@@ -269,8 +270,10 @@ function AdminStudioContent() {
 
   // While a page is edited, the side menu folds to icons so the editor gets room (see useStudioMenuFold)
   const [pageEditorOpen, setPageEditorOpen] = useState(false);
+  // The sign-ins are the administrator's alone, whatever part of the admin someone else may use
   const mayShow = (tab: StudioTab) =>
     visitedTabs.includes(tab) &&
+    (tab !== "innlogging" || studio.currentUser.globalRole === "admin") &&
     (!webEditor || webEditorMayOpen(tab)) &&
     (!membershipClerkOnly || membershipClerkMayOpen(tab));
 
@@ -704,6 +707,10 @@ function AdminStudioContent() {
 
         <StudioTabPanel tab="epost" activeTab={activeTab} visited={mayShow("epost")}>
           <LazyEmailTab studio={studio} showFeedback={showFeedback} />
+        </StudioTabPanel>
+
+        <StudioTabPanel tab="innlogging" activeTab={activeTab} visited={mayShow("innlogging")}>
+          <LazyAccountsTab studio={studio} />
         </StudioTabPanel>
 
 

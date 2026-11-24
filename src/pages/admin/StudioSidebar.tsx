@@ -30,6 +30,7 @@ import {
   Puzzle,
   LogOut,
   ClipboardList,
+  KeyRound,
 } from "lucide-react";
 import { countAddonsOn } from "../../utils/addons";
 import { hasPlanner } from "../../utils/level";
@@ -637,6 +638,24 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
                 {adminPersons.length}
               </span>
             </button>
+
+            {/* The sign-ins are the administrator's alone */}
+            {currentUser.globalRole === "admin" && (
+            <button
+              type="button"
+              title="Innlogging"
+              {...tabPrefetchHandlers("innlogging")}
+              onClick={() => onTabChange("innlogging")}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
+                activeTab === "innlogging"
+                  ? "bg-indigo-600 text-white shadow-sm"
+                  : "text-[var(--studio-muted)] hover:text-[var(--studio-text)] hover:bg-[var(--studio-bg)]"
+              }`}
+            >
+              <KeyRound className="w-4 h-4" />
+              <span className="sidebar-text">Innlogging</span>
+            </button>
+            )}
 
             {manageMembership && (
               <button
