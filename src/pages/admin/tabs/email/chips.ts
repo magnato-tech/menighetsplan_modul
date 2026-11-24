@@ -19,8 +19,6 @@ export type RecipientChip =
   | { key: string; kind: "list"; label: string; listId: string }
   | { key: string; kind: "selection"; label: string; personIds: string[] };
 
-/** The fixed choices, in the order they are suggested. */
-const FIXED_AUDIENCES: EmailAudience[] = [{ kind: "leaders" }, { kind: "serviceGroups" }];
 /** How many suggestions are shown at most. */
 const MAX_SUGGESTIONS = 8;
 /** The longest name of several chips in the log; a longer one is cut. */
@@ -89,7 +87,7 @@ export interface RecipientSuggestion {
 }
 
 /**
- * What the typed text suggests: the fixed choices, the saved lists, the groups and the persons by name or
+ * What the typed text suggests: the saved lists, the groups and the persons by name or
  * address, not those already chosen.
  */
 export function recipientSuggestions(
@@ -108,7 +106,7 @@ export function recipientSuggestions(
     if (taken.has(chip.key) || !chip.label.toLocaleLowerCase("nb").includes(typed)) return;
     found.push({ chip, detail: people(audiencePersonIds(audience, groups, persons).length) });
   };
-  FIXED_AUDIENCES.forEach(addAudience);
+  // Only what the administrator has made: their own lists, the groups and the persons. No ready-made choices.
   for (const list of [...lists].sort((a, b) => a.name.localeCompare(b.name, "nb"))) {
     const chip = listChip(list);
     if (taken.has(chip.key) || !list.name.toLocaleLowerCase("nb").includes(typed)) continue;
