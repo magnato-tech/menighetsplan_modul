@@ -117,7 +117,9 @@ export async function sendEmail({ env, siteUrl, idToken, body, ask, wait = pause
   const audience = toEmailAudience(request.audience);
   const newsletter = audience !== null && isNewsletter(audience);
   const only = Array.isArray(request.onlyPersonIds) ? request.onlyPersonIds.filter((id): id is string => typeof id === "string") : undefined;
-  if (!mode || !draft || (mode === "send" && !audience)) return refuse("bad-request");
+  // A test may name the one address it goes to. Without one, it goes to the one who asks, as before.
+  const testTo = mode === "test" && request.to !== undefined ? usableEmail(request.to) : null;
+  if (!mode || !draft || (mode === "send" && !audience) || (mode === "test" && request.to !== undefined && !testTo)) return refuse("bad-request");
 
   // The register, read as the one who asks. Only an administrator may list it.
   const database = { projectId: installation.projectId, databaseId: installation.firestoreDatabaseId };
@@ -168,8 +170,9 @@ export async function sendEmail({ env, siteUrl, idToken, body, ask, wait = pause
   let recipients: EmailRecipient[];
   let withoutEmail = 0;
   if (mode === "test") {
-    const me = persons.find((person) => usableEmail(person.email) === caller);
-    recipients = [{ email: caller, personIds: me ? [me.id] : [], firstName: firstNameOf(me?.name) }];
+    const to = testTo ?? caller;
+    const me = persons.find((person) => usableEmail(person.email) === to);
+    recipients = [{ email: to, personIds: me ? [me.id] : [], firstName: firstNameOf(me?.name) }];
   } else {
     const found = emailRecipients(audience!, persons, groups, only, unsubscribed);
     recipients = found.recipients;

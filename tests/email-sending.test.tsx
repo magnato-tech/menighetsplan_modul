@@ -10,6 +10,7 @@ import { EMAIL_TEMPLATES, emailDraftError, renderEmail, toEmailDraft } from "../
 import { emailRecordOf, recentSameSending, stopMessage, withLogEntry, withRestSent, type EmailLogEntry, type EmailOutcome, type EmailRecord } from "../src/utils/emailOutcome";
 import { audienceKey, audienceLabel, emailRecipients, isNewsletter, toEmailAudience, usableEmail } from "../src/utils/emailRecipients";
 import type { Group, Person } from "../src/types";
+import { TEST_UNSUBSCRIBE_TOKEN } from "../src/utils/newsletter";
 
 // E-mail from the administration to leaders and volunteers. Every person here is made up.
 
@@ -227,6 +228,41 @@ describe("Utsendingen der installasjonen kjører", () => {
     expect(body).toMatchObject({ ok: true, mode: "test", sent: 1 });
     expect(place.sentTo()).toEqual(["astrid@example.org"]);
     expect(place.mails[0][0].text).toContain("Hei Astrid!");
+  });
+
+  test("prøven kan gå til en annen adresse, som er den eneste som får den, og hilses med fornavn bare når den står i registeret", async () => {
+    const outside = world();
+    const { body } = await send(outside, { mode: "test", subject: "Prøve", text: "Hei", link: "minside", to: " Kari@Example.org " });
+    expect(body).toMatchObject({ ok: true, mode: "test", sent: 1, stopped: null });
+    expect(outside.sentTo()).toEqual(["kari@example.org"]);
+    expect(outside.mails[0][0].to).toEqual(["kari@example.org"]);
+    expect(outside.mails[0][0].text).toMatch(/^Hei!\n/);
+
+    const inside = world();
+    await send(inside, { mode: "test", subject: "Prøve", text: "Hei", link: "minside", to: "frida@example.org" });
+    expect(inside.sentTo()).toEqual(["frida@example.org"]);
+    expect(inside.mails[0][0].text).toMatch(/^Hei Frida!\n/);
+
+    // An administrator's own test to someone else's address is still an administrator's test: the one who asks must be admin
+    const notAdmin = world();
+    expect((await send(notAdmin, { mode: "test", subject: "Prøve", text: "Hei", link: "minside", to: "kari@example.org" }, { idToken: tokenFor("lars@example.org") })).status).toBe(403);
+    expect(notAdmin.mails).toEqual([]);
+  });
+
+  test("en prøve til en adresse som ikke er brukbar, sendes ikke, og registeret leses ikke", async () => {
+    const place = world();
+    for (const to of ["", "ikke en adresse", "kari@example.org, ola@example.org", 7, null]) {
+      expect((await send(place, { mode: "test", subject: "Prøve", text: "Hei", link: "minside", to })).body).toMatchObject({ ok: false, reason: "bad-request" });
+    }
+    expect(place.asked).toEqual([]);
+    expect(place.mails).toEqual([]);
+  });
+
+  test("en prøve til en annen adresse, til et nyhetsbrev, får avmeldingslenken for prøver", async () => {
+    const place = world();
+    await send(place, { mode: "test", audience: { kind: "members" }, subject: "Nyhetsbrev", text: "Hei alle", link: "ingen", to: "kari@example.org" });
+    expect(place.sentTo()).toEqual(["kari@example.org"]);
+    expect(place.mails[0][0]).toMatchObject({ headers: { "List-Unsubscribe": expect.stringContaining(TEST_UNSUBSCRIBE_TOKEN) } });
   });
 
   test("den som ikke er administrator, får nei, og ingenting sendes", async () => {
@@ -572,6 +608,45 @@ describe("Siden «Send e-post» i admin", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Send prøve til meg" }));
     await waitFor(() => expect(service.requestEmail).toHaveBeenCalledWith(expect.objectContaining({ mode: "test", audience: { kind: "everyone" }, link: "ingen" })));
+  });
+
+  test("testboksen sender til adressen som er skrevet, sier det i boksen og føres i loggen; en ugyldig adresse sendes ikke", async () => {
+    service.requestEmail.mockResolvedValue(sent({ mode: "test", sent: 1 }));
+    show();
+    const box = screen.getByRole("region", { name: "Test e-postutsendingen" });
+    const address = within(box).getByLabelText("Send prøve til") as HTMLInputElement;
+    expect(address.value).toBe("");
+
+    fireEvent.change(address, { target: { value: "ikke en adresse" } });
+    fireEvent.click(within(box).getByRole("button", { name: "Send testen" }));
+    expect(within(box).getByRole("alert").textContent).toBe("Skriv en gyldig e-postadresse.");
+    expect(service.requestEmail).not.toHaveBeenCalled();
+
+    fireEvent.change(address, { target: { value: " Kari@Example.org " } });
+    fireEvent.click(within(box).getByRole("button", { name: "Send testen" }));
+    await waitFor(() => expect(within(box).getByRole("status").textContent).toMatch(/^Sendt til kari@example\.org kl\. \d\d:\d\d\. Utsendingen virker\. Kom den ikke fram, sjekk søppelposten\.$/));
+    expect(service.requestEmail).toHaveBeenCalledWith({ subject: EMAIL_TEMPLATES[0].subject, text: EMAIL_TEMPLATES[0].text, link: "leder", mode: "test", to: "kari@example.org" });
+    expect(confirm).not.toHaveBeenCalled();
+    // The page's own result is not touched by the box
+    expect(screen.queryByText(/Prøven er sendt/)).toBeNull();
+
+    const log = service.saveEmailLog.mock.calls[0][0] as EmailLogEntry[];
+    expect(log[0]).toMatchObject({ sentAt: "2026-10-14T12:00:00.000Z", audience: { kind: "persons" }, audienceLabel: "Test til én adresse", subject: EMAIL_TEMPLATES[0].subject, sent: 1, remainingPersonIds: [] });
+  });
+
+  test("testboksen sier hva som hindrer en prøve, og viser det som utsendingen svarer", async () => {
+    show(false);
+    const box = screen.getByRole("region", { name: "Test e-postutsendingen" });
+    expect((within(box).getByRole("button", { name: "Send testen" }) as HTMLButtonElement).disabled).toBe(true);
+    cleanup();
+
+    service.requestEmail.mockResolvedValueOnce({ ok: false, reason: "rules-outdated", message: "Databasen har ikke fått reglene for nyhetsbrev ennå." });
+    show();
+    const again = screen.getByRole("region", { name: "Test e-postutsendingen" });
+    fireEvent.change(within(again).getByLabelText("Send prøve til"), { target: { value: "kari@example.org" } });
+    fireEvent.click(within(again).getByRole("button", { name: "Send testen" }));
+    await waitFor(() => expect(within(again).getByRole("alert").textContent).toBe("Databasen har ikke fått reglene for nyhetsbrev ennå."));
+    expect(service.saveEmailLog).not.toHaveBeenCalled();
   });
 
   test("i demoen vises siden, men ingenting kan sendes", () => {

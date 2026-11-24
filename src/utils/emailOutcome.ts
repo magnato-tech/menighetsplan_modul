@@ -118,6 +118,13 @@ export function recentSameSending(log: readonly EmailLogEntry[], audienceKeyOf: 
 }
 
 /** What a stopped sending is told with. */
+/** Why a test to one address did not arrive: the same reasons, without anyone left to send to. */
+export function testStopMessage(stopped: EmailStop, detail?: string): string {
+  if (stopped === "quota") return "E-posttjenesten tar ikke imot flere e-poster nå: grensen for i dag eller denne måneden er nådd.";
+  if (stopped === "unreachable") return "E-posttjenesten svarte ikke. Prøv igjen om litt.";
+  return `E-posttjenesten tok ikke imot testen${detail ? ` («${detail}»)` : ""}.`;
+}
+
 export function stopMessage(stopped: EmailStop, left: number, detail?: string): string {
   const rest = left === 1 ? "1 person gjenstår" : `${left} personer gjenstår`;
   if (stopped === "quota") return `E-posttjenesten tar ikke imot flere e-poster nå: grensen for i dag eller denne måneden er nådd. ${rest}. Send til dem som gjenstår i morgen.`;
