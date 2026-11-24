@@ -25,6 +25,8 @@ import {
 } from "../services/memberProposals";
 import { reportWriteError } from "../services/writeErrors";
 import { useFirebase } from "../context/FirebaseDataContext";
+import { useHusfellesskap } from "../hooks/useHusfellesskap";
+import { CreateMeetingDialog } from "../components/husfellesskap/CreateMeetingDialog";
 import { useGatheringTemplates } from "../hooks/useGatheringTemplates";
 import { deleteGroupWithTraces } from "../services/groupDeletion";
 import { groupDeletion } from "../utils/groupDeletion";
@@ -53,6 +55,7 @@ import {
   Save,
   Tag,
   Repeat,
+  Plus,
 } from "lucide-react";
 
 export const AdminGroupDetailPage: React.FC = () => {
@@ -72,6 +75,9 @@ export const AdminGroupDetailPage: React.FC = () => {
     removeGroupMember,
   } = useAdminGroupDetail(groupId || "");
   const canPropose = Boolean(group && leadsGroup(group, currentUser.id));
+  // The same planning of meetings as the group's leaders have under «Mine grupper» on Min side
+  const meetingModel = useHusfellesskap(groupId || undefined);
+  const [planningMeetings, setPlanningMeetings] = useState(false);
   const proposals = useGroupProposals(groupId || "", isAdmin && groupId !== "");
 
   // Form states
@@ -691,7 +697,23 @@ export const AdminGroupDetailPage: React.FC = () => {
               <Calendar className="w-4 h-4 text-emerald-600" />
               Konkrete samlinger for gruppen ({groupGatherings.length})
             </span>
+            <button
+              type="button"
+              id="btn-plan-group-meetings"
+              onClick={() => setPlanningMeetings(true)}
+              className="flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-700 cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" aria-hidden="true" />
+              Planlegg møter
+            </button>
           </div>
+          {planningMeetings && (
+            <CreateMeetingDialog
+              model={meetingModel}
+              showToast={(text) => showFeedback(text)}
+              onClose={() => setPlanningMeetings(false)}
+            />
+          )}
 
           <p className="text-[11px] text-[var(--studio-muted)] leading-relaxed">
             Dette er faktiske, planlagte samlinger knyttet til gruppen (uavhengig av den generelle møteplanen over).

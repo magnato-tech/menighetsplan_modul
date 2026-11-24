@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import type { Gathering, Group } from "../src/types";
 
@@ -64,6 +64,11 @@ vi.mock("../src/hooks/useMemberProposals", () => ({
   useGroupProposals: () => [],
 }));
 
+vi.mock("../src/hooks/useHusfellesskap", () => ({ useHusfellesskap: (groupId?: string) => ({ group: { id: groupId } }) }));
+vi.mock("../src/components/husfellesskap/CreateMeetingDialog", () => ({
+  CreateMeetingDialog: ({ model }: { model: { group: { id: string } } }) => <div role="dialog">Planlegg møter for {model.group.id}</div>,
+}));
+
 import { AdminGroupDetailPage } from "../src/pages/AdminGroupDetailPage";
 
 afterEach(cleanup);
@@ -89,5 +94,16 @@ describe("Samlingene på gruppesiden i admin", () => {
     expect(card).toBeTruthy();
     expect(within(card).getByText("Husfellesskap, 26. november").closest("a")?.getAttribute("href")).toBe("/admin/samling/m1");
     expect(within(card).getByRole("link", { name: "Endre" }).getAttribute("href")).toBe("/admin/samling/m1");
+  });
+
+  test("møtene planlegges fra gruppekortet med samme vindu som gruppelederne har", () => {
+    render(
+      <MemoryRouter>
+        <AdminGroupDetailPage />
+      </MemoryRouter>
+    );
+    expect(screen.queryByRole("dialog")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Planlegg møter" }));
+    expect(screen.getByRole("dialog").textContent).toBe("Planlegg møter for hus");
   });
 });
