@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { overviewOf, type AccountRow } from "../src/utils/accountOverview";
+import { inPeriod, overviewOf, type AccountRow } from "../src/utils/accountOverview";
 import type { Group, Person } from "../src/types";
 
 // Every person and address here is made up.
@@ -86,5 +86,18 @@ describe("Innloggingsoversikten", () => {
       [account("ada@example.org", "2026-11-01T08:00:00.000Z"), account("dora@example.org", "2026-11-09T08:00:00.000Z")]
     );
     expect(overview.signedIn.map((row) => row.person.id)).toEqual(["dora", "ada"]);
+  });
+});
+
+describe("Perioden i Innlogging", () => {
+  const now = Date.parse("2026-11-24T12:00:00.000Z");
+  test("en tid innenfor de siste dagene er med, en eldre er ikke, og uten periode er alt med", () => {
+    expect(inPeriod("2026-11-20T12:00:00.000Z", 7, now)).toBe(true);
+    expect(inPeriod("2026-11-10T12:00:00.000Z", 7, now)).toBe(false);
+    expect(inPeriod("2026-11-10T12:00:00.000Z", 30, now)).toBe(true);
+    expect(inPeriod("2026-10-01T12:00:00.000Z", 30, now)).toBe(false);
+    expect(inPeriod("2020-01-01T00:00:00.000Z", null, now)).toBe(true);
+    expect(inPeriod(null, 30, now)).toBe(false);
+    expect(inPeriod("tull", 30, now)).toBe(false);
   });
 });
