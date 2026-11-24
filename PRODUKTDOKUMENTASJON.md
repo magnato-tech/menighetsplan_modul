@@ -2028,6 +2028,8 @@ git push origin origin/main:stabil
 
 **Sluppet til Lillesand 24. november 2026, varighet for innloggingslenken** (`stabil` = `b2f2beb`, `main` `9e12230` slått sammen inn etter beskjed fra produkteier): i Send e-post velges hvor lenge innloggingslenken virker: 14 dager, 30 dager eller til og med en dato, høyst 120 dager (serveren sjekker). E-posten sier hvilken dag. Valget huskes i nettleseren. Lenker som alt er sendt, beholder 14 dager. Databasereglene er ikke endret.
 
+**Sluppet til Lillesand 24. november 2026, ny Send e-post** (`stabil` = `f0292b4`, `main` `88658b7` slått sammen inn etter beskjed fra produkteier): siden er lagt om etter Outlook-mønster: Ny e-post, Sendte, Nyhetsbrev og Innstillinger til venstre; «Til» med brikker der grupper, faste valg og personer kan blandes (sendes som valgte personer, én e-post per person); «Mal ▾»; «Knapp ▾» med knappens mål, semesterplan, innloggingslenke og varighet; én «Send prøve» med adressefelt; «Forhåndsvis». Retter feilen der valgt varighet for innloggingslenken bare ble brukt i prøver (ekte utsendinger fikk 14 dager), og at en prøve av nyhetsbrevet manglet avmeldingslenke. Serveren og databasereglene er ikke endret. Del 2 (Lister) gjenstår.
+
 **Sluppet til Lillesand 24. november 2026** (etter beskjed fra produkteier, som prøvde endringene på localhost først): bare siste status per person og oppgave (forfall vises ikke flere ganger), Gudstjenester-fanen med ˅ og knappene Kjøreplan og Planlegg, tilbakeknappen fra kjøreplanen, tre vertikale prikker for «mer», og infoskjermen trinn 1 (`/skjerm`). Databasereglene er ikke endret.
 
 **Sluppet til Lillesand 24. november 2026, andre gang** (etter beskjed fra produkteier): testboksen for e-postutsendingen på «Send e-post». Databasereglene er ikke endret.
