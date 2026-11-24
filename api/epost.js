@@ -707,7 +707,8 @@ async function sendEmail({ env, siteUrl, idToken, body, ask, wait = pause2 }) {
   const audience = toEmailAudience(request.audience);
   const newsletter = audience !== null && isNewsletter(audience);
   const only = Array.isArray(request.onlyPersonIds) ? request.onlyPersonIds.filter((id) => typeof id === "string") : void 0;
-  if (!mode || !draft || mode === "send" && !audience) return refuse("bad-request");
+  const testTo = mode === "test" && request.to !== void 0 ? usableEmail(request.to) : null;
+  if (!mode || !draft || mode === "send" && !audience || mode === "test" && request.to !== void 0 && !testTo) return refuse("bad-request");
   const database = { projectId: installation.projectId, databaseId: installation.firestoreDatabaseId };
   const as = signedInAs(idToken);
   let persons;
@@ -751,8 +752,9 @@ async function sendEmail({ env, siteUrl, idToken, body, ask, wait = pause2 }) {
   let recipients;
   let withoutEmail = 0;
   if (mode === "test") {
-    const me = persons.find((person) => usableEmail(person.email) === caller);
-    recipients = [{ email: caller, personIds: me ? [me.id] : [], firstName: firstNameOf(me?.name) }];
+    const to = testTo ?? caller;
+    const me = persons.find((person) => usableEmail(person.email) === to);
+    recipients = [{ email: to, personIds: me ? [me.id] : [], firstName: firstNameOf(me?.name) }];
   } else {
     const found = emailRecipients(audience, persons, groups, only, unsubscribed);
     recipients = found.recipients;

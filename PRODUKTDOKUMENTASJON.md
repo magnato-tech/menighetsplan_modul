@@ -1763,6 +1763,10 @@ Bestilt av produkteier etter tredje runde med monday.com som målestokk.
 
 Bestilt av produkteier: på mobil tok toppbildet og bildet på det fremhevede kortet nesten hele skjermen. Under bredden for nettbrett (`sm`, 640 px) vises ikke det store toppbildet; overskriften står i en tynn hvit linje under menyen, med knappene små under. Menyen er da alltid den vanlige hvite linjen, også der den ellers ligger over bildet. Kortet «Neste gudstjeneste» får et lavere bilde, og dato, tid og sted på én linje rett under tittelen; den grå boksen med det samme skjules på mobil. Fra nettbrett og opp er nettsiden uendret (sjekket piksel for piksel på PC).
 
+### Test av e-postutsendingen (24. november 2026)
+
+Bestilt av produkteier: administrator må kunne se at utsendingen virker. Under knappene på «Send e-post» står boksen «Test e-postutsendingen»: én valgfri adresse (fylt ut med ens egen), og «Send testen». Prøven har teksten på siden, eller en fast prøvetekst når den er tom (`testDraftFor` i `src/utils/emailTest.ts`), og går ikke til noen andre. Svaret står i boksen: sendt, eller hvorfor ikke (`testStopMessage`). Testen føres i loggen som «Test til én adresse»; adressen lagres ikke. Serveren tar imot `to` bare ved en test og bare fra en administrator. Demoen sender ikke, så selve sendingen prøves hos en menighet. Neste trinn, et «Til»-felt med forslag fra kartoteket, er planlagt med skisse, ikke bygget.
+
 ### Forfall, Gudstjenester-fanen og tre prikker (24. november 2026)
 
 Meldt av produkteier etter at en frivillig i Lillesand sto med flere forfall på samme oppgave, og prøvd av ham på localhost før innsending.
@@ -1988,6 +1992,8 @@ git push origin origin/main:stabil
 **Sluppet til Lillesand 23. november 2026, tredje gang** (`stabil` = `721577e`, `main` `6277719` slått sammen inn etter beskjed fra produkteier): Aktuelt & Nyheter med status og filter, søk og filter i talearkivet, «Endret … av …» på sider og nyheter, «Denne uka på nettsiden» på Oversikt (på mobil bak en bjelle ved menyknappen), papirkurv i 30 dager for sider, nyheter og taler, og toppbildet med færre valg. Databasereglene er ikke endret.
 
 **Sluppet til Lillesand 24. november 2026** (etter beskjed fra produkteier, som prøvde endringene på localhost først): bare siste status per person og oppgave (forfall vises ikke flere ganger), Gudstjenester-fanen med ˅ og knappene Kjøreplan og Planlegg, tilbakeknappen fra kjøreplanen, tre vertikale prikker for «mer», og infoskjermen trinn 1 (`/skjerm`). Databasereglene er ikke endret.
+
+**Sluppet til Lillesand 24. november 2026, andre gang** (etter beskjed fra produkteier): testboksen for e-postutsendingen på «Send e-post». Databasereglene er ikke endret.
 
 ### Brukernivåer som holder i databasen *(avtalt 12. oktober 2026; lesetilgangen er i koden, ikke publisert i databasen ennå)*
 

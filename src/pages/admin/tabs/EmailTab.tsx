@@ -7,9 +7,10 @@ import { subscribeNewsletterBanner, subscribeNewsletterOptOuts } from "../../../
 import { formatNorwegianDateTime } from "../../../utils/dates";
 import { newId } from "../../../utils/id";
 import { EMAIL_LINKS, EMAIL_SUBJECT_MAX, EMAIL_TEMPLATES, EMAIL_TEXT_MAX, emailDraftError, renderEmail, type EmailDraft, type EmailLink } from "../../../utils/emailMessage";
-import { recentSameSending, stopMessage, withLogEntry, withRestSent, type EmailLogEntry, type EmailOutcome, type EmailRecord } from "../../../utils/emailOutcome";
+import { recentSameSending, stopMessage, testStopMessage, withLogEntry, withRestSent, type EmailLogEntry, type EmailOutcome, type EmailRecord, type EmailStop } from "../../../utils/emailOutcome";
 import { audienceKey, audienceLabel, emailRecipients, isNewsletter, toEmailAudience, usableEmail, type EmailAudience } from "../../../utils/emailRecipients";
 import { TEST_UNSUBSCRIBE_TOKEN, optedOutPersonIds, unsubscribeUrlOf } from "../../../utils/newsletter";
+import { testDraftFor } from "../../../utils/emailTest";
 import { isServiceGroup } from "../../../utils/personDirectory";
 import type { ShowFeedback, StudioData } from "../studio";
 import { studioCardPadded, studioInputFull, studioPrimaryButton, studioSecondaryButton } from "../studioTheme";
@@ -18,7 +19,7 @@ import { NewsletterBannerCard } from "./email/NewsletterBannerCard";
 import { NewsletterOptOutsCard } from "./email/NewsletterOptOutsCard";
 
 interface EmailTabProps {
-  studio: Pick<StudioData, "adminPersons" | "adminGroups">;
+  studio: Pick<StudioData, "adminPersons" | "adminGroups" | "currentUser">;
   showFeedback: ShowFeedback;
   /** Whether e-mail can be sent here. Not in the demo, which has no real addresses. Given in tests. */
   canSend?: boolean;
@@ -50,6 +51,10 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
   const [optOutKeys, setOptOutKeys] = useState<string[] | null | undefined>(undefined);
   const [banner, setBanner] = useState<string | null | undefined>(undefined);
   const textField = useRef<HTMLTextAreaElement>(null);
+  // The box that tests the sending: its own address and its own result, apart from the page's
+  const [testAddressText, setTestAddressText] = useState(() => studio.currentUser?.email ?? "");
+  const [testBusy, setTestBusy] = useState(false);
+  const [testResult, setTestResult] = useState<{ good: boolean; text: string } | null>(null);
 
   useEffect(
     () =>
@@ -121,16 +126,22 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
     );
   };
 
-  /** What stands in the way of sending, or null. */
-  const blocked = (): string | null => {
+  /** What stands in the way of a test, or null. The draft is not looked at: a test sends a fixed one when the page's is not valid. */
+  const testBlocked = (): string | null => {
     if (!canSend) return "Demoen sender ikke e-post.";
     if (storedReplyTo === "") return "Lagre adressen svar skal gå til, før du sender.";
-    return emailDraftError(draft);
+    return null;
   };
+
+  /** What stands in the way of sending, or null. */
+  const blocked = (): string | null => testBlocked() ?? emailDraftError(draft);
+
+  /** What a sending that stopped is told with. */
+  const stopText = (sent: number, stopped: EmailStop, left: number, detail?: string): string => `${sent > 0 ? `${people(sent)} fikk e-posten. ` : ""}${stopMessage(stopped, left, detail)}`;
 
   const tell = (outcome: EmailOutcome, done: string) => {
     if (!outcome.ok) return setResult({ good: false, text: outcome.message });
-    if (outcome.stopped) return setResult({ good: false, text: `${outcome.sent > 0 ? `${people(outcome.sent)} fikk e-posten. ` : ""}${stopMessage(outcome.stopped, outcome.remainingPersonIds.length, outcome.detail)}` });
+    if (outcome.stopped) return setResult({ good: false, text: stopText(outcome.sent, outcome.stopped, outcome.remainingPersonIds.length, outcome.detail) });
     setResult({ good: true, text: done });
   };
 
@@ -143,6 +154,38 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
     const outcome = await requestEmail(newsletter ? { ...draft, mode: "test", audience } : { ...draft, mode: "test" });
     setBusy(null);
     tell(outcome, "Prøven er sendt til e-postadressen du er logget inn med. Sjekk innboksen, og søppelposten.");
+  };
+
+  /** Sends the test to the one address the box names, and logs that it was sent. */
+  const sendOwnTest = async () => {
+    const address = usableEmail(testAddressText);
+    if (!address) return setTestResult({ good: false, text: "Skriv en gyldig e-postadresse." });
+    const wrong = testBlocked();
+    if (wrong) return setTestResult({ good: false, text: wrong });
+    const testDraft = testDraftFor(draft, churchName);
+    setTestBusy(true);
+    setTestResult(null);
+    const outcome = await requestEmail({ ...testDraft, mode: "test", to: address });
+    setTestBusy(false);
+    if (outcome.ok && record) {
+      const entry: EmailLogEntry = {
+        id: newId("epost"),
+        sentAt: now().toISOString(),
+        audience: { kind: "persons" },
+        // The log never holds an address (see utils/emailOutcome.ts)
+        audienceLabel: "Test til én adresse",
+        subject: testDraft.subject.trim(),
+        sent: outcome.sent,
+        withoutEmail: 0,
+        stopped: outcome.stopped,
+        remainingPersonIds: [],
+      };
+      saveEmailLog(withLogEntry(record.log, entry)).catch(() => showFeedback("Prøven er sendt, men loggen kunne ikke lagres.", "error"));
+    }
+    if (!outcome.ok) return setTestResult({ good: false, text: outcome.message });
+    if (outcome.stopped) return setTestResult({ good: false, text: testStopMessage(outcome.stopped, outcome.detail) });
+    const clock = now().toLocaleTimeString("nb-NO", { hour: "2-digit", minute: "2-digit" });
+    setTestResult({ good: true, text: `Sendt til ${address} kl. ${clock}. Utsendingen virker. Kom den ikke fram, sjekk søppelposten.` });
   };
 
   const send = async () => {
@@ -350,6 +393,31 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
               <span>{result.text}</span>
             </p>
           )}
+
+          <section aria-labelledby="email-test-title" className="p-4 rounded-xl border border-[var(--studio-border)] space-y-3">
+            <h3 id="email-test-title" className="text-xs font-black text-[var(--studio-text)]">
+              Test e-postutsendingen
+            </h3>
+            <p className="text-[11px] text-[var(--studio-muted)]">Sender en kort prøve til én adresse, med teksten over, eller en fast prøvetekst når den er tom. Går ikke til noen andre.</p>
+            <div>
+              <label htmlFor="email-test-address" className={label}>
+                Send prøve til
+              </label>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input id="email-test-address" type="email" value={testAddressText} onChange={(event) => setTestAddressText(event.target.value)} placeholder="din@adresse.no" className={`${studioInputFull} sm:max-w-sm`} />
+                <button type="button" onClick={sendOwnTest} disabled={testBusy || busy !== null || !canSend} className={`${studioSecondaryButton} flex items-center justify-center gap-1.5 shrink-0 disabled:opacity-50`}>
+                  <Send className="w-4 h-4" aria-hidden="true" />
+                  <span>{testBusy ? "Sender testen …" : "Send testen"}</span>
+                </button>
+              </div>
+            </div>
+            {testResult && (
+              <p role={testResult.good ? "status" : "alert"} className={`p-3 rounded-xl border text-xs flex items-start gap-2 ${testResult.good ? "border-emerald-500/40 bg-emerald-500/10" : "border-red-500/40 bg-red-500/10"} text-[var(--studio-text)]`}>
+                {testResult.good ? <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" aria-hidden="true" /> : <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" aria-hidden="true" />}
+                <span>{testResult.text}</span>
+              </p>
+            )}
+          </section>
         </section>
 
         <section aria-label="Slik ser den ut" className={`${studioCardPadded} space-y-3`}>
