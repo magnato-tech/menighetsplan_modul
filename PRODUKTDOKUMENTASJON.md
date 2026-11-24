@@ -1993,7 +1993,7 @@ git push origin origin/main:stabil
 
 **Sluppet til Lillesand 23. november 2026, andre gang** (`stabil` = `90921cd`, `main` `a2554f3` slått sammen inn etter beskjed fra produkteier): Arrangementer på nettsiden som tabell etter dato med filter, Sjekk nettsiden med serier og «Ikke nå», overskriften og ingressen på forsiden bare på selve forsiden («Navnet på appen» i innstillingene), og nettsiden på mobil uten toppbilde. Databasereglene er ikke endret.
 
-**Sluppet til Lillesand 23. november 2026, tredje gang** (`stabil` = `721577e`, `main` `6277719` slått sammen inn etter beskjed fra produkteier): Aktuelt & Nyheter med status og filter, søk og filter i talearkivet, «Endret … av …» på sider og nyheter, «Denne uka på nettsiden» på Oversikt (på mobil bak en bjelle ved menyknappen), papirkurv i 30 dager for sider, nyheter og taler, og toppbildet med færre valg. Databasereglene er ikke endret.
+**Sluppet til Lillesand 23. november 2026, tredje gang** (`stabil` = `721577e`, `main` `6277719` slått sammen inn etter beskjed fra produkteier): Aktuelt & Nyheter med status og filter, søk og filter i talearkivet, «Endret … av …» på sider og nyheter, «Denne uka på nettsiden» på Oversikt (på mobil bak en bjelle ved menyknappen), papirkurv i 30 dager for sider, nyheter og taler, og toppbildet med færre valg. Databasereglene er ikke endret.
 
 **Sluppet til Lillesand 24. november 2026, andre gang** (`stabil` = `3501a6b`, `main` `5ca5556` slått sammen inn etter beskjed fra produkteier): «Semesterplan» som valg under «Knappen fører til» i Send e-post, med knappen «Planlegg semesteret» og den ferdige teksten «Semesterplanen er åpen: til de frivillige», og kalenderen på Min side med filtrene Alle, Gudstjenester og Mine grupper. Databasereglene er ikke endret.
 
