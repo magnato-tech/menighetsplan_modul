@@ -1,10 +1,10 @@
 import type { Assignment, Gathering, Group, GatheringAttendance, Task } from "../types";
 import { staffingDotFor, worstStaffingDot, type StaffingDot } from "./staffing";
-import { isGroupGathering, upcomingPublicGatherings } from "./gatherings";
+import { isGroupGathering, isWorshipService, upcomingPublicGatherings } from "./gatherings";
 
 export type PersonalCalendarSource = "menigheten" | "mine_grupper";
 
-export type PersonalCalendarFilter = "alle" | "menigheten" | "mine_grupper" | "jeg_leder";
+export type PersonalCalendarFilter = "alle" | "gudstjenester" | "mine_grupper";
 
 export interface PersonalCalendarEvent {
   gathering: Gathering;
@@ -70,30 +70,15 @@ export function personalCalendarEvents(
 }
 
 /**
- * The events for the groups one leads: the group's own gatherings, and church gatherings where a
- * group one leads has a task that is not cancelled. `led` is needed for «jeg_leder».
+ * The events the filter shows: all of them («Alle»), the worship services («Gudstjenester»), or the
+ * group gatherings of the groups the person is in («Mine grupper»).
  */
 export function filterPersonalCalendarEvents(
   events: PersonalCalendarEvent[],
-  filter: PersonalCalendarFilter,
-  led?: { ledGroupIds: ReadonlySet<string>; tasks: readonly Task[] }
+  filter: PersonalCalendarFilter
 ): PersonalCalendarEvent[] {
   if (filter === "alle") return events;
-  if (filter === "menigheten") return events.filter((event) => event.source === "menigheten");
-  if (filter === "jeg_leder") {
-    if (!led) return [];
-    const { ledGroupIds, tasks } = led;
-    const ledTaskGatheringIds = new Set(
-      tasks
-        .filter((t) => t.groupId && ledGroupIds.has(t.groupId) && t.status !== "cancelled")
-        .map((t) => t.gatheringId)
-    );
-    return events.filter(
-      (event) =>
-        (event.gathering.groupId !== undefined && ledGroupIds.has(event.gathering.groupId)) ||
-        ledTaskGatheringIds.has(event.gathering.id)
-    );
-  }
+  if (filter === "gudstjenester") return events.filter((event) => isWorshipService(event.gathering));
   return events.filter((event) => event.source === "mine_grupper");
 }
 

@@ -12,6 +12,8 @@ export type EmailRefusal =
   | "bad-request"
   | "no-reply-to"
   | "no-recipients"
+  /** The semester plan the button opens is not there (or is not a plan). */
+  | "no-plan"
   | "database"
   /** The database's rules are older than the newsletter, and refuse what it reads. */
   | "rules-outdated"

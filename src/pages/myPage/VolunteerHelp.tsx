@@ -63,7 +63,7 @@ export const VolunteerHelp: React.FC = () => {
                 </li>
                 <li>
                   Gruppene dine står under Mine grupper. Der ser du hvem som er med, og beskjedene. Under Gudstjenester ser du hvem som gjør hva de neste søndagene.
-                  Leder du en gruppe, står den øverst med bemanningen, forfall står som Må fylles på Mine oppgaver, og Jeg leder i Kalender viser gruppens arrangementer.
+                  Leder du en gruppe, står den øverst med bemanningen, forfall står som Må fylles på Mine oppgaver, og Kalender viser med en rød eller gul prikk der gruppen mangler folk.
                 </li>
                 <li>Er du spurt om en oppgave, står forespørselen øverst på Mine oppgaver. Svar Ja, jeg kan eller Kan ikke. Har du flere, kommer den neste når du har svart.</li>
                 <li>Under står knappen Se ledige oppgaver. Der ser du alt samlet: forespørslene først, så de ledige oppgavene i gruppene dine.</li>

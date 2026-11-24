@@ -4,6 +4,7 @@
 // who asks. The database's own rules refuse everyone but an administrator.
 
 import { readDemoInstallation, readInstallationConfig, type InstallationEnv } from "../src/installation";
+import { SEMESTER_PLAN_RECORD } from "../src/data/settingsRecords";
 import { renderEmail, toEmailDraft, type EmailDraft } from "../src/utils/emailMessage";
 import type { EmailOutcome, EmailRefusal, EmailStop } from "../src/utils/emailOutcome";
 import { emailRecipients, firstNameOf, isNewsletter, toEmailAudience, usableEmail, type EmailRecipient } from "../src/utils/emailRecipients";
@@ -61,6 +62,7 @@ const MESSAGES: Record<Exclude<EmailRefusal, "unreachable">, [number, string]> =
   "bad-request": [400, "E-posten kan ikke sendes slik den er."],
   "no-reply-to": [400, "Legg inn adressen svar skal gå til, før du sender."],
   "no-recipients": [400, "Ingen av mottakerne har en e-postadresse."],
+  "no-plan": [400, "Semesterplanen som knappen skal åpne, finnes ikke lenger. Velg en annen plan."],
   database: [502, "Registeret kunne ikke leses akkurat nå. Prøv igjen."],
   "rules-outdated": [409, "Databasen har ikke fått reglene for nyhetsbrev ennå. Lim inn de nye reglene i Firebase, og prøv igjen."],
 };
@@ -146,6 +148,12 @@ export async function sendEmail({ env, siteUrl, idToken, body, ask, wait = pause
   const churchName = (typeof settings?.churchName === "string" && settings.churchName.trim()) || "Menigheten";
   const replyTo = usableEmail(record?.replyTo);
   if (!replyTo) return refuse("no-reply-to");
+
+  // The button leads to a plan that must exist, in test and send alike. The id is plain text (see emailDraftError).
+  if (draft.link === "semesterplan") {
+    const plan = await readDocument(database, `cms_settings/${draft.planId}`, ask, as).catch(() => null);
+    if (plan?.recordType !== SEMESTER_PLAN_RECORD) return refuse("no-plan");
+  }
 
   // A newsletter is not sent to those who have unsubscribed. Whether anyone has, is only known
   // where the database's rules have the collection; older rules refuse it, and then nothing is sent.

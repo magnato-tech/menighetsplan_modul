@@ -273,7 +273,7 @@ Regnskap er ikke en egen modul. Givertjeneste og Utleie skal registrere inntekte
 
 | Skjerm | Adresse | Innhold | Status |
 |---|---|---|---|
-| **Min side** | `/minside` | Tre faner: «Mine oppgaver» (knappen «Ta oppgave» og oppgavene en har sagt ja til), «Mine grupper» og «Kalender». En leder eller nestleder får i tillegg forfall i egne grupper («Må fylles»), gruppene sine øverst med bemanningen, og filteret «Jeg leder» i kalenderen. Fanene er moduler (kapittel 14) | Levert |
+| **Min side** | `/minside` | Tre faner: «Mine oppgaver» (knappen «Ta oppgave» og oppgavene en har sagt ja til), «Mine grupper» og «Kalender». En leder eller nestleder får i tillegg forfall i egne grupper («Må fylles»), gruppene sine øverst med bemanningen, og en rød eller gul prikk i kalenderen der gruppen mangler folk. Fanene er moduler (kapittel 14) | Levert |
 | **Oppgave** | `/oppgave/:id` | Tid, sted, instruks og hvem andre som står på. Ta oppgaven, svar på forespørsel, meld forfall | Levert. En grunn for forfallet lagres ikke: den kan være privat, og tas muntlig |
 | ~~Gruppeleder~~ | `/leder` | Tatt bort 9. november 2026: innholdet står på Min side. Adressen går til «Mine grupper» | Tatt bort |
 | **Gruppe** | `/gruppe/:id` | Deltakere, møteplan, aktiviteter og beskjeder til gruppen, med bilde | Levert |
@@ -293,7 +293,7 @@ Min side viser så lite som mulig. Overskriften er navnet på fanen som er åpen
 |---|---|
 | **Mine oppgaver** | Knappen «Ta oppgave (68)» når tre eller flere saker venter (forespørsler, innkallinger og ledige oppgaver i egne grupper). Den åpner listen, som kan snevres inn med tagger. Venter én eller to saker, står kortene rett på siden. Under står oppgavene personen har sagt ja til, den nærmeste først |
 | **Mine grupper** | Gruppekortene, med neste samling, siste beskjed og vei inn til gruppa |
-| **Kalender** | Filtrene Alle / Menigheten / Mine grupper, og hendelsene under. Viser offentlige arrangementer i menigheten og kommende samlinger i gruppene personen er med i |
+| **Kalender** | Filtrene Alle / Gudstjenester / Mine grupper, og hendelsene under. «Mine grupper» vises bare for den som er med i en gruppe. Viser offentlige arrangementer i menigheten og kommende samlinger i gruppene personen er med i. En leder ser en rød eller gul prikk der gruppen mangler folk |
 
 Veiledningen «Slik bruker du Min side» ligger bak et «?» ved overskriften, og åpnes i et vindu.
 
@@ -1767,6 +1767,10 @@ Bestilt av produkteier: på mobil tok toppbildet og bildet på det fremhevede ko
 
 Bestilt av produkteier: administrator må kunne se at utsendingen virker. Under knappene på «Send e-post» står boksen «Test e-postutsendingen»: én valgfri adresse (fylt ut med ens egen), og «Send testen». Prøven har teksten på siden, eller en fast prøvetekst når den er tom (`testDraftFor` i `src/utils/emailTest.ts`), og går ikke til noen andre. Svaret står i boksen: sendt, eller hvorfor ikke (`testStopMessage`). Testen føres i loggen som «Test til én adresse»; adressen lagres ikke. Serveren tar imot `to` bare ved en test og bare fra en administrator. Demoen sender ikke, så selve sendingen prøves hos en menighet. Neste trinn, et «Til»-felt med forslag fra kartoteket, er planlagt med skisse, ikke bygget.
 
+### Semesterplan som knapp i e-posten (24. november 2026)
+
+På «Send e-post» kan knappen i e-posten føre til en semesterplan. Velg «Semesterplan» under «Knappen fører til», og velg planen under «Hvilken plan». Knappen heter «Planlegg semesteret» og åpner planen. Den ferdige teksten «Semesterplanen er åpen: til de frivillige» velger knappen av seg selv. Bare planer som ikke er lukket, kan velges. Serveren sjekker at planen finnes før noe sendes, også ved prøven. Ingenting er sluppet til en menighet ennå.
+
 ### Forfall, Gudstjenester-fanen og tre prikker (24. november 2026)
 
 Meldt av produkteier etter at en frivillig i Lillesand sto med flere forfall på samme oppgave, og prøvd av ham på localhost før innsending.
@@ -1994,6 +1998,10 @@ git push origin origin/main:stabil
 **Sluppet til Lillesand 24. november 2026** (etter beskjed fra produkteier, som prøvde endringene på localhost først): bare siste status per person og oppgave (forfall vises ikke flere ganger), Gudstjenester-fanen med ˅ og knappene Kjøreplan og Planlegg, tilbakeknappen fra kjøreplanen, tre vertikale prikker for «mer», og infoskjermen trinn 1 (`/skjerm`). Databasereglene er ikke endret.
 
 **Sluppet til Lillesand 24. november 2026, andre gang** (etter beskjed fra produkteier): testboksen for e-postutsendingen på «Send e-post». Databasereglene er ikke endret.
+
+**Bygget 24. november 2026, ikke sluppet** (e-post): knappen i e-posten kan føre til en semesterplan («Planlegg semesteret»), med den ferdige teksten «Semesterplanen er åpen: til de frivillige». Se «Semesterplan som knapp i e-posten» i kapittel 13.
+
+**Bygget 24. november 2026, ikke sluppet** (kalenderen på Min side): filtrene er Alle, Gudstjenester og Mine grupper. «Menigheten» og «Jeg leder» er tatt ut. «Mine grupper» vises bare for den som er med i en gruppe, og en leder ser som før en rød eller gul prikk der gruppen mangler folk. Databasereglene er ikke endret.
 
 ### Brukernivåer som holder i databasen *(avtalt 12. oktober 2026; lesetilgangen er i koden, ikke publisert i databasen ennå)*
 

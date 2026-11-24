@@ -6,7 +6,8 @@ import { BATCH_SIZE, DEFAULT_FROM_ADDRESS, EMAIL_DOCUMENT, GROUPS, PERSONS, SEND
 import type { Fetch, RestFields, RestValue } from "../server/firestoreRest";
 import { CMS_COLLECTIONS, CMS_SETTINGS_DOC_ID, COLLECTIONS } from "../src/data/collections";
 import { EMAIL_DOC_ID, EMAIL_RECORD } from "../src/data/settingsRecords";
-import { EMAIL_TEMPLATES, emailDraftError, renderEmail, toEmailDraft } from "../src/utils/emailMessage";
+import { EMAIL_TEMPLATES, emailButtonUrl, emailDraftError, isPlanIdText, renderEmail, toEmailDraft } from "../src/utils/emailMessage";
+import { semesterPlanPath } from "../src/utils/semesterPlan";
 import { emailRecordOf, recentSameSending, stopMessage, withLogEntry, withRestSent, type EmailLogEntry, type EmailOutcome, type EmailRecord } from "../src/utils/emailOutcome";
 import { audienceKey, audienceLabel, emailRecipients, isNewsletter, toEmailAudience, usableEmail } from "../src/utils/emailRecipients";
 import type { Group, Person } from "../src/types";
@@ -93,9 +94,11 @@ describe("E-posten slik den sendes", () => {
     expect(EMAIL_TEMPLATES.map((template) => [template.audience.kind, template.link])).toEqual([
       ["leaders", "leder"],
       ["serviceGroups", "minside"],
+      ["serviceGroups", "semesterplan"],
       ["members", "ingen"],
     ]);
-    for (const template of EMAIL_TEMPLATES) expect(emailDraftError(template)).toBeNull();
+    // The semester plan's template has no plan: the page fills it in, so one is given here
+    for (const template of EMAIL_TEMPLATES) expect(emailDraftError({ planId: "semesterplan-1", ...template })).toBeNull();
   });
 
   test("hilsen, knapp og avsender legges til, og det som er skrevet, leses aldri som HTML", () => {
@@ -149,10 +152,12 @@ interface World {
   refusePersons?: number;
   /** What the e-mail service answers each request with: a status, or "down". */
   mail?: (number | "down")[];
+  /** The semester plans the database has, by id. Any other cms_settings document is not a plan. */
+  plans?: string[];
 }
 
 /** A database and an e-mail service that remember what they were asked. */
-const world = ({ persons: people = persons, groups: all = groups, replyTo = "post@example.org", refusePersons, mail = [] }: World = {}) => {
+const world = ({ persons: people = persons, groups: all = groups, replyTo = "post@example.org", refusePersons, mail = [], plans: planIds = [] }: World = {}) => {
   const asked: { url: string; headers?: Record<string, string>; body?: unknown }[] = [];
   const mails: { from: string; to: string[]; reply_to: string; subject: string; html: string; text: string }[][] = [];
   const ask: Fetch = async (url, init) => {
@@ -171,6 +176,7 @@ const world = ({ persons: people = persons, groups: all = groups, replyTo = "pos
       if (collection === PERSONS && refusePersons) return { ok: false, status: refusePersons, json: async () => [{ error: { code: refusePersons } }] };
       return { ok: true, status: 200, json: async () => rowsOf(collection, collection === PERSONS ? people : all) };
     }
+    if (planIds.some((id) => url.endsWith(`/${CMS_COLLECTIONS.SETTINGS}/${id}`))) return { ok: true, status: 200, json: async () => ({ name: url, fields: fieldsOf({ recordType: "semesterPlan", name: "Våren 2027" }) }) };
     if (url.endsWith(`/${EMAIL_DOCUMENT}`)) return replyTo ? { ok: true, status: 200, json: async () => ({ name: url, fields: fieldsOf({ recordType: "email", replyTo }) }) } : { ok: false, status: 404, json: async () => ({}) };
     return { ok: true, status: 200, json: async () => ({ name: url, fields: fieldsOf({ churchName: "Fjellbygda menighet" }) }) };
   };
@@ -416,6 +422,68 @@ describe("Loggen over det som er sendt", () => {
   });
 });
 
+// ---------- The button to a semester plan ----------
+
+describe("Knappen som fører til en semesterplan", () => {
+  beforeEach(() => vi.stubGlobal("console", { ...console, error: vi.fn() }));
+  afterEach(() => vi.unstubAllGlobals());
+
+  test("knappen heter «Planlegg semesteret» og går til planen, i både HTML og ren tekst", () => {
+    const rendered = renderEmail({ draft: { subject: "Semester", text: "Hei der", link: "semesterplan", planId: "semesterplan-1" }, churchName: "Fjellbygda menighet", siteUrl: "https://a.no/", firstName: "Lars" });
+    expect(rendered.html).toContain('href="https://a.no/minside/semesterplan/semesterplan-1"');
+    expect(rendered.html).toContain("Planlegg semesteret");
+    expect(rendered.text).toContain("Planlegg semesteret: https://a.no/minside/semesterplan/semesterplan-1");
+  });
+
+  test("lenken er samme sti som semesterPlanPath", () => {
+    expect(emailButtonUrl({ link: "semesterplan", planId: "semesterplan-1" }, "https://a.no")).toBe("https://a.no" + semesterPlanPath("semesterplan-1"));
+    expect(emailButtonUrl({ link: "semesterplan", planId: "semesterplan-1" }, "https://a.no")).toBe("https://a.no/minside/semesterplan/semesterplan-1");
+  });
+
+  test("en plan-id med andre tegn enn bokstaver, tall, «-» og «_» godtas ikke, og det sies hva som mangler", () => {
+    expect(isPlanIdText("semesterplan-1")).toBe(true);
+    expect(isPlanIdText("")).toBe(false);
+    expect(isPlanIdText("../annen")).toBe(false);
+    expect(emailDraftError({ subject: "Emne", text: "Tekst", link: "semesterplan" })).toBe("Velg hvilken semesterplan knappen skal åpne.");
+    expect(emailDraftError({ subject: "Emne", text: "Tekst", link: "semesterplan", planId: "../annen" })).toBe("Velg hvilken semesterplan knappen skal åpne.");
+    expect(emailDraftError({ subject: "Emne", text: "Tekst", link: "semesterplan", planId: "semesterplan-1" })).toBeNull();
+    expect(emailButtonUrl({ link: "semesterplan", planId: "../annen" }, "https://a.no")).toBeNull();
+  });
+
+  test("bare knappen til en semesterplan har en plan: andre knapper får ingen", () => {
+    expect(toEmailDraft({ subject: "Emne", text: "Tekst", link: "minside", planId: "semesterplan-1" })).toEqual({ subject: "Emne", text: "Tekst", link: "minside" });
+    expect(toEmailDraft({ subject: "Emne", text: "Tekst", link: "semesterplan", planId: "semesterplan-1" })).toEqual({ subject: "Emne", text: "Tekst", link: "semesterplan", planId: "semesterplan-1" });
+  });
+
+  test("malen for de frivillige velger knappen til semesterplanen, og ligger etter «Oppgavene er klare»", () => {
+    const ids = EMAIL_TEMPLATES.map((template) => template.id);
+    expect(ids).toContain("semesterplan-frivillige");
+    expect(ids.indexOf("semesterplan-frivillige")).toBe(ids.indexOf("oppgaver-klare") + 1);
+    expect(EMAIL_TEMPLATES.find((template) => template.id === "semesterplan-frivillige")?.link).toBe("semesterplan");
+  });
+
+  test("planen må finnes: då sendes e-posten med knappen til den, i både prøve og utsending", async () => {
+    const place = world({ plans: ["semesterplan-1"] });
+    const { body } = await send(place, request({ link: "semesterplan", planId: "semesterplan-1" }));
+    expect(body).toMatchObject({ ok: true, mode: "send", sent: 2 });
+    expect(place.mails[0][0].html).toContain("/minside/semesterplan/semesterplan-1");
+    expect(place.mails[0][0].text).toContain("Planlegg semesteret: https://menigheten.example/minside/semesterplan/semesterplan-1");
+
+    const prove = await send(place, { mode: "test", subject: "Prøve", text: "Hei", link: "semesterplan", planId: "semesterplan-1" });
+    expect(prove.body).toMatchObject({ ok: true, mode: "test", sent: 1 });
+  });
+
+  test("finnes ikke planen, sendes ingenting, og det sies hvorfor, i både prøve og utsending", async () => {
+    const place = world({ plans: [] });
+    const { status, body } = await send(place, request({ link: "semesterplan", planId: "borte" }));
+    expect(status).toBe(400);
+    expect(body).toEqual({ ok: false, reason: "no-plan", message: "Semesterplanen som knappen skal åpne, finnes ikke lenger. Velg en annen plan." });
+    const prove = await send(place, { mode: "test", subject: "Prøve", text: "Hei", link: "semesterplan", planId: "borte" });
+    expect(prove.body).toMatchObject({ ok: false, reason: "no-plan" });
+    expect(place.mails).toHaveLength(0);
+  });
+});
+
 // ---------- The page in admin ----------
 
 const service = vi.hoisted(() => ({
@@ -434,6 +502,22 @@ vi.mock("../src/services/email", () => ({
   },
 }));
 vi.mock("../src/context/CmsContext", () => ({ useCms: () => ({ settings: { churchName: "Fjellbygda menighet" } }) }));
+// The semester plans the page offers to the button: set per test (see the page's describe)
+const semester = vi.hoisted(() => ({ plans: [] as unknown[] }));
+vi.mock("../src/services/semesterPlans", () => ({
+  subscribeSemesterPlans: (onChange: (plans: unknown[]) => void) => {
+    onChange(semester.plans);
+    return () => undefined;
+  },
+  subscribeMySemesterAnswers: () => () => undefined,
+  subscribeAllSemesterAnswers: () => () => undefined,
+  saveSemesterPlan: vi.fn(async () => true),
+  deleteSemesterPlan: vi.fn(async () => true),
+  saveAnswerStep: vi.fn(async () => true),
+  restartAnswer: vi.fn(async () => true),
+}));
+// Open today (14 October 2026, see `now` below), and answered by the end of November
+const OPEN_PLAN = { id: "semesterplan-1", name: "Våren 2027", firstDay: "2026-10-01", lastDay: "2026-12-31", answerBy: "2026-11-30", opensAt: "2026-10-01T08:00:00.000Z", createdAt: "2026-09-01T00:00:00.000Z" };
 // The newsletter's stores: nobody has unsubscribed, and there is no banner (tests/newsletter.test.tsx has the rest)
 vi.mock("../src/services/newsletter", () => ({
   subscribeNewsletterOptOuts: (onChange: (keys: string[]) => void) => {
@@ -462,6 +546,7 @@ describe("Siden «Send e-post» i admin", () => {
     service.requestEmail.mockReset();
     service.saveEmailLog.mockClear();
     service.saveReplyTo.mockClear();
+    semester.plans = [OPEN_PLAN];
     showFeedback.mockClear();
     vi.stubGlobal("confirm", vi.fn(() => true));
   });
@@ -654,5 +739,37 @@ describe("Siden «Send e-post» i admin", () => {
     expect(screen.getByRole("note").textContent).toContain("Demoen sender ikke e-post");
     expect((screen.getByRole("button", { name: "Send prøve til meg" }) as HTMLButtonElement).disabled).toBe(true);
     expect((screen.getByRole("button", { name: "Send til 2 personer" }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  test("knappen kan føre til en semesterplan: planen velges i en egen liste, og e-posten sendes med den", async () => {
+    service.requestEmail.mockResolvedValue(sent());
+    show();
+    expect(screen.getByRole("option", { name: "Semesterplan" })).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Knappen fører til"), { target: { value: "semesterplan" } });
+    const plan = screen.getByLabelText("Hvilken plan") as HTMLSelectElement;
+    expect(plan.value).toBe("semesterplan-1");
+    expect(within(plan).getByRole("option", { name: "Våren 2027 (Åpen)" })).toBeTruthy();
+    expect(document.getElementById("email-preview")?.getAttribute("srcdoc")).toContain("/minside/semesterplan/semesterplan-1");
+
+    fireEvent.click(screen.getByRole("button", { name: "Send til 2 personer" }));
+    await waitFor(() => expect(service.requestEmail).toHaveBeenCalledWith(expect.objectContaining({ mode: "send", link: "semesterplan", planId: "semesterplan-1" })));
+  });
+
+  test("malen for semesterplanen velger knappen og planen av seg selv", () => {
+    show();
+    fireEvent.click(screen.getByRole("button", { name: EMAIL_TEMPLATES.find((template) => template.id === "semesterplan-frivillige")!.label }));
+    expect((screen.getByLabelText("Knappen fører til") as HTMLSelectElement).value).toBe("semesterplan");
+    expect((screen.getByLabelText("Hvilken plan") as HTMLSelectElement).value).toBe("semesterplan-1");
+  });
+
+  test("uten en plan som kan velges, sies det hvordan den lages, og ingen e-post går ut", () => {
+    semester.plans = [];
+    show();
+    fireEvent.change(screen.getByLabelText("Knappen fører til"), { target: { value: "semesterplan" } });
+    expect(screen.queryByLabelText("Hvilken plan")).toBeNull();
+    expect(screen.getByText("Det finnes ingen åpen eller planlagt semesterplan. Lag en under Semesterplan først.")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Send til 2 personer" }));
+    expect(screen.getByRole("alert").textContent).toBe("Velg hvilken semesterplan knappen skal åpne.");
+    expect(service.requestEmail).not.toHaveBeenCalled();
   });
 });

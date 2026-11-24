@@ -48,7 +48,7 @@ const losningen: HelpArticle = {
   steg: [
     "For alle: nettsiden med sider, nyheter, taler og arrangementene fra kalenderen. Den tilpasser seg telefon, nettbrett og PC.",
     "For medlemmene: den som trykker **Logg inn** på nettsiden, kommer til **Min side** med sine oppgaver, sine grupper, kalenderen og **Gudstjenester**. Min side er en del av nettsiden, ikke en egen app.",
-    "For gruppene: en leder eller nestleder ser mer på Min side, men bare for sine egne grupper: bemanningen under **Mine grupper**, forfall som **Må fylles** og filteret **Jeg leder** i kalenderen.",
+    "For gruppene: en leder eller nestleder ser mer på Min side, men bare for sine egne grupper: bemanningen under **Mine grupper**, forfall som **Må fylles** og en rød eller gul prikk i kalenderen der gruppa mangler folk.",
     "Admin er ikke en fjerde visning, men stedet der alt legges inn. Et arrangement legges inn én gang i **Kalender**, og vises på nettsiden, på Min side og i bemanningen.",
     "Alt er moduler. Under **Moduler** slår dere av det menigheten ikke bruker, så blir siden enklere, og på igjen når det trengs. Ingenting slettes.",
     "Adressen virker også uten nettsiden: velger menigheten **En annen nettside** under **Menighetens hjemmeside**, går adressen rett til Min side, med innlogging foran.",
@@ -70,7 +70,7 @@ const minSide: HelpArticle = {
     "**Gudstjenester**: de neste gudstjenestene, med hvem som har sagt ja til hva. Egne oppgaver er uthevet.",
     "Leder eller nestleder: gruppene en leder, står øverst under **Mine grupper**, med bemanningen på neste aktivitet. Et trykk på aktiviteten åpner planleggingen.",
     "Forfall i egne grupper står som **Må fylles** på Mine oppgaver. **Finn noen** åpner planleggingen, der plassen fylles.",
-    "I **Kalender** viser **Jeg leder** gruppenes arrangementer, med rød prikk der det mangler folk. På nettbrett og PC er kalenderen en måned; trykk på en dag for å se hva som skjer.",
+    "I **Kalender** kan du velge **Alle**, **Gudstjenester** eller **Mine grupper**. En leder ser en rød prikk der gruppa mangler folk. På nettbrett og PC er kalenderen en måned; trykk på en dag for å se hva som skjer.",
   ],
   godt:
     "På PC står gruppene og gudstjenestene i tre kolonner, grupperommet viser aktiviteter, chat og deltakere side om side, og kjøreplanen har bemanningen ved siden av programmet. Vil noen ha Min side som et ikon på telefonen, velger de «Legg til på startskjermen» i nettleseren. Ikonet åpner Min side. Det finnes ingen egen side for gruppeledere lenger: rollen bestemmer hva Min side viser.",
@@ -105,7 +105,7 @@ const nytt: HelpArticle = {
     "Trykk på en seksjon i forhåndsvisningen, så åpnes den i redigeringen. Endringene vises med en gang.",
     "Har du endret noe uten å lagre, står det **Ikke lagret** ved fanen i menyen, og admin spør før du går.",
     "Nettsidens meny viser **Logg inn** for gjester og **Min side** for den som er logget inn. Min side har menighetens logo og farger.",
-    "Gruppeleder-siden er borte. En leder finner gruppene sine, forfall og **Jeg leder** på Min side.",
+    "Gruppeleder-siden er borte. En leder finner gruppene sine og forfall på Min side.",
     "**Gudstjenester** på Min side viser hvem som gjør hva på de neste gudstjenestene.",
     "**Semesterplan** under Kalender: frigi planen for et semester, så går teamene gjennom arrangementene på Min side ett om gangen.",
     "**Bemanning** har et kort per team med tall for bekreftet, venter og ledig. Programmet står ved siden av teamene på stor skjerm, og kan foldes sammen.",

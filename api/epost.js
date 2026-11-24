@@ -56,10 +56,15 @@ function readDemoInstallation(env) {
   return demo;
 }
 
+// src/data/settingsRecords.ts
+var SEMESTER_PLAN_RECORD = "semesterPlan";
+
 // src/utils/emailMessage.ts
 var EMAIL_LINKS = {
   leder: { path: "/minside?view=grupper", button: "Åpne gruppene mine", label: "Mine grupper" },
   minside: { path: "/minside", button: "Åpne Min side", label: "Min side" },
+  // The path depends on the plan, see emailButtonUrl
+  semesterplan: { path: null, button: "Planlegg semesteret", label: "Semesterplan" },
   ingen: { path: null, button: "", label: "Ingen knapp" }
 };
 var EMAIL_SUBJECT_MAX = 120;
@@ -90,6 +95,17 @@ var EMAIL_TEMPLATES = [
     ].join("\n\n")
   },
   {
+    id: "semesterplan-frivillige",
+    label: "Semesterplanen er åpen: til de frivillige",
+    audience: { kind: "serviceGroups" },
+    link: "semesterplan",
+    subject: "Semesterplanen er klar: velg oppgavene dine",
+    text: [
+      "Semesterplanen er klar. Gå gjennom arrangementene ett og ett, og ta oppgavene som passer for deg. Er det en dag du ikke kan, trykker du «Kan ikke».",
+      "Du logger inn med e-postadressen denne e-posten kom til."
+    ].join("\n\n")
+  },
+  {
     id: "nyhetsbrev",
     label: "Nyhetsbrev",
     audience: { kind: "members" },
@@ -98,6 +114,13 @@ var EMAIL_TEMPLATES = [
     text: ["## Kjære alle sammen!", "Skriv nyhetsbrevet her.", "## Hva skjer", "- Første punkt\n- Andre punkt"].join("\n\n")
   }
 ];
+var isPlanIdText = (value) => typeof value === "string" && /^[A-Za-z0-9_-]{1,128}$/.test(value);
+function emailButtonUrl(draft, siteUrl) {
+  const base = siteUrl.replace(/\/+$/, "");
+  if (draft.link === "semesterplan") return isPlanIdText(draft.planId) ? `${base}/minside/semesterplan/${draft.planId}` : null;
+  const path = EMAIL_LINKS[draft.link].path;
+  return path ? base + path : null;
+}
 function emailDraftError(draft) {
   const subject = typeof draft.subject === "string" ? draft.subject.trim() : "";
   const text = typeof draft.text === "string" ? draft.text.trim() : "";
@@ -107,11 +130,14 @@ function emailDraftError(draft) {
   if (text === "") return "E-posten må ha en tekst.";
   if (text.length > EMAIL_TEXT_MAX) return `Teksten kan ikke være lengre enn ${EMAIL_TEXT_MAX} tegn.`;
   if (typeof draft.link !== "string" || !Object.keys(EMAIL_LINKS).includes(draft.link)) return "Velg hvor knappen i e-posten skal føre.";
+  if (draft.link === "semesterplan" && !isPlanIdText(draft.planId)) return "Velg hvilken semesterplan knappen skal åpne.";
   return null;
 }
 function toEmailDraft(value) {
   if (emailDraftError(value) !== null) return null;
-  return { subject: value.subject.trim(), text: value.text.trim().replace(/\r\n/g, "\n"), link: value.link };
+  const draft = { subject: value.subject.trim(), text: value.text.trim().replace(/\r\n/g, "\n"), link: value.link };
+  if (draft.link === "semesterplan") draft.planId = value.planId;
+  return draft;
 }
 var escapeHtml = (value) => value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 var HEADING = /^##\s+(.*)$/;
@@ -156,7 +182,7 @@ var blockText = (block) => {
 };
 function renderEmail({ draft, churchName, siteUrl, firstName, newsletter }) {
   const link = EMAIL_LINKS[draft.link];
-  const url = link.path ? siteUrl.replace(/\/+$/, "") + link.path : null;
+  const url = emailButtonUrl(draft, siteUrl);
   const greeting = newsletter ? null : firstName ? `Hei ${firstName}!` : "Hei!";
   const closing = newsletter ? null : `Hilsen ${churchName}`;
   const blocks = emailBlocksOf(draft.text);
@@ -666,6 +692,7 @@ var MESSAGES = {
   "bad-request": [400, "E-posten kan ikke sendes slik den er."],
   "no-reply-to": [400, "Legg inn adressen svar skal gå til, før du sender."],
   "no-recipients": [400, "Ingen av mottakerne har en e-postadresse."],
+  "no-plan": [400, "Semesterplanen som knappen skal åpne, finnes ikke lenger. Velg en annen plan."],
   database: [502, "Registeret kunne ikke leses akkurat nå. Prøv igjen."],
   "rules-outdated": [409, "Databasen har ikke fått reglene for nyhetsbrev ennå. Lim inn de nye reglene i Firebase, og prøv igjen."]
 };
@@ -732,6 +759,10 @@ async function sendEmail({ env, siteUrl, idToken, body, ask, wait = pause2 }) {
   const churchName = typeof settings?.churchName === "string" && settings.churchName.trim() || "Menigheten";
   const replyTo = usableEmail(record?.replyTo);
   if (!replyTo) return refuse("no-reply-to");
+  if (draft.link === "semesterplan") {
+    const plan = await readDocument(database, `cms_settings/${draft.planId}`, ask, as).catch(() => null);
+    if (plan?.recordType !== SEMESTER_PLAN_RECORD) return refuse("no-plan");
+  }
   let unsubscribed = /* @__PURE__ */ new Set();
   let bannerUrl = null;
   if (newsletter) {
