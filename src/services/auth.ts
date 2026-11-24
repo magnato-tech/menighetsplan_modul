@@ -9,7 +9,10 @@ import {
   signOut as firebaseSignOut,
 } from "firebase/auth";
 import { auth } from "../firebase";
+import { isLoginCounted } from "../utils/countedVisit";
+import type { LoginCountId } from "../utils/siteTraffic";
 import type { AccountState } from "../utils/session";
+import { recordLoginCount } from "./siteTraffic";
 
 /**
  * Signing in, with the two ways the congregations use: a Google account, or a link sent to an
@@ -45,11 +48,24 @@ export function subscribeAccount(onChange: (state: AccountState) => void): () =>
   );
 }
 
+/**
+ * Counts a sign-in that has succeeded, as a sum for the day (see utils/loginCounts.ts). Nothing
+ * waits for it, and nothing in it can make the sign-in fail.
+ */
+function countSignIn(id: LoginCountId): void {
+  try {
+    if (isLoginCounted()) recordLoginCount(id);
+  } catch {
+    // A count that cannot be made is left out; the sign-in itself is already done
+  }
+}
+
 export async function signInWithGoogle(): Promise<void> {
   const provider = new GoogleAuthProvider();
   // Always ask which account, so a shared machine does not sign the next person in as the last
   provider.setCustomParameters({ prompt: "select_account" });
   await signInWithPopup(auth, provider);
+  countSignIn("innlogging-google");
 }
 
 /** Sends a sign-in link to the address. `returnTo` is the address in the app the link leads back to. */
@@ -96,6 +112,7 @@ export async function completeSignInLink(url: string, email?: string): Promise<"
   const address = email?.trim() || emailForLink();
   if (!address) return "needsEmail";
   await signInWithEmailLink(auth, address, url);
+  countSignIn("innlogging-epostlenke");
   forgetEmailForLink();
   return "signedIn";
 }
@@ -103,6 +120,7 @@ export async function completeSignInLink(url: string, email?: string): Promise<"
 /** Signs in with the token the server gave for a personal login link (see utils/loginLink.ts). */
 export async function signInWithLoginLink(customToken: string): Promise<void> {
   await signInWithCustomToken(auth, customToken);
+  countSignIn("innlogging-lenke");
 }
 
 export async function signOut(): Promise<void> {

@@ -2,12 +2,14 @@ import { useEffect, useMemo, useRef } from "react";
 import { useCms } from "../context/CmsContext";
 import { useFirebase } from "../context/FirebaseDataContext";
 import { isEventPath } from "../utils/gatheringPresentation";
+import { isVisitCounted } from "../utils/countedVisit";
 import { recordTrafficAction, siteTrafficRecorder } from "../services/siteTraffic";
-import { areOwnVisitsExcluded } from "../utils/ownVisits";
-import { readPreviewModeFlags } from "../utils/previewBridge";
 import { isPublicPath } from "../utils/routes";
 import { trafficActionForLink, trafficTarget, visitCounting } from "../utils/siteTraffic";
 import { VisitTracker } from "../utils/visitTracker";
+
+// Where the visit is decided (see utils/countedVisit.ts). Kept importable from here for the tests.
+export { isVisitCounted };
 
 // Counts the visits to the public website as they happen (see utils/siteTraffic.ts for what is
 // counted and what is deliberately not). One tracker lives for as long as the website stays
@@ -47,21 +49,6 @@ function scheduleFlush(): void {
       }),
     wait
   );
-}
-
-/**
- * Whether this opening of the website is a visit to count. The editor's preview is not, a
- * program reading the page is not, a copy of the website running on a developer's own machine
- * is not, and neither is a browser whose owner has asked to be left out.
- */
-export function isVisitCounted(win: Window = window): boolean {
-  if (win.parent !== win) return false;
-  if (/^(localhost|127\.0\.0\.1|\[::1\])$|\.localhost$/.test(win.location.hostname)) return false;
-  if (readPreviewModeFlags(win.location.search, false).preview) return false;
-  // "bot" at the end of a word is a robot (Googlebot, bingbot). Inside a word it is a phone (CUBOT_X18).
-  const robot =
-    win.navigator.webdriver === true || /bot\b|crawl|spider|slurp|lighthouse|headless|pagespeed|prerender/i.test(win.navigator.userAgent);
-  return !robot && !areOwnVisitsExcluded();
 }
 
 const sameFile = (a: string, b: string): boolean => {

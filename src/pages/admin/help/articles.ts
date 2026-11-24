@@ -661,8 +661,9 @@ const innlogging: HelpArticle = {
     "Under **Står i registeret, men har aldri logget inn**: de kan logge inn, men har ikke gjort det. Gruppeledere står først.",
     "Under **Kan ikke logge inn**: de mangler e-post, eller deler adressen med noen andre i registeret.",
     "**Har logget inn** viser alle som har kommet inn. Trykk på overskriften for å åpne listen.",
+    "**Innlogginger per dag** teller hvor mange som logget inn, og hvor mange som åpnet Min side, bare som summer per dag uten navn. Min side telles høyst én gang per nettleser per dag, og tellingen startet da denne versjonen ble tatt i bruk, så det finnes ingen eldre tall.",
   ],
-  godt: "Ingenting lagres her. Kontoene hentes fra innloggingen hver gang siden åpnes, og sammenlignes med registeret. Bare en administrator ser denne fanen.",
+  godt: "Kontoene lagres ikke her. Kontoene hentes fra innloggingen hver gang siden åpnes, og sammenlignes med registeret. Bare en administrator ser denne fanen.",
   passPa: "Oversikten virker bare i menighetens egen installasjon, der nøkkelen til innloggingen (FIREBASE_SERVICE_ACCOUNT) er lagt inn hos Vercel. Uten den vises en melding i stedet for listene.",
   tabs: ["innlogging"],
   // No picture yet: the demo has no real accounts to show. Take it in the congregation's installation, then remove this line.

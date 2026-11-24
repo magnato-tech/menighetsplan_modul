@@ -126,6 +126,23 @@ export function trafficActionForLink(href: string | null | undefined): TrafficAc
   return null;
 }
 
+// ---------- Sign-ins and openings of Min side ----------
+
+// Counted in the same day documents, under `actions`, but not website actions: they are shown on
+// the Innlogging tab, never in Nettsidebesøk (see TRAFFIC_ACTIONS and hasAnyCount). Only sums.
+
+/** The ways of signing in to Min side that are counted. */
+export const LOGIN_COUNTS = [
+  { id: "innlogging-google", label: "Google" },
+  { id: "innlogging-epostlenke", label: "E-postlenke" },
+  { id: "innlogging-lenke", label: "Lenke fra e-post" },
+] as const;
+
+export type LoginCountId = (typeof LOGIN_COUNTS)[number]["id"];
+
+/** Openings of Min side, counted once per browser per day (see hooks/useMinSideOpenCount.ts). */
+export const MIN_SIDE_OPENED = "minside-aapnet";
+
 // ---------- Which address a count belongs to ----------
 
 const MAX_ADDRESS_LENGTH = 120;
@@ -342,8 +359,11 @@ function totalsOf(days: TrafficDay[]): TrafficTotals {
   };
 }
 
+// Only the website's own actions count here: a day with just the sign-in counts is no day of website traffic
 const hasAnyCount = (day: TrafficDay): boolean =>
-  day.visits > 0 || [day.views, day.actions, day.sermons, day.missing].some((values) => sumOf(values) > 0);
+  day.visits > 0 ||
+  [day.views, day.sermons, day.missing].some((values) => sumOf(values) > 0) ||
+  TRAFFIC_ACTIONS.some((action) => (day.actions[action.id] ?? 0) > 0);
 
 function describeAddress(address: string, site: SiteContent, now: Date): { title: string; exists: boolean } {
   if (address === "/") return { title: "Forsiden", exists: true };

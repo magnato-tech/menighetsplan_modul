@@ -5,6 +5,7 @@ import { inPeriod, overviewOf, type AccountListAnswer, type AccountPeriod, type 
 import { formatNorwegianDateTime } from "../../../utils/dates";
 import type { StudioData } from "../studio";
 import { studioBadge, studioCardPadded, studioMuted, studioSecondaryButton } from "../studioTheme";
+import { LoginCountsSection } from "./LoginCountsSection";
 
 interface AccountsTabProps {
   studio: Pick<StudioData, "adminPersons" | "adminGroups">;
@@ -119,6 +120,8 @@ export const AccountsTab: React.FC<AccountsTabProps> = ({ studio }) => {
               </button>
             ))}
           </div>
+
+          <LoginCountsSection days={period} />
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <Count value={signedIn.length} label={period === null ? "Har logget inn" : "Logget inn"} note={period === null ? undefined : `${newcomers} av dem for første gang`} />
