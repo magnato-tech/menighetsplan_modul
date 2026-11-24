@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   AlertTriangle,
   Shield,
@@ -13,7 +13,7 @@ import {
   Table2,
   UserPlus,
 } from "lucide-react";
-import { StudioData, ShowFeedback } from "../studio";
+import { StudioData, ShowFeedback, studioTabUrl } from "../studio";
 import { populateDemoPersons } from "../../../services/databaseAdmin";
 import {
   isInServiceGroup,
@@ -34,6 +34,16 @@ import { DEMO } from "../../../demo";
 import { clerkOnlyInAdmin } from "../../../utils/session";
 import { useOperatingMode } from "../../../hooks/useOperatingMode";
 import { CornerstoneImportDialog } from "../CornerstoneImportDialog";
+import { FilterMenu } from "./persons/FilterMenu";
+import { SaveListDialog } from "./persons/SaveListDialog";
+import { CATEGORY_ORDER, ROLE_LABEL, ROLE_ORDER, categoryLabel, cleanFilter, describeFilter, isEmptyFilter, personsMatching, type PersonFilter } from "../../../utils/personFilter";
+import { listFailureText, writeEmailHandover, type EmailList, type EmailListKind } from "../../../utils/emailLists";
+import { saveEmailList } from "../../../services/emailLists";
+import { useEmailLists } from "../../../hooks/useEmailLists";
+import { newId } from "../../../utils/id";
+
+const ROLE_OPTIONS = ROLE_ORDER.map((role) => ({ value: role, label: ROLE_LABEL[role] }));
+const CATEGORY_OPTIONS = CATEGORY_ORDER.map((category) => ({ value: category, label: categoryLabel(category) }));
 
 interface PersonsTabProps {
   studio: StudioData;
@@ -52,9 +62,11 @@ export const PersonsTab: React.FC<PersonsTabProps> = ({ studio, showFeedback }) 
   const [newCongregation, setNewCongregation] = useState(false);
   const [newDenomination, setNewDenomination] = useState(false);
   const [newGroupId, setNewGroupId] = useState("");
-  const [onlyCongregation, setOnlyCongregation] = useState(false);
-  const [onlyDenomination, setOnlyDenomination] = useState(false);
-  const [onlyWithoutService, setOnlyWithoutService] = useState(false);
+  // What the table is narrowed to: the checkboxes, the role, the type and the group (see utils/personFilter.ts)
+  const [filter, setFilter] = useState<PersonFilter>({});
+  const [listDialogOpen, setListDialogOpen] = useState(false);
+  const [savingList, setSavingList] = useState(false);
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [isPopulating, setIsPopulating] = useState<boolean>(false);
   const [view, setView] = useState<"cards" | "table">("table");
@@ -86,16 +98,67 @@ export const PersonsTab: React.FC<PersonsTabProps> = ({ studio, showFeedback }) 
     [adminPersons]
   );
 
+  // The lists are read for the name check and for the lists in «Send e-post»; the clerk does not see e-mail
+  const listsState = useEmailLists(!clerkOnly);
+  const persons = useMemo(() => adminPersons.map((row) => row.person), [adminPersons]);
+  const groups = useMemo(() => adminGroups.map((row) => row.group), [adminGroups]);
+  const sortedGroups = useMemo(() => [...groups].sort((a, b) => a.name.localeCompare(b.name, "nb")), [groups]);
+  // The table reads the service groups from the rows it shows (the same reckoning as the cards), so
+  // «Ikke i noen tjenestegruppe» is asked of those rows; the rest of the filter is matched by personsMatching
+  const matchingIds = useMemo(
+    () => new Set(personsMatching(persons, groups, { ...filter, withoutService: undefined }).map((person) => person.id)),
+    [persons, groups, filter]
+  );
+
   const visiblePersons = useMemo(() => {
-    const filtered = adminPersons.filter((row) => {
-      if (!matchesPersonSearch(row, searchTerm)) return false;
-      if (onlyCongregation && row.person.congregationMember !== true) return false;
-      if (onlyDenomination && row.person.denominationMember !== true) return false;
-      if (onlyWithoutService && isInServiceGroup(row)) return false;
-      return true;
-    });
+    const filtered = adminPersons.filter((row) => matchingIds.has(row.person.id) && (!filter.withoutService || !isInServiceGroup(row)) && matchesPersonSearch(row, searchTerm));
     return sortPersonRows(filtered, sortKey, sortDirection);
-  }, [adminPersons, searchTerm, sortKey, sortDirection, onlyCongregation, onlyDenomination, onlyWithoutService]);
+  }, [adminPersons, matchingIds, filter.withoutService, searchTerm, sortKey, sortDirection]);
+
+  const searching = searchTerm.trim() !== "";
+  const narrowed = !isEmptyFilter(filter) || searching;
+  const filterText = describeFilter(filter, groups);
+  const headerText = [filterText, searching ? `søk «${searchTerm.trim()}»` : ""].filter(Boolean).join(" · ");
+  // The name the chip in «Send e-post» is given: the filter, or «Utvalg fra Personer» when a search is typed (a search is not kept)
+  const selectionLabel = searching ? "Utvalg fra Personer" : `Utvalg: ${filterText}`;
+
+  const setFlag = (key: "congregationMember" | "denominationMember" | "withoutService", on: boolean) =>
+    setFilter((current) => ({ ...current, [key]: on ? true : undefined }) as PersonFilter);
+
+  /** «Send e-post til utvalget»: the persons shown are handed to «Send e-post», which opens with them as a chip. */
+  const sendSelection = () => {
+    if (!writeEmailHandover({ personIds: visiblePersons.map((row) => row.person.id), label: selectionLabel })) {
+      showFeedback?.("Utvalget kunne ikke sendes videre. Prøv igjen.", "error");
+      return;
+    }
+    navigate(studioTabUrl("epost"));
+  };
+
+  /** «Lagre som liste» in the dialog: a filter list keeps the filter, a fixed one keeps the persons shown now. */
+  const saveList = (name: string, kind: EmailListKind) => {
+    const now = new Date().toISOString();
+    const list: EmailList = {
+      id: newId("liste"),
+      name,
+      kind,
+      ...(kind === "filter" ? { filter: cleanFilter(filter) } : { personIds: visiblePersons.map((row) => row.person.id) }),
+      createdAt: now,
+      updatedAt: now,
+      createdBy: currentUser?.id ?? "",
+    };
+    setSavingList(true);
+    saveEmailList(list).then(
+      () => {
+        setSavingList(false);
+        setListDialogOpen(false);
+        showFeedback?.(`Listen «${name}» er lagret.`);
+      },
+      (error: unknown) => {
+        setSavingList(false);
+        showFeedback?.(listFailureText(error, "lagre listen"), "error");
+      }
+    );
+  };
 
   const handleCreatePerson = (event: React.FormEvent) => {
     event.preventDefault();
@@ -338,17 +401,35 @@ export const PersonsTab: React.FC<PersonsTabProps> = ({ studio, showFeedback }) 
 
       <div className="flex flex-wrap items-center gap-4 text-xs text-[var(--studio-text)]">
         <label className="flex items-center gap-2">
-          <input id="filter-congregation" type="checkbox" checked={onlyCongregation} onChange={(event) => setOnlyCongregation(event.target.checked)} />
+          <input id="filter-congregation" type="checkbox" checked={filter.congregationMember === true} onChange={(event) => setFlag("congregationMember", event.target.checked)} />
           Medlem i menigheten
         </label>
         <label className="flex items-center gap-2">
-          <input id="filter-denomination" type="checkbox" checked={onlyDenomination} onChange={(event) => setOnlyDenomination(event.target.checked)} />
+          <input id="filter-denomination" type="checkbox" checked={filter.denominationMember === true} onChange={(event) => setFlag("denominationMember", event.target.checked)} />
           Medlem i kirkesamfunnet
         </label>
         <label className="flex items-center gap-2">
-          <input id="filter-without-service" type="checkbox" checked={onlyWithoutService} onChange={(event) => setOnlyWithoutService(event.target.checked)} />
+          <input id="filter-without-service" type="checkbox" checked={filter.withoutService === true} onChange={(event) => setFlag("withoutService", event.target.checked)} />
           Ikke i noen tjenestegruppe
         </label>
+        <FilterMenu id="filter-role" label="Rolle" options={ROLE_OPTIONS} selected={filter.roles ?? []} onChange={(roles) => setFilter((current) => ({ ...current, roles }))} />
+        <FilterMenu id="filter-category" label="Gruppetype" options={CATEGORY_OPTIONS} selected={filter.categories ?? []} onChange={(categories) => setFilter((current) => ({ ...current, categories }))} />
+        <div className="flex items-center gap-2">
+          <label htmlFor="filter-group">Gruppe</label>
+          <select
+            id="filter-group"
+            value={filter.groupId ?? ""}
+            onChange={(event) => setFilter((current) => ({ ...current, groupId: event.target.value || undefined }))}
+            className="px-2.5 py-1.5 rounded-lg bg-[var(--studio-surface)] border border-[var(--studio-border)] text-xs text-[var(--studio-text)] max-w-[14rem]"
+          >
+            <option value="">Alle grupper</option>
+            {sortedGroups.map((group) => (
+              <option key={group.id} value={group.id}>
+                {group.name}
+              </option>
+            ))}
+          </select>
+        </div>
         <button type="button" id="btn-download-persons" onClick={downloadList} className="font-bold text-indigo-700 cursor-pointer">
           Last ned listen
         </button>
@@ -390,6 +471,51 @@ export const PersonsTab: React.FC<PersonsTabProps> = ({ studio, showFeedback }) 
           </button>
         </div>
       </div>
+
+      {narrowed && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl bg-[var(--studio-surface)] border border-[var(--studio-border)]">
+          <p id="filter-summary" className="text-xs text-[var(--studio-text)]">
+            <strong>
+              {visiblePersons.length} {visiblePersons.length === 1 ? "person" : "personer"}
+            </strong>
+            {headerText ? `: ${headerText}` : ""}
+          </p>
+          {!clerkOnly && (
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                id="btn-send-selection"
+                onClick={sendSelection}
+                disabled={visiblePersons.length === 0}
+                className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-bold cursor-pointer"
+              >
+                Send e-post til utvalget ({visiblePersons.length})
+              </button>
+              <button
+                type="button"
+                id="btn-save-list"
+                onClick={() => setListDialogOpen(true)}
+                disabled={visiblePersons.length === 0}
+                className="px-3 py-1.5 rounded-lg bg-[var(--studio-row)] border border-[var(--studio-border)] hover:bg-[var(--studio-hover)] disabled:opacity-50 text-[var(--studio-text)] text-xs font-bold cursor-pointer"
+              >
+                Lagre som liste ({visiblePersons.length})
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {listDialogOpen && (
+        <SaveListDialog
+          count={visiblePersons.length}
+          filterText={filterText}
+          canFilter={!searching}
+          lists={listsState.lists ?? []}
+          saving={savingList}
+          onSave={saveList}
+          onClose={() => setListDialogOpen(false)}
+        />
+      )}
 
       {visiblePersons.length === 0 ? (
         <p className="text-xs text-[var(--studio-muted)] text-center py-8">Ingen personer matcher søket.</p>

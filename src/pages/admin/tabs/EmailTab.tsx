@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Newspaper, PenLine, SendHorizontal, Settings, type LucideIcon } from "lucide-react";
+import { List as ListIcon, Newspaper, PenLine, SendHorizontal, Settings, type LucideIcon } from "lucide-react";
 import { useCms } from "../../../context/CmsContext";
 import { useMinSideModules } from "../../../hooks/useMinSideModules";
 import { useSemesterPlans } from "../../../hooks/useSemesterPlans";
@@ -16,13 +16,16 @@ import { audienceKey, audienceLabel, emailRecipients, isNewsletter, usableEmail,
 import { optedOutPersonIds } from "../../../utils/newsletter";
 import { daysAfter, formatLoginLinkUntil, loginLinkUntilError } from "../../../utils/loginLink";
 import { testDraftFor } from "../../../utils/emailTest";
+import { takeEmailHandover, type EmailList } from "../../../utils/emailLists";
+import { useEmailLists } from "../../../hooks/useEmailLists";
 import type { ShowFeedback, StudioData } from "../studio";
 import { EmailComposer } from "./email/EmailComposer";
 import { EmailSettings } from "./email/EmailSettings";
 import { NewsletterView } from "./email/NewsletterView";
+import { ListsView } from "./email/ListsView";
 import { SentList } from "./email/SentList";
 import type { ButtonOptionsProps, LinkSpan } from "./email/ButtonOptions";
-import { audienceChip, countOf, newsletterAudience, people, resolveChips, type NewsletterKind, type RecipientChip } from "./email/chips";
+import { audienceChip, countOf, listChip, newsletterAudience, people, resolveChips, selectionChip, type NewsletterKind, type RecipientChip } from "./email/chips";
 import { navItem, resultBox } from "./email/emailStyles";
 
 interface EmailTabProps {
@@ -33,14 +36,15 @@ interface EmailTabProps {
   now?: () => Date;
 }
 
-/** The four views: the e-mail being written, what has been sent, the newsletter, and the settings. */
-type EmailView = "ny" | "sendte" | "nyhetsbrev" | "innstillinger";
+/** The views: the e-mail being written, what has been sent, the saved lists, the newsletter, and the settings. */
+type EmailView = "ny" | "sendte" | "lister" | "nyhetsbrev" | "innstillinger";
 /** How a view is named in the address, as `&vis=`. «Ny e-post» is the page's own address. */
-const VIEW_PARAM: Record<EmailView, string | null> = { ny: null, sendte: "sendte", nyhetsbrev: "nyhetsbrev", innstillinger: "innstillinger" };
-const viewOf = (param: string | null): EmailView => (param === "sendte" || param === "nyhetsbrev" || param === "innstillinger" ? param : "ny");
+const VIEW_PARAM: Record<EmailView, string | null> = { ny: null, sendte: "sendte", lister: "lister", nyhetsbrev: "nyhetsbrev", innstillinger: "innstillinger" };
+const viewOf = (param: string | null): EmailView => (param === "sendte" || param === "lister" || param === "nyhetsbrev" || param === "innstillinger" ? param : "ny");
 const MAIN_VIEWS: { view: EmailView; label: string; icon: LucideIcon }[] = [
   { view: "ny", label: "Ny e-post", icon: PenLine },
   { view: "sendte", label: "Sendte", icon: SendHorizontal },
+  { view: "lister", label: "Lister", icon: ListIcon },
   { view: "nyhetsbrev", label: "Nyhetsbrev", icon: Newspaper },
 ];
 
@@ -87,6 +91,9 @@ interface Sending {
 export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSend = DEMO === null, now = () => new Date() }) => {
   const persons = useMemo(() => studio.adminPersons.map((row) => row.person), [studio.adminPersons]);
   const groups = useMemo(() => studio.adminGroups.map((row) => row.group), [studio.adminGroups]);
+  // The saved lists of persons, followed live: suggested in «Til», and shown under «Lister»
+  const listsState = useEmailLists(true);
+  const lists = useMemo<EmailList[]>(() => listsState.lists ?? [], [listsState.lists]);
   const churchName = useCms().settings.churchName?.trim() || "Menigheten";
   // The view is kept in the address, as the other sub-views of the admin are (see studio.ts)
   const [searchParams, setSearchParams] = useSearchParams();
@@ -120,6 +127,12 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
   const loginLinkUntil = linkSpan === "dato" ? linkDate : daysAfter(today, Number(linkSpan));
   const loginLinkProblem = loginLinkUntilError(loginLinkUntil, today);
   useEffect(() => keepLinkChoice(linkSpan, linkDate), [linkSpan, linkDate]);
+
+  // The selection handed over from «Personer» (see utils/emailLists.ts) becomes the only recipient, once, when the page opens
+  useEffect(() => {
+    const handover = takeEmailHandover();
+    if (handover) setChips([selectionChip(handover)]);
+  }, []);
 
   useEffect(
     () =>
@@ -162,7 +175,7 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
   );
 
   // Who the e-mail goes to: the chips in «Til» as one audience, and the newsletter's audience as chosen
-  const target = useMemo(() => resolveChips(chips, persons, groups), [chips, persons, groups]);
+  const target = useMemo(() => resolveChips(chips, persons, groups, lists), [chips, persons, groups, lists]);
   const composerRecipients = useMemo(
     () => (target ? emailRecipients(target.audience, persons, groups, target.onlyPersonIds, optedOutIds) : NOBODY),
     [target, persons, groups, optedOutIds]
@@ -351,6 +364,12 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
     tell(outcome, `E-posten er sendt til ${people(outcome.ok ? outcome.sent : 0)}.${loginLinksText(outcome)}`);
   };
 
+  /** «Send e-post til listen» under «Lister»: «Ny e-post» with the list as its only chip. */
+  const sendToList = (list: EmailList) => {
+    setChips([listChip(list)]);
+    showView("ny");
+  };
+
   /** «Send til» in «Ny e-post»: the chips as they stand. */
   const sendComposer = () => {
     if (!target) return setError(preflight(draft, loginLinksOn) ?? "Legg til minst én mottaker.");
@@ -446,6 +465,7 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
               storedReplyTo={storedReplyTo}
               persons={persons}
               groups={groups}
+              lists={lists}
               chips={chips}
               onChips={setChips}
               recipients={composerRecipients}
@@ -468,6 +488,10 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
           )}
 
           {view === "sendte" && <SentList record={record} busy={busy} canSend={canSend} onSendRest={(entry) => void sendRest(entry)} />}
+
+          {view === "lister" && (
+            <ListsView lists={listsState.lists} problem={listsState.problem} persons={persons} groups={groups} canSend={canSend} showFeedback={showFeedback} onSendToList={sendToList} />
+          )}
 
           {view === "nyhetsbrev" && (
             <NewsletterView

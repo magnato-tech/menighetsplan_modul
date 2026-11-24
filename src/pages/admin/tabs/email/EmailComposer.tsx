@@ -3,6 +3,7 @@ import { Send } from "lucide-react";
 import type { Group, Person } from "../../../../types";
 import { EMAIL_LINKS, type EmailDraft } from "../../../../utils/emailMessage";
 import type { EmailRecipients } from "../../../../utils/emailRecipients";
+import type { EmailList } from "../../../../utils/emailLists";
 import { studioCardPadded, studioPrimaryButton, studioSecondaryButton } from "../../studioTheme";
 import { ButtonMenu } from "./ButtonMenu";
 import { ButtonOptions, type ButtonOptionsProps } from "./ButtonOptions";
@@ -21,6 +22,8 @@ export interface EmailComposerProps {
   storedReplyTo: string;
   persons: Person[];
   groups: Group[];
+  /** The saved lists, which «Til» suggests. */
+  lists: EmailList[];
   chips: RecipientChip[];
   onChips: (chips: RecipientChip[]) => void;
   /** Who the chips reach, for the count and the list of those without an address. */
@@ -46,7 +49,7 @@ export interface EmailComposerProps {
 
 /** «Ny e-post»: the one that is written and sent to the chosen recipients. */
 export const EmailComposer: React.FC<EmailComposerProps> = (props) => {
-  const { canSend, ready, churchName, storedReplyTo, persons, groups, chips, onChips, recipients, draft, setDraft, templates, onTemplate, buttonProps, loginNote, previewLogin, sending, testing, onSend, testAddress, onTestAddress, testResult, onSendTest, onOpenSettings } = props;
+  const { canSend, ready, churchName, storedReplyTo, persons, groups, lists, chips, onChips, recipients, draft, setDraft, templates, onTemplate, buttonProps, loginNote, previewLogin, sending, testing, onSend, testAddress, onTestAddress, testResult, onSendTest, onOpenSettings } = props;
   const [previewing, setPreviewing] = useState(false);
   const [testOpen, setTestOpen] = useState(false);
   const { personCount, addressNote } = countOf(recipients);
@@ -113,7 +116,7 @@ export const EmailComposer: React.FC<EmailComposerProps> = (props) => {
         <label htmlFor="email-recipients" className={fieldLabel}>
           Til
         </label>
-        <RecipientField chips={chips} onChips={onChips} persons={persons} groups={groups} summary={`${people(personCount)}${addressNote}`} />
+        <RecipientField chips={chips} onChips={onChips} persons={persons} groups={groups} lists={lists} summary={`${people(personCount)}${addressNote}`} />
       </div>
 
       {testOpen && (

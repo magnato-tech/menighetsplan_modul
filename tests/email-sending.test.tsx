@@ -510,6 +510,17 @@ vi.mock("../src/services/email", () => ({
   },
 }));
 vi.mock("../src/context/CmsContext", () => ({ useCms: () => ({ settings: { churchName: "Fjellbygda menighet" } }) }));
+// The lists of persons: none are saved here (tests/email-lists-tab.test.tsx has them)
+vi.mock("../src/services/emailLists", () => ({
+  subscribeEmailLists: (onChange: (lists: unknown[]) => void) => {
+    onChange([]);
+    return () => undefined;
+  },
+  saveEmailList: vi.fn(async () => undefined),
+  renameEmailList: vi.fn(async () => undefined),
+  setListPersons: vi.fn(async () => undefined),
+  deleteEmailList: vi.fn(async () => undefined),
+}));
 // The semester plans the page offers to the button: set per test (see the page's describe)
 const semester = vi.hoisted(() => ({ plans: [] as unknown[] }));
 vi.mock("../src/services/semesterPlans", () => ({
