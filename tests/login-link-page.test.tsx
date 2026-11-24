@@ -11,7 +11,7 @@ vi.mock("../src/services/auth", () => ({
   describeSignInError: () => "Innloggingen gikk ikke. Prøv igjen.",
 }));
 vi.mock("../src/context/CmsContext", () => ({
-  useCms: () => ({ settings: { churchName: "Fjellbygda menighet" } }),
+  useCms: () => ({ settings: { churchName: "Fjellbygda menighet" }, surfaces: { ownWebsite: true, externalSiteUrl: "", signInBackUrl: "" } }),
 }));
 
 const page = () =>

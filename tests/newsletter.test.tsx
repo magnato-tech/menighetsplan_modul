@@ -342,7 +342,7 @@ vi.mock("../src/services/newsletter", () => ({
   isOptedOut: async () => store.already,
   optOut: store.optOut,
 }));
-vi.mock("../src/context/CmsContext", () => ({ useCms: () => ({ settings: { churchName: "Fjellbygda menighet" } }) }));
+vi.mock("../src/context/CmsContext", () => ({ useCms: () => ({ settings: { churchName: "Fjellbygda menighet" }, surfaces: { ownWebsite: true, externalSiteUrl: "", signInBackUrl: "" } }) }));
 
 import { UnsubscribePage } from "../src/pages/UnsubscribePage";
 

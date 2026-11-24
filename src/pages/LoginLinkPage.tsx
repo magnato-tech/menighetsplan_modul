@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { ChurchSiteLink } from "../components/ChurchSiteLink";
 import { useCms } from "../context/CmsContext";
 import { describeSignInError, signInWithLoginLink } from "../services/auth";
 import { exchangeLoginLink } from "../services/loginLink";
@@ -101,9 +102,9 @@ export const LoginLinkPage: React.FC = () => {
           </div>
         )}
 
-        <Link to="/" className="block text-center text-xs font-bold text-indigo-700 underline underline-offset-2">
+        <ChurchSiteLink outsideSite className="block text-center text-xs font-bold text-indigo-700 underline underline-offset-2">
           Til nettsiden
-        </Link>
+        </ChurchSiteLink>
       </div>
     </main>
   );

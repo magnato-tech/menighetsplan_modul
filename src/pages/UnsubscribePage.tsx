@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
+import { ChurchSiteLink } from "../components/ChurchSiteLink";
 import { CheckCircle2, MailX } from "lucide-react";
 import { useCms } from "../context/CmsContext";
 import { isOptedOut, optOut } from "../services/newsletter";
@@ -88,9 +89,9 @@ export const UnsubscribePage: React.FC = () => {
           </p>
         )}
 
-        <Link to="/" className="block text-center text-xs font-bold text-indigo-700 underline underline-offset-2">
+        <ChurchSiteLink outsideSite className="block text-center text-xs font-bold text-indigo-700 underline underline-offset-2">
           Til nettsiden
-        </Link>
+        </ChurchSiteLink>
       </div>
     </main>
   );
