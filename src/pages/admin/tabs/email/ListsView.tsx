@@ -6,7 +6,7 @@ import { listFailureText, LISTS_NOT_PUBLISHED, listNameError, listPersonIds, typ
 import { describeFilter } from "../../../../utils/personFilter";
 import { studioTabUrl, type ShowFeedback } from "../../studio";
 import { studioCardPadded, studioInputFull, studioPrimaryButton, studioSecondaryButton } from "../../studioTheme";
-import { people } from "./chips";
+import { people, type Ask } from "./chips";
 import { hint } from "./emailStyles";
 
 export interface ListsViewProps {
@@ -20,10 +20,12 @@ export interface ListsViewProps {
   showFeedback: ShowFeedback;
   /** Starts an e-mail to the list: «Ny e-post» with the list as its only chip. */
   onSendToList: (list: EmailList) => void;
+  /** Asks before a list is deleted, in the page. */
+  ask: Ask;
 }
 
 /** «Lister» in «Send e-post»: the lists saved on the «Personer» tab, and what can be done with each. */
-export const ListsView: React.FC<ListsViewProps> = ({ lists, problem, persons, groups, canSend, showFeedback, onSendToList }) => {
+export const ListsView: React.FC<ListsViewProps> = ({ lists, problem, persons, groups, canSend, showFeedback, onSendToList, ask }) => {
   const sorted = useMemo(() => [...(lists ?? [])].sort((a, b) => a.name.localeCompare(b.name, "nb")), [lists]);
 
   let body: React.ReactNode;
@@ -35,7 +37,7 @@ export const ListsView: React.FC<ListsViewProps> = ({ lists, problem, persons, g
     body = (
       <ul className="divide-y divide-[var(--studio-border)]">
         {sorted.map((list) => (
-          <ListRow key={list.id} list={list} allLists={sorted} persons={persons} groups={groups} canSend={canSend} showFeedback={showFeedback} onSendToList={onSendToList} />
+          <ListRow key={list.id} list={list} allLists={sorted} persons={persons} groups={groups} canSend={canSend} showFeedback={showFeedback} onSendToList={onSendToList} ask={ask} />
         ))}
       </ul>
     );
@@ -63,10 +65,11 @@ interface ListRowProps {
   canSend: boolean;
   showFeedback: ShowFeedback;
   onSendToList: (list: EmailList) => void;
+  ask: Ask;
 }
 
 /** One list: what it is, who is on it, and the actions. The names and the adding open below it. */
-const ListRow: React.FC<ListRowProps> = ({ list, allLists, persons, groups, canSend, showFeedback, onSendToList }) => {
+const ListRow: React.FC<ListRowProps> = ({ list, allLists, persons, groups, canSend, showFeedback, onSendToList, ask }) => {
   const [open, setOpen] = useState(false);
   // The name being typed while renaming, null when not renaming
   const [renaming, setRenaming] = useState<string | null>(null);
@@ -101,8 +104,8 @@ const ListRow: React.FC<ListRowProps> = ({ list, allLists, persons, groups, canS
     );
   };
 
-  const remove = () => {
-    if (!confirm(`Slette listen «${list.name}»? Personene slettes ikke, bare listen.`)) return;
+  const remove = async () => {
+    if (!(await ask(`Slette listen «${list.name}»? Personene slettes ikke, bare listen.`, "Slett"))) return;
     deleteEmailList(list.id).then(
       () => showFeedback(`Listen «${list.name}» er slettet.`),
       (error) => showFeedback(listFailureText(error, "slette listen"), "error")
@@ -141,7 +144,7 @@ const ListRow: React.FC<ListRowProps> = ({ list, allLists, persons, groups, canS
           >
             Gi nytt navn
           </button>
-          <button type="button" onClick={remove} className={studioSecondaryButton}>
+          <button type="button" onClick={() => void remove()} className={studioSecondaryButton}>
             Slett
           </button>
           <button type="button" onClick={() => onSendToList(list)} disabled={!canSend} className={`${studioPrimaryButton} px-3 py-1.5 text-xs disabled:opacity-50`}>

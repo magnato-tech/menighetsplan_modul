@@ -16,8 +16,6 @@ import { fieldLabel, hint } from "./emailStyles";
 
 export interface EmailComposerProps {
   canSend: boolean;
-  /** False while what is stored is being read: nothing is sent then. */
-  ready: boolean;
   churchName: string;
   storedReplyTo: string;
   persons: Person[];
@@ -49,7 +47,7 @@ export interface EmailComposerProps {
 
 /** «Ny e-post»: the one that is written and sent to the chosen recipients. */
 export const EmailComposer: React.FC<EmailComposerProps> = (props) => {
-  const { canSend, ready, churchName, storedReplyTo, persons, groups, lists, chips, onChips, recipients, draft, setDraft, templates, onTemplate, buttonProps, loginNote, previewLogin, sending, testing, onSend, testAddress, onTestAddress, testResult, onSendTest, onOpenSettings } = props;
+  const { canSend, churchName, storedReplyTo, persons, groups, lists, chips, onChips, recipients, draft, setDraft, templates, onTemplate, buttonProps, loginNote, previewLogin, sending, testing, onSend, testAddress, onTestAddress, testResult, onSendTest, onOpenSettings } = props;
   const [previewing, setPreviewing] = useState(false);
   const [testOpen, setTestOpen] = useState(false);
   const { personCount, addressNote } = countOf(recipients);
@@ -59,7 +57,7 @@ export const EmailComposer: React.FC<EmailComposerProps> = (props) => {
   return (
     <section aria-label="Ny e-post" className={`${studioCardPadded} space-y-4`}>
       <div className="flex flex-wrap items-center gap-2">
-        <button type="button" onClick={onSend} disabled={sending || testing || !canSend || !ready} className={`${studioPrimaryButton} flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs disabled:opacity-50`}>
+        <button type="button" onClick={onSend} disabled={sending || testing || !canSend} className={`${studioPrimaryButton} flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs disabled:opacity-50`}>
           <Send className="w-4 h-4" aria-hidden="true" />
           <span>{sending ? "Sender …" : `Send til ${people(personCount)}`}</span>
         </button>

@@ -97,6 +97,16 @@ const show = (vis?: string) =>
       <Where />
     </MemoryRouter>
   );
+/** The question in the page, once it is shown: its text. */
+const askedText = async (): Promise<string | null> => {
+  const box = await screen.findByRole("alertdialog");
+  return document.getElementById(box.getAttribute("aria-labelledby") ?? "")?.textContent ?? null;
+};
+/** Answers the question in the page with the button of that name, once it is shown. */
+const answer = async (name: "Send" | "Avbryt" | "Slett") => {
+  const box = await screen.findByRole("alertdialog");
+  fireEvent.click(within(box).getByRole("button", { name }));
+};
 /** The row of a list in «Lister». */
 const rowOf = (name: string) => screen.getByText(name, { selector: "p" }).closest("li") as HTMLElement;
 
@@ -128,6 +138,7 @@ describe("Utvalget fra Personer i «Til»", () => {
     expect(screen.queryByRole("button", { name: "Fjern Ledere og nestledere i tjenestegruppene" })).toBeNull();
     expect(document.getElementById("email-recipient-count")?.textContent).toBe("2 personer");
     fireEvent.click(screen.getByRole("button", { name: "Send til 2 personer" }));
+    await answer("Send");
     await vi.waitFor(() => expect(service.requestEmail).toHaveBeenCalledTimes(1));
     expect(service.requestEmail).toHaveBeenCalledWith(expect.objectContaining({ mode: "send", audience: { kind: "persons" }, onlyPersonIds: ["hanne", "frida"] }));
   });
@@ -162,14 +173,18 @@ describe("Lister i «Send e-post»", () => {
     await vi.waitFor(() => expect(lists.rename).toHaveBeenCalledWith("liste-1", "Husgruppeledere"));
 
     fireEvent.click(within(rowOf("Styret")).getByRole("button", { name: "Slett" }));
+    expect(await askedText()).toBe("Slette listen «Styret»? Personene slettes ikke, bare listen.");
+    await answer("Slett");
     await vi.waitFor(() => expect(lists.remove).toHaveBeenCalledWith("liste-2"));
   });
 
-  test("ingen sletting uten bekreftelse", () => {
-    vi.stubGlobal("confirm", vi.fn(() => false));
+  test("ingen sletting uten bekreftelse, og siden spør aldri med window.confirm", async () => {
     show("lister");
     fireEvent.click(within(rowOf("Styret")).getByRole("button", { name: "Slett" }));
+    await answer("Avbryt");
+    await vi.waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
     expect(lists.remove).not.toHaveBeenCalled();
+    expect(confirm).not.toHaveBeenCalled();
   });
 
   test("en fast liste får en person lagt til, og en tatt av", async () => {

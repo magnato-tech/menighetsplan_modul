@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { List as ListIcon, Newspaper, PenLine, SendHorizontal, Settings, type LucideIcon } from "lucide-react";
 import { useCms } from "../../../context/CmsContext";
 import { useMinSideModules } from "../../../hooks/useMinSideModules";
 import { useSemesterPlans } from "../../../hooks/useSemesterPlans";
+import { studioPrimaryButton, studioSecondaryButton } from "../studioTheme";
 import { DEMO } from "../../../demo";
 import { requestEmail, saveEmailLog, saveReplyTo, subscribeEmailRecord } from "../../../services/email";
 import { subscribeNewsletterBanner, subscribeNewsletterOptOuts } from "../../../services/newsletter";
@@ -25,7 +26,7 @@ import { NewsletterView } from "./email/NewsletterView";
 import { ListsView } from "./email/ListsView";
 import { SentList } from "./email/SentList";
 import type { ButtonOptionsProps, LinkSpan } from "./email/ButtonOptions";
-import { audienceChip, countOf, listChip, newsletterAudience, people, resolveChips, selectionChip, type NewsletterKind, type RecipientChip } from "./email/chips";
+import { audienceChip, countOf, listChip, newsletterAudience, people, resolveChips, selectionChip, type Ask, type NewsletterKind, type RecipientChip } from "./email/chips";
 import { navItem, resultBox } from "./email/emailStyles";
 
 interface EmailTabProps {
@@ -49,6 +50,11 @@ const MAIN_VIEWS: { view: EmailView; label: string; icon: LucideIcon }[] = [
 ];
 
 type Notice = { good: boolean; text: string };
+/** A question asked in the page: its text, the words of its yes button, and what answering it does. */
+type Question = { text: string; yes: string; answer: (yes: boolean) => void };
+
+/** What a send says when the e-mail settings have not been read yet. */
+const NOT_LOADED = "Innstillingene for e-post er ikke lastet ennå. Vent litt og prøv igjen.";
 
 const EMPTY: EmailDraft = { subject: "", text: "", link: "minside" };
 /** Only what is sent: a ready-made text has a name and an audience too, which the draft has not. */
@@ -114,6 +120,10 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<Notice | null>(null);
   const [sending, setSending] = useState(false);
+  // The question waiting for an answer, shown where the notices are. Nothing is sent while one is open.
+  const [question, setQuestion] = useState<Question | null>(null);
+  const questionBox = useRef<HTMLDivElement>(null);
+  const questionYes = useRef<HTMLButtonElement>(null);
   // The panel «Send prøve»: its own address and its own result, apart from the sending
   const [testAddressText, setTestAddressText] = useState(() => studio.currentUser?.email ?? "");
   const [testing, setTesting] = useState(false);
@@ -246,6 +256,8 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
     setError(null);
     setResult(null);
     setTestResult(null);
+    // A question asked in the view left behind counts as «Avbryt»
+    question?.answer(false);
     setSearchParams(
       (previous) => {
         const params = new URLSearchParams(previous);
@@ -290,8 +302,21 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
     setResult({ good: true, text: done });
   };
 
+  /** Asks the administrator in the page, and resolves with the answer: true for the yes button, false for «Avbryt» or Escape. */
+  const ask: Ask = (text, yes = "Send") => new Promise<boolean>((resolve) => setQuestion({ text, yes, answer: (ok) => { setQuestion(null); resolve(ok); } }));
+
+  // A question is read at once: its yes button has the focus, and the box is in view
+  useEffect(() => {
+    if (!question) return;
+    questionYes.current?.focus();
+    const box = questionBox.current;
+    // jsdom has no scrolling
+    if (box && typeof box.scrollIntoView === "function") box.scrollIntoView({ block: "nearest" });
+  }, [question]);
+
   /** Sends the test to the one address the panel names, and logs that it was sent. A newsletter test gets its audience too. */
   const sendTestMail = async (source: EmailDraft, newsletter: NewsletterKind | null) => {
+    if (question) return;
     const address = usableEmail(testAddressText);
     if (!address) return setTestResult({ good: false, text: "Skriv en gyldig e-postadresse." });
     const withLoginLinks = newsletter === null && loginLinksOn;
@@ -327,15 +352,16 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
 
   /** Sends an e-mail to all of its recipients, after the questions the administrator is asked, and logs it. */
   const sendMail = async (sendingNow: Sending) => {
+    if (!record) return setError(NOT_LOADED);
     const { personCount, addressNote } = countOf(sendingNow.recipients);
     const wrong = preflight(sendingNow.draft, sendingNow.loginLinks) ?? (sendingNow.recipients.recipients.length === 0 ? "Ingen av mottakerne har en e-postadresse." : null);
     setError(wrong);
-    if (wrong || !record) return;
+    if (wrong) return;
     const to = sendingNow.label;
     const subject = sendingNow.draft.subject.trim();
     const before = recentSameSending(record.log, audienceKey, sendingNow.audience, sendingNow.draft.subject, now());
-    if (before && !confirm(`Denne e-posten ble sendt til «${to}» ${formatNorwegianDateTime(before.sentAt)}. Vil du sende den en gang til?`)) return;
-    if (!confirm(`Du sender «${subject}» til ${people(personCount)}${addressNote} (${to}). Vil du sende?`)) return;
+    if (before && !(await ask(`Denne e-posten ble sendt til «${to}» ${formatNorwegianDateTime(before.sentAt)}. Vil du sende den en gang til?`))) return;
+    if (!(await ask(`Du sender «${subject}» til ${people(personCount)}${addressNote} (${to}). Vil du sende?`))) return;
 
     setSending(true);
     setResult(null);
@@ -372,25 +398,30 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
 
   /** «Send til» in «Ny e-post»: the chips as they stand. */
   const sendComposer = () => {
+    if (question) return;
+    if (!record) return setError(NOT_LOADED);
     if (!target) return setError(preflight(draft, loginLinksOn) ?? "Legg til minst én mottaker.");
     void sendMail({ draft, audience: target.audience, onlyPersonIds: target.onlyPersonIds, label: target.label, recipients: composerRecipients, loginLinks: loginLinksOn });
   };
 
   /** «Send til» in «Nyhetsbrev»: the newsletter as it stands. Never with login links. */
   const sendNewsletter = () => {
+    if (question) return;
     const audience = newsletterAudience(newsKind);
     void sendMail({ draft: newsDraft, audience, label: audienceLabel(audience, groups), recipients: newsRecipients, loginLinks: false });
   };
 
   /** Sends to those a stopped sending left: the same e-mail as stands in the form now, with the text of its kind. */
   const sendRest = async (entry: EmailLogEntry) => {
+    if (question) return;
+    if (!record) return setError(NOT_LOADED);
     const newsletter = isNewsletter(entry.audience);
     const source = newsletter ? newsDraft : draft;
     const withLoginLinks = loginLinksOn && !newsletter;
     const wrong = preflight(source, withLoginLinks);
     setError(wrong);
-    if (wrong || !record) return;
-    if (!confirm(`Du sender «${source.subject.trim()}» til ${people(entry.remainingPersonIds.length)} som gjenstår (${entry.audienceLabel}). Teksten er den som står i skjemaet nå. Vil du sende?`)) return;
+    if (wrong) return;
+    if (!(await ask(`Du sender «${source.subject.trim()}» til ${people(entry.remainingPersonIds.length)} som gjenstår (${entry.audienceLabel}). Teksten er den som står i skjemaet nå. Vil du sende?`))) return;
     setSending(true);
     setResult(null);
     const outcome = await requestEmail({
@@ -457,10 +488,25 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
             </p>
           )}
 
+          {question && (
+            <div ref={questionBox} role="alertdialog" aria-labelledby="email-question" onKeyDown={(event) => event.key === "Escape" && question.answer(false)} className="p-3 rounded-xl border border-amber-500/40 bg-amber-500/10 space-y-3">
+              <p id="email-question" className="text-xs font-bold text-[var(--studio-text)]">
+                {question.text}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <button ref={questionYes} type="button" onClick={() => question.answer(true)} className={`${studioPrimaryButton} px-3 py-1.5 text-xs`}>
+                  {question.yes}
+                </button>
+                <button type="button" onClick={() => question.answer(false)} className={studioSecondaryButton}>
+                  Avbryt
+                </button>
+              </div>
+            </div>
+          )}
+
           {view === "ny" && (
             <EmailComposer
               canSend={canSend}
-              ready={record !== undefined}
               churchName={churchName}
               storedReplyTo={storedReplyTo}
               persons={persons}
@@ -490,17 +536,17 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
           {view === "sendte" && <SentList record={record} busy={busy} canSend={canSend} onSendRest={(entry) => void sendRest(entry)} />}
 
           {view === "lister" && (
-            <ListsView lists={listsState.lists} problem={listsState.problem} persons={persons} groups={groups} canSend={canSend} showFeedback={showFeedback} onSendToList={sendToList} />
+            <ListsView lists={listsState.lists} problem={listsState.problem} persons={persons} groups={groups} canSend={canSend} showFeedback={showFeedback} onSendToList={sendToList} ask={ask} />
           )}
 
           {view === "nyhetsbrev" && (
             <NewsletterView
               canSend={canSend}
-              ready={record !== undefined}
               churchName={churchName}
               banner={banner}
               optedOut={optedOutPersons}
               showFeedback={showFeedback}
+              ask={ask}
               draft={newsDraft}
               setDraft={setNewsDraft}
               kind={newsKind}

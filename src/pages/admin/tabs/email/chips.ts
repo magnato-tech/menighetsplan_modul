@@ -7,6 +7,9 @@ import { newId } from "../../../../utils/id";
 // list, or a selection handed over from the «Personer» tab. The chips are turned into one audience to send
 // with (resolveChips), so the server gets what it always got.
 
+/** Asks the administrator a question in the page and resolves with the answer: true for the yes button, false for «Avbryt». */
+export type Ask = (text: string, yes?: string) => Promise<boolean>;
+
 /** The two newsletter audiences: the only ones a newsletter goes to. */
 export type NewsletterKind = "members" | "everyone";
 
