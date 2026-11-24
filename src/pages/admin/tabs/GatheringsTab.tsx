@@ -175,7 +175,12 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
       store(KINDS_KEY, next);
       return next;
     });
-  const filteredGatherings = useMemo(() => filterByKinds(adminGatherings, kinds), [adminGatherings, kinds]);
+  // House-group meetings are shown here too, under «Husgrupper». The other lists in admin leave them out.
+  const calendarItems = useMemo(
+    () => [...adminGatherings, ...(studio.adminHouseGroupGatherings ?? [])],
+    [adminGatherings, studio.adminHouseGroupGatherings]
+  );
+  const filteredGatherings = useMemo(() => filterByKinds(calendarItems, kinds), [calendarItems, kinds]);
   const [sortKey, setSortKey] = useState<GatheringSortKey>("date");
   const [sortDirection, setSortDirection] = useState<GatheringSortDirection>("asc");
   // Coming events first; the held ones are a press away on PC. A phone always shows the coming ones.

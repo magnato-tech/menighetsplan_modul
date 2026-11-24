@@ -142,7 +142,7 @@ Adminpanelet ligger på `/admin` og heter **Admin**. Øverst i menyen velges **P
 | Fane | Hva administratoren gjør | Status |
 |---|---|---|
 | **Oversikt** | Ser de tre neste arrangementene med bemanningen (forfall, ubesatt, venter), og hva som må ordnes de nærmeste fire ukene. Ett trykk åpner Bemanning på arrangementet | Levert. De neste arrangementene øverst 20. oktober |
-| **Arrangementer** | Oppretter, endrer og avlyser samlinger. «+» øverst åpner skjemaet for et nytt arrangement *(fra 20. oktober; det raske skjemaet over listen er tatt bort, for nye arrangementer legges mest inn ved semesterstart)*. Et trykk på et arrangement åpner Bemanning, «Kjøreplan» åpner Program. Skjemaet gjør ingen gruppe ansvarlig før en velges, og brukes også ved redigering: slutt (også en annen dag), sted, bibeltekst, ansvarlig gruppe (kalenderen til en annen velges), gudstjeneste og synlighet. «Lag neste arrangement» kopierer oppgavene til en ny dato. På mobil står bare Måned og Kort, og kortene viser tema og taler hver på sin linje (kapittel 12, «Kalender på mobil») | Levert. Mal og serie i det store skjemaet er prøveutgaver (kapittel 14) |
+| **Arrangementer** | Oppretter, endrer og avlyser samlinger. «+» øverst åpner skjemaet for et nytt arrangement *(fra 20. oktober; det raske skjemaet over listen er tatt bort, for nye arrangementer legges mest inn ved semesterstart)*. Et trykk på et arrangement åpner Bemanning, «Kjøreplan» åpner Program. Skjemaet gjør ingen gruppe ansvarlig før en velges, og brukes også ved redigering: slutt (også en annen dag), sted, bibeltekst, ansvarlig gruppe (kalenderen til en annen velges), gudstjeneste og synlighet. «Lag neste arrangement» kopierer oppgavene til en ny dato. Husgruppemøter står her under filteret «Husgrupper» og kan endres og slettes (de telles ikke i tallene på dashbordet og menyen, se kapittel 14). På mobil står bare Måned og Kort, og kortene viser tema og taler hver på sin linje (kapittel 12, «Kalender på mobil») | Levert. Mal og serie i det store skjemaet er prøveutgaver (kapittel 14) |
 | **Maler** | Holder malene for arrangementer som gjentas: tid, sted, bilde og tekst, program med roller, og oppgavene som skal bemannes. Legger inn standardmalen for gudstjeneste, og planlegger en serie fra en mal | Levert 12. oktober |
 | **Trenger oppfølging** | Ser forfall og ubesatte oppgaver per arrangement, det nærmeste først, de nærmeste fire ukene eller alt som kommer. Tildeler og forespør | Levert. Purr tatt bort 20. oktober (kapittel 11.3) |
 | **Grupper & husfellesskap** | Oppretter grupper, setter leder og nestleder, kategori, møteplan og om gruppen vises på nettsiden | Levert |
@@ -278,7 +278,7 @@ Regnskap er ikke en egen modul. Givertjeneste og Utleie skal registrere inntekte
 | ~~Gruppeleder~~ | `/leder` | Tatt bort 9. november 2026: innholdet står på Min side. Adressen går til «Mine grupper» | Tatt bort |
 | **Gruppe** | `/gruppe/:id` | Deltakere, møteplan, aktiviteter og beskjeder til gruppen, med bilde | Levert |
 | **Samling** | `/samling/:id` | Kjøreplan: programmet og oppgavene på én tidslinje, med hvem som har sagt ja. Åpnes fra kalenderen på Min side, og er lik for alle. Ledere og administrator går videre med «Åpne planlegging» | Delvis: programmet kan ikke redigeres i løsningen ennå |
-| **Husfellesskap** | `/husfellesskap` | Neste møte med vert, tema og bibeltekst. «Kommer» / «Kommer ikke». Deltakerliste | Levert |
+| **Husfellesskap** | `/husfellesskap` | Neste møte med vert, tema og bibeltekst. «Kommer» / «Kommer ikke». Deltakerliste. Lederen trykker «Vis for gruppa» for å gjøre et møte synlig på Min side; det sendes ingen e-post eller SMS | Levert |
 | Meldinger | `/meldinger` | Går til Min side. Meldingene står i gruppene (modulen Gruppechat) | Plassholderen er tatt bort |
 | Kalender | – | Fanen «Kalender» på Min side, en modul som kan slås av | Levert |
 | **Kalender** | `/minside?view=kalender` | Fanen «Kalender» på Min side: det som kommer i menigheten og i egne grupper | Levert |
@@ -339,7 +339,7 @@ Felles begrep for enhver samling: gudstjeneste, ungdomsmøte, bønnemøte, dugna
 | `isGudstjeneste` | `boolean` | Nei | Om samlingen er en gudstjeneste. Mangler feltet, leses det av tittelen |
 | `theme`, `bibleText` | `string` | Nei | Tema og bibeltekst |
 | `hostPersonId` | `string` | Nei | Vert, brukt av husfellesskap |
-| `invitationSent`, `invitationSentAt` | `boolean`, ISO 8601 | Nei | Om innkalling til husfellesskapet er sendt |
+| `invitationSent`, `invitationSentAt` | `boolean`, ISO 8601 | Nei | Om møtet i husfellesskapet er synlig for gruppa på Min side. Ingen e-post sendes |
 | `visibility` | `"intern" \| "offentlig" \| "fremhevet"` | Ja | Den ene bryteren for synlighet (kapittel 7) |
 | `isPublic` | `boolean` | Nei | Speil av `visibility` for eldre dokumenter. Leses aldri alene |
 | `cancelled` | `boolean` | Nei | Avlyst |
@@ -2010,6 +2010,8 @@ git push origin origin/main:stabil
 
 **Sluppet til Lillesand 24. november 2026, andre gang** (`stabil` = `3501a6b`, `main` `5ca5556` slått sammen inn etter beskjed fra produkteier): «Semesterplan» som valg under «Knappen fører til» i Send e-post, med knappen «Planlegg semesteret» og den ferdige teksten «Semesterplanen er åpen: til de frivillige», og kalenderen på Min side med filtrene Alle, Gudstjenester og Mine grupper. Databasereglene er ikke endret.
 
+**Sluppet til Lillesand 24. november 2026, innloggingslenken** (`stabil` = `ce3d96d`, `main` `0f2d905` slått sammen inn etter beskjed fra produkteier): haken «Logg mottakerne rett inn med knappen» i Send e-post. Databasereglene er ikke endret. Virker først når `FIREBASE_SERVICE_ACCOUNT` er lagt inn hos Vercel for Lillesand; ikke prøvd mot Google ennå.
+
 **Sluppet til Lillesand 24. november 2026** (etter beskjed fra produkteier, som prøvde endringene på localhost først): bare siste status per person og oppgave (forfall vises ikke flere ganger), Gudstjenester-fanen med ˅ og knappene Kjøreplan og Planlegg, tilbakeknappen fra kjøreplanen, tre vertikale prikker for «mer», og infoskjermen trinn 1 (`/skjerm`). Databasereglene er ikke endret.
 
 **Sluppet til Lillesand 24. november 2026, andre gang** (etter beskjed fra produkteier): testboksen for e-postutsendingen på «Send e-post». Databasereglene er ikke endret.
@@ -2232,6 +2234,14 @@ Semesterplanen (ett kort om gangen) og siden for én oppgave forblir smale og mi
 
 ### Løpende – kodekvalitet
 Hver endring typesjekkes, testes og bygges før den regnes som ferdig. Regler flyttes til rene funksjoner med tester. Dokumentene oppdateres i samme endring.
+
+### Husgruppemøter i admin, og «Vis for gruppa» *(bygget 24. november 2026, ikke sluppet)*
+
+Bestilt av produkteier: møter i husgruppene skal kunne åpnes og endres i admin, og ordene i husfellesskapsvisningen skal stemme med det som skjer.
+
+* **Kalender.** Husgruppemøtene står i Kalender under filteret «Husgrupper», og kan åpnes, flyttes i tid og sted og slettes der, som andre arrangementer. Tallet på menyen, dashbordet, kalenderimporten og sjekken for overlapp er som før: de teller ikke husgruppemøtene.
+* **Gruppesiden i admin.** Hvert møte under «Konkrete samlinger for gruppen» har en «Endre»-lenke og åpner samme side som i Kalender. Teksten «Eksisterende Gathering» er tatt bort.
+* **Husfellesskapet.** «Vis for gruppa» gjør et utkast synlig i kalenderen til alle i gruppa på Min side, og de kan svare om de kommer. Det sendes ingen e-post eller SMS. Knappen står bare på et utkast; et synlig møte viser «Synlig for gruppa». Fanen heter «Samlinger».
 
 ### Åpne produktvalg
 | Valg | Alternativer | Anbefaling |

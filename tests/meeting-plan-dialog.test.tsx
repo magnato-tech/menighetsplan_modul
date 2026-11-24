@@ -59,7 +59,7 @@ describe("En gruppe uten fast møtetid", () => {
     expect(occurrences()).toHaveLength(1);
     expect(occurrences()[0]).toMatchObject({ hostPersonId: "ellen", location: "Hos Ellen Fossli" });
     expect(createMeetings.mock.calls[0][0]).toMatchObject({ title: "Husfellesskap", sendInvitationImmediately: true });
-    expect(showToast).toHaveBeenCalledWith("Nytt møte opprettet og innkalling sendt!");
+    expect(showToast).toHaveBeenCalledWith("Nytt møte er lagt inn og er synlig for gruppa.");
     expect(onClose).toHaveBeenCalled();
   });
 });

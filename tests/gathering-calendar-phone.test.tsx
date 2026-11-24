@@ -108,9 +108,10 @@ planner.assignments = [
 const stubWidth = (wide: boolean) =>
   vi.stubGlobal("matchMedia", (query: string) => ({ matches: wide && query === "(min-width: 768px)", media: query, addEventListener() {}, removeEventListener() {} }));
 
-const show = () => {
+const show = (houseGroupItems: AdminGatheringItem[] = []) => {
   const studio = {
     adminGatherings,
+    adminHouseGroupGatherings: houseGroupItems,
     adminGroups: groups.map((group) => ({ group })),
     adminVolunteerRoles: roles,
     createGathering: vi.fn(),
@@ -245,5 +246,39 @@ describe("Kortet for et arrangement", () => {
     localStorage.setItem(VIEW_KEY, JSON.stringify("cards"));
     const view = show();
     expect(cardOf(view.container, "mote").querySelectorAll("p")).toHaveLength(1);
+  });
+});
+
+describe("Husgruppemøter i kalenderen", () => {
+  const KINDS_FILTER_KEY = "menighetsplan_kalender_filter";
+  // A meeting of a house group: it has its group, and no tasks yet
+  const houseMeeting = gathering("husmote", "Husmøte Borkedalen", "2026-10-22", "19:00", {
+    groupId: "hus",
+    type: "gruppesamling",
+    visibility: "intern",
+    isPublic: false,
+    location: "Hos Ellen",
+  });
+  const houseItem = {
+    ...item(houseMeeting),
+    group: { id: "hus", name: "Husfellesskap Borkedalen", category: "husgruppe", memberIds: [], leaderIds: [] },
+  } as unknown as AdminGatheringItem;
+
+  test("står i listen blant de andre, og åpnes som et annet arrangement", () => {
+    stubWidth(true);
+    localStorage.setItem(VIEW_KEY, JSON.stringify("cards"));
+    const view = show([houseItem]);
+    expect(cardOf(view.container, "husmote")).not.toBeNull();
+    expect(cardOf(view.container, "mote")).not.toBeNull();
+  });
+
+  test("med filteret Husgrupper står bare husgruppemøtene", () => {
+    stubWidth(true);
+    localStorage.setItem(VIEW_KEY, JSON.stringify("cards"));
+    localStorage.setItem(KINDS_FILTER_KEY, JSON.stringify(["husgrupper"]));
+    const view = show([houseItem]);
+    expect(cardOf(view.container, "husmote")).not.toBeNull();
+    expect(cardOf(view.container, "mote")).toBeNull();
+    expect(cardOf(view.container, "sondag")).toBeNull();
   });
 });
