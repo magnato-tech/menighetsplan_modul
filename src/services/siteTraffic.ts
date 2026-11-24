@@ -7,8 +7,10 @@ import {
   osloDayAndHour,
   parseTrafficDay,
   trafficDocId,
+  type LoginCountId,
   type TrafficActionId,
   type TrafficDay,
+  MIN_SIDE_OPENED,
 } from "../utils/siteTraffic";
 import type { TrafficRecorder } from "../utils/visitTracker";
 import { ensureDeletionAllowed, readOperatingMode } from "./operatingMode";
@@ -79,6 +81,14 @@ export function recordTrafficAction(id: TrafficActionId, at: Date = new Date(), 
     actions: { [id]: increment(1) },
     ...(sermonId && isKey(sermonId) ? { sermons: { [sermonId]: increment(1) } } : {}),
   });
+}
+
+/**
+ * Counts a sign-in (see services/auth.ts) or an opening of Min side (see hooks/useMinSideOpenCount.ts).
+ * Stored in the day's actions, beside the website's, but kept apart from them when shown.
+ */
+export function recordLoginCount(id: LoginCountId | typeof MIN_SIDE_OPENED, at: Date = new Date()): void {
+  add(at, { actions: { [id]: increment(1) } });
 }
 
 // The days are found by their names, which sort by date. No index has to be set up for that.

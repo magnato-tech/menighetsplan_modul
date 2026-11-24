@@ -33,6 +33,7 @@ import { PublicLeadershipPage } from "./pages/public/PublicLeadershipPage";
 import { PublicEventPage } from "./pages/public/PublicEventPage";
 import { useFirebase } from "./context/FirebaseDataContext";
 import { useMinSideModules } from "./hooks/useMinSideModules";
+import { useMinSideOpenCount } from "./hooks/useMinSideOpenCount";
 
 const AdminStudio = lazy(() =>
   import("./pages/admin/AdminStudio").then((m) => ({ default: m.AdminStudio }))
@@ -81,6 +82,12 @@ const LoginLinkPage = lazy(() => import("./pages/LoginLinkPage").then((m) => ({ 
 const InfoScreenPage = lazy(() => import("./pages/InfoScreenPage"));
 function LazyRouteFallback() {
   return <p className="p-6 text-sm text-slate-500">Laster…</p>;
+}
+
+/** Counts an opening of Min side (see hooks/useMinSideOpenCount.ts). Renders nothing. */
+function MinSideOpenCount() {
+  useMinSideOpenCount();
+  return null;
 }
 
 /** A house group's page: the house group view while Husfellesskap is on, else the group's page. */
@@ -220,6 +227,7 @@ function AppContent() {
     }
     return (
       <SessionGate>
+      <MinSideOpenCount />
       {/* The website's theme colours (primary-*, accent-*), without its fonts and page background */}
       <div style={themeVariables} className="min-h-[calc(100vh-var(--demo-strip,0px))] flex flex-col bg-slate-100 text-slate-800">
         <Header />

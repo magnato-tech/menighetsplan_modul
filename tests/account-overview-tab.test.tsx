@@ -10,7 +10,12 @@ import type { StudioData } from "../src/pages/admin/studio";
 const { requestAccountList } = vi.hoisted(() => ({ requestAccountList: vi.fn<() => Promise<AccountListAnswer>>() }));
 vi.mock("../src/services/accountList", () => ({ requestAccountList }));
 
+// The counts of sign-ins and Min side openings are followed live; here they are handed over as made-up days
+const { subscribeSiteTraffic } = vi.hoisted(() => ({ subscribeSiteTraffic: vi.fn() }));
+vi.mock("../src/services/siteTraffic", () => ({ subscribeSiteTraffic }));
+
 import { AccountsTab } from "../src/pages/admin/tabs/AccountsTab";
+import { emptyTrafficDay, osloDayAndHour, addDays, type TrafficDay } from "../src/utils/siteTraffic";
 
 const person = (id: string, name: string, email?: string): Person => ({ id, name, email, globalRole: "member" });
 const persons = [person("ada", "Ada Admin", "ada@example.org"), person("bjorn", "Bjørn Leder", "bjorn@example.org"), person("uten", "Ulf Uten")];
@@ -25,7 +30,17 @@ const ok = (accounts: AccountRow[]): AccountListAnswer => ({ ok: true, accounts,
 afterEach(() => {
   cleanup();
   requestAccountList.mockReset();
+  subscribeSiteTraffic.mockReset();
 });
+
+/** Hands the days over to the section as soon as it subscribes, and stops nothing. */
+const sendDays = (days: TrafficDay[]) =>
+  subscribeSiteTraffic.mockImplementation((_from: string, _to: string, onChange: (days: TrafficDay[]) => void) => {
+    onChange(days);
+    return () => {};
+  });
+const today = osloDayAndHour(new Date()).date;
+const yesterday = addDays(today, -1);
 
 describe("Innlogging-fanen", () => {
   test("viser listene med det som mangler, og merker gruppelederen som aldri har logget inn", async () => {
@@ -68,5 +83,31 @@ describe("Innlogging-fanen", () => {
     const message = await screen.findByRole("status");
     expect(message.textContent).toContain("Tjenestenøkkelen");
     expect(screen.queryByText("Ble stoppet – feil e-post?")).toBeNull();
+  });
+});
+
+describe("Innlogginger per dag", () => {
+  test("viser summene for perioden, fordelt på måte, og stolpene per dag", async () => {
+    requestAccountList.mockResolvedValue(ok([]));
+    sendDays([
+      { ...emptyTrafficDay(yesterday), actions: { "innlogging-google": 2, "innlogging-lenke": 1, "minside-aapnet": 3 } },
+      { ...emptyTrafficDay(today), actions: { "innlogging-epostlenke": 1 } },
+    ]);
+    render(<AccountsTab studio={studio} />);
+
+    expect(await screen.findByText("Google 2 · E-postlenke 1 · Lenke fra e-post 1")).toBeTruthy();
+    expect(screen.getByText("4")).toBeTruthy();
+    expect(screen.getByText("(høyst én gang per nettleser per dag)")).toBeTruthy();
+    expect(screen.getByRole("img", { name: /3 innlogginger, 3 åpnet Min side/ })).toBeTruthy();
+    expect(screen.getByRole("img", { name: /1 innlogging, 0 åpnet Min side/ })).toBeTruthy();
+  });
+
+  test("viser teksten for når tellingen startet, og en rolig melding uten tellinger", async () => {
+    requestAccountList.mockResolvedValue(ok([]));
+    sendDays([]);
+    render(<AccountsTab studio={studio} />);
+
+    expect(await screen.findByText("Ingen innlogginger telt ennå. Tellingen startet da denne versjonen ble tatt i bruk.")).toBeTruthy();
+    expect(screen.getByText("Telles fra og med i dag. Bare summer per dag, uten navn.")).toBeTruthy();
   });
 });
