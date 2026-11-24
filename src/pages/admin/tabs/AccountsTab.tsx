@@ -8,6 +8,7 @@ import { requestOverviewOf, requestTotalsOf } from "../../../utils/loginRequests
 import type { StudioData } from "../studio";
 import { studioBadge, studioCardPadded, studioMuted, studioSecondaryButton } from "../studioTheme";
 import { LOGIN_COUNT_ALL_DAYS, LoginCountsSection } from "./LoginCountsSection";
+import { AddAddressToPerson } from "./AddAddressToPerson";
 
 interface AccountsTabProps {
   studio: Pick<StudioData, "adminPersons" | "adminGroups">;
@@ -69,6 +70,8 @@ export const AccountsTab: React.FC<AccountsTabProps> = ({ studio }) => {
   const [showSigned, setShowSigned] = useState(false);
   // The period narrows who signed in and who was stopped; who never has, and who cannot, are the same in every period
   const [period, setPeriod] = useState<AccountPeriod>(null);
+  // What the «Legg til på person» action said last, shown above the list it was done from
+  const [addedNote, setAddedNote] = useState<string | null>(null);
 
   const load = useCallback(() => {
     setAnswer(undefined);
@@ -145,6 +148,7 @@ export const AccountsTab: React.FC<AccountsTabProps> = ({ studio }) => {
             <Count value={overview.cannotSignIn.length} label="Kan ikke logge inn" />
           </div>
 
+          {addedNote && <p role="status" className={`text-xs font-bold ${studioMuted}`}>{addedNote}</p>}
           <Section
             title={`Ble stoppet – feil e-post?${inThePeriod}`}
             help="De prøvde å logge inn, men adressen de brukte, står ikke i registeret. Som regel har personen en annen adresse der. Rett adressen under Personer, så kommer de inn."
@@ -160,6 +164,7 @@ export const AccountsTab: React.FC<AccountsTabProps> = ({ studio }) => {
                 {shared && <Tag tone="amber">Delt adresse</Tag>}
                 {!account.emailVerified && <Tag>Ikke bekreftet</Tag>}
                 {account.disabled && <Tag tone="red">Sperret</Tag>}
+                {!shared && <AddAddressToPerson address={address} persons={persons} onAdded={setAddedNote} />}
               </li>
             ))}
           </Section>

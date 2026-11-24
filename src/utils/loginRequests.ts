@@ -72,7 +72,9 @@ const time = (iso: string): number => Date.parse(iso);
 export function requestOverviewOf(requests: readonly LoginRequest[], persons: readonly Person[], accounts: readonly AccountRow[], groups: readonly Group[] = []): RequestOverview {
   const logins = loginsOf(persons);
   const loginAddresses = new Set(logins.map((login) => login.id));
-  const personById = new Map(persons.map((person) => [person.id, person]));
+  // The addresses each person signs in with, by person id: the main one and the extra ones that may sign in
+  const addressesOfPerson = new Map<string, string[]>();
+  for (const login of logins) addressesOfPerson.set(login.personId, [...(addressesOfPerson.get(login.personId) ?? []), login.id]);
   const leaderIds = new Set(groups.flatMap((group) => [...group.leaderIds, ...(group.deputyLeaderIds ?? [])]));
 
   // Per address: how many requests, the latest of any kind, and the latest that was sent
@@ -96,12 +98,20 @@ export function requestOverviewOf(requests: readonly LoginRequest[], persons: re
   }
 
   const askedNotSignedIn: AskedRow[] = [];
-  for (const login of logins) {
-    const tally = tallies.get(login.id);
-    const person = personById.get(login.personId);
-    if (!tally || !tally.latestSent || !person) continue;
-    if ((lastLogin.get(login.id) ?? 0) > time(tally.latestSent)) continue;
-    askedNotSignedIn.push({ person, address: login.id, latest: tally.latestSent, count: tally.count, isLeader: leaderIds.has(person.id) });
+  for (const person of persons) {
+    const addresses = addressesOfPerson.get(person.id) ?? [];
+    // The latest request that was sent, on any of the person's addresses
+    let latest: { address: string; at: string } | null = null;
+    for (const address of addresses) {
+      const at = tallies.get(address)?.latestSent;
+      if (at && (latest === null || time(at) > time(latest.at))) latest = { address, at };
+    }
+    const best = latest;
+    if (!best) continue;
+    // Signed in on any of the addresses after that request: not asked and not signed in
+    if (addresses.some((address) => (lastLogin.get(address) ?? 0) > time(best.at))) continue;
+    const count = addresses.reduce((sum, address) => sum + (tallies.get(address)?.count ?? 0), 0);
+    askedNotSignedIn.push({ person, address: best.address, latest: best.at, count, isLeader: leaderIds.has(person.id) });
   }
   askedNotSignedIn.sort((a, b) => Number(b.isLeader) - Number(a.isLeader) || a.person.name.localeCompare(b.person.name, "nb"));
 

@@ -73,7 +73,10 @@ export function groupDirectoryOf(persons: readonly Person[], groups: readonly Gr
   return byId(cards);
 }
 
-/** One e-mail card per person in a group who has an e-mail address. */
+/**
+ * One e-mail card per person in a group who has an e-mail address. Only the main address is shown
+ * here, never the extra ones (see utils/personEmails.ts): this list is for the leaders' own reading.
+ */
 export function groupLeaderEmailsOf(persons: readonly Person[], groups: readonly Group[]): GroupLeaderEmail[] {
   const people = new Map(persons.map((person) => [person.id, person]));
   const cards: GroupLeaderEmail[] = [];

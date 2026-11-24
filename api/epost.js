@@ -258,16 +258,18 @@ function emailRecipients(audience, persons, groups, onlyPersonIds, optedOutPerso
   const withoutEmail = [];
   for (const person of persons) {
     if (!wanted.has(person.id)) continue;
-    const address = usableEmail(person.email);
-    if (!address) withoutEmail.push(person);
-    else byAddress.set(address, [...byAddress.get(address) ?? [], person]);
+    const addresses = [usableEmail(person.email), ...copyAddressesOf(person)].filter((address) => address !== null);
+    if (addresses.length === 0) withoutEmail.push(person);
+    for (const address of addresses) byAddress.set(address, [...byAddress.get(address) ?? [], person]);
   }
   const optedOut = [];
   if (isNewsletter(audience)) {
-    const unsubscribed = new Set(persons.filter((person) => optedOutPersonIds2.has(person.id)).map((person) => usableEmail(person.email)));
+    const unsubscribed = new Set(
+      persons.filter((person) => optedOutPersonIds2.has(person.id)).flatMap((person) => [usableEmail(person.email), ...copyAddressesOf(person)]).filter((address) => address !== null)
+    );
     for (const [address, people] of byAddress) {
       if (!unsubscribed.has(address)) continue;
-      optedOut.push(...people);
+      for (const person of people) if (!optedOut.includes(person)) optedOut.push(person);
       byAddress.delete(address);
     }
   }
@@ -288,6 +290,31 @@ function toEmailAudience(value) {
   if (kind === "leaders" || kind === "serviceGroups" || kind === "members" || kind === "everyone" || kind === "persons") return { kind };
   if (kind === "group" && typeof groupId === "string" && groupId.trim() !== "") return { kind, groupId };
   return null;
+}
+
+// src/utils/logins.ts
+var loginIdOf = (email) => (email ?? "").trim().toLowerCase();
+var usableLoginId = (id) => /^[^\s@/]+@[^\s@/]+\.[^\s@/]+$/.test(id);
+
+// src/utils/personEmails.ts
+function extraEmailsOf(value) {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+    const { address, copy, login } = item;
+    if (typeof address !== "string" || typeof copy !== "boolean" || typeof login !== "boolean") return [];
+    return [{ address, copy, login }];
+  });
+}
+function loginAddressesOf(person) {
+  const extra = extraEmailsOf(person.extraEmails).filter((item) => item.login).map((item) => item.address);
+  const addresses = [person.email, ...extra].map((address) => loginIdOf(address)).filter((id) => usableLoginId(id));
+  return [...new Set(addresses)];
+}
+function copyAddressesOf(person) {
+  const main = usableEmail(person.email);
+  const copies = extraEmailsOf(person.extraEmails).filter((item) => item.copy).map((item) => usableEmail(item.address)).filter((address) => address !== null && address !== main);
+  return [...new Set(copies)];
 }
 
 // src/utils/newsletter.ts
@@ -866,14 +893,13 @@ async function sendEmail({ env, siteUrl, idToken, body, ask, wait = pause2 }) {
     const base = siteUrl.replace(/\/+$/, "");
     const buttonPath = emailButtonUrl(draft, siteUrl)?.slice(base.length);
     const nowSeconds = Math.floor(Date.now() / 1e3);
-    const addressCount = /* @__PURE__ */ new Map();
+    const loginCount = /* @__PURE__ */ new Map();
     for (const person of persons) {
-      const address = usableEmail(person.email);
-      if (address) addressCount.set(address, (addressCount.get(address) ?? 0) + 1);
+      for (const address of loginAddressesOf(person)) loginCount.set(address, (loginCount.get(address) ?? 0) + 1);
     }
     for (const recipient of recipients) {
       const owner = recipient.personIds.length === 1 ? persons.find((person) => person.id === recipient.personIds[0]) : void 0;
-      if (!owner || !buttonPath || addressCount.get(recipient.email) !== 1) continue;
+      if (!owner || !buttonPath || loginCount.get(recipient.email) !== 1 || !loginAddressesOf(owner).includes(recipient.email)) continue;
       if (owner.globalRole === "admin" || owner.globalRole === "nettredaktor") continue;
       loginUrls.set(recipient.email, loginLinkUrl(siteUrl, buttonPath, makeLoginToken(account, owner.id, recipient.email, nowSeconds)));
     }

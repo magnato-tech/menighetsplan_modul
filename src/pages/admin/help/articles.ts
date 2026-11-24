@@ -543,6 +543,7 @@ const personer: HelpArticle = {
   steg: [
     "Søk, eller bytt mellom **Kort** og **Tabell**. Åpne personen.",
     "Oppdater navn, telefon, e-post, tilgang, politiattest og fravær.",
+    "Under **Andre e-postadresser** legger du inn flere adresser. **Få kopi** gir kopi av e-post fra admin, som hovedadressen. **Logge inn** gjør at personen kan logge inn med adressen. Begge kan velges hver for seg.",
     "Under **Offentlig profil på nettsiden** bestemmer du hva som kan vises utad.",
     "Trykk **Lagre alle personopplysninger & tilganger**.",
   ],
@@ -657,7 +658,7 @@ const innlogging: HelpArticle = {
   intro: "Se hvem i registeret som har kommet inn på Min side, og hvem som trenger hjelp til å komme inn.",
   steg: [
     "Trykk **Oppdater** for å hente kontoene på nytt. **Har logget inn** viser alle som har kommet inn. Trykk på overskriften for å åpne listen.",
-    "Under **Ble stoppet – feil e-post?**: de prøvde å logge inn, men adressen de brukte, står ikke på noen person i registeret. Rett adressen under **Personer**, så kommer de inn.",
+    "Under **Ble stoppet – feil e-post?**: de prøvde å logge inn, men adressen de brukte, står ikke på noen person i registeret. Rett adressen under **Personer**, så kommer de inn. Eller trykk **Legg til på person …**, velg personen, og adressen legges til som en ekstra adresse som kan logge inn.",
     "Under **Ba om lenke, men har ikke logget inn**: de fikk e-post med innloggingslenke, men har ikke brukt den. Kanskje havnet den i søppelpost? Ta kontakt, eller send dem en innloggingslenke fra **Send e-post**. Gruppeledere står først.",
     "Under **Ba om lenke med en adresse som ikke er i registeret**: noen ba om lenke med en adresse som ikke står i registeret, og fikk beskjed om det. Det kan være en adresse de bruker, men som ikke er lagt inn hos personen.",
     "Under **Står i registeret, men har aldri logget inn** står de som kan logge inn, men ikke har gjort det. Under **Kan ikke logge inn** står de som mangler e-post, eller deler adressen med noen andre i registeret.",

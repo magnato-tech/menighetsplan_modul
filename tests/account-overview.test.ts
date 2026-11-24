@@ -101,3 +101,38 @@ describe("Perioden i Innlogging", () => {
     expect(inPeriod("tull", 30, now)).toBe(false);
   });
 });
+
+
+describe("Innloggingsoversikten når en person har flere adresser", () => {
+  const mari: Person = { id: "mari", name: "Mari", email: "mari@example.org", globalRole: "member", extraEmails: [{ address: "mari.privat@example.org", copy: false, login: true }] };
+
+  test("har logget inn når en av adressene har konto, og den nyeste av dem vises med sin adresse", () => {
+    const overview = overviewOf(
+      [mari],
+      [],
+      [account("mari@example.org", "2026-11-01T08:00:00.000Z"), account("mari.privat@example.org", "2026-11-20T08:00:00.000Z")]
+    );
+    expect(overview.signedIn.map((row) => row.person.id)).toEqual(["mari"]);
+    expect(overview.signedIn[0].account.email).toBe("mari.privat@example.org");
+    expect(overview.neverSignedIn).toEqual([]);
+    expect(overview.notInRegister).toEqual([]);
+  });
+
+  test("aldri logget inn når ingen av adressene har konto, og en konto på en adresse som ikke kan logge inn, står utenfor registeret", () => {
+    const overview = overviewOf([mari], [], [account("mari.kopi@example.org", null)]);
+    expect(overview.neverSignedIn.map((row) => row.person.id)).toEqual(["mari"]);
+    expect(overview.notInRegister.map((row) => row.address)).toEqual(["mari.kopi@example.org"]);
+  });
+
+  test("en person som bare har en adresse som får kopi, kan ikke logge inn", () => {
+    const kopi: Person = { id: "kopi", name: "Kopi", globalRole: "member", extraEmails: [{ address: "kopi@example.org", copy: true, login: false }] };
+    expect(overviewOf([kopi], [], []).cannotSignIn).toEqual([{ person: kopi, reason: "no-email" }]);
+  });
+
+  test("en ekstra innloggingsadresse som står på en annen person, gjør den delt, og den andre kan ikke logge inn med den", () => {
+    const other = person("other", "Other", "mari.privat@example.org");
+    const overview = overviewOf([mari, other], [], []);
+    expect(overview.neverSignedIn.map((row) => row.person.id)).toEqual(["mari"]);
+    expect(overview.cannotSignIn).toEqual([{ person: other, reason: "shared", address: "mari.privat@example.org" }]);
+  });
+});

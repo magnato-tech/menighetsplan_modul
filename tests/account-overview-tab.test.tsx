@@ -17,6 +17,9 @@ vi.mock("../src/services/siteTraffic", () => ({ subscribeSiteTraffic }));
 // The log of the requests for a sign-in link is followed live as well; here it is handed over as made-up requests
 const { subscribeLoginRequests } = vi.hoisted(() => ({ subscribeLoginRequests: vi.fn() }));
 vi.mock("../src/services/loginRequests", () => ({ subscribeLoginRequests }));
+// The «Legg til på person» action of a row reads the persons through the page's own data; here it is handed a made-up save
+const { updatePerson } = vi.hoisted(() => ({ updatePerson: vi.fn(() => ({ success: true })) }));
+vi.mock("../src/context/FirebaseDataContext", async (importOriginal) => ({ ...(await importOriginal<object>()), useFirebase: () => ({ updatePerson }) }));
 
 import { AccountsTab } from "../src/pages/admin/tabs/AccountsTab";
 import { emptyTrafficDay, osloDayAndHour, addDays, type TrafficDay } from "../src/utils/siteTraffic";
@@ -157,5 +160,19 @@ describe("Lenkene som er bedt om", () => {
     expect(await screen.findByText("Loggen kan ikke leses ennå. Databasereglene må publiseres på nytt i Firebase.")).toBeTruthy();
     expect(screen.getByText("Står i registeret, men har aldri logget inn")).toBeTruthy();
     expect(screen.queryByText(/Ba om lenke: /)).toBeNull();
+  });
+});
+
+describe("Legg til på person i listen over stoppede", () => {
+  test("adressen legges til på den valgte personen, og det sies hva som ble gjort", async () => {
+    requestAccountList.mockResolvedValue(
+      ok([{ email: "ny@example.org", emailVerified: true, disabled: false, provider: "google", createdAt: null, lastLoginAt: "2026-11-20T08:00:00.000Z" }])
+    );
+    render(<AccountsTab studio={studio} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Legg til på person …" }));
+    fireEvent.click(screen.getByRole("button", { name: "Ulf Uten" }));
+    expect(updatePerson).toHaveBeenCalledWith("uten", { extraEmails: [{ address: "ny@example.org", copy: false, login: true }] });
+    expect(await screen.findByText("Adressen er lagt til på Ulf Uten. Personen kan logge inn med den nå.")).toBeTruthy();
   });
 });

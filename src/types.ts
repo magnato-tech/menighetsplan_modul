@@ -57,8 +57,20 @@ export interface Person {
   calendarFeedToken?: string;
   /** The key in the person's link to unsubscribe from the newsletter (see utils/newsletter.ts). Written the first time a newsletter is sent to them. */
   newsletterToken?: string;
+  /** More e-mail addresses than `email`, each with its own choices (see utils/personEmails.ts). Absent means none. */
+  extraEmails?: ExtraEmail[];
   updatedBy?: string;
   updatedAt?: string;
+}
+
+/**
+ * An e-mail address a person has besides the main one. `copy`: gets a copy of e-mail from the
+ * administration, as the main address does. `login`: can be used to sign in.
+ */
+export interface ExtraEmail {
+  address: string;
+  copy: boolean;
+  login: boolean;
 }
 
 export type GroupCategory = "tjenestegruppe" | "husgruppe" | "strategigruppe" | "ledergruppe" | "interessegruppe";

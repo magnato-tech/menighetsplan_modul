@@ -142,6 +142,8 @@ const encode = (value: unknown): RestValue => {
   if (typeof value === "string") return { stringValue: value };
   if (typeof value === "boolean") return { booleanValue: value };
   if (Array.isArray(value)) return { arrayValue: { values: value.map(encode) } };
+  if (value && typeof value === "object") return { mapValue: { fields: fieldsOf(value) } };
+  if (Array.isArray(value)) return { arrayValue: { values: value.map(encode) } };
   return { nullValue: null };
 };
 const fieldsOf = (data: object): RestFields => Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined).map(([key, value]) => [key, encode(value)]));
@@ -655,7 +657,7 @@ describe("Siden «Send e-post» i admin", () => {
     show();
     fireEvent.click(screen.getByRole("button", { name: EMAIL_TEMPLATES[1].label }));
     expect((screen.getByLabelText("Hvem skal ha den") as HTMLSelectElement).value).toBe("serviceGroups");
-    expect(document.getElementById("email-recipient-count")?.textContent).toBe("4 personer får e-posten. 2 personer mangler e-postadresse og får den ikke: Ulf Uten, Finn Feil.");
+    expect(document.getElementById("email-recipient-count")?.textContent).toBe("5 personer får e-posten (4 e-postadresser). 2 personer mangler e-postadresse og får den ikke: Ulf Uten, Finn Feil.");
     expect((screen.getByLabelText("Knappen fører til") as HTMLSelectElement).value).toBe("minside");
 
     fireEvent.change(screen.getByLabelText("Hvem skal ha den"), { target: { value: "group:hus" } });
@@ -794,7 +796,7 @@ describe("Siden «Send e-post» i admin", () => {
     // Nobody among the made-up persons here is marked as a member of the congregation
     expect(document.getElementById("email-recipient-count")?.textContent).toBe("0 personer får e-posten.");
     fireEvent.change(screen.getByLabelText("Hvem skal ha den"), { target: { value: "everyone" } });
-    expect(document.getElementById("email-recipient-count")?.textContent).toMatch(/^7 personer får e-posten\. 2 personer mangler e-postadresse/);
+    expect(document.getElementById("email-recipient-count")?.textContent).toMatch(/^8 personer får e-posten \(7 e-postadresser\)\. 2 personer mangler e-postadresse/);
     expect(document.getElementById("email-preview")?.getAttribute("srcdoc")).toContain("Meld deg av");
 
     const field = screen.getByLabelText("Tekst") as HTMLTextAreaElement;
@@ -883,5 +885,59 @@ describe("Siden «Send e-post» i admin", () => {
     fireEvent.click(screen.getByRole("button", { name: "Send til 2 personer" }));
     expect(screen.getByRole("alert").textContent).toBe("Velg hvilken semesterplan knappen skal åpne.");
     expect(service.requestEmail).not.toHaveBeenCalled();
+  });
+});
+
+// ---------- Flere e-postadresser på én person ----------
+
+describe("Ekstra e-postadresser i utsendingen", () => {
+  beforeEach(() => vi.stubGlobal("console", { ...console, error: vi.fn() }));
+  afterEach(() => vi.unstubAllGlobals());
+
+  const kari: Person = { ...person("kari", "Kari Kopi", "kari@example.org"), extraEmails: [{ address: "kari.jobb@example.org", copy: true, login: true }] };
+  const ola: Person = { ...person("ola", "Ola Kopi", "ola@example.org"), extraEmails: [{ address: "ola.kopi@example.org", copy: true, login: false }] };
+  const uten: Person = { ...person("uten", "Ulf Uten"), extraEmails: [{ address: "uten.kopi@example.org", copy: true, login: false }] };
+
+  test("en kopiadresse får e-posten, den som bare har kopi, har ikke ingen adresse, og bare den med innlogging får innloggingsknappen", async () => {
+    const place = world({ persons: [person("admin", "Astrid Admin", "astrid@example.org", "admin"), kari, ola, uten], groups: [] });
+    const { body } = await send(place, request({ audience: { kind: "persons" }, onlyPersonIds: ["kari", "ola", "uten"], link: "minside", loginLinks: true }), { env: loginEnv });
+    expect(body).toMatchObject({ ok: true, sent: 5, withoutEmail: 0, loginLinks: 3 });
+
+    const byAddress = new Map(place.mails.flat().map((mail) => [mail.to[0], mail]));
+    expect(new Set(byAddress.keys())).toEqual(new Set(["kari@example.org", "kari.jobb@example.org", "ola@example.org", "ola.kopi@example.org", "uten.kopi@example.org"]));
+    // The copy address with login signs in its own person
+    const link = linkIn(byAddress.get("kari.jobb@example.org")!.html)!;
+    expect(readLoginToken(loginAccount, new URL(link).hash.slice(1), Math.floor(Date.now() / 1000))).toMatchObject({ personId: "kari" });
+    // A copy address without login gets the ordinary button
+    expect(byAddress.get("ola.kopi@example.org")!.html).not.toContain("/lenke");
+    expect(byAddress.get("uten.kopi@example.org")!.html).not.toContain("/lenke");
+  });
+
+  test("emailRecipients: kopiadressen kommer med, uten kopi kommer den ikke, og samme adresse to ganger blir én", () => {
+    const found = emailRecipients({ kind: "persons" }, [kari, ola], [], ["kari", "ola"]);
+    expect(found.recipients.map((recipient) => recipient.email).sort()).toEqual(["kari.jobb@example.org", "kari@example.org", "ola.kopi@example.org", "ola@example.org"].sort());
+
+    const noCopy: Person = { ...person("kari", "Kari", "kari@example.org"), extraEmails: [{ address: "kari.jobb@example.org", copy: false, login: true }] };
+    expect(emailRecipients({ kind: "persons" }, [noCopy], [], ["kari"]).recipients.map((recipient) => recipient.email)).toEqual(["kari@example.org"]);
+
+    const same: Person = { ...person("kari", "Kari", "kari@example.org"), extraEmails: [{ address: "Kari@example.org", copy: true, login: false }] };
+    expect(emailRecipients({ kind: "persons" }, [same], [], ["kari"]).recipients).toEqual([{ email: "kari@example.org", personIds: ["kari"], firstName: "Kari" }]);
+
+    // Two persons with the same copy address: one e-mail, both named on it
+    const twin: Person = { ...person("ola", "Ola", "ola@example.org"), extraEmails: [{ address: "kari.jobb@example.org", copy: true, login: false }] };
+    const shared = emailRecipients({ kind: "persons" }, [kari, twin], [], ["kari", "ola"]).recipients.find((recipient) => recipient.email === "kari.jobb@example.org");
+    expect(shared).toEqual({ email: "kari.jobb@example.org", personIds: ["kari", "ola"], firstName: null });
+  });
+
+  test("en nyhetsbrevmottaker som har meldt seg av, mister alle adressene sine, hoved og kopi", () => {
+    const found = emailRecipients({ kind: "everyone" }, [kari, ola], [], undefined, new Set(["kari"]));
+    expect(found.recipients.map((recipient) => recipient.email).sort()).toEqual(["ola.kopi@example.org", "ola@example.org"]);
+    expect(found.optedOut.map((one) => one.id)).toEqual(["kari"]);
+  });
+
+  test("den som bare har en kopiadresse, er ikke uten e-postadresse", () => {
+    const found = emailRecipients({ kind: "persons" }, [uten], [], ["uten"]);
+    expect(found.withoutEmail).toEqual([]);
+    expect(found.recipients.map((recipient) => recipient.email)).toEqual(["uten.kopi@example.org"]);
   });
 });
