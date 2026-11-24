@@ -61,7 +61,7 @@ import { useRegisterMirror } from "../hooks/useRegisterMirror";
 import { useLeadersAsMembers } from "../hooks/useLeadersAsMembers";
 import { DEMO } from "../demo";
 import type { HeadcountInput } from "../utils/headcount";
-import { absenceFields, AssignmentChange, applyAssignmentChange, holdsSlot, isAcuteForfall, taskStatusFor } from "../utils/staffing";
+import { absenceFields, AssignmentChange, applyAssignmentChange, currentAssignments, holdsSlot, isAcuteForfall, taskStatusFor } from "../utils/staffing";
 
 /**
  * What an action answers. `success` means the change was accepted and is on its way to
@@ -229,7 +229,10 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
   const [groups, setGroups] = useState<Group[]>([]);
   const [gatherings, setGatherings] = useState<Gathering[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
+  // Every assignment in the database, old copies included. Only the deletions use it; everything
+  // a screen sees is `assignments`, the latest answer per person and task (see currentAssignments).
+  const [allAssignments, setAllAssignments] = useState<Assignment[]>([]);
+  const assignments = useMemo(() => currentAssignments(allAssignments), [allAssignments]);
   const [groupMessages, setGroupMessages] = useState<GroupMessage[]>([]);
   const [attendances, setAttendances] = useState<GatheringAttendance[]>([]);
   const [headcounts, setHeadcounts] = useState<GatheringHeadcount[]>([]);
@@ -421,7 +424,7 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
     groups,
     gatherings,
     tasks,
-    assignments,
+    assignments: allAssignments,
     listsReady,
     planningReady,
   });
@@ -484,7 +487,7 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
   useEffect(() => {
     if (!internal || !isMember) {
       setTasks([]);
-      setAssignments([]);
+      setAllAssignments([]);
       setGroupMessages([]);
       setAttendances([]);
       setHeadcounts([]);
@@ -498,7 +501,7 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
           setTasks(list);
           setPlanningReady(true);
         }),
-        subscribeCollection<Assignment>(COLLECTIONS.ASSIGNMENTS, setAssignments),
+        subscribeCollection<Assignment>(COLLECTIONS.ASSIGNMENTS, setAllAssignments),
         subscribeCollection<GroupMessage>(COLLECTIONS.GROUP_MESSAGES, setGroupMessages),
         subscribeCollection<GatheringAttendance>(COLLECTIONS.GATHERING_ATTENDANCES, setAttendances),
         subscribeHeadcounts(setHeadcounts),
@@ -518,7 +521,7 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
     const publishAssignments = () => {
       const byId = new Map<string, Assignment>();
       for (const list of assignmentParts.values()) for (const item of list) byId.set(item.id, item);
-      setAssignments([...byId.values()]);
+      setAllAssignments([...byId.values()]);
     };
     if (memberId) {
       stops.push(
@@ -841,7 +844,13 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
       updateTaskNeededCount: (taskId: string, neededCount: number | undefined) =>
         updateTask(taskId, { neededCount }, "lagre bemanningsbehovet"),
 
+      /** Only one assignment per person per task: someone already on it gets the same one updated. */
       assignTaskToPerson: (taskId: string, personId: string, response: "confirmed" | "pending") => {
+        const existing = assignments.find((a) => a.taskId === taskId && a.personId === personId);
+        if (existing) {
+          const fields = { response, respondedAt: response === "pending" ? undefined : new Date().toISOString() };
+          return changeAssignments(taskId, { update: [{ id: existing.id, fields }] }, "lagre tildelingen");
+        }
         const task = tasks.find((item) => item.id === taskId);
         const gathering = gatherings.find((item) => item.id === task?.gatheringId);
         const personName =
@@ -880,12 +889,18 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
       removeAssignment: (assignmentId: string) => {
         const assignment = assignments.find((a) => a.id === assignmentId);
         if (!assignment) return { success: false, error: "Tildelingen finnes ikke lenger." };
-        return changeAssignments(assignment.taskId, { remove: assignmentId }, "fjerne tildelingen");
+        // Every copy of the person on the task goes, so an old hidden one (a withdrawal from before
+        // there was one assignment per person) does not come back as the person's status
+        const copies = allAssignments
+          .filter((a) => a.taskId === assignment.taskId && a.personId === assignment.personId)
+          .map((a) => a.id);
+        return changeAssignments(assignment.taskId, { remove: copies.length > 0 ? copies : assignmentId }, "fjerne tildelingen");
       },
 
       deleteGatheringWithStaffing: (gatheringId: string) => {
         const taskIds = tasks.filter((task) => task.gatheringId === gatheringId).map((task) => task.id);
-        const assignmentIds = assignments.filter((assignment) => taskIds.includes(assignment.taskId)).map((assignment) => assignment.id);
+        // Every copy, hidden old ones included, so nothing is left pointing at a gathering that is gone
+        const assignmentIds = allAssignments.filter((assignment) => taskIds.includes(assignment.taskId)).map((assignment) => assignment.id);
         return save("slette arrangementet", () => deleteGatheringAndStaffing(gatheringId, taskIds, assignmentIds));
       },
 
@@ -897,7 +912,7 @@ export const FirebaseDataProvider: React.FC<FirebaseDataProviderProps> = ({ chil
         return changeAssignments(taskId, { update }, "registrere forfallet", isAcuteNow(taskId, new Date(respondedAt)));
       },
     };
-  }, [tasks, assignments, gatherings, currentUser, visiblePersons, directoryCards, visibleGroups]);
+  }, [tasks, assignments, allAssignments, gatherings, currentUser, visiblePersons, directoryCards, visibleGroups]);
 
   const { getGroupNotificationsEnabled } = groupLookups;
   const toggleGroupNotifications = useCallback(

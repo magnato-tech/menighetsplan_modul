@@ -400,6 +400,24 @@ describe("Bemanning", () => {
     expect(getWriteError()).toBeNull();
   });
 
+  test("Den som trekker seg og tar oppgaven igjen, får ikke en ny tildeling: det er fortsatt én, bekreftet", async () => {
+    const data = await mountProvider();
+    data.current.assignTaskToPerson("task-1", "person-3", "confirmed");
+    await waitFor(() => expect(data.current.getAllAssignmentsForTask("task-1")).toHaveLength(1));
+    expect(data.current.reportAbsence("task-1", "person-3")).toEqual({ success: true });
+    await waitFor(() => expect(data.current.getAllAssignmentsForTask("task-1")[0].response).toBe("withdrawn"));
+
+    expect(data.current.assignTaskToPerson("task-1", "person-3", "confirmed")).toEqual({ success: true });
+    await waitFor(() => expect(data.current.getTaskById("task-1")?.status).toBe("confirmed"));
+    const [onTask] = data.current.getAllAssignmentsForTask("task-1");
+    expect(data.current.getAllAssignmentsForTask("task-1")).toHaveLength(1);
+    expect(onTask).toMatchObject({ personId: "person-3", response: "confirmed" });
+    // The two seeded assignments and this one, and no copy
+    expect(await storedIds(COLLECTIONS.ASSIGNMENTS)).toHaveLength(3);
+    expect(await stored(COLLECTIONS.ASSIGNMENTS, onTask.id)).toMatchObject({ response: "confirmed" });
+    expect(getWriteError()).toBeNull();
+  });
+
   test("Mange personer legges inn i én sending, slik en liste fra et annet register kommer", async () => {
     const data = await mountProvider();
     const list = Array.from({ length: 450 }, (_, at) => ({ name: `Person ${at + 1}`, email: at === 0 ? "forste@eksempel.no" : "", birthDate: at === 1 ? "2013-06-05" : undefined, congregationMember: at === 0 }));

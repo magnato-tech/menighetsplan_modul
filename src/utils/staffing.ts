@@ -136,18 +136,49 @@ export interface AssignmentChange {
   add?: Assignment;
   /** A field given as `undefined` is cleared. */
   update?: { id: string; fields: Partial<Assignment> }[];
-  remove?: string;
+  /** One assignment, or several: every copy of one person on the task. */
+  remove?: string | string[];
 }
 
 /** The task's assignments as they are once the change has been made. */
 export function applyAssignmentChange(taskAssignments: Assignment[], change: AssignmentChange): Assignment[] {
+  const removed = new Set([change.remove ?? []].flat());
   const updated = taskAssignments
-    .filter((a) => a.id !== change.remove)
+    .filter((a) => !removed.has(a.id))
     .map((a) => {
       const fields = change.update?.find((u) => u.id === a.id)?.fields;
       return fields ? { ...a, ...fields } : a;
     });
   return change.add ? [...updated, change.add] : updated;
+}
+
+/** When an assignment last said something: the later of its answer and its assignment. A missing date counts as "". */
+function latestStamp(item: Pick<Assignment, "assignedAt" | "respondedAt">): string {
+  return [item.respondedAt ?? "", item.assignedAt ?? ""].sort().pop() ?? "";
+}
+
+function isLaterAssignment(a: Pick<Assignment, "id" | "assignedAt" | "respondedAt">, b: Pick<Assignment, "id" | "assignedAt" | "respondedAt">): boolean {
+  const stampA = latestStamp(a);
+  const stampB = latestStamp(b);
+  if (stampA !== stampB) return stampA > stampB;
+  return a.id > b.id;
+}
+
+/**
+ * The assignments that count: one per person per task, the latest. Before 24 November 2026, taking
+ * a task again after a withdrawal stored a new copy, and the old copy stayed in the database. A
+ * person has one status on a task, so older copies are ignored. Where two are equally late, the greater id wins, so the
+ * result is the same every time. The order of the list is kept.
+ */
+export function currentAssignments<T extends Pick<Assignment, "id" | "taskId" | "personId" | "assignedAt" | "respondedAt">>(list: readonly T[]): T[] {
+  const latest = new Map<string, T>();
+  for (const item of list) {
+    const key = JSON.stringify([item.taskId, item.personId]);
+    const current = latest.get(key);
+    if (!current || isLaterAssignment(item, current)) latest.set(key, item);
+  }
+  const kept = new Set(latest.values());
+  return list.filter((item) => kept.has(item));
 }
 
 export type StaffingColor = "green" | "yellow" | "red";
