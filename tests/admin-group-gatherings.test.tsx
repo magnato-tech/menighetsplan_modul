@@ -106,4 +106,17 @@ describe("Samlingene på gruppesiden i admin", () => {
     fireEvent.click(screen.getByRole("button", { name: "Planlegg møter" }));
     expect(screen.getByRole("dialog").textContent).toBe("Planlegg møter for hus");
   });
+
+  test("fast møtetid og møtene står i samme seksjon, og møtetiden endres der", () => {
+    render(
+      <MemoryRouter>
+        <AdminGroupDetailPage />
+      </MemoryRouter>
+    );
+    expect(document.getElementById("group-fixed-meeting-time")?.textContent).toMatch(/^Fast møtetid:/);
+    expect(document.getElementById("input-edit-group-has-schedule")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Endre" }));
+    expect(document.getElementById("input-edit-group-has-schedule")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Lagre møtetid" })).toBeTruthy();
+  });
 });
