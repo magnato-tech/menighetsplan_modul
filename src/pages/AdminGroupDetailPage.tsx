@@ -78,6 +78,7 @@ export const AdminGroupDetailPage: React.FC = () => {
   // The same planning of meetings as the group's leaders have under «Mine grupper» on Min side
   const meetingModel = useHusfellesskap(groupId || undefined);
   const [planningMeetings, setPlanningMeetings] = useState(false);
+  const [editingSchedule, setEditingSchedule] = useState(false);
   const proposals = useGroupProposals(groupId || "", isAdmin && groupId !== "");
 
   // Form states
@@ -398,109 +399,6 @@ export const AdminGroupDetailPage: React.FC = () => {
               </div>
             </div>
 
-            {/* 5. Møteplan */}
-            <div className="pt-2 border-t border-[var(--studio-border)] space-y-3">
-              <label
-                htmlFor="input-edit-group-has-schedule"
-                className="text-xs font-bold text-[var(--studio-muted)] flex items-center gap-1.5 cursor-pointer"
-              >
-                <input
-                  type="checkbox"
-                  id="input-edit-group-has-schedule"
-                  checked={hasSchedule}
-                  onChange={(e) => setHasSchedule(e.target.checked)}
-                  className="w-4 h-4 rounded text-indigo-600 focus:ring-0"
-                />
-                <Repeat className="w-3.5 h-3.5 text-indigo-600" />
-                Gruppen har fast møtetid
-              </label>
-
-              {hasSchedule && (
-                <>
-                  <div className="grid grid-cols-3 gap-2">
-                    {/* Ukedag */}
-                    <div className="space-y-1">
-                      <label
-                        htmlFor="select-schedule-weekday"
-                        className="text-[11px] font-semibold text-[var(--studio-muted)] block"
-                      >
-                        Ukedag:
-                      </label>
-                      <select
-                        id="select-schedule-weekday"
-                        value={weekday}
-                        onChange={(e) => setWeekday(e.target.value)}
-                        className={studioDetailInput}
-                      >
-                        {WEEKDAYS.map((day) => (
-                          <option key={day} value={day}>
-                            {day}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Klokkeslett */}
-                    <div className="space-y-1">
-                      <label
-                        htmlFor="input-schedule-time"
-                        className="text-[11px] font-semibold text-[var(--studio-muted)] block"
-                      >
-                        Klokkeslett:
-                      </label>
-                      <input
-                        type="text"
-                        id="input-schedule-time"
-                        value={time}
-                        onChange={(e) => setTime(e.target.value)}
-                        placeholder="19:00"
-                        className={studioDetailInput}
-                      />
-                    </div>
-
-                    {/* Frekvens */}
-                    <div className="space-y-1">
-                      <label
-                        htmlFor="select-schedule-frequency"
-                        className="text-[11px] font-semibold text-[var(--studio-muted)] block"
-                      >
-                        Frekvens:
-                      </label>
-                      <select
-                        id="select-schedule-frequency"
-                        value={frequency}
-                        onChange={(e) =>
-                          setFrequency(
-                            e.target.value as "hver uke" | "annenhver uke" | "hver måned"
-                          )
-                        }
-                        className={studioDetailInput}
-                      >
-                        {MEETING_FREQUENCIES.map((freq) => (
-                          <option key={freq.id} value={freq.id}>
-                            {freq.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Formatted Meeting Plan Preview */}
-                  <div className={studioDetailRow}>
-                    <Clock className="w-4 h-4 text-indigo-600 shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <span className="text-[10px] uppercase font-bold text-[var(--studio-muted)] block">
-                        Aktiv møteplan:
-                      </span>
-                      <p className="font-bold text-[var(--studio-text)]">
-                        {weekday} kl. {time}, {frequency}
-                      </p>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-
             {/* Save Button */}
             <div className="pt-2">
               <button
@@ -695,7 +593,7 @@ export const AdminGroupDetailPage: React.FC = () => {
           <div className="flex items-center justify-between border-b border-[var(--studio-border)] pb-2">
             <span className="text-xs font-bold text-[var(--studio-text)] flex items-center gap-1.5">
               <Calendar className="w-4 h-4 text-emerald-600" />
-              Konkrete samlinger for gruppen ({groupGatherings.length})
+              Møter ({groupGatherings.length})
             </span>
             <button
               type="button"
@@ -716,8 +614,124 @@ export const AdminGroupDetailPage: React.FC = () => {
           )}
 
           <p className="text-[11px] text-[var(--studio-muted)] leading-relaxed">
-            Dette er faktiske, planlagte samlinger knyttet til gruppen (uavhengig av den generelle møteplanen over).
+            Fast møtetid er det som står om gruppen, og brukes som forslag når du planlegger. Møtene under har dato, står i kalenderen og kan besvares av deltakerne.
           </p>
+
+          <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--studio-text)]">
+            <Repeat className="w-3.5 h-3.5 text-indigo-600" aria-hidden="true" />
+            <span id="group-fixed-meeting-time">
+              <strong>Fast møtetid:</strong> {group.meetingSchedule ? `${group.meetingSchedule.weekday} kl. ${group.meetingSchedule.time}, ${group.meetingSchedule.frequency}` : "ikke satt"}
+            </span>
+            <button type="button" id="btn-edit-fixed-meeting-time" onClick={() => setEditingSchedule((open) => !open)} className="text-xs font-bold text-indigo-600 hover:text-indigo-700 cursor-pointer">
+              {editingSchedule ? "Lukk" : "Endre"}
+            </button>
+          </div>
+          {editingSchedule && (
+            <div className="p-3 rounded-xl border border-[var(--studio-border)] space-y-3">
+              <div className="space-y-3">
+              <label
+                htmlFor="input-edit-group-has-schedule"
+                className="text-xs font-bold text-[var(--studio-muted)] flex items-center gap-1.5 cursor-pointer"
+              >
+                <input
+                  type="checkbox"
+                  id="input-edit-group-has-schedule"
+                  checked={hasSchedule}
+                  onChange={(e) => setHasSchedule(e.target.checked)}
+                  className="w-4 h-4 rounded text-indigo-600 focus:ring-0"
+                />
+                <Repeat className="w-3.5 h-3.5 text-indigo-600" />
+                Gruppen har fast møtetid
+              </label>
+
+              {hasSchedule && (
+                <>
+                  <div className="grid grid-cols-3 gap-2">
+                    {/* Ukedag */}
+                    <div className="space-y-1">
+                      <label
+                        htmlFor="select-schedule-weekday"
+                        className="text-[11px] font-semibold text-[var(--studio-muted)] block"
+                      >
+                        Ukedag:
+                      </label>
+                      <select
+                        id="select-schedule-weekday"
+                        value={weekday}
+                        onChange={(e) => setWeekday(e.target.value)}
+                        className={studioDetailInput}
+                      >
+                        {WEEKDAYS.map((day) => (
+                          <option key={day} value={day}>
+                            {day}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Klokkeslett */}
+                    <div className="space-y-1">
+                      <label
+                        htmlFor="input-schedule-time"
+                        className="text-[11px] font-semibold text-[var(--studio-muted)] block"
+                      >
+                        Klokkeslett:
+                      </label>
+                      <input
+                        type="text"
+                        id="input-schedule-time"
+                        value={time}
+                        onChange={(e) => setTime(e.target.value)}
+                        placeholder="19:00"
+                        className={studioDetailInput}
+                      />
+                    </div>
+
+                    {/* Frekvens */}
+                    <div className="space-y-1">
+                      <label
+                        htmlFor="select-schedule-frequency"
+                        className="text-[11px] font-semibold text-[var(--studio-muted)] block"
+                      >
+                        Frekvens:
+                      </label>
+                      <select
+                        id="select-schedule-frequency"
+                        value={frequency}
+                        onChange={(e) =>
+                          setFrequency(
+                            e.target.value as "hver uke" | "annenhver uke" | "hver måned"
+                          )
+                        }
+                        className={studioDetailInput}
+                      >
+                        {MEETING_FREQUENCIES.map((freq) => (
+                          <option key={freq.id} value={freq.id}>
+                            {freq.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                </>
+              )}
+            </div>
+
+              <button
+                type="button"
+                id="btn-save-fixed-meeting-time"
+                onClick={() => {
+                  handleSave();
+                  setEditingSchedule(false);
+                }}
+                className={studioPrimaryButton}
+              >
+                <Save className="w-4 h-4" aria-hidden="true" />
+                Lagre møtetid
+              </button>
+            </div>
+          )}
 
           {groupGatherings.length === 0 ? (
             <p className="text-xs text-[var(--studio-muted)] italic py-2">
