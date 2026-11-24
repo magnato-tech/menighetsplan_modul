@@ -2010,6 +2010,8 @@ git push origin origin/main:stabil
 
 **Sluppet til Lillesand 24. november 2026, andre gang** (`stabil` = `3501a6b`, `main` `5ca5556` slått sammen inn etter beskjed fra produkteier): «Semesterplan» som valg under «Knappen fører til» i Send e-post, med knappen «Planlegg semesteret» og den ferdige teksten «Semesterplanen er åpen: til de frivillige», og kalenderen på Min side med filtrene Alle, Gudstjenester og Mine grupper. Databasereglene er ikke endret.
 
+**Sluppet til Lillesand 24. november 2026, innloggingslenken** (`stabil` = `ce3d96d`, `main` `0f2d905` slått sammen inn etter beskjed fra produkteier): haken «Logg mottakerne rett inn med knappen» i Send e-post. Databasereglene er ikke endret. Virker først når `FIREBASE_SERVICE_ACCOUNT` er lagt inn hos Vercel for Lillesand; ikke prøvd mot Google ennå.
+
 **Sluppet til Lillesand 24. november 2026** (etter beskjed fra produkteier, som prøvde endringene på localhost først): bare siste status per person og oppgave (forfall vises ikke flere ganger), Gudstjenester-fanen med ˅ og knappene Kjøreplan og Planlegg, tilbakeknappen fra kjøreplanen, tre vertikale prikker for «mer», og infoskjermen trinn 1 (`/skjerm`). Databasereglene er ikke endret.
 
 **Sluppet til Lillesand 24. november 2026, andre gang** (etter beskjed fra produkteier): testboksen for e-postutsendingen på «Send e-post». Databasereglene er ikke endret.
