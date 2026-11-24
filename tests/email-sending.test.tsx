@@ -16,6 +16,8 @@ import { emailRecordOf, recentSameSending, stopMessage, withLogEntry, withRestSe
 import { audienceKey, audienceLabel, emailRecipients, isNewsletter, toEmailAudience, usableEmail } from "../src/utils/emailRecipients";
 import type { Group, Person } from "../src/types";
 import { TEST_UNSUBSCRIBE_TOKEN } from "../src/utils/newsletter";
+import { joinedLabel, audienceChip, personChip, recipientSuggestions, resolveChips } from "../src/pages/admin/tabs/email/chips";
+import { MemoryRouter, useLocation } from "react-router-dom";
 
 // E-mail from the administration to leaders and volunteers. Every person here is made up.
 
@@ -647,8 +649,33 @@ describe("Innloggingslenker i e-posten", () => {
 describe("Siden «Send e-post» i admin", () => {
   const showFeedback = vi.fn();
   const studio = { adminPersons: persons.map((one) => ({ person: one })), adminGroups: groups.map((one) => ({ group: one })) } as unknown as Parameters<typeof EmailTab>[0]["studio"];
-  const show = (canSend = true) => render(<EmailTab studio={studio} showFeedback={showFeedback} canSend={canSend} now={() => new Date("2026-10-14T12:00:00.000Z")} />);
+  // Shows the address the page is at, so a test can see which view is open
+  const Where = () => <span data-testid="adresse">{useLocation().search}</span>;
+  const show = (canSend = true, vis?: string) =>
+    render(
+      <MemoryRouter initialEntries={[`/admin?tab=epost${vis ? `&vis=${vis}` : ""}`]}>
+        <EmailTab studio={studio} showFeedback={showFeedback} canSend={canSend} now={() => new Date("2026-10-14T12:00:00.000Z")} />
+        <Where />
+      </MemoryRouter>
+    );
   const sent = (outcome: Partial<Extract<EmailOutcome, { ok: true }>> = {}): EmailOutcome => ({ ok: true, mode: "send", sent: 2, withoutEmail: 0, stopped: null, remainingPersonIds: [], ...outcome });
+  /** Opens the «Knapp» panel of the e-mail, which is named after the button it has. */
+  const openButtonMenu = () => fireEvent.click(screen.getByRole("button", { name: /^Knapp: .* ▾$/ }));
+  /** Chooses a ready-made text from the «Mal» menu. */
+  const pickTemplate = (name: string) => {
+    fireEvent.click(screen.getByRole("button", { name: "Mal ▾" }));
+    fireEvent.click(screen.getByRole("button", { name }));
+  };
+  /** Types a name into «Til» and presses Enter: the first suggestion is chosen. */
+  const addRecipient = (text: string) => {
+    fireEvent.change(screen.getByLabelText("Til"), { target: { value: text } });
+    fireEvent.keyDown(screen.getByLabelText("Til"), { key: "Enter" });
+  };
+  /** Opens the panel «Send prøve», which is inline on the page. */
+  const openTestPanel = () => {
+    fireEvent.click(screen.getByRole("button", { name: "Send prøve" }));
+    return screen.getByRole("region", { name: "Send prøve" });
+  };
 
   beforeEach(() => {
     service.record = { replyTo: "post@example.org", log: [] };
@@ -667,38 +694,77 @@ describe("Siden «Send e-post» i admin", () => {
   test("siden åpner med teksten til lederne, sier hvor mange som får den, og viser hvordan den ser ut", () => {
     show();
     expect((screen.getByLabelText("Emne") as HTMLInputElement).value).toBe(EMAIL_TEMPLATES[0].subject);
-    expect((screen.getByLabelText("Hvem skal ha den") as HTMLSelectElement).value).toBe("leaders");
-    expect(document.getElementById("email-recipient-count")?.textContent).toBe("2 personer får e-posten.");
+    expect(screen.getByRole("button", { name: "Fjern Ledere og nestledere i tjenestegruppene" })).toBeTruthy();
+    expect(document.getElementById("email-recipient-count")?.textContent).toBe("2 personer");
     expect(screen.getByRole("button", { name: "Send til 2 personer" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Knapp: Mine grupper ▾" })).toBeTruthy();
+    // The preview is opened on purpose
+    expect(document.getElementById("email-preview")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Forhåndsvis" }));
     expect(document.getElementById("email-preview")?.getAttribute("srcdoc")).toContain("Hei Kari!");
     expect(document.getElementById("email-preview")?.getAttribute("srcdoc")).toContain("Hilsen Fjellbygda menighet");
-    expect(screen.getByText("Ingen e-post er sendt herfra ennå.")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "← Tilbake til skriving" }));
+    expect(document.getElementById("email-preview")).toBeNull();
+    expect((screen.getByLabelText("Emne") as HTMLInputElement).value).toBe(EMAIL_TEMPLATES[0].subject);
   });
 
   test("teksten til de frivillige velger alle i tjenestegruppene, og de uten e-postadresse nevnes ved navn", () => {
     show();
-    fireEvent.click(screen.getByRole("button", { name: EMAIL_TEMPLATES[1].label }));
-    expect((screen.getByLabelText("Hvem skal ha den") as HTMLSelectElement).value).toBe("serviceGroups");
-    expect(document.getElementById("email-recipient-count")?.textContent).toBe("5 personer får e-posten (4 e-postadresser). 2 personer mangler e-postadresse og får den ikke: Ulf Uten, Finn Feil.");
-    expect((screen.getByLabelText("Knappen fører til") as HTMLSelectElement).value).toBe("minside");
+    pickTemplate(EMAIL_TEMPLATES[1].label);
+    expect(screen.getByRole("button", { name: "Fjern Alle i tjenestegruppene" })).toBeTruthy();
+    expect(document.getElementById("email-recipient-count")?.textContent).toBe("5 personer (4 e-postadresser)");
+    expect(screen.getByText("2 personer mangler e-post: Ulf Uten, Finn Feil")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Knapp: Min side ▾" })).toBeTruthy();
 
-    fireEvent.change(screen.getByLabelText("Hvem skal ha den"), { target: { value: "group:hus" } });
+    fireEvent.click(screen.getByRole("button", { name: "Fjern Alle i tjenestegruppene" }));
+    addRecipient("Husgruppe");
+    expect(screen.getByRole("button", { name: "Fjern Husgruppe øst" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Send til 2 personer" })).toBeTruthy();
   });
 
-  test("prøven sendes uten spørsmål, og føres ikke i loggen", async () => {
+  test("prøve-panelet sender til adressen som er skrevet, sier det i panelet og føres i loggen; en ugyldig adresse sendes ikke", async () => {
     service.requestEmail.mockResolvedValue(sent({ mode: "test", sent: 1 }));
     show();
-    fireEvent.click(screen.getByRole("button", { name: "Send prøve til meg" }));
-    await waitFor(() => expect(screen.getByRole("status").textContent).toContain("Prøven er sendt"));
-    expect(service.requestEmail).toHaveBeenCalledWith({ mode: "test", subject: EMAIL_TEMPLATES[0].subject, text: EMAIL_TEMPLATES[0].text, link: "leder" });
+    const box = openTestPanel();
+    const address = within(box).getByLabelText("Send prøve til") as HTMLInputElement;
+    expect(address.value).toBe("");
+
+    fireEvent.change(address, { target: { value: "ikke en adresse" } });
+    fireEvent.click(within(box).getByRole("button", { name: "Send" }));
+    expect(within(box).getByRole("alert").textContent).toBe("Skriv en gyldig e-postadresse.");
+    expect(service.requestEmail).not.toHaveBeenCalled();
+
+    fireEvent.change(address, { target: { value: " Kari@Example.org " } });
+    fireEvent.click(within(box).getByRole("button", { name: "Send" }));
+    await waitFor(() => expect(within(box).getByRole("status").textContent).toMatch(/^Sendt til kari@example\.org kl\. \d\d:\d\d\. Utsendingen virker\. Kom den ikke fram, sjekk søppelposten\.$/));
+    // The test is sent with the page's text, and nothing is asked first
+    expect(service.requestEmail).toHaveBeenCalledWith({ subject: EMAIL_TEMPLATES[0].subject, text: EMAIL_TEMPLATES[0].text, link: "leder", mode: "test", to: "kari@example.org" });
     expect(confirm).not.toHaveBeenCalled();
+    // The page's own result is not touched by the panel
+    expect(screen.queryByText(/Prøven er sendt/)).toBeNull();
+
+    const log = service.saveEmailLog.mock.calls[0][0] as EmailLogEntry[];
+    expect(log[0]).toMatchObject({ sentAt: "2026-10-14T12:00:00.000Z", audience: { kind: "persons" }, audienceLabel: "Test til én adresse", subject: EMAIL_TEMPLATES[0].subject, sent: 1, remainingPersonIds: [] });
+  });
+
+  test("prøve-panelet sier hva som hindrer en prøve, og viser det som utsendingen svarer", async () => {
+    show(false);
+    expect((screen.getByRole("button", { name: "Send prøve" }) as HTMLButtonElement).disabled).toBe(true);
+    cleanup();
+
+    service.requestEmail.mockResolvedValueOnce({ ok: false, reason: "rules-outdated", message: "Databasen har ikke fått reglene for nyhetsbrev ennå." });
+    show();
+    const again = openTestPanel();
+    fireEvent.change(within(again).getByLabelText("Send prøve til"), { target: { value: "kari@example.org" } });
+    fireEvent.click(within(again).getByRole("button", { name: "Send" }));
+    await waitFor(() => expect(within(again).getByRole("alert").textContent).toBe("Databasen har ikke fått reglene for nyhetsbrev ennå."));
     expect(service.saveEmailLog).not.toHaveBeenCalled();
   });
 
-  test("innloggingslenkene er et valg for en vanlig e-post med knapp, sendes bare når det er krysset av, og tas med i svaret", async () => {
+  test("innloggingslenkene er et valg i knapp-panelet for en vanlig e-post med knapp, sendes bare når det er krysset av, og tas med i svaret", async () => {
     service.requestEmail.mockResolvedValueOnce(sent()).mockResolvedValueOnce(sent({ loginLinks: 2 }));
     show();
+    openButtonMenu();
     const box = screen.getByLabelText("Logg mottakerne rett inn med knappen") as HTMLInputElement;
     expect(box.checked).toBe(false);
     fireEvent.click(screen.getByRole("button", { name: "Send til 2 personer" }));
@@ -706,20 +772,40 @@ describe("Siden «Send e-post» i admin", () => {
     expect(service.requestEmail.mock.calls[0][0]).not.toHaveProperty("loginLinks");
 
     fireEvent.click(box);
+    fireEvent.click(screen.getByRole("button", { name: "Forhåndsvis" }));
     expect(document.getElementById("email-preview")?.getAttribute("srcdoc")).toMatch(/Knappen logger deg rett inn og virker til og med \d+\. \p{L}+ \d{4}\. Ikke send e-posten videre\./u);
+    fireEvent.click(screen.getByRole("button", { name: "← Tilbake til skriving" }));
     fireEvent.click(screen.getByRole("button", { name: "Send til 2 personer" }));
     await waitFor(() => expect(service.requestEmail).toHaveBeenCalledTimes(2));
     expect(service.requestEmail.mock.calls[1][0]).toMatchObject({ mode: "send", loginLinks: true });
     await waitFor(() => expect(screen.getByRole("status").textContent).toBe("E-posten er sendt til 2 personer. 2 av dem fikk knapp som logger dem rett inn."));
   });
 
-  test("valget vises ikke for et nyhetsbrev eller en e-post uten knapp", () => {
+  test("knapp-panelet: lenken kan virke 14 dager, og den valgte fristen sendes med", async () => {
+    service.requestEmail.mockResolvedValue(sent({ loginLinks: 1 }));
     show();
+    openButtonMenu();
+    fireEvent.click(screen.getByLabelText("Logg mottakerne rett inn med knappen"));
+    fireEvent.click(screen.getByLabelText("14 dager"));
+    expect(document.getElementById("email-login-link-until")?.textContent).toMatch(/^Knappen virker til og med \d+\. \p{L}+ \d{4}\. Høyst 120 dager\.$/u);
+    fireEvent.click(screen.getByRole("button", { name: "Send til 2 personer" }));
+    // The day is 14 days from today, as the page counts it (the real clock, not `now`)
+    await waitFor(() => expect(service.requestEmail).toHaveBeenCalledWith(expect.objectContaining({ mode: "send", loginLinks: true, loginLinkUntil: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/) })));
+    expect(service.requestEmail.mock.calls[0][0].loginLinkUntil).toBe(daysAfter(new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Oslo" }), 14));
+  });
+
+  test("valget vises ikke i knapp-panelet når knappen er ingen, og ikke i nyhetsbrevet, der det ikke finnes", () => {
+    show();
+    openButtonMenu();
     expect(screen.queryByLabelText("Logg mottakerne rett inn med knappen")).not.toBeNull();
     fireEvent.change(screen.getByLabelText("Knappen fører til"), { target: { value: "ingen" } });
     expect(screen.queryByLabelText("Logg mottakerne rett inn med knappen")).toBeNull();
     fireEvent.change(screen.getByLabelText("Knappen fører til"), { target: { value: "minside" } });
-    fireEvent.change(screen.getByLabelText("Hvem skal ha den"), { target: { value: "members" } });
+    expect(screen.queryByLabelText("Logg mottakerne rett inn med knappen")).not.toBeNull();
+    cleanup();
+
+    show(true, "nyhetsbrev");
+    expect(screen.queryByRole("button", { name: /^Knapp: / })).toBeNull();
     expect(screen.queryByLabelText("Logg mottakerne rett inn med knappen")).toBeNull();
   });
 
@@ -769,7 +855,7 @@ describe("Siden «Send e-post» i admin", () => {
 
     service.record = { replyTo: "post@example.org", log: service.saveEmailLog.mock.calls[0][0] as EmailLogEntry[] };
     service.requestEmail.mockResolvedValueOnce(sent({ sent: 1 }));
-    show();
+    show(true, "sendte");
     const logged = screen.getByRole("region", { name: "Sendt" });
     expect(within(logged).getByText("Stoppet før alle hadde fått den: 1 person gjenstår.")).toBeTruthy();
     fireEvent.click(within(logged).getByRole("button", { name: "Send til dem som gjenstår" }));
@@ -788,38 +874,45 @@ describe("Siden «Send e-post» i admin", () => {
   test("uten lagret svaradresse eller uten emne sendes ingenting", () => {
     service.record = { replyTo: "", log: [] };
     show();
-    expect(screen.getByText("Ingen adresse er lagret ennå.")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Send prøve til meg" }));
-    expect(screen.getByRole("alert").textContent).toBe("Lagre adressen svar skal gå til, før du sender.");
+    expect(screen.getByRole("button", { name: "ingen svaradresse ennå" })).toBeTruthy();
+    const box = openTestPanel();
+    fireEvent.change(within(box).getByLabelText("Send prøve til"), { target: { value: "kari@example.org" } });
+    fireEvent.click(within(box).getByRole("button", { name: "Send" }));
+    expect(within(box).getByRole("alert").textContent).toBe("Lagre adressen svar skal gå til, før du sender.");
+    expect(service.requestEmail).not.toHaveBeenCalled();
 
+    // The reply address is set under Innstillinger
+    fireEvent.click(screen.getByRole("button", { name: "Innstillinger" }));
+    expect(screen.getByText("Ingen adresse er lagret ennå.")).toBeTruthy();
     fireEvent.change(screen.getByLabelText("Svar går til"), { target: { value: "ikke en adresse" } });
     fireEvent.click(screen.getByRole("button", { name: "Lagre" }));
     expect(service.saveReplyTo).not.toHaveBeenCalled();
     fireEvent.change(screen.getByLabelText("Svar går til"), { target: { value: " Post@Example.org " } });
     fireEvent.click(screen.getByRole("button", { name: "Lagre" }));
     expect(service.saveReplyTo).toHaveBeenCalledWith("post@example.org");
-    expect(service.requestEmail).not.toHaveBeenCalled();
     cleanup();
 
     service.record = { replyTo: "post@example.org", log: [] };
     show();
-    fireEvent.click(screen.getByRole("button", { name: "Tom e-post" }));
+    pickTemplate("Tom e-post");
     fireEvent.click(screen.getByRole("button", { name: "Send til 2 personer" }));
     expect(screen.getByRole("alert").textContent).toBe("E-posten må ha et emne.");
     expect(service.requestEmail).not.toHaveBeenCalled();
   });
 
-  test("nyhetsbrevet går til medlemmene, prøven ser ut som det, og knappene over teksten skriver merkene", async () => {
+  test("nyhetsbrevet går til medlemmene, forhåndsvisningen viser avmeldingen, og knappene over teksten skriver merkene", async () => {
     service.requestEmail.mockResolvedValue(sent({ mode: "test", sent: 1 }));
     show();
     fireEvent.click(screen.getByRole("button", { name: "Nyhetsbrev" }));
-    expect((screen.getByLabelText("Hvem skal ha den") as HTMLSelectElement).value).toBe("members");
-    expect((screen.getByLabelText("Knappen fører til") as HTMLSelectElement).value).toBe("ingen");
+    expect((screen.getByLabelText("Til") as HTMLSelectElement).value).toBe("members");
     // Nobody among the made-up persons here is marked as a member of the congregation
     expect(document.getElementById("email-recipient-count")?.textContent).toBe("0 personer får e-posten.");
-    fireEvent.change(screen.getByLabelText("Hvem skal ha den"), { target: { value: "everyone" } });
-    expect(document.getElementById("email-recipient-count")?.textContent).toMatch(/^8 personer får e-posten \(7 e-postadresser\)\. 2 personer mangler e-postadresse/);
+    fireEvent.change(screen.getByLabelText("Til"), { target: { value: "everyone" } });
+    expect(document.getElementById("email-recipient-count")?.textContent).toBe("8 personer (7 e-postadresser) får e-posten.");
+    expect(screen.getByText("2 personer mangler e-post: Ulf Uten, Finn Feil")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Forhåndsvis" }));
     expect(document.getElementById("email-preview")?.getAttribute("srcdoc")).toContain("Meld deg av");
+    fireEvent.click(screen.getByRole("button", { name: "← Tilbake til skriving" }));
 
     const field = screen.getByLabelText("Tekst") as HTMLTextAreaElement;
     fireEvent.change(field, { target: { value: "Kom på fest" } });
@@ -827,65 +920,31 @@ describe("Siden «Send e-post» i admin", () => {
     fireEvent.click(screen.getByRole("button", { name: "Fet" }));
     expect(field.value).toBe("Kom på **fest**");
 
-    fireEvent.click(screen.getByRole("button", { name: "Send prøve til meg" }));
-    await waitFor(() => expect(service.requestEmail).toHaveBeenCalledWith(expect.objectContaining({ mode: "test", audience: { kind: "everyone" }, link: "ingen" })));
-  });
-
-  test("testboksen sender til adressen som er skrevet, sier det i boksen og føres i loggen; en ugyldig adresse sendes ikke", async () => {
-    service.requestEmail.mockResolvedValue(sent({ mode: "test", sent: 1 }));
-    show();
-    const box = screen.getByRole("region", { name: "Test e-postutsendingen" });
-    const address = within(box).getByLabelText("Send prøve til") as HTMLInputElement;
-    expect(address.value).toBe("");
-
-    fireEvent.change(address, { target: { value: "ikke en adresse" } });
-    fireEvent.click(within(box).getByRole("button", { name: "Send testen" }));
-    expect(within(box).getByRole("alert").textContent).toBe("Skriv en gyldig e-postadresse.");
-    expect(service.requestEmail).not.toHaveBeenCalled();
-
-    fireEvent.change(address, { target: { value: " Kari@Example.org " } });
-    fireEvent.click(within(box).getByRole("button", { name: "Send testen" }));
-    await waitFor(() => expect(within(box).getByRole("status").textContent).toMatch(/^Sendt til kari@example\.org kl\. \d\d:\d\d\. Utsendingen virker\. Kom den ikke fram, sjekk søppelposten\.$/));
-    expect(service.requestEmail).toHaveBeenCalledWith({ subject: EMAIL_TEMPLATES[0].subject, text: EMAIL_TEMPLATES[0].text, link: "leder", mode: "test", to: "kari@example.org" });
-    expect(confirm).not.toHaveBeenCalled();
-    // The page's own result is not touched by the box
-    expect(screen.queryByText(/Prøven er sendt/)).toBeNull();
-
-    const log = service.saveEmailLog.mock.calls[0][0] as EmailLogEntry[];
-    expect(log[0]).toMatchObject({ sentAt: "2026-10-14T12:00:00.000Z", audience: { kind: "persons" }, audienceLabel: "Test til én adresse", subject: EMAIL_TEMPLATES[0].subject, sent: 1, remainingPersonIds: [] });
-  });
-
-  test("testboksen sier hva som hindrer en prøve, og viser det som utsendingen svarer", async () => {
-    show(false);
-    const box = screen.getByRole("region", { name: "Test e-postutsendingen" });
-    expect((within(box).getByRole("button", { name: "Send testen" }) as HTMLButtonElement).disabled).toBe(true);
-    cleanup();
-
-    service.requestEmail.mockResolvedValueOnce({ ok: false, reason: "rules-outdated", message: "Databasen har ikke fått reglene for nyhetsbrev ennå." });
-    show();
-    const again = screen.getByRole("region", { name: "Test e-postutsendingen" });
-    fireEvent.change(within(again).getByLabelText("Send prøve til"), { target: { value: "kari@example.org" } });
-    fireEvent.click(within(again).getByRole("button", { name: "Send testen" }));
-    await waitFor(() => expect(within(again).getByRole("alert").textContent).toBe("Databasen har ikke fått reglene for nyhetsbrev ennå."));
-    expect(service.saveEmailLog).not.toHaveBeenCalled();
+    const box = openTestPanel();
+    fireEvent.change(within(box).getByLabelText("Send prøve til"), { target: { value: "kari@example.org" } });
+    fireEvent.click(within(box).getByRole("button", { name: "Send" }));
+    await waitFor(() => expect(service.requestEmail).toHaveBeenCalledWith(expect.objectContaining({ mode: "test", audience: { kind: "everyone" }, link: "ingen", to: "kari@example.org" })));
   });
 
   test("i demoen vises siden, men ingenting kan sendes", () => {
     show(false);
     expect(screen.getByRole("note").textContent).toContain("Demoen sender ikke e-post");
-    expect((screen.getByRole("button", { name: "Send prøve til meg" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole("button", { name: "Send prøve" }) as HTMLButtonElement).disabled).toBe(true);
     expect((screen.getByRole("button", { name: "Send til 2 personer" }) as HTMLButtonElement).disabled).toBe(true);
   });
 
-  test("knappen kan føre til en semesterplan: planen velges i en egen liste, og e-posten sendes med den", async () => {
+  test("knappen kan føre til en semesterplan: planen velges i knapp-panelet, og e-posten sendes med den", async () => {
     service.requestEmail.mockResolvedValue(sent());
     show();
+    openButtonMenu();
     expect(screen.getByRole("option", { name: "Semesterplan" })).toBeTruthy();
     fireEvent.change(screen.getByLabelText("Knappen fører til"), { target: { value: "semesterplan" } });
     const plan = screen.getByLabelText("Hvilken plan") as HTMLSelectElement;
     expect(plan.value).toBe("semesterplan-1");
     expect(within(plan).getByRole("option", { name: "Våren 2027 (Åpen)" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Forhåndsvis" }));
     expect(document.getElementById("email-preview")?.getAttribute("srcdoc")).toContain("/minside/semesterplan/semesterplan-1");
+    fireEvent.click(screen.getByRole("button", { name: "← Tilbake til skriving" }));
 
     fireEvent.click(screen.getByRole("button", { name: "Send til 2 personer" }));
     await waitFor(() => expect(service.requestEmail).toHaveBeenCalledWith(expect.objectContaining({ mode: "send", link: "semesterplan", planId: "semesterplan-1" })));
@@ -893,7 +952,8 @@ describe("Siden «Send e-post» i admin", () => {
 
   test("malen for semesterplanen velger knappen og planen av seg selv", () => {
     show();
-    fireEvent.click(screen.getByRole("button", { name: EMAIL_TEMPLATES.find((template) => template.id === "semesterplan-frivillige")!.label }));
+    pickTemplate(EMAIL_TEMPLATES.find((template) => template.id === "semesterplan-frivillige")!.label);
+    openButtonMenu();
     expect((screen.getByLabelText("Knappen fører til") as HTMLSelectElement).value).toBe("semesterplan");
     expect((screen.getByLabelText("Hvilken plan") as HTMLSelectElement).value).toBe("semesterplan-1");
   });
@@ -901,12 +961,139 @@ describe("Siden «Send e-post» i admin", () => {
   test("uten en plan som kan velges, sies det hvordan den lages, og ingen e-post går ut", () => {
     semester.plans = [];
     show();
+    openButtonMenu();
     fireEvent.change(screen.getByLabelText("Knappen fører til"), { target: { value: "semesterplan" } });
     expect(screen.queryByLabelText("Hvilken plan")).toBeNull();
     expect(screen.getByText("Det finnes ingen åpen eller planlagt semesterplan. Lag en under Semesterplan først.")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Send til 2 personer" }));
     expect(screen.getByRole("alert").textContent).toBe("Velg hvilken semesterplan knappen skal åpne.");
     expect(service.requestEmail).not.toHaveBeenCalled();
+  });
+
+  test("Til: forslag fra grupper, personer på navn og adresse, og de faste valgene", () => {
+    show();
+    fireEvent.change(screen.getByLabelText("Til"), { target: { value: "lyd" } });
+    const list = screen.getByRole("listbox", { name: "Forslag" });
+    expect(within(list).getByRole("option", { name: /^Lyd og bilde/ })).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText("Til"), { target: { value: "hanne@" } });
+    expect(within(screen.getByRole("listbox", { name: "Forslag" })).getByRole("option", { name: /^Hanne Hus/ })).toBeTruthy();
+    fireEvent.mouseDown(screen.getByRole("option", { name: /^Hanne Hus/ }));
+    expect(screen.getByRole("button", { name: "Fjern Hanne Hus" })).toBeTruthy();
+    expect(screen.queryByRole("listbox")).toBeNull();
+
+    // The leaders are chosen by default: once taken away, they are offered again, and not while they are chosen
+    fireEvent.click(screen.getByRole("button", { name: "Fjern Ledere og nestledere i tjenestegruppene" }));
+    fireEvent.change(screen.getByLabelText("Til"), { target: { value: "ledere" } });
+    fireEvent.mouseDown(screen.getByRole("option", { name: /^Ledere og nestledere/ }));
+    expect(screen.getByRole("button", { name: "Fjern Ledere og nestledere i tjenestegruppene" })).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Til"), { target: { value: "Ledere" } });
+    expect(screen.queryByRole("option", { name: /^Ledere og nestledere/ })).toBeNull();
+  });
+
+  test("Til: Enter velger det som er uthevet, og Backspace på tomt felt tar bort den siste brikken", () => {
+    show();
+    addRecipient("Frida");
+    expect(screen.getByRole("button", { name: "Fjern Frida Frivillig" })).toBeTruthy();
+    expect(document.getElementById("email-recipient-count")?.textContent).toBe("3 personer");
+    fireEvent.keyDown(screen.getByLabelText("Til"), { key: "Backspace" });
+    expect(screen.queryByRole("button", { name: "Fjern Frida Frivillig" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Fjern Ledere og nestledere i tjenestegruppene" })).toBeTruthy();
+    fireEvent.keyDown(screen.getByLabelText("Til"), { key: "Backspace" });
+    expect(screen.queryByRole("button", { name: /^Fjern / })).toBeNull();
+    expect(screen.getByRole("button", { name: "Send til 0 personer" })).toBeTruthy();
+  });
+
+  test("en blanding av brikker sendes til de nevnte, hver én gang, med navnene i loggen", async () => {
+    service.requestEmail.mockResolvedValue(sent({ sent: 4 }));
+    show();
+    // Leaders and a person and a group, where the person is in the group as well
+    addRecipient("Frida");
+    addRecipient("Husgruppe");
+    expect(document.getElementById("email-recipient-count")?.textContent).toBe("4 personer");
+    fireEvent.click(screen.getByRole("button", { name: "Send til 4 personer" }));
+    await waitFor(() => expect(service.requestEmail).toHaveBeenCalledTimes(1));
+
+    const request = service.requestEmail.mock.calls[0][0];
+    expect(request).toMatchObject({ mode: "send", audience: { kind: "persons" } });
+    expect(request.onlyPersonIds).toHaveLength(4);
+    expect(new Set(request.onlyPersonIds)).toEqual(new Set(["leder", "nest", "frivillig", "husgruppe"]));
+    const label = "Ledere og nestledere i tjenestegruppene, Frida Frivillig, Husgruppe øst";
+    expect(vi.mocked(confirm).mock.calls[0][0]).toBe(`Du sender «${EMAIL_TEMPLATES[0].subject}» til 4 personer (${label}). Vil du sende?`);
+    expect((service.saveEmailLog.mock.calls[0][0] as EmailLogEntry[])[0]).toMatchObject({ audience: { kind: "persons" }, audienceLabel: label, sent: 4 });
+  });
+
+  test("én gruppe alene sendes med gruppen, som før, og uten en liste over personer", async () => {
+    service.requestEmail.mockResolvedValue(sent());
+    show();
+    fireEvent.click(screen.getByRole("button", { name: "Fjern Ledere og nestledere i tjenestegruppene" }));
+    addRecipient("Lyd og bilde");
+    fireEvent.click(screen.getByRole("button", { name: /^Send til \d+ personer?$/ }));
+    await waitFor(() => expect(service.requestEmail).toHaveBeenCalledTimes(1));
+    expect(service.requestEmail).toHaveBeenCalledWith(expect.objectContaining({ mode: "send", audience: { kind: "group", groupId: "lyd" } }));
+    expect(service.requestEmail.mock.calls[0][0]).not.toHaveProperty("onlyPersonIds");
+    expect((service.saveEmailLog.mock.calls[0][0] as EmailLogEntry[])[0]).toMatchObject({ audience: { kind: "group", groupId: "lyd" }, audienceLabel: "Lyd og bilde" });
+  });
+
+  test("«Send til de som gjenstår» virker også for en blanding, med dem som er nevnt", async () => {
+    service.requestEmail.mockResolvedValue(sent({ sent: 3 }));
+    service.record = {
+      replyTo: "post@example.org",
+      log: [{ id: "b", sentAt: "2026-10-14T08:00:00.000Z", audience: { kind: "persons" }, audienceLabel: "Frida Frivillig, Husgruppe øst", subject: "Blanding", sent: 3, withoutEmail: 0, stopped: "quota", remainingPersonIds: ["hanne"] }],
+    };
+    show(true, "sendte");
+    fireEvent.click(screen.getByRole("button", { name: "Send til dem som gjenstår" }));
+    await waitFor(() => expect(service.requestEmail).toHaveBeenCalledWith(expect.objectContaining({ mode: "send", audience: { kind: "persons" }, onlyPersonIds: ["hanne"] })));
+  });
+
+  test("Sendte viser loggen; de andre visningene åpnes med egen adresse, og demoen sier det i alle", () => {
+    show(true, "sendte");
+    expect(screen.getByTestId("adresse").textContent).toBe("?tab=epost&vis=sendte");
+    expect(screen.getByRole("region", { name: "Sendt" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Nyhetsbrev" }));
+    expect(screen.getByTestId("adresse").textContent).toBe("?tab=epost&vis=nyhetsbrev");
+    expect(screen.getByRole("region", { name: "Nyhetsbrev" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Innstillinger" }));
+    expect(screen.getByTestId("adresse").textContent).toBe("?tab=epost&vis=innstillinger");
+    expect(screen.getByLabelText("Svar går til")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Ny e-post" }));
+    expect(screen.getByTestId("adresse").textContent).toBe("?tab=epost");
+    expect(screen.getByRole("region", { name: "Ny e-post" })).toBeTruthy();
+    cleanup();
+
+    show(false, "innstillinger");
+    expect(screen.getByRole("note").textContent).toContain("Demoen sender ikke e-post");
+  });
+});
+
+describe("Mottakerne i «Til» blir én utsending", () => {
+  test("én lederliste eller én gruppe sendes som den er, med sitt eget navn", () => {
+    expect(resolveChips([audienceChip({ kind: "group", groupId: "hus" }, groups)], persons, groups)).toEqual({ audience: { kind: "group", groupId: "hus" }, label: "Husgruppe øst" });
+    expect(resolveChips([audienceChip({ kind: "leaders" }, groups)], persons, groups)).toEqual({ audience: { kind: "leaders" }, label: "Ledere og nestledere i tjenestegruppene" });
+    expect(resolveChips([], persons, groups)).toBeNull();
+  });
+
+  test("én person sendes til den personen, og flere valg sendes til de nevnte, hver én gang", () => {
+    expect(resolveChips([personChip(persons[1])], persons, groups)).toEqual({ audience: { kind: "persons" }, onlyPersonIds: ["leder"], label: "Lars Leder" });
+    const mixed = resolveChips([audienceChip({ kind: "serviceGroups" }, groups), personChip(persons[3]), audienceChip({ kind: "group", groupId: "lyd" }, groups)], persons, groups);
+    expect(mixed?.audience).toEqual({ kind: "persons" });
+    expect([...(mixed?.onlyPersonIds ?? [])].sort()).toEqual(["ektefelle-1", "ektefelle-2", "feil", "frivillig", "leder", "nest", "uten"]);
+    expect(mixed?.label).toBe("Alle i tjenestegruppene, Frida Frivillig, Lyd og bilde");
+  });
+
+  test("etiketten i loggen kappes når den blir for lang", () => {
+    const long = Array.from({ length: 6 }, (_, index) => `Navn nummer ${index} som er ganske langt`);
+    const cut = joinedLabel(long);
+    expect(cut.length).toBeLessThanOrEqual(80);
+    expect(cut.endsWith("…")).toBe(true);
+    expect(joinedLabel(["Kari", "Ola"])).toBe("Kari, Ola");
+  });
+
+  test("forslagene viser ikke det som er valgt, og finner personer på navn og adresse", () => {
+    const found = recipientSuggestions("leder", persons, groups, [audienceChip({ kind: "leaders" }, groups)]);
+    expect(found.map((suggestion) => suggestion.chip.key)).toEqual(["person:leder", "person:nest"]);
+    expect(recipientSuggestions("frida@", persons, groups, []).map((suggestion) => suggestion.chip.label)).toEqual(["Frida Frivillig"]);
+    expect(recipientSuggestions("   ", persons, groups, [])).toEqual([]);
   });
 });
 
