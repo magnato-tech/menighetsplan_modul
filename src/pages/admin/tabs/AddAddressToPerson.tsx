@@ -13,11 +13,13 @@ interface AddAddressToPersonProps {
   persons: Person[];
   /** Says what was done. The tab keeps it, since this row leaves the list once the address can sign in. */
   onAdded: (text: string) => void;
+  /** Called with the person the address was added to, once it is saved (the board closes its task with it). */
+  onPersonAdded?: (person: Person) => void;
 }
 
 const SHOWN = 8;
 
-export const AddAddressToPerson: React.FC<AddAddressToPersonProps> = ({ address, persons, onAdded }) => {
+export const AddAddressToPerson: React.FC<AddAddressToPersonProps> = ({ address, persons, onAdded, onPersonAdded }) => {
   const { updatePerson } = useFirebase();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -40,6 +42,7 @@ export const AddAddressToPerson: React.FC<AddAddressToPersonProps> = ({ address,
     const res = updatePerson(person.id, { extraEmails: next.extraEmails });
     if (res.success) {
       onAdded(`Adressen er lagt til på ${person.name}. Personen kan logge inn med den nå.`);
+      onPersonAdded?.(person);
       setOpen(false);
       setQuery("");
       setError(null);

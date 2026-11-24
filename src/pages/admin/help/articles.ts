@@ -555,17 +555,19 @@ const personer: HelpArticle = {
 
 const medlemskap: HelpArticle = {
   id: "medlemskap",
-  title: "Medlemskap og innmelding",
-  hvor: "Planlegging → Medlemskap",
+  title: "Oppgaver",
+  hvor: "Planlegging → Oppgaver",
   intro:
-    "Søknader og innmeldinger fra Min side kommer hit som oppgaver for protokollansvarlig. Skjemaene arkiveres konfidensielt.",
+    "Oppgaver er arbeidslisten for protokollansvarlig: søknader og innmeldinger fra Min side, utmeldinger, rettelser av innmeldingsdato og innlogginger som ble stoppet. Oppgaver merket Protokollansvarlig gjøres av protokollansvarlig, eller av en administrator når menigheten ikke har en. Skjemaene arkiveres konfidensielt.",
   steg: [
     "Åpne en oppgave og marker **Merk som mottatt** når skjemaet er tatt imot.",
     "Før inn i Cornerstone, og trykk **Ført inn i Cornerstone**.",
     "Ved bekreftelse av voksenmedlemskap (G → A): fyll utmeldingsdato G og innmeldingsdato A – registeret oppdateres da automatisk.",
     "Ved andre skjema: oppdater medlemskap på personkortet, og trykk **Bekreftet i Menighetsplan**.",
+    "Oppgaven **Ukjent e-postadresse** kommer når noen har logget inn med en adresse som ikke står i registeret, eller som står på flere personer. Finn ut hvem det er. En administrator legger så adressen til på personen med **Legg til på person …**, og oppgaven er utført. Er det ikke en av menighetens, trykk **Ikke en av oss**. Står adressen på flere personer, gi hver av dem sin egen adresse under Personer, og trykk **Ordnet**.",
+    "Når en ny oppgave kommer, sendes en e-post til protokollansvarlig (eller til administratorene når det ikke finnes en). Det sendes høyst én e-post i timen; den neste sier hvor mange oppgaver som er åpne.",
   ],
-  godt: "Protokollansvarlig ser denne fanen uten full administrator-tilgang. Administratorer ser den også.",
+  godt: "Protokollansvarlig ser denne fanen uten full administrator-tilgang. Administratorer ser den også. Oversikt viser når det finnes innlogginger med ukjent e-postadresse, og Innlogging viser hvilke av dem som har en åpen oppgave.",
   utenBilde: true,
   seOgsa: ["personer"],
   tabs: ["planlegger-medlemskap"],

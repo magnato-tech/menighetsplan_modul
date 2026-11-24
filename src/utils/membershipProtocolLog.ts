@@ -79,7 +79,8 @@ export function protocolLogRows(
   const appById = new Map(applications.map((a) => [a.id, a]));
 
   return tasks
-    .filter((t) => t.status === "done" && t.doneAt && periodContains(t.doneAt, period, today))
+    // A sign-in that was stopped belongs to no person, so it is not in the protocol
+    .filter((t) => t.kind !== "loginUnknownEmail" && t.status === "done" && t.doneAt && periodContains(t.doneAt, period, today))
     .map((task) => {
       const person = byPerson.get(task.personId);
       const app = task.applicationId ? appById.get(task.applicationId) : undefined;

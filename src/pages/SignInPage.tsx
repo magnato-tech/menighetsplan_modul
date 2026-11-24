@@ -5,6 +5,7 @@ import { LogIn, Mail } from "lucide-react";
 import { useCms } from "../context/CmsContext";
 import { useFirebase } from "../context/FirebaseDataContext";
 import { completeSignInLink, describeSignInError, isSignInLink, sendSignInLink, signInWithGoogle } from "../services/auth";
+import { reportLoginProblem } from "../services/loginProblem";
 import { destinationAfterSignIn, signInUrl } from "../utils/session";
 import { DEMO } from "../demo";
 import { DemoDoor } from "./DemoDoor";
@@ -67,6 +68,12 @@ export const SignInPage: React.FC = () => {
       if ((await completeSignInLink(window.location.href)) === "needsEmail") setLinkNeedsEmail(true);
     });
   }, []);
+
+  // A signed-in account the register does not know tells the board, once a day (see services/loginProblem.ts)
+  const notInRegisterAddress = session.status === "notInRegister" && session.reason !== "unverified";
+  useEffect(() => {
+    if (notInRegisterAddress) void reportLoginProblem();
+  }, [notInRegisterAddress]);
 
   // In the demo, someone who is inside stays on the page until they have chosen, and the choice decides where they go
   const choosingAgain = atDemoDoor && session.status === "member" && doorStart === null;

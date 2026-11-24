@@ -16,6 +16,7 @@ import { reportWriteError } from "../../../services/writeErrors";
 import type { ShowFeedback } from "../studio";
 import { MembershipClerkTaskCard } from "../membership/MembershipClerkTaskCard";
 import { MembershipClerkInboxList } from "../membership/MembershipClerkInboxList";
+import { LoginProblemTaskCard } from "../membership/LoginProblemTaskCard";
 import { MembershipProtocolLogPanel } from "../membership/MembershipProtocolLogPanel";
 
 type BoardTab = "inbox" | "log";
@@ -96,8 +97,11 @@ export const MembershipApplicationsTab: React.FC<{ showFeedback: ShowFeedback }>
       <div className="border-b border-[var(--studio-border)] pb-4">
         <h1 className="text-xl sm:text-2xl font-black text-[var(--studio-text)] tracking-tight flex items-center gap-2">
           <ClipboardList className="w-6 h-6 text-indigo-500" aria-hidden="true" />
-          Oppgavebord – medlemskap
+          Oppgaver
         </h1>
+        <p className="text-sm font-bold text-[var(--studio-text)] mt-2 max-w-2xl leading-relaxed">
+          Oppgaver merket Protokollansvarlig gjøres av protokollansvarlig, eller av en administrator når menigheten ikke har en.
+        </p>
         <p className="text-xs text-[var(--studio-muted)] mt-2 max-w-2xl leading-relaxed">
           Arbeidsflyt for protokollansvarlig: åpne saker til venstre, utfør stegene til høyre. Du kan hoppe videre uten å
           lukke en sak.
@@ -152,7 +156,21 @@ export const MembershipApplicationsTab: React.FC<{ showFeedback: ShowFeedback }>
                 Neste uten å lukke
               </button>
             </div>
-            {current && (
+            {current?.kind === "loginUnknownEmail" && (
+              <LoginProblemTaskCard
+                key={current.id}
+                task={current}
+                persons={allPersons}
+                clerkName={currentUser?.name ?? ""}
+                mayAddAddress={currentUser?.globalRole === "admin"}
+                busy={busy}
+                setBusy={setBusy}
+                onSaved={(text) => showFeedback(text, "success")}
+                onError={(text) => showFeedback(text, "error")}
+                onCompleted={afterComplete}
+              />
+            )}
+            {current && current.kind !== "loginUnknownEmail" && (
               <MembershipClerkTaskCard
                 key={current.id}
                 task={current}

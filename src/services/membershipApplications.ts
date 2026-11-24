@@ -8,6 +8,7 @@ import { gToARegisterUpdate } from "../utils/denominationGToA";
 import { membershipLogWithStatus, newMembershipLogEntry } from "../utils/membershipLog";
 import { buildApplicationTask } from "../utils/membershipClerkTasks";
 import { syncApplicationClerkTaskInstruction } from "./membershipClerkTasks";
+import { noticeNewApplication } from "./taskNotice";
 
 /** Saves a membership form and appends a reference on the person's membership log. */
 export async function submitMembershipApplication(
@@ -28,6 +29,8 @@ export async function submitMembershipApplication(
     sanitizeForFirestore(documentFields(task))
   );
   await batch.commit();
+  // The protokollansvarlig is told about it; the applicant is not kept waiting for that
+  void noticeNewApplication(application.id);
   return application;
 }
 

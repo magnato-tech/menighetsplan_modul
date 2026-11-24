@@ -14,8 +14,10 @@ export const API_FUNCTIONS = {
   epost: "server/vercel/epost.ts",
   innlogging: "server/vercel/innlogging.ts",
   innloggingsepost: "server/vercel/innloggingsepost.ts",
+  innloggingsproblem: "server/vercel/innloggingsproblem.ts",
   kontoer: "server/vercel/kontoer.ts",
   nyhetsbrevbilde: "server/vercel/nyhetsbrevbilde.ts",
+  oppgavevarsel: "server/vercel/oppgavevarsel.ts",
 } as const;
 
 const root = fileURLToPath(new URL("..", import.meta.url));

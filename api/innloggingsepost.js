@@ -177,7 +177,39 @@ function decodeDocument(document2) {
   const stored = typeof data.id === "string" && data.id ? data.id : null;
   return { ...data, id: stored ?? document2.name.slice(document2.name.lastIndexOf("/") + 1) };
 }
+var wholeCollectionQuery = (collectionId) => ({ structuredQuery: { from: [{ collectionId }] } });
+async function readAll(database, collectionId, ask, headers = {}) {
+  const response = await ask(`${documentsOf(database)}:runQuery`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...headers },
+    body: JSON.stringify(wholeCollectionQuery(collectionId))
+  });
+  if (!response.ok) throw new FirestoreRestError(`Databasen svarte ${response.status} for ${collectionId}`, response.status);
+  const rows = await response.json();
+  if (!Array.isArray(rows)) throw new FirestoreRestError(`Databasen svarte ikke med en liste for ${collectionId}`, 502);
+  const failed = rows.find((row) => row.error);
+  if (failed?.error) throw new FirestoreRestError(failed.error.message || `Databasen svarte med en feil for ${collectionId}`, failed.error.code ?? 502);
+  return rows.flatMap((row) => row.document ? [decodeDocument(row.document)] : []);
+}
 var documentNameOf = ({ projectId, databaseId }, path) => `projects/${projectId}/databases/${databaseId || "(default)"}/documents/${path}`;
+var encodeWritable = (value) => {
+  if (typeof value === "boolean") return { booleanValue: value };
+  if (typeof value === "number") return Number.isInteger(value) ? { integerValue: String(value) } : { doubleValue: value };
+  return { stringValue: value };
+};
+async function writeDocumentFields(database, path, fields, ask, headers = {}, mustExist = false) {
+  const write = {
+    update: { name: documentNameOf(database, path), fields: Object.fromEntries(Object.entries(fields).map(([key, value]) => [key, encodeWritable(value)])) },
+    updateMask: { fieldPaths: Object.keys(fields) },
+    ...mustExist ? { currentDocument: { exists: true } } : {}
+  };
+  const response = await ask(`${documentsOf(database)}:commit`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...headers },
+    body: JSON.stringify({ writes: [write] })
+  });
+  if (!response.ok) throw new FirestoreRestError(`Databasen svarte ${response.status} på skrivingen`, response.status);
+}
 async function readDocument(database, path, ask, headers) {
   const response = await ask(`${documentsOf(database)}/${path}`, headers ? { headers } : void 0);
   if (!response.ok) return null;
@@ -300,6 +332,7 @@ var CRC_TABLE = (() => {
 })();
 
 // server/emailSending.ts
+var PERSONS = "persons";
 var SETTINGS_DOCUMENT = "cms_settings/global";
 var EMAIL_SETTINGS = {
   /** The key to the e-mail service. Only where the installation is hosted, never in the browser. */
@@ -308,6 +341,7 @@ var EMAIL_SETTINGS = {
   from: "EMAIL_FROM_ADDRESS"
 };
 var DEFAULT_FROM_ADDRESS = "ikke-svar@menighetsplan.no";
+var SEND_URL = "https://api.resend.com/emails/batch";
 var settingOf = (env, name) => {
   const value = env[name];
   return typeof value === "string" && value.trim() !== "" ? value.trim() : void 0;
@@ -315,6 +349,112 @@ var settingOf = (env, name) => {
 function senderOf(churchName, address) {
   const name = churchName.replace(/["<>\r\n]/g, "").trim();
   return name ? `"${name}" <${address}>` : address;
+}
+
+// server/loginProblemTask.ts
+import { randomUUID } from "node:crypto";
+
+// src/utils/membershipClerkTasks.ts
+function loginProblemInstruction(address, reason) {
+  if (reason === "shared") {
+    return `${address} prøvde å logge inn, men adressen står på flere personer. Gi hver av dem sin egen adresse.`;
+  }
+  return `${address} prøvde å logge inn, men adressen står ikke i registeret. Finn ut hvem det er, og legg til adressen på personen.`;
+}
+
+// server/taskNotice.ts
+var MEMBERSHIP_CLERK_TASKS = "membershipClerkTasks";
+var HOUR_MS = 60 * 60 * 1e3;
+var NOTICE_GAP_MS = HOUR_MS;
+var MAX_RECIPIENTS = 10;
+async function noticeNewTask(input) {
+  try {
+    return await sendNotice(input);
+  } catch (error) {
+    console.error("Varselet om ny oppgave ble ikke sendt:", error instanceof Error ? error.message : error);
+    return { sent: false };
+  }
+}
+async function sendNotice({ database, env, ask, headers, now, siteUrl, task }) {
+  const apiKey = settingOf(env, EMAIL_SETTINGS.apiKey);
+  if (!apiKey) return { sent: false };
+  const since = new Date(now.getTime() - NOTICE_GAP_MS).toISOString();
+  const recent = await queryDocuments(database, MEMBERSHIP_CLERK_TASKS, { field: "createdAt", op: "GREATER_THAN_OR_EQUAL", value: since }, ask, headers);
+  if (recent.some((row) => row.id !== task.id)) return { sent: false };
+  const persons = await readAll(database, PERSONS, ask, headers);
+  const addressesOf = (wanted) => persons.filter(wanted).flatMap((person) => {
+    const address = usableEmail(person.email);
+    return address ? [address] : [];
+  });
+  let addresses = addressesOf((person) => person.membershipClerk === true);
+  if (addresses.length === 0) addresses = addressesOf((person) => person.globalRole === "admin");
+  const recipients = [...new Set(addresses)].slice(0, MAX_RECIPIENTS);
+  if (recipients.length === 0) return { sent: false };
+  const open = await queryDocuments(database, MEMBERSHIP_CLERK_TASKS, { field: "status", op: "EQUAL", value: "open" }, ask, headers);
+  const settings = await readDocument(database, SETTINGS_DOCUMENT, ask, headers).catch(() => null);
+  const churchName = typeof settings?.churchName === "string" && settings.churchName.trim() || "Menigheten";
+  const base = siteUrl.replace(/\/+$/, "");
+  const parts = [
+    { text: "Hei!" },
+    { text: task.summary },
+    { text: `Det er nå ${open.length} åpne oppgaver.` },
+    { button: { label: "Åpne Oppgaver", url: `${base}/admin?tab=planlegger-medlemskap` } },
+    { text: `Vennlig hilsen ${churchName}` },
+    { text: "Du får denne e-posten fordi du er protokollansvarlig eller administrator." }
+  ];
+  const rendered = renderSignInEmail({ subject: `Ny oppgave i Oppgaver – ${churchName}`, churchName, parts });
+  const from = senderOf(churchName, settingOf(env, EMAIL_SETTINGS.from) ?? DEFAULT_FROM_ADDRESS);
+  const response = await ask(SEND_URL, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify(recipients.map((to) => ({ from, to: [to], subject: rendered.subject, html: rendered.html, text: rendered.text })))
+  });
+  if (!response.ok) {
+    console.error("E-posttjenesten tok ikke imot varselet om ny oppgave:", response.status);
+    return { sent: false };
+  }
+  return { sent: true };
+}
+
+// server/loginProblemTask.ts
+var MEMBERSHIP_CLERK_TASKS2 = "membershipClerkTasks";
+async function recordLoginProblem({ database, address, reason, now, ask, headers, env, siteUrl }) {
+  try {
+    const at = now.toISOString();
+    const rows = await queryDocuments(database, MEMBERSHIP_CLERK_TASKS2, { field: "loginAddress", op: "EQUAL", value: address }, ask, headers);
+    const open = rows.find((row) => row.kind === "loginUnknownEmail" && row.status === "open");
+    if (open) {
+      const attempts = typeof open.attempts === "number" ? open.attempts : 1;
+      await writeDocumentFields(database, `${MEMBERSHIP_CLERK_TASKS2}/${open.id}`, { attempts: attempts + 1, lastAttemptAt: at }, ask, headers, true);
+      return { created: false };
+    }
+    const id = `loginproblem-${randomUUID()}`;
+    await writeDocumentFields(
+      database,
+      `${MEMBERSHIP_CLERK_TASKS2}/${id}`,
+      {
+        id,
+        kind: "loginUnknownEmail",
+        status: "open",
+        createdAt: at,
+        lastAttemptAt: at,
+        attempts: 1,
+        loginAddress: address,
+        loginReason: reason,
+        personId: "",
+        personName: "",
+        instruction: loginProblemInstruction(address, reason)
+      },
+      ask,
+      headers
+    );
+    const summary = reason === "shared" ? "Noen prøvde å logge inn med en e-postadresse som står på flere personer." : "Noen prøvde å logge inn med en e-postadresse som ikke står i registeret.";
+    await noticeNewTask({ database, env, ask, headers, now, siteUrl, task: { summary, id } });
+    return { created: true };
+  } catch (error) {
+    console.error("Oppgaven for en innlogging som ble stoppet, fikk ikke blitt lagret:", error instanceof Error ? error.message : error);
+    return { created: false };
+  }
 }
 
 // server/signInEmail.ts
@@ -327,8 +467,8 @@ var REQUESTS_PER_ADDRESS_PER_HOUR = 3;
 var REQUESTS_PER_DAY = 300;
 var KEEP_DAYS = 90;
 var DELETE_PER_CALL = 50;
-var HOUR_MS = 60 * 60 * 1e3;
-var DAY_MS = 24 * HOUR_MS;
+var HOUR_MS2 = 60 * 60 * 1e3;
+var DAY_MS = 24 * HOUR_MS2;
 var FAILED = "E-posten kunne ikke sendes akkurat nå. Prøv igjen om litt.";
 var unavailable = () => ({ status: 503, body: { ok: false, reason: "not-available" } });
 var refuse = (status, reason, message) => ({ status, body: { ok: false, reason, message } });
@@ -344,7 +484,7 @@ function continueUrlOf(site, returnTo) {
   }
 }
 async function isLimited(database, address, now, ask, headers) {
-  const hourAgo = new Date(now.getTime() - HOUR_MS).toISOString();
+  const hourAgo = new Date(now.getTime() - HOUR_MS2).toISOString();
   const mine = await queryDocuments(database, LOGIN_REQUESTS, { field: "email", op: "EQUAL", value: address }, ask, headers);
   if (mine.filter((row) => String(row.at) >= hourAgo).length >= REQUESTS_PER_ADDRESS_PER_HOUR) return true;
   const dayAgo = new Date(now.getTime() - DAY_MS).toISOString();
@@ -447,6 +587,9 @@ async function sendSignInEmail({ env, siteUrl, body, ask, now = /* @__PURE__ */ 
     const sent = limited ? false : await deliver({ ask, database, bearer, projectId: installation.projectId, apiKey, fromAddress, address, inRegister, continueUrl, siteOrigin: site.origin });
     const result = limited ? "limited" : sent ? "sent" : "failed";
     await logRequest(database, address, now, inRegister, result, ask, headers);
+    if (!inRegister && !limited) {
+      await recordLoginProblem({ database, address, reason: "noMatch", now, ask, headers, env, siteUrl: site.origin });
+    }
     return sent || limited ? { status: 200, body: { ok: true } } : refuse(502, "failed", FAILED);
   } catch (error) {
     console.error("Innloggingsepost fikk ikke sjekket registeret eller Google:", error instanceof Error ? error.message : error);

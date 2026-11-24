@@ -16,6 +16,7 @@ import { renderSignInEmail, type SignInEmailPart } from "../src/utils/signInEmai
 import { addDocument, deleteDocuments, documentExists, queryDocuments, readDocument, type Fetch, type RestDatabase } from "./firestoreRest";
 import { DEFAULT_FROM_ADDRESS, EMAIL_SETTINGS, SETTINGS_DOCUMENT, senderOf, settingOf } from "./emailSending";
 import { accessToken, identityRequest, readServiceAccount } from "./serviceAccount";
+import { recordLoginProblem } from "./loginProblemTask";
 
 // The names in src/data/collections.ts, written out here (see emailSending.ts for why)
 const LOGINS = "logins";
@@ -212,6 +213,10 @@ export async function sendSignInEmail({ env, siteUrl, body, ask, now = new Date(
     const sent = limited ? false : await deliver({ ask, database, bearer, projectId: installation.projectId, apiKey, fromAddress, address, inRegister, continueUrl, siteOrigin: site.origin });
     const result = limited ? "limited" : sent ? "sent" : "failed";
     await logRequest(database, address, now, inRegister, result, ask, headers);
+    // An address the register does not know is a task for the board, so the protokollansvarlig can find out who it is
+    if (!inRegister && !limited) {
+      await recordLoginProblem({ database, address, reason: "noMatch", now, ask, headers, env, siteUrl: site.origin });
+    }
     return sent || limited ? { status: 200, body: { ok: true } } : refuse(502, "failed", FAILED);
   } catch (error) {
     console.error("Innloggingsepost fikk ikke sjekket registeret eller Google:", error instanceof Error ? error.message : error);

@@ -177,9 +177,14 @@ export interface MembershipApplication {
   /** Filled by protokollansvarlig when completing a G→A transition (reference log). */
   transitionGEndedAt?: string;
   transitionAStartedAt?: string;
+  /** When the protokollansvarlig and administrators were e-mailed about it (server/applicationNotice.ts). Set by the server only. */
+  noticeSentAt?: string;
 }
 
-export type MembershipClerkTaskKind = "correctEnrollmentDate" | "application" | "withdrawal";
+export type MembershipClerkTaskKind = "correctEnrollmentDate" | "application" | "withdrawal" | "loginUnknownEmail";
+
+/** Why someone's sign-in was stopped by an address the register does not know: nobody has it, or several persons share it. */
+export type LoginProblemReason = "noMatch" | "shared";
 
 export type MembershipClerkTaskStatus = "open" | "done";
 
@@ -211,6 +216,13 @@ export interface MembershipClerkTask {
   attestationPosted?: boolean;
   attestationEmailedAt?: string;
   attestationEmailedBy?: string;
+  /** loginUnknownEmail: the address (lower-cased) that a sign-in was stopped with. */
+  loginAddress?: string;
+  loginReason?: LoginProblemReason;
+  /** loginUnknownEmail: how many times the address has tried since the task was made. */
+  attempts?: number;
+  /** loginUnknownEmail: when the address last tried, as an ISO time. */
+  lastAttemptAt?: string;
 }
 
 /** A name a leader has asked an administrator to add to a group. Nothing but the name. */

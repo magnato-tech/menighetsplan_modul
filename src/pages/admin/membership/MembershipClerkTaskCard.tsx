@@ -17,6 +17,7 @@ import {
   updateClerkTask,
 } from "../../../services/membershipClerkTasks";
 import { downloadWithdrawalAttestation } from "../../../utils/withdrawalAttestation";
+import { TaskOwnerTag } from "./TaskOwnerTag";
 import { canSendWithdrawalAttestationEmail } from "../../../utils/withdrawalAttestationDelivery";
 import { sendWithdrawalAttestationEmail } from "../../../services/withdrawalAttestationEmail";
 import { canCompleteClerkTask, cornerstoneDoneForTask } from "../../../utils/membershipProtocolLog";
@@ -210,6 +211,7 @@ export const MembershipClerkTaskCard: React.FC<{
     <div className="rounded-xl border border-[var(--studio-border)] bg-[var(--studio-surface)] p-4 sm:p-5 space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-2 text-sm">
         <div className="space-y-1 min-w-0">
+          <TaskOwnerTag kind={task.kind} />
           <h2 className="text-lg font-black text-[var(--studio-text)] leading-snug">{headline}</h2>
           <p className="text-sm font-bold text-[var(--studio-text)]">{task.personName}</p>
           <p className="text-xs text-[var(--studio-muted)]">

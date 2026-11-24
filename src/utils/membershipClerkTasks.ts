@@ -1,4 +1,5 @@
 import type {
+  LoginProblemReason,
   MembershipApplication,
   MembershipApplicationStatus,
   MembershipClerkTask,
@@ -12,7 +13,7 @@ type ClerkTaskHeadlineInput = Pick<
 >;
 type ApplicationHeadlineInput = Pick<MembershipApplication, "kind" | "alsoDenomination">;
 import { membershipApplicationKindLabel } from "./membershipApplication";
-import { membershipApplicationStatusLabel } from "./membershipClerkWorkflow";
+import { membershipApplicationStatusLabel, openMembershipApplications } from "./membershipClerkWorkflow";
 import { newId } from "./id";
 import { withdrawalAttestationDelivered } from "./withdrawalAttestationDelivery";
 
@@ -165,8 +166,63 @@ export function clerkTaskKindLabel(kind: MembershipClerkTaskKind): string {
     correctEnrollmentDate: "Innmeldingsdato",
     application: "Søknad / innmelding",
     withdrawal: "Utmelding",
+    loginUnknownEmail: "Ukjent e-postadresse",
   };
   return map[kind];
+}
+
+/**
+ * Whose hat a task is: the tag on the card. Every kind is the protokollansvarligs today; another
+ * owner would be given its own answer here.
+ */
+export function taskOwnerLabel(kind: MembershipClerkTaskKind): string {
+  switch (kind) {
+    case "correctEnrollmentDate":
+    case "application":
+    case "withdrawal":
+    case "loginUnknownEmail":
+      return "Protokollansvarlig";
+  }
+}
+
+/** What a task about a stopped sign-in says to do. The address is the one that tried, lower-cased. */
+export function loginProblemInstruction(address: string, reason: LoginProblemReason): string {
+  if (reason === "shared") {
+    return `${address} prøvde å logge inn, men adressen står på flere personer. Gi hver av dem sin egen adresse.`;
+  }
+  return `${address} prøvde å logge inn, men adressen står ikke i registeret. Finn ut hvem det er, og legg til adressen på personen.`;
+}
+
+/** The open tasks for addresses that stopped a sign-in (kind loginUnknownEmail). */
+export function openLoginProblemTasks(tasks: readonly MembershipClerkTask[]): MembershipClerkTask[] {
+  return tasks.filter((task) => task.kind === "loginUnknownEmail" && task.status === "open");
+}
+
+/** The open login task for an address, if there is one. */
+export function openLoginTaskFor(tasks: readonly MembershipClerkTask[], address: string): MembershipClerkTask | undefined {
+  const wanted = address.trim().toLowerCase();
+  return tasks.find((task) => task.kind === "loginUnknownEmail" && task.status === "open" && task.loginAddress === wanted);
+}
+
+/**
+ * What the board counts as open: the open tasks, and the open applications that have no open task
+ * of their own (an application's task is linked to it by applicationId, so it is counted once).
+ */
+export function openBoardCount(tasks: readonly MembershipClerkTask[], applications: readonly MembershipApplication[]): number {
+  const open = openClerkTasks(tasks);
+  const linked = new Set(open.map((task) => task.applicationId).filter((id): id is string => typeof id === "string"));
+  return open.length + openMembershipApplications(applications).filter((app) => !linked.has(app.id)).length;
+}
+
+/** The fields that close a task: done, when, by whom, and the note as it was with what is added to it. */
+export function closedTaskPatch(
+  task: Pick<MembershipClerkTask, "comment">,
+  doneBy: string,
+  doneAt: string,
+  added?: string
+): Pick<MembershipClerkTask, "status" | "doneAt" | "doneBy" | "comment"> {
+  const comment = [task.comment?.trim(), added?.trim()].filter((part) => part && part !== "").join(" ");
+  return { status: "done", doneAt, doneBy, comment: comment || undefined };
 }
 
 /** Tydelig overskrift for hva oppgaven gjelder (innboks, kort og logg). */
@@ -179,6 +235,7 @@ export function clerkTaskHeadline(
     if (task.enrollmentField === "denominationJoinedAt") return "Feil innmeldingsdato (kirkesamfunn)";
     return "Feil innmeldingsdato";
   }
+  if (task.kind === "loginUnknownEmail") return "Innlogging med ukjent e-postadresse";
   if (task.kind === "withdrawal") {
     const menighet = task.withdrawCongregation === true;
     const kirke = task.withdrawDenomination === true;

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { cleanup, render, screen, within, fireEvent } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import type { AccountListAnswer, AccountRow } from "../src/utils/accountOverview";
 import type { Group, Person } from "../src/types";
 import type { StudioData } from "../src/pages/admin/studio";
@@ -21,6 +22,10 @@ vi.mock("../src/services/loginRequests", () => ({ subscribeLoginRequests }));
 const { updatePerson } = vi.hoisted(() => ({ updatePerson: vi.fn(() => ({ success: true })) }));
 vi.mock("../src/context/FirebaseDataContext", async (importOriginal) => ({ ...(await importOriginal<object>()), useFirebase: () => ({ updatePerson }) }));
 
+// The board's tasks: an address that stopped a sign-in with an open task shows the tag «Oppgave åpen»
+const { boardTasks } = vi.hoisted(() => ({ boardTasks: { current: [] as unknown[] } }));
+vi.mock("../src/hooks/useMembershipClerkTasks", () => ({ useMembershipClerkTasks: () => boardTasks.current }));
+
 import { AccountsTab } from "../src/pages/admin/tabs/AccountsTab";
 import { emptyTrafficDay, osloDayAndHour, addDays, type TrafficDay } from "../src/utils/siteTraffic";
 
@@ -36,6 +41,7 @@ const ok = (accounts: AccountRow[]): AccountListAnswer => ({ ok: true, accounts,
 
 afterEach(() => {
   cleanup();
+  boardTasks.current = [];
   requestAccountList.mockReset();
   subscribeSiteTraffic.mockReset();
   subscribeLoginRequests.mockReset();
@@ -174,5 +180,26 @@ describe("Legg til på person i listen over stoppede", () => {
     fireEvent.click(screen.getByRole("button", { name: "Ulf Uten" }));
     expect(updatePerson).toHaveBeenCalledWith("uten", { extraEmails: [{ address: "ny@example.org", copy: false, login: true }] });
     expect(await screen.findByText("Adressen er lagt til på Ulf Uten. Personen kan logge inn med den nå.")).toBeTruthy();
+  });
+});
+
+describe("Oppgaver for innlogginger som ble stoppet", () => {
+  test("en adresse med åpen oppgave på tavlen viser «Oppgave åpen» i listen over dem som ble stoppet", async () => {
+    requestAccountList.mockResolvedValue(ok([{ email: "ukjent@example.org", emailVerified: true, disabled: false, provider: "google", createdAt: null, lastLoginAt: "2026-11-20T08:00:00.000Z" }]));
+    boardTasks.current = [
+      { id: "loginproblem-1", kind: "loginUnknownEmail", status: "open", createdAt: "2026-11-20T08:00:00.000Z", loginAddress: "ukjent@example.org", personId: "", personName: "", instruction: "x" },
+    ];
+    render(<MemoryRouter><AccountsTab studio={studio} /></MemoryRouter>);
+
+    const row = (await screen.findByText("ukjent@example.org")).closest("li") as HTMLElement;
+    expect(within(row).getByText("Oppgave åpen")).toBeTruthy();
+  });
+
+  test("en adresse uten oppgave viser ingen slik merking", async () => {
+    requestAccountList.mockResolvedValue(ok([{ email: "ukjent@example.org", emailVerified: true, disabled: false, provider: "google", createdAt: null, lastLoginAt: "2026-11-20T08:00:00.000Z" }]));
+    render(<MemoryRouter><AccountsTab studio={studio} /></MemoryRouter>);
+
+    const row = (await screen.findByText("ukjent@example.org")).closest("li") as HTMLElement;
+    expect(within(row).queryByText("Oppgave åpen")).toBeNull();
   });
 });

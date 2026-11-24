@@ -141,6 +141,41 @@ export async function setTextFields(database: RestDatabase, changes: readonly { 
   if (!response.ok) throw new FirestoreRestError(`Databasen svarte ${response.status} på skrivingen`, response.status);
 }
 
+/** A value written with writeDocumentFields: text, a number, or true or false. */
+export type WritableValue = string | number | boolean;
+
+const encodeWritable = (value: WritableValue): RestValue => {
+  if (typeof value === "boolean") return { booleanValue: value };
+  if (typeof value === "number") return Number.isInteger(value) ? { integerValue: String(value) } : { doubleValue: value };
+  return { stringValue: value };
+};
+
+/**
+ * Sets fields on one document in one write, as the one the headers say is asking: the fields named
+ * are written, and the others of the document are kept. With `mustExist`, a document that is not
+ * there is not made. Thrown as a FirestoreRestError when the database refuses.
+ */
+export async function writeDocumentFields(
+  database: RestDatabase,
+  path: string,
+  fields: Record<string, WritableValue>,
+  ask: Fetch,
+  headers: Record<string, string> = {},
+  mustExist = false
+): Promise<void> {
+  const write: Record<string, unknown> = {
+    update: { name: documentNameOf(database, path), fields: Object.fromEntries(Object.entries(fields).map(([key, value]) => [key, encodeWritable(value)])) },
+    updateMask: { fieldPaths: Object.keys(fields) },
+    ...(mustExist ? { currentDocument: { exists: true } } : {}),
+  };
+  const response = await ask(`${documentsOf(database)}:commit`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...headers },
+    body: JSON.stringify({ writes: [write] }),
+  });
+  if (!response.ok) throw new FirestoreRestError(`Databasen svarte ${response.status} på skrivingen`, response.status);
+}
+
 /** One document, or null when it is not there or may not be read. */
 export async function readDocument(database: RestDatabase, path: string, ask: Fetch, headers?: Record<string, string>): Promise<(Record<string, unknown> & { id: string }) | null> {
   const response = await ask(`${documentsOf(database)}/${path}`, headers ? { headers } : undefined);
