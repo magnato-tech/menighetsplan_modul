@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
 import { requestAccountList } from "../../../services/accountList";
-import { overviewOf, type AccountListAnswer, type AccountOverview, type AccountProvider, type AccountRefusal } from "../../../utils/accountOverview";
+import { inPeriod, overviewOf, type AccountListAnswer, type AccountPeriod, type AccountOverview, type AccountProvider, type AccountRefusal } from "../../../utils/accountOverview";
 import { formatNorwegianDateTime } from "../../../utils/dates";
 import type { StudioData } from "../studio";
 import { studioBadge, studioCardPadded, studioMuted, studioSecondaryButton } from "../studioTheme";
@@ -17,12 +17,19 @@ const PROVIDER_LABEL: Record<AccountProvider, string> = { google: "Google", "e-p
 
 const when = (iso: string | null): string => (iso ? formatNorwegianDateTime(iso) : "ikke logget inn");
 
-const Count: React.FC<{ value: number; label: string }> = ({ value, label }) => (
+const Count: React.FC<{ value: number; label: string; note?: string }> = ({ value, label, note }) => (
   <div className={studioCardPadded}>
     <p className="text-2xl font-black text-[var(--studio-text)]">{value}</p>
     <p className={`text-xs font-bold ${studioMuted}`}>{label}</p>
+    {note && <p className={`text-[11px] mt-0.5 ${studioMuted}`}>{note}</p>}
   </div>
 );
+
+const PERIODS: { value: AccountPeriod; label: string }[] = [
+  { value: 7, label: "Siste 7 dager" },
+  { value: 30, label: "Siste 30 dager" },
+  { value: null, label: "Alt" },
+];
 
 const Tag: React.FC<{ tone?: "red" | "amber"; children: React.ReactNode }> = ({ tone, children }) => (
   <span
@@ -49,6 +56,8 @@ export const AccountsTab: React.FC<AccountsTabProps> = ({ studio }) => {
   // undefined while the accounts are being fetched
   const [answer, setAnswer] = useState<AccountListAnswer | undefined>(undefined);
   const [showSigned, setShowSigned] = useState(false);
+  // The period narrows who signed in and who was stopped; who never has, and who cannot, are the same in every period
+  const [period, setPeriod] = useState<AccountPeriod>(null);
 
   const load = useCallback(() => {
     setAnswer(undefined);
@@ -57,6 +66,11 @@ export const AccountsTab: React.FC<AccountsTabProps> = ({ studio }) => {
   useEffect(() => load(), [load]);
 
   const overview: AccountOverview | null = answer && answer.ok ? overviewOf(persons, groups, answer.accounts) : null;
+  const now = answer && answer.ok ? Date.parse(answer.fetchedAt) : Date.now();
+  const signedIn = overview ? overview.signedIn.filter((row) => inPeriod(row.account.lastLoginAt, period, now)) : [];
+  const newcomers = period === null ? 0 : signedIn.filter((row) => inPeriod(row.account.createdAt, period, now)).length;
+  const stopped = overview ? overview.notInRegister.filter((row) => inPeriod(row.account.lastLoginAt, period, now)) : [];
+  const inThePeriod = period === null ? "" : ` (${PERIODS.find((p) => p.value === period)?.label.toLowerCase()})`;
 
   return (
     <div className="space-y-5">
@@ -90,19 +104,35 @@ export const AccountsTab: React.FC<AccountsTabProps> = ({ studio }) => {
 
       {overview && (
         <>
+          <div role="group" aria-label="Periode" className="flex flex-wrap gap-2">
+            {PERIODS.map((choice) => (
+              <button
+                key={String(choice.value)}
+                type="button"
+                onClick={() => setPeriod(choice.value)}
+                aria-pressed={period === choice.value}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer ${
+                  period === choice.value ? "bg-indigo-600 text-white" : "text-[var(--studio-muted)] hover:text-[var(--studio-text)] border border-[var(--studio-border)]"
+                }`}
+              >
+                {choice.label}
+              </button>
+            ))}
+          </div>
+
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <Count value={overview.signedIn.length} label="Har logget inn" />
+            <Count value={signedIn.length} label={period === null ? "Har logget inn" : "Logget inn"} note={period === null ? undefined : `${newcomers} av dem for første gang`} />
             <Count value={overview.neverSignedIn.length} label="Aldri logget inn" />
-            <Count value={overview.notInRegister.length} label="Ble stoppet" />
+            <Count value={stopped.length} label="Ble stoppet" />
             <Count value={overview.cannotSignIn.length} label="Kan ikke logge inn" />
           </div>
 
           <Section
-            title="Ble stoppet – feil e-post?"
+            title={`Ble stoppet – feil e-post?${inThePeriod}`}
             help="De prøvde å logge inn, men adressen de brukte, står ikke i registeret. Som regel har personen en annen adresse der. Rett adressen under Personer, så kommer de inn."
-            empty={overview.notInRegister.length === 0}
+            empty={stopped.length === 0}
           >
-            {overview.notInRegister.map(({ address, account, shared }) => (
+            {stopped.map(({ address, account, shared }) => (
               <li key={address} className="py-2.5 flex flex-wrap items-center gap-x-3 gap-y-1">
                 <span className="text-xs font-bold text-[var(--studio-text)] break-all">{address}</span>
                 <span className={`text-[11px] ${studioMuted}`}>
@@ -150,19 +180,19 @@ export const AccountsTab: React.FC<AccountsTabProps> = ({ studio }) => {
               aria-expanded={showSigned}
               className="w-full flex items-center justify-between text-left cursor-pointer"
             >
-              <span className="text-sm font-black text-[var(--studio-text)]">Har logget inn ({overview.signedIn.length})</span>
+              <span className="text-sm font-black text-[var(--studio-text)]">{period === null ? "Har logget inn" : `Logget inn${inThePeriod}`} ({signedIn.length})</span>
               {showSigned ? <ChevronUp className="w-4 h-4" aria-hidden="true" /> : <ChevronDown className="w-4 h-4" aria-hidden="true" />}
             </button>
             {showSigned &&
-              (overview.signedIn.length === 0 ? (
+              (signedIn.length === 0 ? (
                 <p className={`text-xs mt-3 ${studioMuted}`}>Ingen.</p>
               ) : (
                 <ul className="mt-3 divide-y divide-[var(--studio-border)]">
-                  {overview.signedIn.map(({ person, account }) => (
+                  {signedIn.map(({ person, account }) => (
                     <li key={person.id} className="py-2.5 flex flex-wrap items-center gap-x-3 gap-y-1">
                       <span className="text-xs font-bold text-[var(--studio-text)]">{person.name}</span>
                       <span className={`text-[11px] ${studioMuted}`}>
-                        {PROVIDER_LABEL[account.provider]}, sist innlogget {when(account.lastLoginAt)}
+                        {PROVIDER_LABEL[account.provider]}, første gang {when(account.createdAt)}, sist {when(account.lastLoginAt)}
                       </span>
                     </li>
                   ))}

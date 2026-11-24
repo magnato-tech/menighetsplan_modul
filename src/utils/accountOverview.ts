@@ -116,3 +116,14 @@ export function overviewOf(persons: readonly Person[], groups: readonly Group[],
 
   return { notInRegister, neverSignedIn, cannotSignIn, signedIn };
 }
+
+/** How far back the tab looks: the last 7 or 30 days, or everything (null). */
+export type AccountPeriod = 7 | 30 | null;
+
+/** Whether the time lies within the last `days` days before `now`. With no period, every time does; with no time, none does. */
+export function inPeriod(iso: string | null, days: AccountPeriod, now: number): boolean {
+  if (days === null) return true;
+  if (iso === null) return false;
+  const time = Date.parse(iso);
+  return !Number.isNaN(time) && time >= now - days * 24 * 60 * 60 * 1000 && time <= now + 60 * 1000;
+}
