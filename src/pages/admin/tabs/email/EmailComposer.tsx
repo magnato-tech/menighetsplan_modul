@@ -50,6 +50,7 @@ export const EmailComposer: React.FC<EmailComposerProps> = (props) => {
   const { canSend, churchName, storedReplyTo, persons, groups, lists, chips, onChips, recipients, draft, setDraft, templates, onTemplate, buttonProps, loginNote, previewLogin, sending, testing, onSend, testAddress, onTestAddress, testResult, onSendTest, onOpenSettings } = props;
   const [previewing, setPreviewing] = useState(false);
   const [testOpen, setTestOpen] = useState(false);
+  const [showWho, setShowWho] = useState(false);
   const { personCount, addressNote } = countOf(recipients);
   const missing = recipients.withoutEmail;
   const notes = [loginNote, missing.length > 0 ? `${people(missing.length)} mangler e-post: ${missing.map((person) => person.name).join(", ")}` : null].filter(Boolean).join(" · ");
@@ -115,6 +116,35 @@ export const EmailComposer: React.FC<EmailComposerProps> = (props) => {
           Til
         </label>
         <RecipientField chips={chips} onChips={onChips} persons={persons} groups={groups} lists={lists} summary={`${people(personCount)}${addressNote}`} />
+        {chips.length > 0 && (
+          <button
+            type="button"
+            id="btn-show-recipients"
+            aria-expanded={showWho}
+            onClick={() => setShowWho((open) => !open)}
+            className="mt-1 text-xs font-bold text-indigo-600 hover:text-indigo-700 cursor-pointer"
+          >
+            {showWho ? "Skjul hvem som får e-posten" : `Vis hvem som får e-posten (${people(personCount)})`}
+          </button>
+        )}
+        {chips.length > 0 && showWho && (
+          <ul id="email-recipient-list" className="mt-2 max-h-64 overflow-y-auto rounded-xl border border-[var(--studio-border)] divide-y divide-[var(--studio-border)] text-xs">
+            {recipients.recipients.flatMap((recipient) =>
+              recipient.personIds.map((personId) => (
+                <li key={`${recipient.email}-${personId}`} className="px-3 py-1.5 flex flex-wrap gap-x-3">
+                  <span className="font-bold text-[var(--studio-text)]">{persons.find((person) => person.id === personId)?.name ?? "Ukjent"}</span>
+                  <span className="text-[var(--studio-muted)] break-all">{recipient.email}</span>
+                </li>
+              ))
+            )}
+            {recipients.withoutEmail.map((person) => (
+              <li key={`uten-${person.id}`} className="px-3 py-1.5 flex flex-wrap gap-x-3">
+                <span className="font-bold text-[var(--studio-text)]">{person.name}</span>
+                <span className="text-red-400">mangler e-post, får den ikke</span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       {testOpen && (

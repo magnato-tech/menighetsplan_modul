@@ -26,7 +26,7 @@ import { NewsletterView } from "./email/NewsletterView";
 import { ListsView } from "./email/ListsView";
 import { SentList } from "./email/SentList";
 import type { ButtonOptionsProps, LinkSpan } from "./email/ButtonOptions";
-import { audienceChip, countOf, listChip, newsletterAudience, people, resolveChips, selectionChip, type Ask, type NewsletterKind, type RecipientChip } from "./email/chips";
+import { countOf, listChip, newsletterAudience, people, resolveChips, selectionChip, type Ask, type NewsletterKind, type RecipientChip } from "./email/chips";
 import { navItem, resultBox } from "./email/emailStyles";
 
 interface EmailTabProps {
@@ -112,7 +112,8 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
   const [optOutKeys, setOptOutKeys] = useState<string[] | null | undefined>(undefined);
   const [banner, setBanner] = useState<string | null | undefined>(undefined);
   // The e-mail and the newsletter each keep their own text and recipients
-  const [chips, setChips] = useState<RecipientChip[]>(() => [audienceChip(EMAIL_TEMPLATES[0].audience, groups)]);
+  // «Til» starts empty: nobody is chosen for the administrator, and a template never changes who gets it
+  const [chips, setChips] = useState<RecipientChip[]>([]);
   const [draft, setDraft] = useState<EmailDraft>(draftOf(EMAIL_TEMPLATES[0]));
   const [newsDraft, setNewsDraft] = useState<EmailDraft>(draftOf(EMAIL_TEMPLATES.find((template) => isNewsletter(template.audience)) ?? EMPTY));
   const [newsKind, setNewsKind] = useState<NewsletterKind>("members");
@@ -222,7 +223,6 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
     const template = EMAIL_TEMPLATES.find((candidate) => candidate.id === id);
     if (template) {
       setDraft(withLink(template, template.link, template.link === "semesterplan" ? planFor(undefined) : undefined));
-      setChips([audienceChip(template.audience, groups)]);
     } else setDraft(EMPTY);
   };
   const chooseLink = (link: EmailLink) => setDraft((current) => withLink(current, link, link === "semesterplan" ? planFor(current.planId) : undefined));
