@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Calendar, Clock, MapPin, Printer, SlidersHorizontal } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, MapPin, Printer, MoreVertical } from "lucide-react";
 import { formatNorwegianDateTime } from "../../utils/dates";
 import { locationOf } from "../../utils/gatherings";
 import { buildRunSheet, sharedRunSheet } from "../../utils/runSheet";
@@ -80,11 +80,11 @@ export const SharedRunSheetView: React.FC<SharedRunSheetViewProps> = ({
               {planningLink && (
                 <Link
                   to={planningLink}
-                  aria-label="Åpne planlegging"
-                  title="Åpne planlegging"
+                  aria-label="Mer: åpne planleggingen"
+                  title="Mer: planleggingen"
                   className="inline-flex items-center justify-center w-9 h-9 rounded-xl text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors"
                 >
-                  <SlidersHorizontal className="w-4 h-4" aria-hidden />
+                  <MoreVertical className="w-4 h-4" aria-hidden />
                 </Link>
               )}
               <button

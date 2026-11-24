@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from "
 import { FirebaseDataProvider } from "./context/FirebaseDataContext";
 import { CmsProvider, useCms } from "./context/CmsContext";
 import { SITE_THEME_CLASS, getThemeCssVariables } from "./utils/themeUtils";
-import { isAdminStudioPath, isMinSidePath, isPublicPath, isSignInPath, isUnsubscribePath } from "./utils/routes";
+import { isAdminStudioPath, isInfoScreenPath, isMinSidePath, isPublicPath, isSignInPath, isUnsubscribePath } from "./utils/routes";
 import { decidePublicEntry } from "./utils/surfaces";
 import { MinSideUnavailablePage } from "./pages/MinSideUnavailablePage";
 import { PreviewQueryPersist } from "./components/public/PreviewQueryPersist";
@@ -77,6 +77,7 @@ const HusfellesskapPage = lazy(() =>
 );
 const SignInPage = lazy(() => import("./pages/SignInPage").then((m) => ({ default: m.SignInPage })));
 const UnsubscribePage = lazy(() => import("./pages/UnsubscribePage").then((m) => ({ default: m.UnsubscribePage })));
+const InfoScreenPage = lazy(() => import("./pages/InfoScreenPage"));
 function LazyRouteFallback() {
   return <p className="p-6 text-sm text-slate-500">Laster…</p>;
 }
@@ -142,7 +143,7 @@ function AppContent() {
   const isMinSideRoute = isMinSidePath(location.pathname);
   const inIframe = typeof window !== "undefined" && window.parent !== window;
 
-  if (inIframe && !isPublicPath(location.pathname)) {
+  if (inIframe && !isPublicPath(location.pathname) && !isInfoScreenPath(location.pathname)) {
     return <IframeInternalRouteBlock />;
   }
 
@@ -153,6 +154,18 @@ function AppContent() {
           <SignInPage />
         </Suspense>
       </ChunkErrorBoundary>
+    );
+  }
+
+  if (isInfoScreenPath(location.pathname)) {
+    return (
+      <div style={themeVariables}>
+        <ChunkErrorBoundary>
+          <Suspense fallback={<LazyRouteFallback />}>
+            <InfoScreenPage />
+          </Suspense>
+        </ChunkErrorBoundary>
+      </div>
     );
   }
 

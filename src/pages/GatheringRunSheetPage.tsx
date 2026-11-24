@@ -1,6 +1,6 @@
 import { MinSideFrame } from "../components/minSide/MinSideFrame";
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import { ArrowLeft, Lock, Plus, Printer } from "lucide-react";
 import { useLeaderGatheringDetail } from "../hooks/leaderHooks";
 import { useFirebase } from "../context/FirebaseDataContext";
@@ -12,15 +12,16 @@ import { SharedRunSheetView } from "../components/gathering/SharedRunSheetView";
 import { ProgramView } from "../components/gathering/ProgramView";
 import { ProgramPostDialog } from "../components/gathering/ProgramPostDialog";
 import { ProgramUndoToast } from "../components/gathering/ProgramUndoToast";
-
-const CALENDAR_ON_MY_PAGE = "/minside?view=kalender";
+import { runSheetBackLabel, runSheetBackLink } from "../utils/runSheetBack";
 
 /**
- * An event opened from the calendar on Min side: the run sheet as everyone reads it. The one who leads
+ * An event opened from the calendar or the Gudstjenester tab on Min side: the run sheet as everyone reads it. The one who leads
  * the event may also change its programme here, with the same view as the planning uses.
  */
 export const GatheringRunSheetPage: React.FC = () => {
   const { gatheringId = "" } = useParams<{ gatheringId: string }>();
+  const { search } = useLocation();
+  const backLink = runSheetBackLink(search);
   const detail = useLeaderGatheringDetail(gatheringId);
   const { watchGatheringAssignments, getGroupById, assignments } = useFirebase();
   const { gathering, hasAccess, isAdmin, currentUser, tasksWithDetails, gatheringTasks, programSchedule, volunteerRoles, updateGathering } = detail;
@@ -113,11 +114,11 @@ export const GatheringRunSheetPage: React.FC = () => {
             </p>
           </div>
           <Link
-            to={CALENDAR_ON_MY_PAGE}
+            to={backLink}
             className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            Tilbake til kalenderen
+            {runSheetBackLabel(search)}
           </Link>
         </div>
       </MinSideFrame>
@@ -132,7 +133,7 @@ export const GatheringRunSheetPage: React.FC = () => {
           detail={detail}
           personId={currentUser.id}
           planningLink={null}
-          backLink={CALENDAR_ON_MY_PAGE}
+          backLink={backLink}
           headerActions={
             <>
               {/* Icons only, so the programme gets the room on a phone; the names are in aria-label and title */}
@@ -203,7 +204,7 @@ export const GatheringRunSheetPage: React.FC = () => {
       detail={detail}
       personId={currentUser.id}
       planningLink={planningLink}
-      backLink={CALENDAR_ON_MY_PAGE}
+      backLink={backLink}
     />
   );
 };

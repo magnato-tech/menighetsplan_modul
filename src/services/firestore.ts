@@ -191,7 +191,7 @@ export function saveAssignmentChange(taskId: string, change: AssignmentChange, t
     }
   }
   for (const { id, fields } of change.update ?? []) batch.update(assignmentRef(id), forUpdate(fields));
-  if (change.remove) batch.delete(assignmentRef(change.remove));
+  for (const id of [change.remove ?? []].flat()) batch.delete(assignmentRef(id));
   batch.update(doc(db, COLLECTIONS.TASKS, taskId), { status: taskStatus });
   return batch.commit();
 }

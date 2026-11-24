@@ -1,4 +1,5 @@
 import type { Assignment, Gathering, Task, VolunteerRole } from "../types";
+import { leadsGroup, type GroupRoles } from "./groups";
 import { isOpenCommunityGathering, isWorshipService } from "./gatherings";
 
 // Who does what at the next worship services, as Min side shows it to everyone in the register.
@@ -69,4 +70,41 @@ export function worshipPlanRows(input: WorshipPlanInput): WorshipPlanRow[] {
     const role = (task.volunteerRoleId && roles.get(task.volunteerRoleId)) || task.title;
     return { taskId: task.id, role, people, isMine: people.some((person) => person.isMe) };
   });
+}
+
+export interface WorshipServiceActionsInput {
+  gathering: Pick<Gathering, "id" | "groupId">;
+  tasks: readonly Task[];
+  /** The groups the reader can see. The ones the service uses are looked up here. */
+  groups: readonly (GroupRoles & { id: string })[];
+  personId: string;
+  isAdmin: boolean;
+  /** The reader is on a task at this service, as accepted. */
+  hasTaskThatDay: boolean;
+}
+
+export interface WorshipServiceActions {
+  /** «Kjøreplan»: for those on a task that day, leaders of the service's groups, and admins. */
+  runSheet: boolean;
+  /** Where «Planlegg» goes, or null when the reader may not plan the service. */
+  planningPath: string | null;
+}
+
+/**
+ * What the reader may open from a service on Min side. The service's groups are its own group and
+ * the group of each live task on it. Leading a group counts for a deputy leader too.
+ */
+export function worshipServiceActions(input: WorshipServiceActionsInput): WorshipServiceActions {
+  const { gathering, tasks, groups, personId, isAdmin, hasTaskThatDay } = input;
+  const groupIds = new Set<string>([gathering.groupId]);
+  for (const task of tasks) {
+    if (task.gatheringId === gathering.id && task.status !== "cancelled" && task.groupId) groupIds.add(task.groupId);
+  }
+  const leads = groups.some((group) => groupIds.has(group.id) && leadsGroup(group, personId));
+  const planningPath = isAdmin
+    ? `/admin/samling/${gathering.id}?fra=kjoreplan`
+    : leads
+    ? `/leder/samling/${gathering.id}?fra=kjoreplan`
+    : null;
+  return { runSheet: hasTaskThatDay || leads || isAdmin, planningPath };
 }
