@@ -1157,3 +1157,24 @@ describe("Loggen over forespørsler om innloggingslenke", () => {
     await assertFails(deleteDoc(doc(kari(), "loginRequests/r1")));
   });
 });
+
+describe("Listene over personer", () => {
+  test("bare en administrator leser og skriver dem, også den som er lagt inn av en annen", async () => {
+    const list = { id: "liste-1", name: "Husgrupper", kind: "filter", filter: { roles: ["leader"], categories: ["husgruppe"] }, createdAt: "2026-11-24T10:00:00.000Z", updatedAt: "2026-11-24T10:00:00.000Z", createdBy: "kari" };
+    await assertSucceeds(setDoc(doc(kari(), "emailLists/liste-1"), list));
+    await assertSucceeds(getDocs(collection(kari(), "emailLists")));
+    await assertSucceeds(updateDoc(doc(kari(), "emailLists/liste-1"), { name: "Husgruppeledere" }));
+    await assertSucceeds(deleteDoc(doc(kari(), "emailLists/liste-1")));
+  });
+
+  test("et medlem, en gruppeleder og en besøkende ser ikke listene og kan ikke lagre dem", async () => {
+    await env.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore() as unknown as Firestore, "emailLists/liste-2"), { name: "Styret", kind: "fixed", personIds: ["ola"], createdBy: "kari" });
+    });
+    await assertFails(getDocs(collection(ola(), "emailLists")));
+    await assertFails(getDoc(doc(hakon(), "emailLists/liste-2")));
+    await assertFails(getDoc(doc(visitor(), "emailLists/liste-2")));
+    await assertFails(setDoc(doc(hakon(), "emailLists/liste-3"), { name: "Min", kind: "fixed", personIds: [], createdBy: "hakon" }));
+    await assertFails(deleteDoc(doc(ola(), "emailLists/liste-2")));
+  });
+});

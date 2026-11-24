@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { User, Users, X } from "lucide-react";
+import { Filter, List as ListIcon, User, Users, X } from "lucide-react";
 import type { Group, Person } from "../../../../types";
+import type { EmailList } from "../../../../utils/emailLists";
 import { recipientSuggestions, type RecipientChip } from "./chips";
 import { studioInputFull } from "../../studioTheme";
 
@@ -9,6 +10,8 @@ interface RecipientFieldProps {
   onChips: (chips: RecipientChip[]) => void;
   persons: readonly Person[];
   groups: readonly Group[];
+  /** The saved lists, offered as suggestions. */
+  lists?: readonly EmailList[];
   /** Said to the right of the field, for example «5 personer (4 e-postadresser)». */
   summary: string;
 }
@@ -16,12 +19,12 @@ interface RecipientFieldProps {
 const LIST_ID = "email-recipient-list";
 
 /** The field «Til», as in an e-mail program: typed names become chips, and suggestions are offered as one types. */
-export const RecipientField: React.FC<RecipientFieldProps> = ({ chips, onChips, persons, groups, summary }) => {
+export const RecipientField: React.FC<RecipientFieldProps> = ({ chips, onChips, persons, groups, lists = [], summary }) => {
   const [query, setQuery] = useState("");
   // Hidden after Escape or when the field is left, until the text is typed again or the field is entered
   const [closed, setClosed] = useState(false);
   const [active, setActive] = useState(0);
-  const suggestions = recipientSuggestions(query, persons, groups, chips);
+  const suggestions = recipientSuggestions(query, persons, groups, chips, lists);
   const open = !closed && suggestions.length > 0;
   const shown = Math.min(active, suggestions.length - 1);
 
@@ -56,7 +59,10 @@ export const RecipientField: React.FC<RecipientFieldProps> = ({ chips, onChips, 
         <div className={`${studioInputFull} flex flex-wrap items-center gap-1.5 min-h-[2.5rem] focus-within:border-indigo-500`}>
           {chips.map((chip) => (
             <span key={chip.key} className="inline-flex items-center gap-1 pl-1.5 pr-0.5 py-0.5 rounded-lg bg-[var(--studio-row)] text-[11px] font-bold text-[var(--studio-text)]">
-              {chip.kind === "audience" ? <Users className="w-3 h-3 shrink-0" aria-hidden="true" /> : <User className="w-3 h-3 shrink-0" aria-hidden="true" />}
+              {chip.kind === "audience" && <Users className="w-3 h-3 shrink-0" aria-hidden="true" />}
+              {chip.kind === "person" && <User className="w-3 h-3 shrink-0" aria-hidden="true" />}
+              {chip.kind === "list" && <ListIcon className="w-3 h-3 shrink-0" aria-hidden="true" />}
+              {chip.kind === "selection" && <Filter className="w-3 h-3 shrink-0" aria-hidden="true" />}
               <span>{chip.label}</span>
               <button type="button" onClick={() => onChips(chips.filter((other) => other.key !== chip.key))} aria-label={`Fjern ${chip.label}`} className="p-0.5 rounded hover:bg-[var(--studio-hover)] cursor-pointer">
                 <X className="w-3 h-3" aria-hidden="true" />

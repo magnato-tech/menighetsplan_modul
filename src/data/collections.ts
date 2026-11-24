@@ -75,6 +75,13 @@ export const GATHERING_READERS_COLLECTION = "gatheringReaders";
  */
 export const NEWSLETTER_OPT_OUTS_COLLECTION = "newsletterOptOuts";
 
+/**
+ * The e-mail lists made on the «Personer» tab (see utils/emailLists.ts): one document per list, with its
+ * filter or its persons. Only an administrator reads or writes them. Not content, like the logins: not part of
+ * ALL_COLLECTIONS, not in a dataset, and not in the demo.
+ */
+export const EMAIL_LISTS_COLLECTION = "emailLists";
+
 const PREFIX = collectionPrefixOf(DEMO_SITE);
 
 /** The names as the congregation being looked at has them. They keep their plain types: no code tells the two apart. */

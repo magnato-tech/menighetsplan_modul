@@ -265,6 +265,12 @@ service cloud.firestore {
         && request.resource.data.at.size() <= 40;
     }
 
+    // The e-mail lists made on the Personer tab (src/services/emailLists.ts): a saved filter, or the
+    // persons on a fixed list. Only an administrator reads or writes them.
+    match /emailLists/{listId} {
+      allow read, write: if isAdmin();
+    }
+
     match /groups/{groupId} {
       allow read: if isAdmin() || (isMember() && inGroupData(resource.data));
       allow create, delete: if isAdmin();
