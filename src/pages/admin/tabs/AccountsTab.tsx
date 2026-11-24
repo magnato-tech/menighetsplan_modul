@@ -5,10 +5,13 @@ import { inPeriod, overviewOf, type AccountListAnswer, type AccountPeriod, type 
 import { useLoginRequests } from "../../../hooks/useLoginRequests";
 import { formatNorwegianDateTime } from "../../../utils/dates";
 import { requestOverviewOf, requestTotalsOf } from "../../../utils/loginRequests";
-import type { StudioData } from "../studio";
 import { studioBadge, studioCardPadded, studioMuted, studioSecondaryButton } from "../studioTheme";
 import { LOGIN_COUNT_ALL_DAYS, LoginCountsSection } from "./LoginCountsSection";
 import { AddAddressToPerson } from "./AddAddressToPerson";
+import { Link } from "react-router-dom";
+import { useMembershipClerkTasks } from "../../../hooks/useMembershipClerkTasks";
+import { openLoginTaskFor } from "../../../utils/membershipClerkTasks";
+import { studioTabUrl, type StudioData } from "../studio";
 
 interface AccountsTabProps {
   studio: Pick<StudioData, "adminPersons" | "adminGroups">;
@@ -72,6 +75,8 @@ export const AccountsTab: React.FC<AccountsTabProps> = ({ studio }) => {
   const [period, setPeriod] = useState<AccountPeriod>(null);
   // What the «Legg til på person» action said last, shown above the list it was done from
   const [addedNote, setAddedNote] = useState<string | null>(null);
+  // The board's tasks for addresses that stopped a sign-in: an administrator reads them
+  const boardTasks = useMembershipClerkTasks(true);
 
   const load = useCallback(() => {
     setAnswer(undefined);
@@ -164,6 +169,11 @@ export const AccountsTab: React.FC<AccountsTabProps> = ({ studio }) => {
                 {shared && <Tag tone="amber">Delt adresse</Tag>}
                 {!account.emailVerified && <Tag>Ikke bekreftet</Tag>}
                 {account.disabled && <Tag tone="red">Sperret</Tag>}
+                {openLoginTaskFor(boardTasks, address) && (
+                  <Link to={studioTabUrl("planlegger-medlemskap")} className="no-underline">
+                    <Tag tone="amber">Oppgave åpen</Tag>
+                  </Link>
+                )}
                 {!shared && <AddAddressToPerson address={address} persons={persons} onAdded={setAddedNote} />}
               </li>
             ))}

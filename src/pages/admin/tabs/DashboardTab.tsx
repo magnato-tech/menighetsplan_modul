@@ -33,6 +33,10 @@ import { useLevel } from "../../../hooks/useLevel";
 import { hasPlanner } from "../../../utils/level";
 import { countPages } from "../../../utils/menu";
 import { WeekOnWebsiteCard } from "./dashboard/WeekOnWebsiteCard";
+import { LoginProblemNotice } from "./dashboard/LoginProblemNotice";
+import { useMembershipClerkTasks } from "../../../hooks/useMembershipClerkTasks";
+import { canManageMembershipApplications } from "../membershipClerk";
+import { openLoginProblemTasks } from "../../../utils/membershipClerkTasks";
 
 interface DashboardTabProps {
   studio: StudioData;
@@ -54,7 +58,10 @@ const ALERT_RED = "text-[11px] px-2 py-0.5 rounded-md bg-red-900/60 border borde
 const ALERT_AMBER = "text-[11px] px-2 py-0.5 rounded-md bg-amber-100 text-amber-950 font-bold";
 
 export const DashboardTab: React.FC<DashboardTabProps> = ({ studio, area, webEditor = false, onTabChange, onAreaChange, onCreateIn }) => {
-  const { adminGatherings, adminTasks } = studio;
+  const { adminGatherings, adminTasks, currentUser } = studio;
+  // The board's open tasks for sign-ins that were stopped: shown to those who may see the board
+  const boardTasks = useMembershipClerkTasks(canManageMembershipApplications(currentUser));
+  const loginProblemCount = canManageMembershipApplications(currentUser) ? openLoginProblemTasks(boardTasks).length : 0;
   const { pages, news, sermons, staff, settings, media, surfaces } = useCms();
   // The moment the overview was opened, for what «Sjekk nettsiden» counts as ahead and as old
   const [now] = React.useState(() => Date.now());
@@ -197,6 +204,8 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ studio, area, webEdi
           />
         </div>
       )}
+
+      {planning && <LoginProblemNotice count={loginProblemCount} />}
 
       {/* Stat Cards */}
       <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

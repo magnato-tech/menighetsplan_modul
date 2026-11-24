@@ -59,7 +59,7 @@ export const MembershipApplicationArchivePage: React.FC<{ applicationId: string 
     return (
       <StudioDetailShell
         backTab="planlegger-medlemskap"
-        backLabel="Tilbake til Medlemskap"
+        backLabel="Tilbake til Oppgaver"
         badge="Arkiv"
         feedback={feedback}
       >
@@ -71,7 +71,7 @@ export const MembershipApplicationArchivePage: React.FC<{ applicationId: string 
   return (
     <StudioDetailShell
       backTab="planlegger-medlemskap"
-      backLabel="Tilbake til Medlemskap"
+      backLabel="Tilbake til Oppgaver"
       badge="Medlemskap – arkiv"
       feedback={feedback}
     >

@@ -38,7 +38,9 @@ export const MembershipClerkInboxList: React.FC<{
               }`}
             >
               <p className="text-xs font-bold text-indigo-600 leading-snug">{headline}</p>
-              <p className="text-sm font-semibold text-[var(--studio-text)] truncate mt-0.5">{task.personName}</p>
+              <p className="text-sm font-semibold text-[var(--studio-text)] truncate mt-0.5">
+                {task.kind === "loginUnknownEmail" ? task.loginAddress : task.personName}
+              </p>
               <p className="text-[10px] text-[var(--studio-muted)] mt-0.5">{date}</p>
             </button>
           </li>

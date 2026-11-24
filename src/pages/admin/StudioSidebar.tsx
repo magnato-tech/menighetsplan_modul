@@ -45,8 +45,9 @@ import { prefetchStudioTab } from "./studioTabLoaders";
 import { STUDIO_AREAS, STUDIO_AREA_NAMES, areaOfTab, type StudioArea } from "./studioAreas";
 import { usePendingProposalCounts } from "../../hooks/useMemberProposals";
 import { canManageMembershipApplications } from "./membershipClerk";
-import { openClerkTasks } from "../../utils/membershipClerkTasks";
+import { openBoardCount } from "../../utils/membershipClerkTasks";
 import { useMembershipClerkTasks } from "../../hooks/useMembershipClerkTasks";
+import { useMembershipApplications } from "../../hooks/useMembershipApplications";
 import { useExternalCalendarPending } from "../../hooks/useExternalCalendarQueue";
 import { useStudioAppearance } from "./studioAppearance";
 import { StudioThemeIconButton, StudioThemeToggle } from "./StudioThemeToggle";
@@ -140,7 +141,8 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
     .filter((entry) => areaOfTab(entry.tab) === area && (!webEditor || webEditorMayOpen(entry.tab)));
   const waitingProposals = [...usePendingProposalCounts(hasPlanner(level)).values()].reduce((sum, count) => sum + count, 0);
   const manageMembership = canManageMembershipApplications(currentUser);
-  const membershipOpenCount = openClerkTasks(useMembershipClerkTasks(manageMembership)).length;
+  // The board counts its open tasks, and the open applications that have no task of their own
+  const membershipOpenCount = openBoardCount(useMembershipClerkTasks(manageMembership), useMembershipApplications(manageMembership));
   const importPending = useExternalCalendarPending();
 
   // The add-ons that are on (see addons.ts), at the end of the part they belong to
@@ -275,7 +277,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
                 </button>
                 <button
                   type="button"
-                  title="Medlemskap og innmelding"
+                  title="Oppgaver for protokollansvarlig og administrator"
                   {...tabPrefetchHandlers("planlegger-medlemskap")}
                   onClick={() => onTabChange("planlegger-medlemskap")}
                   className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
@@ -286,7 +288,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
                 >
                   <div className="flex items-center gap-2.5">
                     <ClipboardList className="w-4 h-4" />
-                    <span className="sidebar-text">Medlemskap</span>
+                    <span className="sidebar-text">Oppgaver</span>
                   </div>
                   {membershipOpenCount > 0 && (
                     <span className="sidebar-hide text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-950">
@@ -660,7 +662,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
             {manageMembership && (
               <button
                 type="button"
-                title="Medlemskap og innmelding"
+                title="Oppgaver for protokollansvarlig og administrator"
                 {...tabPrefetchHandlers("planlegger-medlemskap")}
                 onClick={() => onTabChange("planlegger-medlemskap")}
                 className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
@@ -671,7 +673,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
               >
                 <div className="flex items-center gap-2.5">
                   <ClipboardList className="w-4 h-4" />
-                  <span className="sidebar-text">Medlemskap</span>
+                  <span className="sidebar-text">Oppgaver</span>
                 </div>
                 {membershipOpenCount > 0 && (
                   <span className="sidebar-hide text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-950">

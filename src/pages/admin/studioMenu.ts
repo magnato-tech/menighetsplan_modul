@@ -4,8 +4,9 @@ import { useLevel } from "../../hooks/useLevel";
 import { useStockImageCount } from "../../hooks/useStockImageCount";
 import { usePendingProposalCounts } from "../../hooks/useMemberProposals";
 import { useMembershipApplications } from "../../hooks/useMembershipApplications";
+import { useMembershipClerkTasks } from "../../hooks/useMembershipClerkTasks";
 import { canManageMembershipApplications } from "./membershipClerk";
-import { openMembershipApplications } from "../../utils/membershipClerkWorkflow";
+import { openBoardCount } from "../../utils/membershipClerkTasks";
 import { useExternalCalendarPending } from "../../hooks/useExternalCalendarQueue";
 import { hasPlanner } from "../../utils/level";
 import { NEAR_WEEKS, isUrgentTask, withinWeeks, type StudioData, type StudioTab } from "./studio";
@@ -38,7 +39,8 @@ export function useStudioMenuEntries(studio: StudioData, area: StudioArea, optio
   const mediaCount = media.filter((item) => item.status === "ready").length + useStockImageCount();
   const waitingProposals = [...usePendingProposalCounts(withPlanner).values()].reduce((sum, count) => sum + count, 0);
   const membershipManage = canManageMembershipApplications(currentUser);
-  const membershipOpen = openMembershipApplications(useMembershipApplications(membershipManage)).length;
+  // The board: the open tasks, and the open applications that have no task of their own
+  const membershipOpen = openBoardCount(useMembershipClerkTasks(membershipManage), useMembershipApplications(membershipManage));
   const urgentTasksCount = withinWeeks(adminTasks, NEAR_WEEKS).filter(isUrgentTask).length;
   const importPending = useExternalCalendarPending();
 
@@ -78,12 +80,12 @@ export function useStudioMenuEntries(studio: StudioData, area: StudioArea, optio
       ? [
           {
             tab: "planlegger-medlemskap" as const,
-            label: "Medlemskap",
+            label: "Oppgaver",
             icon: ClipboardList,
             iconClass: "",
             alerts:
               membershipOpen > 0
-                ? [{ text: String(membershipOpen), tone: "amber" as const, title: "Åpne søknader" }]
+                ? [{ text: String(membershipOpen), tone: "amber" as const, title: "Åpne oppgaver" }]
                 : [],
           },
         ]
