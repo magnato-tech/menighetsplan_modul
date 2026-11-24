@@ -1763,6 +1763,16 @@ Bestilt av produkteier etter tredje runde med monday.com som målestokk.
 
 Bestilt av produkteier: på mobil tok toppbildet og bildet på det fremhevede kortet nesten hele skjermen. Under bredden for nettbrett (`sm`, 640 px) vises ikke det store toppbildet; overskriften står i en tynn hvit linje under menyen, med knappene små under. Menyen er da alltid den vanlige hvite linjen, også der den ellers ligger over bildet. Kortet «Neste gudstjeneste» får et lavere bilde, og dato, tid og sted på én linje rett under tittelen; den grå boksen med det samme skjules på mobil. Fra nettbrett og opp er nettsiden uendret (sjekket piksel for piksel på PC).
 
+### Forfall, Gudstjenester-fanen og tre prikker (24. november 2026)
+
+Meldt av produkteier etter at en frivillig i Lillesand sto med flere forfall på samme oppgave, og prøvd av ham på localhost før innsending.
+
+| Del | Hva som er levert |
+|---|---|
+| **Bare siste status teller** | En person har én tildeling per oppgave. Tar man en oppgave igjen etter forfall, oppdateres den samme tildelingen i stedet for at det lages en ny. Der det fra før ligger flere kopier, viser appen bare den nyeste (`currentAssignments` i `staffing.ts`). Fjernes personen fra oppgaven, fjernes alle kopiene. Databasereglene er ikke endret |
+| **Gudstjenester-fanen** | Kortene foldes ut og sammen med ˅. Den nærmeste gudstjenesten står åpen, de andre er foldet, og «Du» står på kortet der du har en oppgave. «Kjøreplan» vises når du har en oppgave den dagen eller leder en gruppe som har det; «Planlegg» for leder, nestleder og administrator (`worshipServiceActions` i `worshipPlan.ts`). Tilbakeknappen i kjøreplanen går dit den ble åpnet fra: Gudstjenester eller Kalender (`runSheetBack.ts`) |
+| **Tre vertikale prikker** | Betyr «mer» overalt: planleggingen fra kjøreplanen og knappene «Flere valg». Glidebryterne står bare der det er innstillinger |
+
 ### Infoskjerm, trinn 1 (23. november 2026)
 
 Bestilt av produkteier: en egen skjerm i vestibylen med det som skjer i menigheten. Adressen `/skjerm` åpnes i nettleseren på en TV i fullskjerm. Den har ingen meny og ingen lenker, og følger fargene som er valgt i «Tema & Designsystem». Øverst står logoen (eller forbokstaven) og navnet, klokka og dagens dato. Under står tre kolonner: **I dag** (et stort kort med dagens gudstjeneste, ellers det første som ikke er avlyst, og resten av dagen under), **Denne uka** (de neste seks dagene, høyst fem) og **Kommende** (høyst fire, fremhevede først, med farget kant). Bare arrangementer åpne for alle vises, aldri interne eller gruppesamlinger. Et avlyst arrangement står overstreket med «AVLYST». Et arrangement som starter ved midnatt (heldags eller over flere dager), vises uten klokkeslett. Nederst står Vipps-nummeret når det er fylt inn, og adressen. Listene følger databasen med en gang, klokka oppdateres hvert halve minutt, og siden lastes på nytt hver sjette time så en skjerm som står i uker, får nye versjoner. Skjermen trenger ingen innlogging og telles ikke som besøk på nettsiden. Utvalget regnes ut i `src/utils/infoScreen.ts`. Planen videre står i kapittel 14.
@@ -1976,6 +1986,8 @@ git push origin origin/main:stabil
 **Sluppet til Lillesand 23. november 2026, andre gang** (`stabil` = `90921cd`, `main` `a2554f3` slått sammen inn etter beskjed fra produkteier): Arrangementer på nettsiden som tabell etter dato med filter, Sjekk nettsiden med serier og «Ikke nå», overskriften og ingressen på forsiden bare på selve forsiden («Navnet på appen» i innstillingene), og nettsiden på mobil uten toppbilde. Databasereglene er ikke endret.
 
 **Sluppet til Lillesand 23. november 2026, tredje gang** (`stabil` = `721577e`, `main` `6277719` slått sammen inn etter beskjed fra produkteier): Aktuelt & Nyheter med status og filter, søk og filter i talearkivet, «Endret … av …» på sider og nyheter, «Denne uka på nettsiden» på Oversikt (på mobil bak en bjelle ved menyknappen), papirkurv i 30 dager for sider, nyheter og taler, og toppbildet med færre valg. Databasereglene er ikke endret.
+
+**Sluppet til Lillesand 24. november 2026** (etter beskjed fra produkteier, som prøvde endringene på localhost først): bare siste status per person og oppgave (forfall vises ikke flere ganger), Gudstjenester-fanen med ˅ og knappene Kjøreplan og Planlegg, tilbakeknappen fra kjøreplanen, tre vertikale prikker for «mer», og infoskjermen trinn 1 (`/skjerm`). Databasereglene er ikke endret.
 
 ### Brukernivåer som holder i databasen *(avtalt 12. oktober 2026; lesetilgangen er i koden, ikke publisert i databasen ennå)*
 

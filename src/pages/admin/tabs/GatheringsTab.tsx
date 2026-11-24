@@ -20,7 +20,7 @@ import {
   LayoutGrid,
   Table2,
   Trash2,
-  MoreHorizontal,
+  MoreVertical,
   ChevronRight,
   CalendarDays,
   CalendarRange,
@@ -484,7 +484,7 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
                   aria-label={`Flere valg for ${g.title}`}
                   className="sm:hidden p-2 -mr-2 rounded-lg text-[var(--studio-muted)] hover:bg-[var(--studio-hover)] cursor-pointer"
                 >
-                  <MoreHorizontal className="w-5 h-5" aria-hidden />
+                  <MoreVertical className="w-5 h-5" aria-hidden />
                 </button>
                 </div>
 

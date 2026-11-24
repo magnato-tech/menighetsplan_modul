@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { MoreHorizontal } from "lucide-react";
+import { MoreVertical } from "lucide-react";
 
 export interface GatheringAction {
   key: string;
@@ -68,7 +68,7 @@ export const GatheringActions: React.FC<{ actions: GatheringAction[] }> = ({ act
           aria-label="Flere valg"
           className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer"
         >
-          <MoreHorizontal className="w-5 h-5" aria-hidden />
+          <MoreVertical className="w-5 h-5" aria-hidden />
         </button>
         {open && (
           <>

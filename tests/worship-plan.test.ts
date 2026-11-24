@@ -1,7 +1,7 @@
-import { describe } from "vitest";
+import { describe, expect, test } from "vitest";
 import { assert } from "./assert";
-import { upcomingWorshipServices, worshipPlanRows } from "../src/utils/worshipPlan";
-import type { Assignment, Gathering, Task, VolunteerRole } from "../src/types";
+import { upcomingWorshipServices, worshipPlanRows, worshipServiceActions } from "../src/utils/worshipPlan";
+import type { Assignment, Gathering, Group, Task, VolunteerRole } from "../src/types";
 
 const NOW = new Date("2026-11-08T12:00:00Z").getTime();
 const gathering = (id: string, startsAt: string, extra: Partial<Gathering> = {}): Gathering => ({
@@ -89,4 +89,61 @@ describe("Hvem som gjør hva på en gudstjeneste", () => {
   assert(rows[1].people.length === 1 && rows[1].people[0].name === "Navn fra tildelingen", "Navnet på tildelingen brukes når personen er ukjent i registeret");
   assert(rows.find((row) => row.taskId === "t-ledig")?.people.length === 0, "En rolle uten noen som har sagt ja, står tom");
   assert(!JSON.stringify(rows).includes("ukjent"), "En person uten kjent navn vises aldri med id");
+});
+
+describe("Hva man kan åpne fra en gudstjeneste på Min side", () => {
+  const service = gathering("gt", "2026-11-29T11:00:00Z", { groupId: "menigheten" });
+  const group = (id: string, extra: Partial<Group> = {}): Group => ({ id, name: id, memberIds: [], leaderIds: [], ...extra } as Group);
+  const groups = [
+    group("menigheten", { leaderIds: ["leder-menighet"] }),
+    group("lyd", { leaderIds: ["lars"], deputyLeaderIds: ["dagny"], memberIds: ["ola"] }),
+    group("kaffe", { leaderIds: ["kari-leder"], memberIds: ["ola"] }),
+  ];
+  const task = (id: string, extra: Partial<Task> = {}): Task => ({ id, gatheringId: "gt", title: id, status: "assigned", neededCount: 1, ...extra });
+  const base = { gathering: service, groups, isAdmin: false, hasTaskThatDay: false };
+
+  test("vanlig medlem uten oppgave ser ingen knapper", () => {
+    expect(worshipServiceActions({ ...base, tasks: [], personId: "ola" })).toEqual({ runSheet: false, planningPath: null });
+  });
+
+  test("medlem med oppgave den dagen ser bare kjøreplanen", () => {
+    expect(worshipServiceActions({ ...base, tasks: [], personId: "ola", hasTaskThatDay: true })).toEqual({ runSheet: true, planningPath: null });
+  });
+
+  test("leder av gudstjenestens gruppe ser begge, og planleggingen går til lederveien", () => {
+    expect(worshipServiceActions({ ...base, tasks: [], personId: "leder-menighet" })).toEqual({
+      runSheet: true,
+      planningPath: "/leder/samling/gt?fra=kjoreplan",
+    });
+  });
+
+  test("nestleder for gruppen på en oppgave ser begge, med lederveien", () => {
+    const tasks = [task("t1", { groupId: "lyd" })];
+    expect(worshipServiceActions({ ...base, tasks, personId: "dagny" })).toEqual({
+      runSheet: true,
+      planningPath: "/leder/samling/gt?fra=kjoreplan",
+    });
+  });
+
+  test("leder av en gruppe med en oppgave på gudstjenesten ser begge", () => {
+    const tasks = [task("t1", { groupId: "kaffe" })];
+    expect(worshipServiceActions({ ...base, tasks, personId: "kari-leder" }).runSheet).toBe(true);
+    expect(worshipServiceActions({ ...base, tasks, personId: "kari-leder" }).planningPath).toBe("/leder/samling/gt?fra=kjoreplan");
+  });
+
+  test("leder av en gruppe uten oppgave på gudstjenesten ser ingenting av den", () => {
+    expect(worshipServiceActions({ ...base, tasks: [], personId: "kari-leder" })).toEqual({ runSheet: false, planningPath: null });
+  });
+
+  test("en avlyst oppgave gir ikke gruppen rett til planleggingen", () => {
+    const tasks = [task("t1", { groupId: "kaffe", status: "cancelled" })];
+    expect(worshipServiceActions({ ...base, tasks, personId: "kari-leder" })).toEqual({ runSheet: false, planningPath: null });
+  });
+
+  test("administrator ser begge, og planleggingen går til adminveien", () => {
+    expect(worshipServiceActions({ ...base, tasks: [], personId: "admin", isAdmin: true })).toEqual({
+      runSheet: true,
+      planningPath: "/admin/samling/gt?fra=kjoreplan",
+    });
+  });
 });

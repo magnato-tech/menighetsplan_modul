@@ -8,7 +8,7 @@ import {
   ExternalLink,
   Monitor,
   Tablet,
-  Smartphone, Save, History, MoreHorizontal, Copy, Trash2 } from "lucide-react";
+  Smartphone, Save, History, MoreVertical, Copy, Trash2 } from "lucide-react";
 import { VersionHistoryDialog } from "../../../../components/admin/VersionHistoryDialog";
 import { restoredFields } from "../../../../utils/contentVersions";
 import { useMediaMap } from "../../../../hooks/useMediaMap";
@@ -916,7 +916,7 @@ export const PageEditModal: React.FC<PageEditModalProps> = ({
                 className="p-1.5 rounded-xl bg-[var(--studio-bg)] hover:bg-[var(--studio-panel-bg)] text-[var(--studio-accent-text)] hover:text-[var(--studio-text)] border border-indigo-700/60 text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
                 title="Flere valg for siden"
               >
-                <MoreHorizontal className="w-3.5 h-3.5 text-[var(--studio-icon)]" aria-hidden />
+                <MoreVertical className="w-3.5 h-3.5 text-[var(--studio-icon)]" aria-hidden />
               </button>
               {menuOpen && (
                 <div
