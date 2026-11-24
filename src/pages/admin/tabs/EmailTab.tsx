@@ -1,10 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, CheckCircle2, Mail, Send } from "lucide-react";
 import { useCms } from "../../../context/CmsContext";
+import { useMinSideModules } from "../../../hooks/useMinSideModules";
+import { useSemesterPlans } from "../../../hooks/useSemesterPlans";
 import { DEMO } from "../../../demo";
 import { requestEmail, saveEmailLog, saveReplyTo, subscribeEmailRecord } from "../../../services/email";
 import { subscribeNewsletterBanner, subscribeNewsletterOptOuts } from "../../../services/newsletter";
 import { formatNorwegianDateTime } from "../../../utils/dates";
+import { PLAN_STATUS_LABELS, planStatus } from "../../../utils/semesterPlan";
 import { newId } from "../../../utils/id";
 import { EMAIL_LINKS, EMAIL_SUBJECT_MAX, EMAIL_TEMPLATES, EMAIL_TEXT_MAX, emailDraftError, renderEmail, type EmailDraft, type EmailLink } from "../../../utils/emailMessage";
 import { recentSameSending, stopMessage, testStopMessage, withLogEntry, withRestSent, type EmailLogEntry, type EmailOutcome, type EmailRecord, type EmailStop } from "../../../utils/emailOutcome";
@@ -28,7 +31,10 @@ interface EmailTabProps {
 
 const EMPTY: EmailDraft = { subject: "", text: "", link: "minside" };
 /** Only what is sent: a ready-made text has a name and an audience too, which the draft has not. */
-const draftOf = ({ subject, text, link }: EmailDraft): EmailDraft => ({ subject, text, link });
+const draftOf = ({ subject, text, link, planId }: EmailDraft): EmailDraft =>
+  link === "semesterplan" && planId !== undefined ? { subject, text, link, planId } : { subject, text, link };
+/** The draft with another button. Only a semester plan's button has a plan; every other link leaves it out. */
+const withLink = (current: EmailDraft, link: EmailLink, planId: string | undefined): EmailDraft => draftOf({ ...current, link, planId });
 const people = (count: number): string => (count === 1 ? "1 person" : `${count} personer`);
 const label = "block text-[11px] font-bold text-[var(--studio-muted)] mb-1";
 
@@ -106,16 +112,31 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
     [draft, churchName, newsletter, banner]
   );
 
+  // The semester plans the button may open: those not yet closed, in the order they come
+  const semesterOn = useMinSideModules().isOn("semesterplan");
+  const { plans, ready: plansReady } = useSemesterPlans(semesterOn);
+  const choosablePlans = plans.filter((plan) => planStatus(plan, now()) !== "lukket");
+  /** The plan a semester button opens: the one given if it can still be chosen, else the first that can. */
+  const planFor = (current: string | undefined): string | undefined => (current !== undefined && choosablePlans.some((plan) => plan.id === current) ? current : choosablePlans[0]?.id);
+  const chosenPlan = planFor(draft.planId);
+  // When the plans arrive later, or the one given is closed, the button opens the first that can be chosen
+  useEffect(() => {
+    if (draft.link !== "semesterplan" || chosenPlan === draft.planId) return;
+    setDraft((current) => withLink(current, "semesterplan", chosenPlan));
+  }, [draft.link, draft.planId, chosenPlan]);
+
   const choose = (id: string) => {
     setTemplateId(id);
     setError(null);
     setResult(null);
     const template = EMAIL_TEMPLATES.find((candidate) => candidate.id === id);
     if (template) {
-      setDraft(draftOf(template));
+      setDraft(withLink(template, template.link, template.link === "semesterplan" ? planFor(undefined) : undefined));
       setAudience(template.audience);
     } else setDraft(EMPTY);
   };
+
+  const chooseLink = (link: EmailLink) => setDraft((current) => withLink(current, link, link === "semesterplan" ? planFor(current.planId) : undefined));
 
   const storeReplyTo = () => {
     const address = usableEmail(replyTo);
@@ -361,14 +382,40 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
             <label htmlFor="email-link" className={label}>
               Knappen fører til
             </label>
-            <select id="email-link" value={draft.link} onChange={(event) => setDraft({ ...draft, link: event.target.value as EmailLink })} className={studioInputFull}>
-              {(Object.keys(EMAIL_LINKS) as EmailLink[]).map((link) => (
-                <option key={link} value={link}>
-                  {EMAIL_LINKS[link].label}
-                </option>
-              ))}
+            <select id="email-link" value={draft.link} onChange={(event) => chooseLink(event.target.value as EmailLink)} className={studioInputFull}>
+              {(Object.keys(EMAIL_LINKS) as EmailLink[])
+                .filter((link) => link !== "semesterplan" || semesterOn || draft.link === "semesterplan")
+                .map((link) => (
+                  <option key={link} value={link}>
+                    {EMAIL_LINKS[link].label}
+                  </option>
+                ))}
             </select>
           </div>
+
+          {draft.link === "semesterplan" && (
+            <div>
+              <label htmlFor="email-plan" className={label}>
+                Hvilken plan
+              </label>
+              {choosablePlans.length > 0 ? (
+                <>
+                  <select id="email-plan" value={chosenPlan ?? ""} onChange={(event) => setDraft((current) => withLink(current, "semesterplan", event.target.value))} className={studioInputFull}>
+                    {choosablePlans.map((plan) => (
+                      <option key={plan.id} value={plan.id}>
+                        {`${plan.name} (${PLAN_STATUS_LABELS[planStatus(plan, now())]})`}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-[11px] text-[var(--studio-muted)] mt-1">Knappen «Planlegg semesteret» åpner planen. Den som ikke er logget inn, kommer dit rett etter innloggingen.</p>
+                </>
+              ) : (
+                <p className="text-[11px] text-amber-500">
+                  {plansReady || !semesterOn ? "Det finnes ingen åpen eller planlagt semesterplan. Lag en under Semesterplan først." : "Henter semesterplanene …"}
+                </p>
+              )}
+            </div>
+          )}
 
           {error && (
             <p role="alert" className="text-xs font-bold text-red-400">

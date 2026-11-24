@@ -31,6 +31,11 @@ describe("Prøven av e-postutsendingen", () => {
     expect(emailDraftError(long)).toBeNull();
   });
 
+  test("en prøve med knappen til en semesterplan går til den planen", () => {
+    const plan = { ...draft, link: "semesterplan" as const, planId: "semesterplan-1" };
+    expect(testDraftFor(plan, "Fjellbygda menighet")).toEqual(plan);
+  });
+
   test("et utkast med bare en tekst som mangler, er ikke gyldig og gir prøven", () => {
     expect(testDraftFor({ ...draft, text: "" }, "M").text).toBe(TEST_TEXT);
   });

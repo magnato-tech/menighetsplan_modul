@@ -11,7 +11,9 @@ export const TEST_TEXT = [
 
 /** The draft a test is sent with: the page's draft when it is valid, otherwise the fixed test draft. */
 export function testDraftFor(draft: EmailDraft, churchName: string): EmailDraft {
-  if (emailDraftError(draft) === null) return { subject: draft.subject, text: draft.text, link: draft.link };
+  if (emailDraftError(draft) === null) {
+    return draft.link === "semesterplan" ? { subject: draft.subject, text: draft.text, link: draft.link, planId: draft.planId } : { subject: draft.subject, text: draft.text, link: draft.link };
+  }
   const name = churchName.replace(/\s+/g, " ").trim();
   const subject = name ? `${TEST_SUBJECT} fra ${name}` : TEST_SUBJECT;
   return { subject: subject.length <= EMAIL_SUBJECT_MAX ? subject : TEST_SUBJECT, text: TEST_TEXT, link: "ingen" };

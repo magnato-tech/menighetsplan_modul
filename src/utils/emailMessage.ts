@@ -4,12 +4,17 @@ import type { EmailAudience } from "./emailRecipients";
 // what it may hold, the ready-made texts, and how it looks in the inbox. Used by the admin page,
 // and where the e-mail is sent.
 
-/** Where the button in the e-mail leads: the leader's page, Min side, or no button at all. */
-export type EmailLink = "leder" | "minside" | "ingen";
+/**
+ * Where the button in the e-mail leads: the leader's page, Min side, a semester plan (which one is
+ * given by the draft's planId), or no button at all.
+ */
+export type EmailLink = "leder" | "minside" | "semesterplan" | "ingen";
 
 export const EMAIL_LINKS: Record<EmailLink, { path: string | null; button: string; label: string }> = {
   leder: { path: "/minside?view=grupper", button: "Åpne gruppene mine", label: "Mine grupper" },
   minside: { path: "/minside", button: "Åpne Min side", label: "Min side" },
+  // The path depends on the plan, see emailButtonUrl
+  semesterplan: { path: null, button: "Planlegg semesteret", label: "Semesterplan" },
   ingen: { path: null, button: "", label: "Ingen knapp" },
 };
 
@@ -22,6 +27,8 @@ export interface EmailDraft {
    */
   text: string;
   link: EmailLink;
+  /** The semester plan the button opens; only when link is "semesterplan". */
+  planId?: string;
 }
 
 export const EMAIL_SUBJECT_MAX = 120;
@@ -60,6 +67,17 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
     ].join("\n\n"),
   },
   {
+    id: "semesterplan-frivillige",
+    label: "Semesterplanen er åpen: til de frivillige",
+    audience: { kind: "serviceGroups" },
+    link: "semesterplan",
+    subject: "Semesterplanen er klar: velg oppgavene dine",
+    text: [
+      "Semesterplanen er klar. Gå gjennom arrangementene ett og ett, og ta oppgavene som passer for deg. Er det en dag du ikke kan, trykker du «Kan ikke».",
+      "Du logger inn med e-postadressen denne e-posten kom til.",
+    ].join("\n\n"),
+  },
+  {
     id: "nyhetsbrev",
     label: "Nyhetsbrev",
     audience: { kind: "members" },
@@ -69,8 +87,23 @@ export const EMAIL_TEMPLATES: EmailTemplate[] = [
   },
 ];
 
+/** A semester plan id as it is written in a link: letters, digits, "-" and "_". Anything else is refused. */
+export const isPlanIdText = (value: unknown): value is string => typeof value === "string" && /^[A-Za-z0-9_-]{1,128}$/.test(value);
+
+/**
+ * The address the button leads to, or null when there is none. The semester plan's path is the
+ * same as semesterPlanPath in src/utils/semesterPlan.ts; it is written out here so that the
+ * server bundle does not take in the whole of that file.
+ */
+export function emailButtonUrl(draft: Pick<EmailDraft, "link" | "planId">, siteUrl: string): string | null {
+  const base = siteUrl.replace(/\/+$/, "");
+  if (draft.link === "semesterplan") return isPlanIdText(draft.planId) ? `${base}/minside/semesterplan/${draft.planId}` : null;
+  const path = EMAIL_LINKS[draft.link].path;
+  return path ? base + path : null;
+}
+
 /** What is wrong with a draft, said to the administrator, or null when it can be sent. */
-export function emailDraftError(draft: { subject?: unknown; text?: unknown; link?: unknown }): string | null {
+export function emailDraftError(draft: { subject?: unknown; text?: unknown; link?: unknown; planId?: unknown }): string | null {
   const subject = typeof draft.subject === "string" ? draft.subject.trim() : "";
   const text = typeof draft.text === "string" ? draft.text.trim() : "";
   if (subject === "") return "E-posten må ha et emne.";
@@ -79,13 +112,17 @@ export function emailDraftError(draft: { subject?: unknown; text?: unknown; link
   if (text === "") return "E-posten må ha en tekst.";
   if (text.length > EMAIL_TEXT_MAX) return `Teksten kan ikke være lengre enn ${EMAIL_TEXT_MAX} tegn.`;
   if (typeof draft.link !== "string" || !Object.keys(EMAIL_LINKS).includes(draft.link)) return "Velg hvor knappen i e-posten skal føre.";
+  if (draft.link === "semesterplan" && !isPlanIdText(draft.planId)) return "Velg hvilken semesterplan knappen skal åpne.";
   return null;
 }
 
 /** The draft a request holds, tidied, or null when it cannot be sent. */
-export function toEmailDraft(value: { subject?: unknown; text?: unknown; link?: unknown }): EmailDraft | null {
+export function toEmailDraft(value: { subject?: unknown; text?: unknown; link?: unknown; planId?: unknown }): EmailDraft | null {
   if (emailDraftError(value) !== null) return null;
-  return { subject: (value.subject as string).trim(), text: (value.text as string).trim().replace(/\r\n/g, "\n"), link: value.link as EmailLink };
+  const draft: EmailDraft = { subject: (value.subject as string).trim(), text: (value.text as string).trim().replace(/\r\n/g, "\n"), link: value.link as EmailLink };
+  // Only the semester plan's button has a plan: any other link leaves the id out
+  if (draft.link === "semesterplan") draft.planId = value.planId as string;
+  return draft;
 }
 
 const escapeHtml = (value: string): string =>
@@ -175,7 +212,7 @@ export interface RenderedEmail {
 /** The e-mail as it is sent: once as plain text, once dressed for the inbox. Nothing the administrator wrote is read as HTML. */
 export function renderEmail({ draft, churchName, siteUrl, firstName, newsletter }: EmailToRender): RenderedEmail {
   const link = EMAIL_LINKS[draft.link];
-  const url = link.path ? siteUrl.replace(/\/+$/, "") + link.path : null;
+  const url = emailButtonUrl(draft, siteUrl);
   const greeting = newsletter ? null : firstName ? `Hei ${firstName}!` : "Hei!";
   const closing = newsletter ? null : `Hilsen ${churchName}`;
   const blocks = emailBlocksOf(draft.text);
