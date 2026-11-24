@@ -3,6 +3,7 @@ import {
   isSignInWithEmailLink,
   onAuthStateChanged,
   sendSignInLinkToEmail,
+  signInWithCustomToken,
   signInWithEmailLink,
   signInWithPopup,
   signOut as firebaseSignOut,
@@ -97,6 +98,11 @@ export async function completeSignInLink(url: string, email?: string): Promise<"
   await signInWithEmailLink(auth, address, url);
   forgetEmailForLink();
   return "signedIn";
+}
+
+/** Signs in with the token the server gave for a personal login link (see utils/loginLink.ts). */
+export async function signInWithLoginLink(customToken: string): Promise<void> {
+  await signInWithCustomToken(auth, customToken);
 }
 
 export async function signOut(): Promise<void> {

@@ -13,6 +13,7 @@ import { EMAIL_LINKS, EMAIL_SUBJECT_MAX, EMAIL_TEMPLATES, EMAIL_TEXT_MAX, emailD
 import { recentSameSending, stopMessage, testStopMessage, withLogEntry, withRestSent, type EmailLogEntry, type EmailOutcome, type EmailRecord, type EmailStop } from "../../../utils/emailOutcome";
 import { audienceKey, audienceLabel, emailRecipients, isNewsletter, toEmailAudience, usableEmail, type EmailAudience } from "../../../utils/emailRecipients";
 import { TEST_UNSUBSCRIBE_TOKEN, optedOutPersonIds, unsubscribeUrlOf } from "../../../utils/newsletter";
+import { LOGIN_LINK_DAYS } from "../../../utils/loginLink";
 import { testDraftFor } from "../../../utils/emailTest";
 import { isServiceGroup } from "../../../utils/personDirectory";
 import type { ShowFeedback, StudioData } from "../studio";
@@ -61,6 +62,8 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
   const [testAddressText, setTestAddressText] = useState(() => studio.currentUser?.email ?? "");
   const [testBusy, setTestBusy] = useState(false);
   const [testResult, setTestResult] = useState<{ good: boolean; text: string } | null>(null);
+  // Whether the button of each recipient is a personal login link (see utils/loginLink.ts). Off unless ticked.
+  const [loginLinks, setLoginLinks] = useState(false);
 
   useEffect(
     () =>
@@ -96,6 +99,9 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
   );
 
   const newsletter = isNewsletter(audience);
+  // The checkbox is only there for a plain e-mail with a button; a newsletter never gets login links
+  const showLoginLinks = draft.link !== "ingen" && !newsletter;
+  const loginLinksOn = loginLinks && showLoginLinks;
   const optedOutIds = useMemo(() => optedOutPersonIds(persons, optOutKeys ?? []), [persons, optOutKeys]);
   const optedOutPersons = useMemo(() => (optOutKeys === undefined || optOutKeys === null ? optOutKeys : persons.filter((person) => optedOutIds.has(person.id))), [optOutKeys, persons, optedOutIds]);
   const { recipients, withoutEmail, optedOut } = useMemo(() => emailRecipients(audience, persons, groups, undefined, optedOutIds), [audience, persons, groups, optedOutIds]);
@@ -108,8 +114,9 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
         siteUrl: window.location.origin,
         firstName: "Kari",
         ...(newsletter ? { newsletter: { unsubscribeUrl: unsubscribeUrlOf(window.location.origin, TEST_UNSUBSCRIBE_TOKEN), bannerUrl: banner ?? null } } : {}),
+        ...(loginLinksOn ? { loginLink: true } : {}),
       }),
-    [draft, churchName, newsletter, banner]
+    [draft, churchName, newsletter, banner, loginLinksOn]
   );
 
   // The semester plans the button may open: those not yet closed, in the order they come
@@ -160,6 +167,9 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
   /** What a sending that stopped is told with. */
   const stopText = (sent: number, stopped: EmailStop, left: number, detail?: string): string => `${sent > 0 ? `${people(sent)} fikk e-posten. ` : ""}${stopMessage(stopped, left, detail)}`;
 
+  /** What is added to a success text about the login links that were sent, or nothing. */
+  const loginLinksText = (outcome: EmailOutcome): string => (outcome.ok && outcome.loginLinks ? ` ${outcome.loginLinks} av dem fikk knapp som logger dem rett inn.` : "");
+
   const tell = (outcome: EmailOutcome, done: string) => {
     if (!outcome.ok) return setResult({ good: false, text: outcome.message });
     if (outcome.stopped) return setResult({ good: false, text: stopText(outcome.sent, outcome.stopped, outcome.remainingPersonIds.length, outcome.detail) });
@@ -172,7 +182,7 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
     if (wrong) return;
     setBusy("test");
     setResult(null);
-    const outcome = await requestEmail(newsletter ? { ...draft, mode: "test", audience } : { ...draft, mode: "test" });
+    const outcome = await requestEmail(newsletter ? { ...draft, mode: "test", audience } : { ...draft, mode: "test", ...(loginLinksOn ? { loginLinks: true as const } : {}) });
     setBusy(null);
     tell(outcome, "Prøven er sendt til e-postadressen du er logget inn med. Sjekk innboksen, og søppelposten.");
   };
@@ -186,7 +196,9 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
     const testDraft = testDraftFor(draft, churchName);
     setTestBusy(true);
     setTestResult(null);
-    const outcome = await requestEmail({ ...testDraft, mode: "test", to: address });
+    // With the box ticked, the test carries a login link too, when the address is a member's (see server/emailSending.ts)
+    const testLoginLinks = loginLinksOn && testDraft.link !== "ingen" ? { loginLinks: true as const } : {};
+    const outcome = await requestEmail({ ...testDraft, mode: "test", to: address, ...testLoginLinks });
     setTestBusy(false);
     if (outcome.ok && record) {
       const entry: EmailLogEntry = {
@@ -220,7 +232,7 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
 
     setBusy("send");
     setResult(null);
-    const outcome = await requestEmail({ ...draft, mode: "send", audience });
+    const outcome = await requestEmail({ ...draft, mode: "send", audience, ...(loginLinksOn ? { loginLinks: true as const } : {}) });
     setBusy(null);
     if (outcome.ok) {
       const entry: EmailLogEntry = {
@@ -236,7 +248,7 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
       };
       saveEmailLog(withLogEntry(record.log, entry)).catch(() => showFeedback("E-posten er sendt, men loggen kunne ikke lagres.", "error"));
     }
-    tell(outcome, `E-posten er sendt til ${people(outcome.ok ? outcome.sent : 0)}.`);
+    tell(outcome, `E-posten er sendt til ${people(outcome.ok ? outcome.sent : 0)}.${loginLinksText(outcome)}`);
   };
 
   /** Sends to those a stopped sending left: the same e-mail as stands in the form now. */
@@ -247,13 +259,14 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
     if (!confirm(`Du sender «${draft.subject.trim()}» til ${people(entry.remainingPersonIds.length)} som gjenstår (${entry.audienceLabel}). Teksten er den som står i skjemaet nå. Vil du sende?`)) return;
     setBusy("send");
     setResult(null);
-    const outcome = await requestEmail({ ...draft, mode: "send", audience: entry.audience, onlyPersonIds: entry.remainingPersonIds });
+    const restLoginLinks = loginLinksOn && !isNewsletter(entry.audience) ? { loginLinks: true as const } : {};
+    const outcome = await requestEmail({ ...draft, mode: "send", audience: entry.audience, onlyPersonIds: entry.remainingPersonIds, ...restLoginLinks });
     setBusy(null);
     if (outcome.ok) {
       const next = withRestSent(record.log, entry.id, outcome.remainingPersonIds, outcome.stopped).map((other) => (other.id === entry.id ? { ...other, sent: other.sent + outcome.sent } : other));
       saveEmailLog(next).catch(() => showFeedback("E-posten er sendt, men loggen kunne ikke lagres.", "error"));
     }
-    tell(outcome, `E-posten er sendt til ${people(outcome.ok ? outcome.sent : 0)} som gjensto.`);
+    tell(outcome, `E-posten er sendt til ${people(outcome.ok ? outcome.sent : 0)} som gjensto.${loginLinksText(outcome)}`);
   };
 
   const audienceValue = audience.kind === "group" ? `group:${audience.groupId}` : audience.kind;
@@ -417,6 +430,18 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
             </div>
           )}
 
+          {showLoginLinks && (
+            <div>
+              <label className="flex items-start gap-2 text-xs font-bold text-[var(--studio-text)] cursor-pointer">
+                <input id="email-login-links" type="checkbox" checked={loginLinks} onChange={(event) => setLoginLinks(event.target.checked)} className="mt-0.5 accent-indigo-600" />
+                <span>Logg mottakerne rett inn med knappen</span>
+              </label>
+              <p className="text-[11px] text-[var(--studio-muted)] mt-1 ml-6">
+                Hver mottaker får sin egen knapp som logger dem inn i {LOGIN_LINK_DAYS} dager, uten Google eller innloggings-e-post. Administratorer, nettredaktører og de som deler e-postadresse med andre, får vanlig knapp.
+              </p>
+            </div>
+          )}
+
           {error && (
             <p role="alert" className="text-xs font-bold text-red-400">
               {error}
@@ -445,7 +470,7 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
             <h3 id="email-test-title" className="text-xs font-black text-[var(--studio-text)]">
               Test e-postutsendingen
             </h3>
-            <p className="text-[11px] text-[var(--studio-muted)]">Sender en kort prøve til én adresse, med teksten over, eller en fast prøvetekst når den er tom. Går ikke til noen andre.</p>
+            <p className="text-[11px] text-[var(--studio-muted)]">Sender en kort prøve til én adresse, med teksten over, eller en fast prøvetekst når den er tom. Går ikke til noen andre. Er «Logg mottakerne rett inn med knappen» krysset av, og adressen er et vanlig medlems, logger knappen i prøven inn som det medlemmet.</p>
             <div>
               <label htmlFor="email-test-address" className={label}>
                 Send prøve til

@@ -59,6 +59,14 @@ function readDemoInstallation(env) {
 // src/data/settingsRecords.ts
 var SEMESTER_PLAN_RECORD = "semesterPlan";
 
+// src/utils/loginLink.ts
+var LOGIN_LINK_DAYS = 14;
+var LOGIN_LINK_PATH = "/lenke";
+function loginLinkUrl(siteUrl, destinationPath, token) {
+  const base = siteUrl.replace(/\/+$/, "");
+  return `${base}${LOGIN_LINK_PATH}?til=${encodeURIComponent(destinationPath)}#${token}`;
+}
+
 // src/utils/emailMessage.ts
 var EMAIL_LINKS = {
   leder: { path: "/minside?view=grupper", button: "Åpne gruppene mine", label: "Mine grupper" },
@@ -180,9 +188,10 @@ var blockText = (block) => {
   if (block.kind === "list") return block.items.map((item) => `- ${inlineText(item)}`).join("\n");
   return block.lines.map(inlineText).join("\n");
 };
-function renderEmail({ draft, churchName, siteUrl, firstName, newsletter }) {
+function renderEmail({ draft, churchName, siteUrl, firstName, newsletter, buttonUrl, loginLink }) {
   const link = EMAIL_LINKS[draft.link];
-  const url = emailButtonUrl(draft, siteUrl);
+  const url = buttonUrl ?? emailButtonUrl(draft, siteUrl);
+  const loginNote = loginLink && url ? `Knappen logger deg rett inn og virker i ${LOGIN_LINK_DAYS} dager. Ikke send e-posten videre.` : null;
   const greeting = newsletter ? null : firstName ? `Hei ${firstName}!` : "Hei!";
   const closing = newsletter ? null : `Hilsen ${churchName}`;
   const blocks = emailBlocksOf(draft.text);
@@ -191,6 +200,7 @@ function renderEmail({ draft, churchName, siteUrl, firstName, newsletter }) {
     greeting,
     ...blocks.map(blockText),
     url ? `${link.button}: ${url}` : null,
+    loginNote,
     closing,
     newsletter ? `${footer} Meld deg av: ${newsletter.unsubscribeUrl}` : footer
   ].filter((part) => part !== null).join("\n\n");
@@ -207,7 +217,7 @@ ${greeting ? `<p style="margin:12px 0;">${escapeHtml(greeting)}</p>
 ` : ""}${blocks.map(blockHtml).join("\n")}
 </td></tr>
 ${url ? `<tr><td style="padding:8px 28px 24px 28px;">
-<a href="${escapeHtml(url)}" style="display:inline-block;background:#047857;color:#ffffff;text-decoration:none;font-size:15px;font-weight:bold;padding:12px 22px;border-radius:10px;">${escapeHtml(link.button)}</a>
+<a href="${escapeHtml(url)}" style="display:inline-block;background:#047857;color:#ffffff;text-decoration:none;font-size:15px;font-weight:bold;padding:12px 22px;border-radius:10px;">${escapeHtml(link.button)}</a>${loginNote ? `<p style="margin:10px 0 0 0;font-size:13px;line-height:18px;color:#64748b;">${escapeHtml(loginNote)}</p>` : ""}
 </td></tr>
 ` : ""}${closing ? `<tr><td style="padding:0 28px 24px 28px;font-size:16px;line-height:24px;">${escapeHtml(closing)}</td></tr>
 ` : ""}<tr><td style="padding:16px 28px 22px 28px;border-top:1px solid #e2e8f0;font-size:12px;line-height:18px;color:#64748b;">${escapeHtml(footer)}${newsletter ? ` <a href="${escapeHtml(newsletter.unsubscribeUrl)}" style="color:#64748b;text-decoration:underline;">Meld deg av</a>` : ""}</td></tr>
@@ -371,6 +381,38 @@ async function readDocument(database, path, ask, headers) {
   const response = await ask(`${documentsOf(database)}/${path}`, headers ? { headers } : void 0);
   if (!response.ok) return null;
   return decodeDocument(await response.json());
+}
+
+// server/loginLinkToken.ts
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
+var DAY_SECONDS = 86400;
+var keyOf = (account) => createHash("sha256").update(`menighetsplan-innloggingslenke:${account.private_key}`).digest();
+var sign = (key, text) => createHmac("sha256", key).update(text, "utf8").digest("base64url");
+var emailHashOf = (email) => createHash("sha256").update(email.trim().toLowerCase(), "utf8").digest("base64url").slice(0, 22);
+function makeLoginToken(account, personId, email, nowSeconds) {
+  const payload = Buffer.from(JSON.stringify({ p: personId, e: emailHashOf(email), x: nowSeconds + LOGIN_LINK_DAYS * DAY_SECONDS }), "utf8").toString("base64url");
+  return `${payload}.${sign(keyOf(account), payload)}`;
+}
+
+// server/serviceAccount.ts
+var SERVICE_ACCOUNT_SETTING = "FIREBASE_SERVICE_ACCOUNT";
+var textOf = (value) => typeof value === "string" && value.trim() !== "" ? value : null;
+function readServiceAccount(env) {
+  const raw = textOf(env[SERVICE_ACCOUNT_SETTING]);
+  if (raw === null) return null;
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  if (!parsed || typeof parsed !== "object") return null;
+  const fields = parsed;
+  const projectId = textOf(fields.project_id);
+  const clientEmail = textOf(fields.client_email);
+  const privateKey = textOf(fields.private_key);
+  if (projectId === null || clientEmail === null || privateKey === null) return null;
+  return { project_id: projectId, client_email: clientEmail, private_key: privateKey.replace(/\\n/g, "\n") };
 }
 
 // src/utils/birthDate.ts
@@ -694,7 +736,8 @@ var MESSAGES = {
   "no-recipients": [400, "Ingen av mottakerne har en e-postadresse."],
   "no-plan": [400, "Semesterplanen som knappen skal åpne, finnes ikke lenger. Velg en annen plan."],
   database: [502, "Registeret kunne ikke leses akkurat nå. Prøv igjen."],
-  "rules-outdated": [409, "Databasen har ikke fått reglene for nyhetsbrev ennå. Lim inn de nye reglene i Firebase, og prøv igjen."]
+  "rules-outdated": [409, "Databasen har ikke fått reglene for nyhetsbrev ennå. Lim inn de nye reglene i Firebase, og prøv igjen."],
+  "no-login-links": [503, "Innloggingslenker er ikke satt opp for denne installasjonen ennå."]
 };
 var refuse = (reason, message) => ({
   status: MESSAGES[reason][0],
@@ -736,6 +779,11 @@ async function sendEmail({ env, siteUrl, idToken, body, ask, wait = pause2 }) {
   const only = Array.isArray(request.onlyPersonIds) ? request.onlyPersonIds.filter((id) => typeof id === "string") : void 0;
   const testTo = mode === "test" && request.to !== void 0 ? usableEmail(request.to) : null;
   if (!mode || !draft || mode === "send" && !audience || mode === "test" && request.to !== void 0 && !testTo) return refuse("bad-request");
+  const loginLinks = request.loginLinks === true;
+  if (request.loginLinks !== void 0 && typeof request.loginLinks !== "boolean") return refuse("bad-request");
+  if (loginLinks && (newsletter || draft.link === "ingen")) return refuse("bad-request");
+  const account = loginLinks ? readServiceAccount(env) : null;
+  if (loginLinks && (!account || account.project_id !== installation.projectId)) return refuse("no-login-links");
   const database = { projectId: installation.projectId, databaseId: installation.firestoreDatabaseId };
   const as = signedInAs(idToken);
   let persons;
@@ -813,6 +861,23 @@ async function sendEmail({ env, siteUrl, idToken, body, ask, wait = pause2 }) {
       return refuse("database");
     }
   }
+  const loginUrls = /* @__PURE__ */ new Map();
+  if (account) {
+    const base = siteUrl.replace(/\/+$/, "");
+    const buttonPath = emailButtonUrl(draft, siteUrl)?.slice(base.length);
+    const nowSeconds = Math.floor(Date.now() / 1e3);
+    const addressCount = /* @__PURE__ */ new Map();
+    for (const person of persons) {
+      const address = usableEmail(person.email);
+      if (address) addressCount.set(address, (addressCount.get(address) ?? 0) + 1);
+    }
+    for (const recipient of recipients) {
+      const owner = recipient.personIds.length === 1 ? persons.find((person) => person.id === recipient.personIds[0]) : void 0;
+      if (!owner || !buttonPath || addressCount.get(recipient.email) !== 1) continue;
+      if (owner.globalRole === "admin" || owner.globalRole === "nettredaktor") continue;
+      loginUrls.set(recipient.email, loginLinkUrl(siteUrl, buttonPath, makeLoginToken(account, owner.id, recipient.email, nowSeconds)));
+    }
+  }
   const from = senderOf(churchName, settingOf(env, EMAIL_SETTINGS.from) ?? DEFAULT_FROM_ADDRESS);
   let sent = 0;
   let stopped = null;
@@ -821,7 +886,15 @@ async function sendEmail({ env, siteUrl, idToken, body, ask, wait = pause2 }) {
     if (start > 0) await wait(600);
     const batch = recipients.slice(start, start + BATCH_SIZE).map((recipient) => {
       const unsubscribeUrl = newsletter ? unsubscribeUrlOf(siteUrl, tokens.get(recipient.email)) : null;
-      const rendered = renderEmail({ draft, churchName, siteUrl, firstName: recipient.firstName, ...unsubscribeUrl ? { newsletter: { unsubscribeUrl, bannerUrl } } : {} });
+      const loginUrl = loginUrls.get(recipient.email);
+      const rendered = renderEmail({
+        draft,
+        churchName,
+        siteUrl,
+        firstName: recipient.firstName,
+        ...unsubscribeUrl ? { newsletter: { unsubscribeUrl, bannerUrl } } : {},
+        ...loginUrl ? { buttonUrl: loginUrl, loginLink: true } : {}
+      });
       return {
         from,
         to: [recipient.email],
@@ -853,7 +926,8 @@ async function sendEmail({ env, siteUrl, idToken, body, ask, wait = pause2 }) {
     }
   }
   const remainingPersonIds = stopped ? recipients.slice(sent).flatMap((recipient) => recipient.personIds) : [];
-  return { status: 200, body: { ok: true, mode, sent, withoutEmail, stopped, remainingPersonIds, ...detail ? { detail } : {} } };
+  const loginLinksSent = recipients.slice(0, sent).filter((recipient) => loginUrls.has(recipient.email)).length;
+  return { status: 200, body: { ok: true, mode, sent, withoutEmail, stopped, remainingPersonIds, loginLinks: loginLinksSent, ...detail ? { detail } : {} } };
 }
 
 // server/vercel/epost.ts

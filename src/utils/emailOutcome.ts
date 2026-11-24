@@ -17,6 +17,8 @@ export type EmailRefusal =
   | "database"
   /** The database's rules are older than the newsletter, and refuse what it reads. */
   | "rules-outdated"
+  /** Login links are asked for, but the installation has no service account for them (or another project's). */
+  | "no-login-links"
   /** The browser got no answer from where the e-mail is sent. */
   | "unreachable";
 
@@ -37,6 +39,8 @@ export type EmailOutcome =
       remainingPersonIds: string[];
       /** What the e-mail service said when it stopped, for the administrator to pass on. */
       detail?: string;
+      /** How many of those who got it have a button that logs them in (0 when none was asked for). */
+      loginLinks?: number;
     }
   | { ok: false; reason: EmailRefusal; message: string };
 
