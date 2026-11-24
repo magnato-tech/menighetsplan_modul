@@ -2040,6 +2040,8 @@ git push origin origin/main:stabil
 
 **Sluppet til Lillesand 24. november 2026, spør om oppmøte**: hver gruppe har i Møter på gruppekortet i admin valget «Spør deltakerne om de kommer»: «Nei, aldri», eller 2, 3, 7 eller 14 dager før. Standard er 7 dager. Kortet på Min side heter «Kommer du?» (før «Innkalling») og vises bare innenfor gruppens antall dager, for neste møte. Databasereglene er ikke endret.
 
+**Sluppet til Lillesand 24. november 2026, tomt Til**: «Til» i Send e-post starter tomt og foreslår bare egne lister, grupper og personer (de ferdige valgene «Ledere og nestledere i tjenestegruppene» og «Alle i tjenestegruppene» er fjernet fra forslagene etter ønske fra produkteier). «Mal» endrer ikke mottakerne. «Vis hvem som får e-posten» under Til viser navn og adresse, og hvem som mangler e-post. Gruppekortets lagreknapp viser «Lagret». Databasereglene er ikke endret.
+
 **Sluppet til Lillesand 24. november 2026** (etter beskjed fra produkteier, som prøvde endringene på localhost først): bare siste status per person og oppgave (forfall vises ikke flere ganger), Gudstjenester-fanen med ˅ og knappene Kjøreplan og Planlegg, tilbakeknappen fra kjøreplanen, tre vertikale prikker for «mer», og infoskjermen trinn 1 (`/skjerm`). Databasereglene er ikke endret.
 
 **Sluppet til Lillesand 24. november 2026, andre gang** (etter beskjed fra produkteier): testboksen for e-postutsendingen på «Send e-post». Databasereglene er ikke endret.
