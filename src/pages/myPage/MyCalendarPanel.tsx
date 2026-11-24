@@ -16,9 +16,8 @@ import {
 
 const FILTERS: { id: PersonalCalendarFilter; label: string }[] = [
   { id: "alle", label: "Alle" },
-  { id: "menigheten", label: "Menigheten" },
+  { id: "gudstjenester", label: "Gudstjenester" },
   { id: "mine_grupper", label: "Mine grupper" },
-  { id: "jeg_leder", label: "Jeg leder" },
 ];
 
 /**
@@ -44,16 +43,18 @@ export const MyCalendarPanel: React.FC = () => {
     [gatherings, userGroups, from, getPersonAttendance, currentUser.id]
   );
 
-  // The groups the user leads or co-leads. Used for the filter «Jeg leder» and for the dots.
+  // The groups the user leads or co-leads. Used for the dots (leaderDotForGathering).
   const ledGroupIds = useMemo(
     () => new Set(userGroups.filter((g) => leadsGroup(g, currentUser.id)).map((g) => g.id)),
     [userGroups, currentUser.id]
   );
-  const filters = ledGroupIds.size > 0 ? FILTERS : FILTERS.filter((item) => item.id !== "jeg_leder");
+  // «Mine grupper» is only offered to someone who is in a group. If the chosen filter is not offered, «Alle» is shown.
+  const filters = userGroups.length > 0 ? FILTERS : FILTERS.filter((item) => item.id !== "mine_grupper");
+  const activeFilter = filters.some((item) => item.id === filter) ? filter : "alle";
 
   const visibleEvents = useMemo(
-    () => filterPersonalCalendarEvents(allEvents, filter, { ledGroupIds, tasks }),
-    [allEvents, filter, ledGroupIds, tasks]
+    () => filterPersonalCalendarEvents(allEvents, activeFilter),
+    [allEvents, activeFilter]
   );
 
   // A group leader sees a dot where the groups they lead lack people (red) or are not full (yellow).
@@ -92,9 +93,9 @@ export const MyCalendarPanel: React.FC = () => {
             type="button"
             onClick={() => setFilter(item.id)}
             className={`flex-1 px-1 py-2 rounded-lg text-[11px] sm:text-xs whitespace-nowrap font-bold transition-colors cursor-pointer ${
-              filter === item.id ? "bg-emerald-700 text-white" : "text-slate-600 hover:bg-slate-50"
+              activeFilter === item.id ? "bg-emerald-700 text-white" : "text-slate-600 hover:bg-slate-50"
             }`}
-            aria-pressed={filter === item.id}
+            aria-pressed={activeFilter === item.id}
           >
             {item.label}
           </button>
