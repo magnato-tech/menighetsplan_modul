@@ -16,7 +16,7 @@ const activity = (id: string, color: "red" | "yellow" | "green", tasks: { status
 const show = (activities: ReturnType<typeof activity>[], isAdmin = false) =>
   render(
     <MemoryRouter>
-      <GroupActivities detail={{ hasLeaderAccess: true, isAdmin, members: [], groupGatherings: activities, assignTaskToPerson: () => ({ success: true }) } as unknown as LeaderGroupDetail} showToast={() => {}} />
+      <GroupActivities detail={{ hasLeaderAccess: true, isAdmin, members: [], groupGatherings: activities, assignTaskToPerson: () => ({ success: true }), undistributedTasks: [], canGiveBack: () => false } as unknown as LeaderGroupDetail} showToast={() => {}} />
     </MemoryRouter>
   );
 const filter = () => (document.getElementById("select-group-filter-status") as HTMLSelectElement).value;

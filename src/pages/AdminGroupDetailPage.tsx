@@ -8,7 +8,7 @@ import {
   WEEKDAYS,
   formatNorwegianDateTime,
 } from "../hooks/useAppHooks";
-import { GroupCategory, type AttendanceQuestion } from "../types";
+import { GroupCategory, type AttendanceQuestion, type VolunteerRole } from "../types";
 import { isGroupPublic } from "../utils/visibility";
 import { useTimedMessage } from "../hooks/useTimedMessage";
 import { AdminAccessRequired } from "../components/AdminAccessRequired";
@@ -26,6 +26,9 @@ import {
 import { reportWriteError } from "../services/writeErrors";
 import { useFirebase } from "../context/FirebaseDataContext";
 import { useHusfellesskap } from "../hooks/useHusfellesskap";
+import { useRoleTeam, useSharedRoleTeams } from "../hooks/useRoleTeam";
+import { roleHasTeam, roleTeamIds } from "../utils/roleTeams";
+import { useConfirm } from "../components/ConfirmProvider";
 import { ATTENDANCE_QUESTION_CHOICES, ATTENDANCE_QUESTION_DAYS } from "../utils/meetingPlan";
 import { CreateMeetingDialog } from "../components/husfellesskap/CreateMeetingDialog";
 import { useGatheringTemplates } from "../hooks/useGatheringTemplates";
@@ -58,6 +61,7 @@ import {
   Repeat,
   Plus,
   Check,
+  ClipboardList,
 } from "lucide-react";
 
 export const AdminGroupDetailPage: React.FC = () => {
@@ -116,14 +120,21 @@ export const AdminGroupDetailPage: React.FC = () => {
 
   // Deleting the group: what it means is worked out here, and shown before anything is deleted
   const navigate = useNavigate();
-  const { gatherings, tasks, volunteerRoles } = useFirebase();
+  const { gatherings, tasks, volunteerRoles, groups } = useFirebase();
+  const confirmInPage = useConfirm();
+  const teamGroups = groups ?? [];
+  const setRoleTeam = useRoleTeam(tasks, teamGroups);
+  const { shareRole, removeTeamFromRole } = useSharedRoleTeams(tasks, teamGroups);
+  const [addingRole, setAddingRole] = useState(false);
+  // A role that has other teams: the admin chooses to share it or to move it here
+  const [pendingRoleId, setPendingRoleId] = useState<string | null>(null);
   const { templates } = useGatheringTemplates();
   const [deleting, setDeleting] = useState(false);
   const deletion = group ? groupDeletion(group, { gatherings, tasks, roles: volunteerRoles, templates }) : null;
   const handleDeleteGroup = async () => {
     if (!group || !deletion || deletion.blockedBy.length > 0) return;
     try {
-      await deleteGroupWithTraces(group.id, { roleIds: deletion.roles.map((role) => role.id), templateIds: deletion.templates.map((template) => template.id) });
+      await deleteGroupWithTraces(group.id, { roles: deletion.roles.map(({ id, remaining }) => ({ id, remaining })), templateIds: deletion.templates.map((template) => template.id) });
       navigate(studioTabUrl("planlegger-grupper"));
     } catch (error) {
       setDeleting(false);
@@ -209,6 +220,74 @@ export const AdminGroupDetailPage: React.FC = () => {
     }
   };
 
+  // Roles are connected to a service group from here as well as from Admin → Roller
+  const teamNameOf = (teamId: string) => teamGroups.find((g) => g.id === teamId)?.name || "Ukjent team";
+  // «A», «A og B», «A, B og C»
+  const joinNames = (names: string[]) => (names.length <= 1 ? names.join("") : `${names.slice(0, -1).join(", ")} og ${names[names.length - 1]}`);
+  const otherTeamsOf = (role: VolunteerRole) => roleTeamIds(role).filter((id) => id !== group?.id);
+
+  const changeRoleTeam = async (role: VolunteerRole, teamId: string | undefined) => {
+    try {
+      const { text } = await setRoleTeam(role, teamId);
+      showFeedback(text);
+    } catch (err) {
+      showFeedback(err instanceof Error ? err.message : "Kunne ikke endre rollen", "error");
+    }
+  };
+
+  const handleRemoveRole = async (role: VolunteerRole) => {
+    if (!group) return;
+    if (roleTeamIds(role).length > 1) {
+      const remaining = otherTeamsOf(role);
+      const remainingNames = joinNames(remaining.map(teamNameOf));
+      const tasksText = remaining.length === 1 ? `går til ${remainingNames}` : `blir «Ikke fordelt» mellom ${remainingNames}`;
+      const yes = await confirmInPage(
+        `Ta «${role.name}» ut av ${group.name}? Oppgavene gruppen har med rollen ${tasksText}.`,
+        { yes: "Ta ut", danger: true }
+      );
+      if (!yes) return;
+      try {
+        const { text } = await removeTeamFromRole(role, group.id);
+        showFeedback(text);
+      } catch (err) {
+        showFeedback(err instanceof Error ? err.message : "Kunne ikke endre rollen", "error");
+      }
+      return;
+    }
+    const yes = await confirmInPage(
+      `Ta «${role.name}» ut av ${group.name}? Oppgavene med rollen blir uten team, og lederen ser dem ikke lenger.`,
+      { yes: "Ta ut", danger: true }
+    );
+    if (!yes) return;
+    await changeRoleTeam(role, undefined);
+  };
+
+  const handleShareRole = async (role: VolunteerRole) => {
+    if (!group) return;
+    setPendingRoleId(null);
+    setAddingRole(false);
+    try {
+      const { text } = await shareRole(role, group.id);
+      showFeedback(text);
+    } catch (err) {
+      showFeedback(err instanceof Error ? err.message : "Kunne ikke dele rollen", "error");
+    }
+  };
+
+  const handleAddRole = async (roleId: string) => {
+    setAddingRole(false);
+    setPendingRoleId(null);
+    const role = volunteerRoles.find((item) => item.id === roleId);
+    if (!group || !role || roleHasTeam(role, group.id)) return;
+    // A role with a team already: the admin chooses below whether to share it or move it here
+    if (roleTeamIds(role).length > 0) {
+      setAddingRole(true);
+      setPendingRoleId(role.id);
+      return;
+    }
+    await changeRoleTeam(role, group.id);
+  };
+
   // Friendly access denied screen if user is not admin
   if (!isAdmin) {
     return <AdminAccessRequired target="denne admin-siden" />;
@@ -227,6 +306,13 @@ export const AdminGroupDetailPage: React.FC = () => {
   const currentCategoryLabel =
     GROUP_CATEGORIES.find((c) => c.id === (group.category || "tjenestegruppe"))?.label ||
     "Tjenestegruppe";
+
+  // Groups without a category are service groups, as the rest of the app treats them
+  const isServiceGroup = (group.category || "tjenestegruppe") === "tjenestegruppe";
+  const byName = (a: VolunteerRole, b: VolunteerRole) => a.name.localeCompare(b.name, "nb");
+  const groupRoles = volunteerRoles.filter((role) => roleHasTeam(role, group.id)).sort(byName);
+  const allRolesByName = [...volunteerRoles].sort(byName);
+  const pendingRole = pendingRoleId ? volunteerRoles.find((role) => role.id === pendingRoleId) ?? null : null;
 
   return (
     <StudioDetailShell
@@ -422,6 +508,124 @@ export const AdminGroupDetailPage: React.FC = () => {
             </div>
           </div>
         </form>
+
+        {isServiceGroup && (
+          <section id="admin-group-roles-section" className={studioDetailSection}>
+            <div className="flex items-center justify-between gap-2 border-b border-[var(--studio-border)] pb-2">
+              <span className="text-xs font-bold text-[var(--studio-text)] flex items-center gap-1.5">
+                <ClipboardList className="w-4 h-4 text-[var(--studio-muted)]" aria-hidden="true" />
+                Roller i gruppen ({groupRoles.length})
+              </span>
+              {!addingRole && (
+                <button
+                  type="button"
+                  id="btn-add-role-to-group"
+                  onClick={() => setAddingRole(true)}
+                  className="text-xs font-bold text-indigo-700 cursor-pointer"
+                >
+                  + Legg til rolle
+                </button>
+              )}
+            </div>
+
+            {groupRoles.length === 0 ? (
+              <p className="text-xs text-[var(--studio-muted)]">
+                Ingen roller er knyttet til gruppen ennå. Legg til en rolle, så kommer oppgavene med rollen hit.
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {groupRoles.map((role) => (
+                  <span
+                    key={role.id}
+                    className="inline-flex items-center gap-1 pl-2.5 pr-1 py-1 rounded-full bg-indigo-50 text-indigo-800 border border-indigo-100 text-xs font-semibold"
+                  >
+                    {role.name}
+                    {roleTeamIds(role).length > 1 && (
+                      <span className="font-normal text-[10px] text-indigo-600">delt med {joinNames(otherTeamsOf(role).map(teamNameOf))}</span>
+                    )}
+                    <button
+                      type="button"
+                      aria-label={`Ta ${role.name} ut av gruppen`}
+                      onClick={() => void handleRemoveRole(role)}
+                      className="w-5 h-5 rounded-full hover:bg-indigo-100 text-indigo-700 leading-none cursor-pointer"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {addingRole && (
+              <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                <select
+                  aria-label="Velg rolle"
+                  defaultValue=""
+                  onChange={(e) => void handleAddRole(e.target.value)}
+                  className={studioDetailInput}
+                >
+                  <option value="">Velg en rolle</option>
+                  {allRolesByName.filter((role) => !roleHasTeam(role, group.id)).map((role) => (
+                    <option key={role.id} value={role.id}>
+                      {roleTeamIds(role).length > 0 ? `${role.name} (${joinNames(roleTeamIds(role).map(teamNameOf))})` : role.name}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAddingRole(false);
+                    setPendingRoleId(null);
+                  }}
+                  className="text-xs font-bold text-[var(--studio-muted)] cursor-pointer"
+                >
+                  Avbryt
+                </button>
+              </div>
+            )}
+
+            {addingRole && pendingRole && (
+              <div id="add-role-choice" className="flex flex-col gap-2 rounded-lg border border-[var(--studio-border)] p-3">
+                <p className="text-xs text-[var(--studio-text)]">
+                  {`${pendingRole.name} hører til ${joinNames(roleTeamIds(pendingRole).map(teamNameOf))}.`}
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    id="btn-share-role"
+                    onClick={() => void handleShareRole(pendingRole)}
+                    className="text-xs font-bold text-indigo-700 cursor-pointer"
+                  >
+                    Del rollen
+                  </button>
+                  <button
+                    type="button"
+                    id="btn-move-role"
+                    onClick={() => {
+                      setAddingRole(false);
+                      setPendingRoleId(null);
+                      void changeRoleTeam(pendingRole, group.id);
+                    }}
+                    className="text-xs font-bold text-indigo-700 cursor-pointer"
+                  >
+                    Flytt hit
+                  </button>
+                  <button
+                    type="button"
+                    id="btn-cancel-role-choice"
+                    onClick={() => {
+                      setAddingRole(false);
+                      setPendingRoleId(null);
+                    }}
+                    className="text-xs font-bold text-[var(--studio-muted)] cursor-pointer"
+                  >
+                    Avbryt
+                  </button>
+                </div>
+              </div>
+            )}
+          </section>
+        )}
 
         {/* Medlemmer Section */}
         <section

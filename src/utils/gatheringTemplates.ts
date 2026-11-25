@@ -5,6 +5,7 @@ import { newGatheringOf, type GatheringFormValues } from "./gatheringForm";
 import { isWorshipService } from "./gatherings";
 import { newId } from "./id";
 import { normalizeClock } from "./runSheet";
+import { newTaskTeamFields } from "./roleTeams";
 import { durationsOf, withComputedTimes } from "./programTiming";
 import { visibilityOf } from "./visibility";
 
@@ -154,8 +155,10 @@ export interface TemplateTask {
   key: string;
   title: string;
   volunteerRoleId?: string;
-  /** The team the role belongs to in the role library. */
+  /** The team the role belongs to in the role library. Absent while the role is shared by several teams. */
   groupId?: string;
+  /** The teams that share the role, when it is shared: the task starts «Ikke fordelt» among them. */
+  teamChoices?: string[];
   neededCount: number;
   /** Whether the task comes from the programme, or is one of the extra ones. */
   from: "program" | "extra";
@@ -174,7 +177,8 @@ export function tasksOfTemplate(template: Pick<GatheringTemplate, "program" | "e
     const key = roleKeyOf(ref, roles);
     const role = roleOf(ref, roles);
     const before = tasks.get(key);
-    tasks.set(key, { key, title, volunteerRoleId: role?.id, groupId: role?.groupId, neededCount: from === "extra" ? neededCount : before?.neededCount ?? neededCount, from: before?.from ?? from });
+    const team = newTaskTeamFields(role);
+    tasks.set(key, { key, title, volunteerRoleId: role?.id, groupId: team.groupId, teamChoices: team.teamChoices, neededCount: from === "extra" ? neededCount : before?.neededCount ?? neededCount, from: before?.from ?? from });
   };
   for (const item of template.program) add(item, "program", 1);
   for (const extra of template.extraStaffing) add(extra, "extra", Math.max(1, extra.neededCount || 1));
@@ -253,7 +257,7 @@ export function planGathering(
   );
   return {
     gathering,
-    tasks: tasks.map((task) => ({ key: task.key, input: { title: task.title, volunteerRoleId: task.volunteerRoleId, groupId: task.groupId, neededCount: task.neededCount, status: "open" } })),
+    tasks: tasks.map((task) => ({ key: task.key, input: { title: task.title, volunteerRoleId: task.volunteerRoleId, groupId: task.groupId, teamChoices: task.teamChoices, neededCount: task.neededCount, status: "open" } })),
     program: lengths.map((item, index) => {
       const key = roleNameOf(item, roles) ? roleKeyOf(item, roles) : undefined;
       return {

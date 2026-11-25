@@ -10,6 +10,7 @@ import { GroupScheduleCard } from "./GroupScheduleCard";
 import { GroupActivities } from "./GroupActivities";
 import { GroupMembers } from "./GroupMembers";
 import { useMinSideModules } from "../../hooks/useMinSideModules";
+import { roleHasTeam } from "../../utils/roleTeams";
 import { minSideFrameClass } from "../../utils/minSideFrame";
 import { PC_CARD, PC_COLUMNS, PC_HEADING, pcTab } from "../../utils/pcColumns";
 import {
@@ -37,7 +38,7 @@ interface LeaderGroupCardProps {
  */
 export const LeaderGroupCard: React.FC<LeaderGroupCardProps> = ({ groupId, inPopup = false, initialTab }) => {
   const detail = useLeaderGroupDetail(groupId);
-  const { group, hasAccess, hasLeaderAccess, currentUser, members, messages } = detail;
+  const { group, hasAccess, hasLeaderAccess, currentUser, members, messages, volunteerRoles } = detail;
 
   // Editing state for group basic metadata
   const [isEditingMeta, setIsEditingMeta] = useState(false);
@@ -130,6 +131,13 @@ export const LeaderGroupCard: React.FC<LeaderGroupCardProps> = ({ groupId, inPop
     );
   }
 
+  // The roles whose team is this group: their tasks are the group's own (see Admin → Roller)
+  const isServiceGroup = (group.category || "tjenestegruppe") === "tjenestegruppe";
+  const roleNames = (volunteerRoles ?? [])
+    .filter((role) => roleHasTeam(role, group.id))
+    .map((role) => role.name)
+    .sort((a, b) => a.localeCompare(b, "nb"));
+
   return (
     <div className={frame}>
       {/* Header & Breadcrumb */}
@@ -142,6 +150,13 @@ export const LeaderGroupCard: React.FC<LeaderGroupCardProps> = ({ groupId, inPop
             <p className="text-xs text-slate-500 capitalize">
               {group.category || "Tjenestegruppe"} • {members.length} {members.length === 1 ? "deltaker" : "deltakere"}
             </p>
+            {isServiceGroup && (
+              <p id="group-card-roles" className="text-xs text-slate-600 pt-0.5">
+                {roleNames.length > 0
+                  ? `Roller i gruppen: ${roleNames.join(", ")}`
+                  : "Ingen roller er knyttet til gruppen ennå."}
+              </p>
+            )}
           </div>
           {hasLeaderAccess && !isEditingMeta && (
             <button

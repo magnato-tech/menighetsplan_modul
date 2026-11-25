@@ -7,6 +7,14 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 
+const roleState = vi.hoisted(() => ({
+  roles: [
+    { id: "role-taler", name: "Taler", groupId: "lovsang" },
+    { id: "role-lyd", name: "Lyd", groupId: "lyd" },
+    { id: "role-vertskap", name: "Vertskap", groupId: "lovsang" },
+  ] as { id: string; name: string; groupId?: string }[],
+}));
+
 vi.mock("../src/hooks/useAppHooks", () => ({
   useLeaderGroupDetail: (groupId: string) => ({
     hasAccess: true,
@@ -15,9 +23,10 @@ vi.mock("../src/hooks/useAppHooks", () => ({
     isDeputy: false,
     isAdmin: false,
     currentUser: { id: "gunnar", name: "Gunnar", globalRole: "member" },
-    group: { id: groupId, name: "Lovsang", category: "tjeneste", memberIds: [], leaderIds: ["gunnar"] },
+    group: { id: groupId, name: "Lovsang", category: "tjenestegruppe", memberIds: [], leaderIds: ["gunnar"] },
     members: [],
     messages: [],
+    volunteerRoles: roleState.roles,
   }),
 }));
 vi.mock("../src/components/GroupChat", async () => {
@@ -77,6 +86,23 @@ describe("Gruppekortet på siden", () => {
 
     fireEvent.click(document.getElementById("tab-btn-group-chat")!);
     expect(screen.getByTestId("group-chat")).toBeTruthy();
+  });
+
+  test("viser rollene som hører til gruppen, og ikke rollene til andre grupper", () => {
+    renderAt("/gruppe/lovsang");
+
+    expect(document.getElementById("group-card-roles")!.textContent).toBe("Roller i gruppen: Taler, Vertskap");
+  });
+
+  test("uten roller på gruppen sies det i samme linje", () => {
+    const saved = roleState.roles;
+    roleState.roles = [{ id: "role-lyd", name: "Lyd", groupId: "lyd" }];
+    try {
+      renderAt("/gruppe/lovsang");
+      expect(document.getElementById("group-card-roles")!.textContent).toBe("Ingen roller er knyttet til gruppen ennå.");
+    } finally {
+      roleState.roles = saved;
+    }
   });
 
   test("siden har tilbakelenken og rammen som før", () => {

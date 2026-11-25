@@ -12,7 +12,6 @@ import {
 import { DEFAULT_VOLUNTEER_ROLE_NAMES, rolesMissingStandardInstruction } from "../../../data/defaultVolunteerRoles";
 import { VolunteerRole } from "../../../types";
 import {
-  moveRoleTasksToTeam,
   patchVolunteerRole,
   persistVolunteerRole,
   removeVolunteerRole,
@@ -20,14 +19,8 @@ import {
 } from "../../../services/volunteerRoles";
 import { StudioData, ShowFeedback } from "../studio";
 import { useConfirm } from "../../../components/ConfirmProvider";
-
-/** What is said after a role is saved with its team: the tasks that followed it, if any. */
-function teamFeedback(roleName: string, teamName: string | null, movedCount: number): string {
-  if (movedCount === 0) return `«${roleName}» er oppdatert.`;
-  const tasks = `${movedCount} ${movedCount === 1 ? "oppgave" : "oppgaver"}`;
-  if (teamName) return `${roleName} er knyttet til ${teamName}. ${tasks} ble flyttet til gruppen.`;
-  return `${roleName} er ikke lenger knyttet til et team. ${tasks} er uten team nå.`;
-}
+import { useRoleTeam } from "../../../hooks/useRoleTeam";
+import { roleTeamIds } from "../../../utils/roleTeams";
 
 interface RolesTabProps {
   studio: StudioData;
@@ -37,6 +30,9 @@ interface RolesTabProps {
 export const RolesTab: React.FC<RolesTabProps> = ({ studio, showFeedback }) => {
   const confirmInPage = useConfirm();
   const { adminVolunteerRoles, adminGroups, adminTasks } = studio;
+  const roleTasks = useMemo(() => (adminTasks ?? []).map(({ task }) => task), [adminTasks]);
+  const teamGroups = useMemo(() => adminGroups.map(({ group }) => group), [adminGroups]);
+  const setRoleTeam = useRoleTeam(roleTasks, teamGroups);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreating, setIsCreating] = useState(false);
@@ -62,6 +58,10 @@ export const RolesTab: React.FC<RolesTabProps> = ({ studio, showFeedback }) => {
 
   const groupName = (groupId?: string) =>
     groupId ? adminGroups.find((g) => g.group.id === groupId)?.group.name || "Ukjent team" : null;
+  // Every team of the role, e.g. «Lovsangsteam 1, Lovsangsteam 2»
+  const teamNames = (role: VolunteerRole) => roleTeamIds(role).map((id) => groupName(id) || "Ukjent team").join(", ");
+  // «A», «A og B», «A, B og C»
+  const joinNames = (names: string[]) => (names.length <= 1 ? names.join("") : `${names.slice(0, -1).join(", ")} og ${names[names.length - 1]}`);
 
   const openInstructionEditor = (role: VolunteerRole) => {
     setEditingRole(role);
@@ -77,24 +77,13 @@ export const RolesTab: React.FC<RolesTabProps> = ({ studio, showFeedback }) => {
 
   const handleSaveInstruction = async () => {
     if (!editingRole || isSavingRole) return;
-    const team = teamDraft || undefined;
-    const teamChanged = (editingRole.groupId || undefined) !== team;
     setIsSavingRole(true);
     try {
-      await patchVolunteerRole(editingRole.id, {
-        instruction: instructionDraft.trim(),
-        groupId: team,
-      });
-      if (teamChanged) {
-        // The tasks of the role follow its team; tasks already on the same team are left as they are
-        const taskIds = (adminTasks ?? [])
-          .filter(({ task }) => task.volunteerRoleId === editingRole.id && (task.groupId || undefined) !== team)
-          .map(({ task }) => task.id);
-        if (taskIds.length > 0) await moveRoleTasksToTeam(team, taskIds);
-        showFeedback?.(teamFeedback(editingRole.name, team ? groupName(team) : null, taskIds.length));
-      } else {
-        showFeedback?.(`«${editingRole.name}» er oppdatert.`);
-      }
+      // A shared role keeps its teams: the teams are changed on the group card, so only the instruction is saved
+      const sharedRole = roleTeamIds(editingRole).length > 1;
+      const team = sharedRole ? editingRole.groupId : teamDraft || undefined;
+      const { text } = await setRoleTeam(editingRole, team, { instruction: instructionDraft.trim() });
+      showFeedback?.(text);
       closeInstructionEditor();
     } catch (err) {
       showFeedback?.(err instanceof Error ? err.message : "Kunne ikke lagre instruksen", "error");
@@ -324,9 +313,7 @@ export const RolesTab: React.FC<RolesTabProps> = ({ studio, showFeedback }) => {
             </div>
 
             <h3 className="font-bold text-[var(--studio-text)] text-sm mt-3 flex-1">{role.name}</h3>
-            {groupName(role.groupId) && (
-              <p className="text-[10px] text-[var(--studio-muted)] mt-1">{groupName(role.groupId)}</p>
-            )}
+            {roleTeamIds(role).length > 0 && <p className="text-[10px] text-[var(--studio-muted)] mt-1">{teamNames(role)}</p>}
 
             <div className="flex items-center justify-end mt-4 pt-3 border-t border-[var(--studio-border)]">
               <button
@@ -335,7 +322,7 @@ export const RolesTab: React.FC<RolesTabProps> = ({ studio, showFeedback }) => {
                 className="text-[10px] font-bold uppercase tracking-wider text-[var(--studio-link)] hover:text-[var(--studio-link-hover)] flex items-center gap-1.5 cursor-pointer"
               >
                 <ClipboardList className="w-3.5 h-3.5" />
-                <span>Instruks</span>
+                <span>Instruks og team</span>
                 {!role.instruction && <span className="text-[var(--studio-muted)] font-normal normal-case">(tom)</span>}
               </button>
             </div>
@@ -378,21 +365,27 @@ export const RolesTab: React.FC<RolesTabProps> = ({ studio, showFeedback }) => {
             </div>
 
             <div className="p-5 space-y-4">
-              <div>
-                <label className="block text-[11px] font-bold text-[var(--studio-muted)] mb-1.5">Tjenesteteam (valgfritt)</label>
-                <select
-                  value={teamDraft}
-                  onChange={(e) => setTeamDraft(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-[var(--studio-overlay)] border border-[var(--studio-border)] text-[var(--studio-input-text)] text-xs cursor-pointer"
-                >
-                  <option value="">Uten team</option>
-                  {adminGroups.map((g) => (
-                    <option key={g.group.id} value={g.group.id}>
-                      {g.group.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {roleTeamIds(editingRole).length > 1 ? (
+                <p className="text-xs text-[var(--studio-muted)]">
+                  Delt mellom {joinNames(roleTeamIds(editingRole).map((id) => groupName(id) || "Ukjent team"))}. Endres på gruppekortet under Admin → Grupper.
+                </p>
+              ) : (
+                <div>
+                  <label className="block text-[11px] font-bold text-[var(--studio-muted)] mb-1.5">Tjenesteteam (valgfritt)</label>
+                  <select
+                    value={teamDraft}
+                    onChange={(e) => setTeamDraft(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-[var(--studio-overlay)] border border-[var(--studio-border)] text-[var(--studio-input-text)] text-xs cursor-pointer"
+                  >
+                    <option value="">Uten team</option>
+                    {adminGroups.map((g) => (
+                      <option key={g.group.id} value={g.group.id}>
+                        {g.group.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <textarea
                 value={instructionDraft}

@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Gathering, ProgramItem } from "../../types";
+import { Gathering, ProgramItem, Task } from "../../types";
+import type { NewTaskInput } from "../../data/newDocuments";
+import { roleTeamIds } from "../../utils/roleTeams";
 import { X } from "lucide-react";
 import { GatheringDetail } from "./gatheringDetail";
 import { findExistingTaskForRole, sortVolunteerRoles } from "../../utils/roleStaffing";
@@ -40,11 +42,14 @@ export const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
   );
   const selectedRole = sortedRoles.find((r) => r.id === selectedRoleId);
   const teamFieldVisible = Boolean(selectedRole?.groupId);
+  // A role shared by several teams: the task starts «Ikke fordelt», and one of the teams takes it
+  const teamIds = roleTeamIds(selectedRole);
+  const sharedRole = teamIds.length > 1;
 
   useEffect(() => {
     if (!selectedRole) return;
     setProgramTitle(selectedRole.name);
-    setTaskGroupId(selectedRole.groupId || "");
+    setTaskGroupId(roleTeamIds(selectedRole).length > 1 ? "" : selectedRole.groupId || "");
   }, [selectedRoleId, selectedRole]);
 
   const resetForm = () => {
@@ -82,13 +87,17 @@ export const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
 
   const createNewTask = (): string | null => {
     if (!selectedRole) return null;
-    const res = createTask({
+    const team: Pick<Task, "groupId" | "teamChoices"> = sharedRole
+      ? { groupId: taskGroupId || undefined, teamChoices: teamIds }
+      : { groupId: selectedRole.groupId ? taskGroupId || selectedRole.groupId : undefined };
+    const input: NewTaskInput = {
       gatheringId: gathering.id,
-      groupId: selectedRole.groupId ? taskGroupId || selectedRole.groupId : undefined,
       volunteerRoleId: selectedRole.id,
       title: selectedRole.name,
       neededCount: neededCount || 1,
-    });
+      ...team,
+    };
+    const res = createTask(input);
     if (!res.success || !res.task) {
       showToast(res.error || "Kunne ikke opprette oppgave.");
       return null;
@@ -210,7 +219,9 @@ export const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
                 {sortedRoles.map((role) => (
                   <option key={role.id} value={role.id}>
                     {role.name}
-                    {role.groupId ? ` (${allGroups.find((g) => g.id === role.groupId)?.name || "team"})` : ""}
+                    {roleTeamIds(role).length > 0
+                      ? ` (${roleTeamIds(role).map((id) => allGroups.find((g) => g.id === id)?.name || "team").join(", ")})`
+                      : ""}
                   </option>
                 ))}
               </select>
@@ -260,7 +271,8 @@ export const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
                   onChange={(e) => setTaskGroupId(e.target.value)}
                   className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-semibold text-slate-800 cursor-pointer"
                 >
-                  {allGroups.map((g) => (
+                  {sharedRole && <option value="">Ikke fordelt</option>}
+                  {(sharedRole ? allGroups.filter((g) => teamIds.includes(g.id)) : allGroups).map((g) => (
                     <option key={g.id} value={g.id}>
                       {g.name} ({g.category || "gruppe"})
                     </option>

@@ -2,6 +2,7 @@ import type { Assignment, Gathering, Group, Task, VolunteerRole } from "../types
 import { allGroupPersonIds, isInGroup } from "./groups";
 import { countSlots, holdsSlot } from "./staffing";
 import { parseIsoToDateAndTime } from "./dates";
+import { taskTeamIds } from "./roleTeams";
 
 // The semester plan: an administrator releases the planning of a semester, and everyone in a team
 // with tasks in it goes through the events one card at a time: takes a task, says they cannot, or
@@ -66,7 +67,8 @@ export const semesterPlanPath = (planId: string): string => `/minside/semesterpl
 /** The calendar day an event is on, for the person looking: "2027-01-10". */
 const dayOf = (gathering: Pick<Gathering, "startsAt">): string => parseIsoToDateAndTime(gathering.startsAt).date;
 
-const isTeamTask = (task: Task): boolean => Boolean(task.groupId) && task.status !== "cancelled";
+/** A task with a team, or not yet given to one of the teams that share its role (see taskTeamIds). */
+const isTeamTask = (task: Task): boolean => taskTeamIds(task).length > 0 && task.status !== "cancelled";
 
 const byStart = (a: Gathering, b: Gathering) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime();
 
@@ -95,7 +97,7 @@ export function planPersonIds(
   groups: readonly Group[]
 ): string[] {
   const inPlan = new Set(planGatherings(plan, gatherings, tasks).map((gathering) => gathering.id));
-  const teamIds = new Set(tasks.filter((task) => isTeamTask(task) && inPlan.has(task.gatheringId)).map((task) => task.groupId!));
+  const teamIds = new Set(tasks.filter((task) => isTeamTask(task) && inPlan.has(task.gatheringId)).flatMap(taskTeamIds));
   const people = new Set<string>();
   for (const group of groups) if (teamIds.has(group.id)) for (const personId of allGroupPersonIds(group)) people.add(personId);
   return [...people];
@@ -158,7 +160,7 @@ export function cardsFor(
     .map((gathering) => ({
       gathering,
       tasks: data.tasks
-        .filter((task) => task.gatheringId === gathering.id && isTeamTask(task) && myTeams.has(task.groupId!))
+        .filter((task) => task.gatheringId === gathering.id && isTeamTask(task) && taskTeamIds(task).some((id) => myTeams.has(id)))
         .map((task) => {
           const taskAssignments = data.assignments.filter((assignment) => assignment.taskId === task.id);
           const mine = taskAssignments.find((assignment) => assignment.personId === personId);

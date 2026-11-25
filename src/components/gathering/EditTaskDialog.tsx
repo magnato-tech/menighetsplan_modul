@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { X, Trash2 } from "lucide-react";
 import { GatheringDetail, EditableTask } from "./gatheringDetail";
 import { sortVolunteerRoles } from "../../utils/roleStaffing";
+import { roleHasTeam, roleTeamIds } from "../../utils/roleTeams";
 import { useConfirm } from "../ConfirmProvider";
 
 interface EditTaskDialogProps {
@@ -25,14 +26,20 @@ export const EditTaskDialog: React.FC<EditTaskDialogProps> = ({ detail, task, sh
   );
   const selectedRole = sortedRoles.find((r) => r.id === editingTask.volunteerRoleId);
   const teamFieldVisible = Boolean(selectedRole?.groupId || editingTask.groupId);
+  // A role shared by several teams: the task may be «Ikke fordelt», or given to one of its teams
+  const teamIds = roleTeamIds(selectedRole);
+  const sharedRole = teamIds.length > 1;
 
   useEffect(() => {
     if (!selectedRole) return;
-    setEditingTask((prev) => ({
-      ...prev,
-      title: selectedRole.name,
-      groupId: selectedRole.groupId || prev.groupId,
-    }));
+    setEditingTask((prev) => {
+      if (roleTeamIds(selectedRole).length > 1) {
+        // Keeps the team the task has when it is one of the shared teams
+        const keep = prev.groupId && roleHasTeam(selectedRole, prev.groupId) ? prev.groupId : undefined;
+        return { ...prev, title: selectedRole.name, groupId: keep };
+      }
+      return { ...prev, title: selectedRole.name, groupId: selectedRole.groupId || prev.groupId };
+    });
   }, [editingTask.volunteerRoleId, selectedRole]);
 
   const handleSaveTaskEdit = (e: React.FormEvent) => {
@@ -49,7 +56,9 @@ export const EditTaskDialog: React.FC<EditTaskDialogProps> = ({ detail, task, sh
     const res = updateTask(editingTask.id, {
       title: selectedRole.name,
       volunteerRoleId: editingTask.volunteerRoleId,
-      groupId: selectedRole.groupId ? editingTask.groupId : undefined,
+      groupId: sharedRole || selectedRole.groupId ? editingTask.groupId : undefined,
+      // The teams that may take a task of a shared role; none for a role with one team
+      teamChoices: sharedRole ? teamIds : undefined,
       neededCount: editingTask.neededCount || 1,
       description: editingTask.description?.trim() || undefined,
       instruction: undefined,
@@ -134,7 +143,8 @@ export const EditTaskDialog: React.FC<EditTaskDialogProps> = ({ detail, task, sh
                 onChange={(e) => setEditingTask({ ...editingTask, groupId: e.target.value || undefined })}
                 className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-semibold text-slate-800 cursor-pointer"
               >
-                {allGroups.map((g) => (
+                {sharedRole && <option value="">Ikke fordelt</option>}
+                {(sharedRole ? allGroups.filter((g) => teamIds.includes(g.id)) : allGroups).map((g) => (
                   <option key={g.id} value={g.id}>
                     {g.name} ({g.category || "gruppe"})
                   </option>

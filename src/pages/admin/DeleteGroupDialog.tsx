@@ -68,11 +68,19 @@ export const DeleteGroupDialog: React.FC<DeleteGroupDialogProps> = ({ groupId, g
                     : `${counted(traces.messages, "melding", "meldinger")} i gruppen slettes.`}
               </li>
               {traces !== null && traces.proposals > 0 && <li>{counted(traces.proposals, "forslag", "forslag")} om nye deltakere slettes.</li>}
-              {deletion.roles.length > 0 && (
-                <li>
-                  {deletion.roles.length === 1 ? "Rollen" : "Rollene"} {deletion.roles.map((role) => role.name).join(", ")} står uten tjenesteteam etterpå.
-                </li>
-              )}
+              {(() => {
+                const alone = deletion.roles.filter((role) => role.remaining.length === 0);
+                return alone.length > 0 ? (
+                  <li>
+                    {alone.length === 1 ? "Rollen" : "Rollene"} {alone.map((role) => role.name).join(", ")} står uten tjenesteteam etterpå.
+                  </li>
+                ) : null;
+              })()}
+              {deletion.roles
+                .filter((role) => role.remaining.length > 0)
+                .map((role) => (
+                  <li key={role.id}>«{role.name}» deles med et annet team og blir værende der.</li>
+                ))}
               {deletion.templates.length > 0 && (
                 <li>
                   {deletion.templates.length === 1 ? "Malen" : "Malene"} {deletion.templates.map((template) => template.name).join(", ")} står uten ansvarlig gruppe etterpå.

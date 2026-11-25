@@ -17,19 +17,31 @@ export async function readGroupTraces(groupId: string): Promise<{ messages: numb
  * the roles and templates that named it. The group itself goes in the last sending, so a failure
  * on the way leaves a group that can be deleted again, not loose ends without a group.
  */
-export async function deleteGroupWithTraces(groupId: string, pointing: { roleIds: readonly string[]; templateIds: readonly string[] }): Promise<void> {
+export async function deleteGroupWithTraces(
+  groupId: string,
+  pointing: { roles: readonly { id: string; remaining: readonly string[] }[]; templateIds: readonly string[] }
+): Promise<void> {
   const [messages, proposals] = await Promise.all([getDocs(ownedBy(COLLECTIONS.GROUP_MESSAGES, groupId)), getDocs(ownedBy(COLLECTIONS.MEMBER_PROPOSALS, groupId))]);
-  type Step = { remove: DocumentReference } | { release: DocumentReference };
+  type Step = { remove: DocumentReference } | { release: DocumentReference; remaining?: readonly string[] };
   const steps: Step[] = [
     ...[...messages.docs, ...proposals.docs].map((found) => ({ remove: found.ref })),
-    ...[...pointing.roleIds, ...pointing.templateIds].map((id) => ({ release: doc(db, CMS_COLLECTIONS.SETTINGS, id) })),
+    ...pointing.roles.map(({ id, remaining }) => ({ release: doc(db, CMS_COLLECTIONS.SETTINGS, id), remaining })),
+    ...pointing.templateIds.map((id) => ({ release: doc(db, CMS_COLLECTIONS.SETTINGS, id) })),
     { remove: doc(db, COLLECTIONS.GROUPS, groupId) },
   ];
   for (let start = 0; start < steps.length; start += 400) {
     const batch = writeBatch(db);
     for (const step of steps.slice(start, start + 400)) {
       if ("remove" in step) batch.delete(step.remove);
-      else batch.update(step.release, { groupId: deleteField(), updatedAt: new Date().toISOString() });
+      else {
+        // A role shared with other teams keeps them: the first becomes its team, the list stays while two or more remain
+        const remaining = step.remaining ?? [];
+        batch.update(step.release, {
+          groupId: remaining[0] ?? deleteField(),
+          ...("remaining" in step ? { groupIds: remaining.length > 1 ? [...remaining] : deleteField() } : {}),
+          updatedAt: new Date().toISOString(),
+        });
+      }
     }
     await batch.commit();
   }

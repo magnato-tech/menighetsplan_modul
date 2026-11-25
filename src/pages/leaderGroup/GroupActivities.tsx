@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { formatNorwegianDateTime, monthKeyOf, monthOptionsOf } from "../../utils/dates";
 import { LeaderGroupDetail } from "./leaderGroupDetail";
 import { tallyAnswers } from "../../utils/staffing";
+import { useConfirm } from "../../components/ConfirmProvider";
 import {
   Calendar,
   Clock,
@@ -21,8 +22,9 @@ interface GroupActivitiesProps {
 }
 
 export const GroupActivities: React.FC<GroupActivitiesProps> = ({ detail, showToast }) => {
-  const { hasLeaderAccess, members, groupGatherings, assignTaskToPerson } = detail;
+  const { hasLeaderAccess, members, groupGatherings, assignTaskToPerson, undistributedTasks, takeTask, giveTaskBack, canGiveBack, volunteerRoles } = detail;
   const navigate = useNavigate();
+  const confirm = useConfirm();
 
   const [selectedMonth, setSelectedMonth] = useState<string>("all");
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<"all" | "red" | "yellow" | "green">("all");
@@ -225,6 +227,44 @@ export const GroupActivities: React.FC<GroupActivitiesProps> = ({ detail, showTo
           {answers.pending > 0 && <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-800">{answers.pending} venter på svar</span>}
           {answers.declined > 0 && <span className="px-2 py-0.5 rounded-md bg-red-100 text-red-700">{answers.declined} kan ikke</span>}
         </p>
+      )}
+
+      {/* Tasks of a shared role that no team has taken yet: this group may take them */}
+      {hasLeaderAccess && undistributedTasks.length > 0 && (
+        <section id="group-undistributed" className="p-3.5 bg-amber-50/60 rounded-2xl border border-amber-200 space-y-2.5">
+          <div className="space-y-0.5">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-amber-900">Ikke fordelt ({undistributedTasks.length})</h3>
+            <p className="text-[11px] text-amber-800">Disse oppgavene deles med et annet team. Ta dem gruppen deres skal ha.</p>
+          </div>
+          <div className="space-y-2">
+            {undistributedTasks.map(({ task, gathering, teamNames }) => (
+              <div
+                key={task.id}
+                id={`group-undistributed-task-${task.id}`}
+                className="p-2.5 bg-white rounded-xl border border-slate-200 flex items-center justify-between gap-2 flex-wrap text-xs"
+              >
+                <div className="space-y-0.5">
+                  <p className="font-bold text-slate-800">{formatNorwegianDateTime(gathering.startsAt)}</p>
+                  <p className="text-slate-700">
+                    {gathering.title} – {task.title}
+                  </p>
+                  <p className="text-[11px] text-slate-500">Kan gå til: {teamNames.join(", ")}</p>
+                </div>
+                <button
+                  type="button"
+                  id={`btn-take-task-${task.id}`}
+                  onClick={() => {
+                    const res = takeTask(task.id);
+                    if (!res.success) showToast(res.error || "Kunne ikke ta oppgaven.");
+                  }}
+                  className="text-[11px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer shrink-0"
+                >
+                  Vi tar denne
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
       )}
 
       {/* 1 Kompakt Kontrollrad: Filter + Visningsvalg */}
@@ -455,6 +495,27 @@ export const GroupActivities: React.FC<GroupActivitiesProps> = ({ detail, showTo
                                 <span className="text-[11px] text-slate-400 italic">Ingen tildelt</span>
                               )}
                             </div>
+
+                            {/* Give the task back, when its role is shared with other teams */}
+                            {hasLeaderAccess && canGiveBack(task) && (
+                              <div className="pt-1 flex items-center justify-between">
+                                <button
+                                  type="button"
+                                  id={`btn-give-back-${task.id}`}
+                                  onClick={async () => {
+                                    const roleName = volunteerRoles.find((role) => role.id === task.volunteerRoleId)?.name ?? task.title;
+                                    const date = formatNorwegianDateTime(gathering.startsAt);
+                                    const ok = await confirm(`Gi «${roleName}» ${date} tilbake? Da kan de andre teamene ta den.`, { yes: "Gi fra oss" });
+                                    if (!ok) return;
+                                    const res = giveTaskBack(task.id);
+                                    if (!res.success) showToast(res.error || "Kunne ikke gi oppgaven tilbake.");
+                                  }}
+                                  className="text-[11px] font-bold text-slate-600 hover:text-slate-900 underline cursor-pointer"
+                                >
+                                  Gi fra oss
+                                </button>
+                              </div>
+                            )}
 
                             {/* Quick Assign action button */}
                             {!taskCovered && hasLeaderAccess && (

@@ -4,6 +4,7 @@ import { useCurrentUser, useMyTasks } from "../../hooks/memberHooks";
 import { formatNorwegianDateTime } from "../../utils/dates";
 import { countSlots } from "../../utils/staffing";
 import { leadsGroup } from "../../utils/groups";
+import { isUndistributed, takeForTeam, taskTeamIds } from "../../utils/roleTeams";
 import { ledGroupDropouts, nextLedActivity, withLedGroupsFirst } from "../../utils/leadGroups";
 import { useFirebase } from "../../context/FirebaseDataContext";
 import { Task, GroupMessage, Gathering, Group } from "../../types";
@@ -36,6 +37,7 @@ export function useMyPage() {
     getTaskById,
     getAllAssignmentsForTask,
     volunteerRoles,
+    updateTask,
   } = useFirebase();
 
   const navigate = useNavigate();
@@ -151,11 +153,12 @@ export function useMyPage() {
 
     // D) Oppgaver med ledig plass i gruppene brukeren er med i
     const myGroupSet = new Set(myGroupIds);
+    // A task not yet given to a team (shared role) is open to the members of each team it may go to
     tasks
-      .filter((task) => task.groupId && myGroupSet.has(task.groupId) && task.status !== "cancelled")
+      .filter((task) => task.status !== "cancelled" && taskTeamIds(task).some((id) => myGroupSet.has(id)))
       .forEach((task) => {
         // Only a group the user leads can be in leadDropoutKeys
-        if (leadDropoutKeys.has(`${task.gatheringId}-${task.groupId}`)) return;
+        if (task.groupId && leadDropoutKeys.has(`${task.gatheringId}-${task.groupId}`)) return;
         const taskAssignments = getAllAssignmentsForTask(task.id);
         // Leave out a task the user is already on, has been asked about (shown above) or has said no to
         if (taskAssignments.some((a) => a.personId === currentUser.id)) return;
@@ -173,7 +176,11 @@ export function useMyPage() {
           taskDescription: task.description,
           startsAt: gathering?.startsAt || "",
           location: gathering?.location || gathering?.title,
-          groupName: task.groupId ? getGroupById(task.groupId)?.name || "" : "",
+          groupName: taskTeamIds(task)
+            .filter((id) => myGroupSet.has(id))
+            .map((id) => getGroupById(id)?.name || "")
+            .filter(Boolean)
+            .join(", "),
           needsSubstitute: task.status === "vacant",
         });
       });
@@ -222,12 +229,22 @@ export function useMyPage() {
               ? "Takk for svar! Du er registrert som KOMMER."
               : "Takk for beskjed. Du er registrert som KOMMER IKKE.",
           };
-        case "open_task":
+        case "open_task": {
+          // A task of a shared role goes to the team first: the member's team takes it, then they take the place
+          const task = getTaskById(item.taskId);
+          if (task && isUndistributed(task)) {
+            const team = (task.teamChoices ?? []).find((id) => myGroupIds.includes(id));
+            if (team) {
+              const taken = updateTask(task.id, takeForTeam(team));
+              if (!taken.success) return { result: taken, thanks: "" };
+            }
+          }
           // Taking a task oneself is a yes, so it is confirmed at once
           return {
             result: assignTaskToPerson(item.taskId, currentUser.id, "confirmed"),
             thanks: "Takk! Du har tatt oppgaven.",
           };
+        }
       }
     };
     const outcome = answer();
