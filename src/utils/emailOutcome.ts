@@ -57,6 +57,8 @@ export interface EmailLogEntry {
   stopped: EmailStop | null;
   /** Those who are still to get it. Emptied when the rest has been sent. */
   remainingPersonIds: string[];
+  /** The persons it was sent to, when the audience is persons. Old entries have none. */
+  onlyPersonIds?: string[];
 }
 
 export interface EmailRecord {
@@ -76,7 +78,7 @@ export function emailRecordOf(data: Record<string, unknown> | undefined): EmailR
   const entries = Array.isArray(data?.log) ? data.log : [];
   const log = entries.flatMap((entry): EmailLogEntry[] => {
     if (!entry || typeof entry !== "object") return [];
-    const { id, sentAt, audience, audienceLabel, subject, sent, withoutEmail, stopped, remainingPersonIds } = entry as Record<string, unknown>;
+    const { id, sentAt, audience, audienceLabel, subject, sent, withoutEmail, stopped, remainingPersonIds, onlyPersonIds } = entry as Record<string, unknown>;
     const to = toEmailAudience(audience);
     if (typeof id !== "string" || typeof sentAt !== "string" || Number.isNaN(Date.parse(sentAt)) || !to || typeof subject !== "string") return [];
     return [
@@ -90,6 +92,7 @@ export function emailRecordOf(data: Record<string, unknown> | undefined): EmailR
         withoutEmail: countOf(withoutEmail),
         stopped: STOPS.includes(stopped as EmailStop) ? (stopped as EmailStop) : null,
         remainingPersonIds: Array.isArray(remainingPersonIds) ? remainingPersonIds.filter((value): value is string => typeof value === "string") : [],
+        ...(Array.isArray(onlyPersonIds) ? { onlyPersonIds: onlyPersonIds.filter((value): value is string => typeof value === "string") } : {}),
       },
     ];
   });
@@ -109,15 +112,23 @@ export const DOUBLE_SEND_HOURS = 24;
  * The newest sending of the same subject to the same audience within the last day: what the
  * administrator is asked about before the same e-mail goes out twice.
  */
-export function recentSameSending(log: readonly EmailLogEntry[], audienceKeyOf: (audience: EmailAudience) => string, audience: EmailAudience, subject: string, now: Date): EmailLogEntry | null {
+export function recentSameSending(
+  log: readonly EmailLogEntry[],
+  audienceKeyOf: (audience: EmailAudience, onlyPersonIds?: readonly string[]) => string,
+  audience: EmailAudience,
+  subject: string,
+  now: Date,
+  onlyPersonIds?: readonly string[]
+): EmailLogEntry | null {
   const since = now.getTime() - DOUBLE_SEND_HOURS * 3_600_000;
   const same = subject.trim().toLocaleLowerCase("nb");
+  const key = audienceKeyOf(audience, onlyPersonIds);
   return (
     log.find(
       (entry) =>
         entry.sent > 0 &&
         Date.parse(entry.sentAt) >= since &&
-        audienceKeyOf(entry.audience) === audienceKeyOf(audience) &&
+        audienceKeyOf(entry.audience, entry.onlyPersonIds) === key &&
         entry.subject.trim().toLocaleLowerCase("nb") === same
     ) ?? null
   );

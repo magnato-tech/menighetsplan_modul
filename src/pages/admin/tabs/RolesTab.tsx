@@ -12,6 +12,7 @@ import {
 import { DEFAULT_VOLUNTEER_ROLE_NAMES, rolesMissingStandardInstruction } from "../../../data/defaultVolunteerRoles";
 import { VolunteerRole } from "../../../types";
 import {
+  moveRoleTasksToTeam,
   patchVolunteerRole,
   persistVolunteerRole,
   removeVolunteerRole,
@@ -20,6 +21,14 @@ import {
 import { StudioData, ShowFeedback } from "../studio";
 import { useConfirm } from "../../../components/ConfirmProvider";
 
+/** What is said after a role is saved with its team: the tasks that followed it, if any. */
+function teamFeedback(roleName: string, teamName: string | null, movedCount: number): string {
+  if (movedCount === 0) return `«${roleName}» er oppdatert.`;
+  const tasks = `${movedCount} ${movedCount === 1 ? "oppgave" : "oppgaver"}`;
+  if (teamName) return `${roleName} er knyttet til ${teamName}. ${tasks} ble flyttet til gruppen.`;
+  return `${roleName} er ikke lenger knyttet til et team. ${tasks} er uten team nå.`;
+}
+
 interface RolesTabProps {
   studio: StudioData;
   showFeedback?: ShowFeedback;
@@ -27,7 +36,7 @@ interface RolesTabProps {
 
 export const RolesTab: React.FC<RolesTabProps> = ({ studio, showFeedback }) => {
   const confirmInPage = useConfirm();
-  const { adminVolunteerRoles, adminGroups } = studio;
+  const { adminVolunteerRoles, adminGroups, adminTasks } = studio;
 
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreating, setIsCreating] = useState(false);
@@ -68,13 +77,24 @@ export const RolesTab: React.FC<RolesTabProps> = ({ studio, showFeedback }) => {
 
   const handleSaveInstruction = async () => {
     if (!editingRole || isSavingRole) return;
+    const team = teamDraft || undefined;
+    const teamChanged = (editingRole.groupId || undefined) !== team;
     setIsSavingRole(true);
     try {
       await patchVolunteerRole(editingRole.id, {
         instruction: instructionDraft.trim(),
-        groupId: teamDraft || undefined,
+        groupId: team,
       });
-      showFeedback?.(`«${editingRole.name}» er oppdatert.`);
+      if (teamChanged) {
+        // The tasks of the role follow its team; tasks already on the same team are left as they are
+        const taskIds = (adminTasks ?? [])
+          .filter(({ task }) => task.volunteerRoleId === editingRole.id && (task.groupId || undefined) !== team)
+          .map(({ task }) => task.id);
+        if (taskIds.length > 0) await moveRoleTasksToTeam(team, taskIds);
+        showFeedback?.(teamFeedback(editingRole.name, team ? groupName(team) : null, taskIds.length));
+      } else {
+        showFeedback?.(`«${editingRole.name}» er oppdatert.`);
+      }
       closeInstructionEditor();
     } catch (err) {
       showFeedback?.(err instanceof Error ? err.message : "Kunne ikke lagre instruksen", "error");

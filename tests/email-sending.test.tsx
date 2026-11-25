@@ -695,7 +695,7 @@ describe("Siden «Send e-post» i admin", () => {
     return document.getElementById(box.getAttribute("aria-labelledby") ?? "")?.textContent ?? null;
   };
   /** Answers the question in the page with the button of that name, once it is shown. */
-  const answer = async (name: "Send" | "Avbryt" | "Slett") => {
+  const answer = async (name: "Ja, send nå" | "Avbryt" | "Slett") => {
     const box = await screen.findByRole("alertdialog");
     fireEvent.click(within(box).getByRole("button", { name }));
   };
@@ -801,7 +801,7 @@ describe("Siden «Send e-post» i admin", () => {
     const box = screen.getByLabelText("Logg mottakerne rett inn med knappen") as HTMLInputElement;
     expect(box.checked).toBe(false);
     fireEvent.click(screen.getByRole("button", { name: "Send til 2 personer" }));
-    await answer("Send");
+    await answer("Ja, send nå");
     await waitFor(() => expect(screen.getByRole("status").textContent).toBe("E-posten er sendt til 2 personer."));
     expect(service.requestEmail.mock.calls[0][0]).not.toHaveProperty("loginLinks");
 
@@ -810,7 +810,7 @@ describe("Siden «Send e-post» i admin", () => {
     expect(document.getElementById("email-preview")?.getAttribute("srcdoc")).toMatch(/Knappen logger deg rett inn og virker til og med \d+\. \p{L}+ \d{4}\. Ikke send e-posten videre\./u);
     fireEvent.click(screen.getByRole("button", { name: "← Tilbake til skriving" }));
     fireEvent.click(screen.getByRole("button", { name: "Send til 2 personer" }));
-    await answer("Send");
+    await answer("Ja, send nå");
     await waitFor(() => expect(service.requestEmail).toHaveBeenCalledTimes(2));
     expect(service.requestEmail.mock.calls[1][0]).toMatchObject({ mode: "send", loginLinks: true });
     await waitFor(() => expect(screen.getByRole("status").textContent).toBe("E-posten er sendt til 2 personer. 2 av dem fikk knapp som logger dem rett inn."));
@@ -825,7 +825,7 @@ describe("Siden «Send e-post» i admin", () => {
     fireEvent.click(screen.getByLabelText("14 dager"));
     expect(document.getElementById("email-login-link-until")?.textContent).toMatch(/^Knappen virker til og med \d+\. \p{L}+ \d{4}\. Høyst 120 dager\.$/u);
     fireEvent.click(screen.getByRole("button", { name: "Send til 2 personer" }));
-    await answer("Send");
+    await answer("Ja, send nå");
     // The day is 14 days from today, as the page counts it (the real clock, not `now`)
     await waitFor(() => expect(service.requestEmail).toHaveBeenCalledWith(expect.objectContaining({ mode: "send", loginLinks: true, loginLinkUntil: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/) })));
     expect(service.requestEmail.mock.calls[0][0].loginLinkUntil).toBe(daysAfter(new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Oslo" }), 14));
@@ -851,8 +851,9 @@ describe("Siden «Send e-post» i admin", () => {
     show();
     chooseRecipient("Husgruppe øst");
     fireEvent.click(screen.getByRole("button", { name: "Send til 2 personer" }));
-    expect(await askedText()).toBe(`Du sender «${EMAIL_TEMPLATES[0].subject}» til 2 personer (Husgruppe øst). Vil du sende?`);
-    await answer("Send");
+    expect(await askedText()).toBe(`Send «${EMAIL_TEMPLATES[0].subject}» til 2 personer?
+Husgruppe øst`);
+    await answer("Ja, send nå");
     await waitFor(() => expect(screen.getByRole("status").textContent).toBe("E-posten er sendt til 2 personer."));
     expect(service.requestEmail).toHaveBeenCalledWith(expect.objectContaining({ mode: "send", audience: { kind: "group", groupId: "hus" } }));
     expect(service.requestEmail.mock.calls[0][0]).not.toHaveProperty("to");
@@ -867,16 +868,18 @@ describe("Siden «Send e-post» i admin", () => {
     show();
     chooseLeaders();
     fireEvent.click(screen.getByRole("button", { name: "Send til 2 personer" }));
-    expect(await askedText()).toBe(`Du sender «${EMAIL_TEMPLATES[0].subject}» til 2 personer (Lars Leder, Nora Nestleder). Vil du sende?`);
+    expect(await askedText()).toBe(`Send «${EMAIL_TEMPLATES[0].subject}» til 2 personer?
+Lars Leder, Nora Nestleder`);
     // The question is in the page, with «Send» in focus, and «Avbryt» takes it away
-    expect(document.activeElement).toBe(within(screen.getByRole("alertdialog")).getByRole("button", { name: "Send" }));
+    expect(document.activeElement).toBe(within(screen.getByRole("alertdialog")).getByRole("button", { name: "Ja, send nå" }));
     await answer("Avbryt");
     await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
     expect(service.requestEmail).not.toHaveBeenCalled();
     expect(screen.queryByRole("status")).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "Send til 2 personer" }));
-    expect(await askedText()).toBe(`Du sender «${EMAIL_TEMPLATES[0].subject}» til 2 personer (Lars Leder, Nora Nestleder). Vil du sende?`);
+    expect(await askedText()).toBe(`Send «${EMAIL_TEMPLATES[0].subject}» til 2 personer?
+Lars Leder, Nora Nestleder`);
     fireEvent.keyDown(screen.getByRole("alertdialog"), { key: "Escape" });
     await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
     expect(service.requestEmail).not.toHaveBeenCalled();
@@ -886,7 +889,8 @@ describe("Siden «Send e-post» i admin", () => {
     show();
     chooseLeaders();
     fireEvent.click(screen.getByRole("button", { name: "Send til 2 personer" }));
-    expect(await askedText()).toBe(`Du sender «${EMAIL_TEMPLATES[0].subject}» til 2 personer (Lars Leder, Nora Nestleder). Vil du sende?`);
+    expect(await askedText()).toBe(`Send «${EMAIL_TEMPLATES[0].subject}» til 2 personer?
+Lars Leder, Nora Nestleder`);
     fireEvent.click(screen.getByRole("button", { name: "Send til 2 personer" }));
     expect(screen.getAllByRole("alertdialog")).toHaveLength(1);
     await answer("Avbryt");
@@ -899,7 +903,7 @@ describe("Siden «Send e-post» i admin", () => {
     show();
     chooseLeaders();
     fireEvent.click(screen.getByRole("button", { name: "Send til 2 personer" }));
-    await answer("Send");
+    await answer("Ja, send nå");
     await waitFor(() => expect(screen.getByRole("status").textContent).toBe("E-posten er sendt til 2 personer."));
     expect(confirm).not.toHaveBeenCalled();
   });
@@ -914,37 +918,70 @@ describe("Siden «Send e-post» i admin", () => {
     expect(service.requestEmail).not.toHaveBeenCalled();
   });
 
-  test("samme e-post til de samme innen et døgn gir et ekstra spørsmål først", async () => {
-    service.record = {
-      replyTo: "post@example.org",
-      log: [{ id: "a", sentAt: "2026-10-14T08:00:00.000Z", audience: { kind: "persons" }, audienceLabel: "Lars Leder, Nora Nestleder", subject: EMAIL_TEMPLATES[0].subject, sent: 2, withoutEmail: 0, stopped: null, remainingPersonIds: [] }],
-    };
+  /** The same e-mail to Lars and Nora, sent a few hours before the page's clock. */
+  const sentToLeaders = (sentAt = "2026-10-14T08:00:00.000Z", onlyPersonIds = ["leder", "nest"]): EmailRecord => ({
+    replyTo: "post@example.org",
+    log: [{ id: "a", sentAt, audience: { kind: "persons" }, audienceLabel: "Lars Leder, Nora Nestleder", subject: EMAIL_TEMPLATES[0].subject, sent: 2, withoutEmail: 0, stopped: null, remainingPersonIds: [], onlyPersonIds }],
+  });
+  const DUPLICATE_LINE = /\nDen samme e-posten ble sendt til Lars Leder, Nora Nestleder \S.*\.$/;
+
+  test("samme e-post til de samme innen et døgn er ett spørsmål, med linjen om at den er sendt før", async () => {
+    service.record = sentToLeaders();
     show();
     chooseLeaders();
     fireEvent.click(screen.getByRole("button", { name: "Send til 2 personer" }));
-    // The question about sending it again comes first; «Avbryt» there stops, and the second question is not asked
-    expect(await askedText()).toMatch(/^Denne e-posten ble sendt til «Lars Leder, Nora Nestleder» .* Vil du sende den en gang til\?$/);
+    const asked = await askedText();
+    expect(asked).toContain(`Send «${EMAIL_TEMPLATES[0].subject}» til 2 personer?
+Lars Leder, Nora Nestleder`);
+    expect(asked).toMatch(DUPLICATE_LINE);
+    expect(screen.getAllByRole("alertdialog")).toHaveLength(1);
     await answer("Avbryt");
     await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
     expect(service.requestEmail).not.toHaveBeenCalled();
   });
 
-  test("«Send» på spørsmålet om å sende igjen gir spørsmålet om å sende, og først da sendes det", async () => {
+  test("«Ja, send nå» sender etter det ene spørsmålet, også når samme e-post er sendt før", async () => {
     service.requestEmail.mockResolvedValue(sent());
-    service.record = {
-      replyTo: "post@example.org",
-      log: [{ id: "a", sentAt: "2026-10-14T08:00:00.000Z", audience: { kind: "persons" }, audienceLabel: "Lars Leder, Nora Nestleder", subject: EMAIL_TEMPLATES[0].subject, sent: 2, withoutEmail: 0, stopped: null, remainingPersonIds: [] }],
-    };
+    service.record = sentToLeaders();
     show();
     chooseLeaders();
     fireEvent.click(screen.getByRole("button", { name: "Send til 2 personer" }));
-    expect(await askedText()).toMatch(/^Denne e-posten ble sendt til «Lars Leder, Nora Nestleder» .* Vil du sende den en gang til\?$/);
-    await answer("Send");
-    expect(await askedText()).toBe(`Du sender «${EMAIL_TEMPLATES[0].subject}» til 2 personer (Lars Leder, Nora Nestleder). Vil du sende?`);
-    expect(service.requestEmail).not.toHaveBeenCalled();
-    await answer("Send");
+    expect(await askedText()).toMatch(DUPLICATE_LINE);
+    await answer("Ja, send nå");
     await waitFor(() => expect(screen.getByRole("status").textContent).toBe("E-posten er sendt til 2 personer."));
     expect(service.requestEmail).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+  });
+
+  test("samme e-post til andre personer gir ingen linje om duplikat", async () => {
+    service.record = sentToLeaders("2026-10-14T08:00:00.000Z", ["frivillig", "uten"]);
+    show();
+    chooseLeaders();
+    fireEvent.click(screen.getByRole("button", { name: "Send til 2 personer" }));
+    expect(await askedText()).toBe(`Send «${EMAIL_TEMPLATES[0].subject}» til 2 personer?\nLars Leder, Nora Nestleder`);
+    await answer("Avbryt");
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
+    expect(service.requestEmail).not.toHaveBeenCalled();
+  });
+
+  test("en eldre loggpost uten personene, eller en over et døgn gammel, gir ingen linje om duplikat", async () => {
+    const old = { ...sentToLeaders().log[0], onlyPersonIds: undefined };
+    service.record = { replyTo: "post@example.org", log: [old] };
+    show();
+    chooseLeaders();
+    fireEvent.click(screen.getByRole("button", { name: "Send til 2 personer" }));
+    expect(await askedText()).toBe(`Send «${EMAIL_TEMPLATES[0].subject}» til 2 personer?\nLars Leder, Nora Nestleder`);
+    await answer("Avbryt");
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
+
+    service.record = sentToLeaders("2026-10-13T11:00:00.000Z");
+    cleanup();
+    show();
+    chooseLeaders();
+    fireEvent.click(screen.getByRole("button", { name: "Send til 2 personer" }));
+    expect(await askedText()).toBe(`Send «${EMAIL_TEMPLATES[0].subject}» til 2 personer?\nLars Leder, Nora Nestleder`);
+    await answer("Avbryt");
+    expect(service.requestEmail).not.toHaveBeenCalled();
   });
 
   test("stopper utsendingen, står det hvem som gjenstår, og de kan få den etterpå", async () => {
@@ -952,7 +989,7 @@ describe("Siden «Send e-post» i admin", () => {
     show();
     chooseLeaders();
     fireEvent.click(screen.getByRole("button", { name: "Send til 2 personer" }));
-    await answer("Send");
+    await answer("Ja, send nå");
     await waitFor(() => expect(screen.getByRole("status").textContent).toContain("1 person fikk e-posten."));
     expect(screen.getByRole("status").textContent).toContain("1 person gjenstår");
     expect((service.saveEmailLog.mock.calls[0][0] as EmailLogEntry[])[0]).toMatchObject({ sent: 1, stopped: "quota", remainingPersonIds: ["nest"] });
@@ -964,7 +1001,7 @@ describe("Siden «Send e-post» i admin", () => {
     const logged = screen.getByRole("region", { name: "Sendt" });
     expect(within(logged).getByText("Stoppet før alle hadde fått den: 1 person gjenstår.")).toBeTruthy();
     fireEvent.click(within(logged).getByRole("button", { name: "Send til dem som gjenstår" }));
-    await answer("Send");
+    await answer("Ja, send nå");
     await waitFor(() => expect(service.requestEmail).toHaveBeenLastCalledWith(expect.objectContaining({ mode: "send", audience: { kind: "persons" }, onlyPersonIds: ["nest"] })));
     await waitFor(() => expect((service.saveEmailLog.mock.calls[1][0] as EmailLogEntry[])[0]).toMatchObject({ sent: 2, stopped: null, remainingPersonIds: [] }));
   });
@@ -974,7 +1011,7 @@ describe("Siden «Send e-post» i admin", () => {
     show();
     chooseLeaders();
     fireEvent.click(screen.getByRole("button", { name: "Send til 2 personer" }));
-    await answer("Send");
+    await answer("Ja, send nå");
     await waitFor(() => expect(screen.getByRole("status").textContent).toBe("E-post er ikke satt opp for denne installasjonen ennå."));
     expect(service.saveEmailLog).not.toHaveBeenCalled();
   });
@@ -1058,7 +1095,7 @@ describe("Siden «Send e-post» i admin", () => {
     fireEvent.click(screen.getByRole("button", { name: "← Tilbake til skriving" }));
 
     fireEvent.click(screen.getByRole("button", { name: "Send til 2 personer" }));
-    await answer("Send");
+    await answer("Ja, send nå");
     await waitFor(() => expect(service.requestEmail).toHaveBeenCalledWith(expect.objectContaining({ mode: "send", link: "semesterplan", planId: "semesterplan-1" })));
   });
 
@@ -1156,8 +1193,9 @@ describe("Siden «Send e-post» i admin", () => {
     expect(document.getElementById("email-recipient-count")?.textContent).toBe("4 personer");
     const label = "Lars Leder, Nora Nestleder, Frida Frivillig, Husgruppe øst";
     fireEvent.click(screen.getByRole("button", { name: "Send til 4 personer" }));
-    expect(await askedText()).toBe(`Du sender «${EMAIL_TEMPLATES[0].subject}» til 4 personer (${label}). Vil du sende?`);
-    await answer("Send");
+    expect(await askedText()).toBe(`Send «${EMAIL_TEMPLATES[0].subject}» til 4 personer?
+${label}`);
+    await answer("Ja, send nå");
     await waitFor(() => expect(service.requestEmail).toHaveBeenCalledTimes(1));
 
     const request = service.requestEmail.mock.calls[0][0];
@@ -1172,7 +1210,7 @@ describe("Siden «Send e-post» i admin", () => {
     show();
     chooseRecipient("Lyd og bilde");
     fireEvent.click(screen.getByRole("button", { name: /^Send til \d+ personer?$/ }));
-    await answer("Send");
+    await answer("Ja, send nå");
     await waitFor(() => expect(service.requestEmail).toHaveBeenCalledTimes(1));
     expect(service.requestEmail).toHaveBeenCalledWith(expect.objectContaining({ mode: "send", audience: { kind: "group", groupId: "lyd" } }));
     expect(service.requestEmail.mock.calls[0][0]).not.toHaveProperty("onlyPersonIds");
@@ -1187,7 +1225,7 @@ describe("Siden «Send e-post» i admin", () => {
     };
     show(true, "sendte");
     fireEvent.click(screen.getByRole("button", { name: "Send til dem som gjenstår" }));
-    await answer("Send");
+    await answer("Ja, send nå");
     await waitFor(() => expect(service.requestEmail).toHaveBeenCalledWith(expect.objectContaining({ mode: "send", audience: { kind: "persons" }, onlyPersonIds: ["hanne"] })));
   });
 

@@ -146,7 +146,12 @@ export function audienceLabel(audience: EmailAudience, groups: readonly Pick<Gro
 }
 
 /** One text per audience: what tells two sendings to the same people apart from two to different ones. */
-export const audienceKey = (audience: EmailAudience): string => (audience.kind === "group" ? `group:${audience.groupId}` : audience.kind);
+// A sending to chosen persons is told apart by who they are: the same subject to other persons is not the same e-mail.
+export const audienceKey = (audience: EmailAudience, onlyPersonIds?: readonly string[]): string => {
+  if (audience.kind === "group") return `group:${audience.groupId}`;
+  if (audience.kind === "persons" && onlyPersonIds && onlyPersonIds.length > 0) return `persons:${[...onlyPersonIds].sort().join(",")}`;
+  return audience.kind;
+};
 
 /** The audience a request names, or null when it names none that exists. */
 export function toEmailAudience(value: unknown): EmailAudience | null {
