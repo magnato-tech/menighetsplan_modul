@@ -2314,6 +2314,21 @@ Bestilt av produkteier: se hvor mange oppgaver som er tatt siste døgn, uke og m
 * **Kan skjules** under «Tilpass bordet», som de andre delene.
 * **Databasereglene** er ikke endret.
 
+### Raskere bemanning på gruppesiden, med varsel om dobbeltbooking *(plan avtalt 25. november 2026, ikke sluppet)*
+
+**Problemet.** En gruppeleder opplever det som tungvint å gå ut og inn av hver gudstjeneste for å fylle plassene i gruppa. Etter en gjennomgang er rutenett og sidepanel droppet (produkteier 25. november 2026): utvidingen per aktivitet på gruppesiden gjør allerede det meste, og «Åpne aktivitetsdetalj» fører til hele kjøreplanen med «Vis bare det som må ordnes». Det som mangler er små grep på selve gruppesiden.
+
+**Det som bygges.**
+1. **Fold ut flere aktiviteter samtidig.** I dag lukkes den forrige når man åpner en ny. Nå kan flere stå åpne, og «Fold ut alle» og «Fold sammen alle» legges til, som i Bemanning.
+2. **Forespør eller tildel.** I valglisten under «Tildel fra gruppen» har hver person to handlinger: «Tildel» (direkte, bekreftet, som i dag) og «Forespør» (venter på svar).
+3. **Varsel om mulig dobbeltbooking.** Står samme person på mer enn én oppgave samme dag, vises et lite gult merke ved navnet. Hold musepekeren over det for å se den andre oppgaven (oppgave og klokkeslett, og gruppe når den er en annen). I valglisten står en liten linje ved de som allerede har noe samme dag. De kan fortsatt velges. Varselet blokkerer ikke og har ett nivå. Øverst vises «N mulige konflikter», som viser bare de aktivitetene det gjelder.
+
+**Avgjort.** Forfall registreres av gruppeleder. Varselet gjelder alle tjenestegrupper som har tjeneste samme dag. Menigheten ønsker det, og gruppeleder har lov til å se det.
+
+**Begrensning.** Reglene i Firestore lar en gruppeleder lese oppgavene til de gudstjenestene som er åpne for alle eller som gruppa hører til. Varselet bygger på det lederen kan lese, og reglene er ikke endret. Dobbeltbooking på tvers av arrangementer som lederen ikke har lesetilgang til, vises derfor ikke.
+
+**Ikke gjort.** Rutenett, sidepanel, egen fane for deltakere, mobilliste og kopiering til neste arrangement.
+
 ### Åpne produktvalg
 | Valg | Alternativer | Anbefaling |
 |:---|:---|:---|

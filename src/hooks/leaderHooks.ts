@@ -4,6 +4,7 @@ import { Group, ProgramItem, Task } from "../types";
 import { calculateTaskStaffingStatus, describeAssignments, getStaffingStatus } from "../utils/staffing";
 import { isInGroup, leadsGroup, allGroupPersonIds } from "../utils/groups";
 import { canGiveBack as canTaskBeGivenBack, giveBack, isUndistributed, roleTeamIds, takeForTeam } from "../utils/roleTeams";
+import { buildDayLoads } from "../utils/sameDayLoads";
 
 // 14. Hook: useLeaderGroupDetail
 export function useLeaderGroupDetail(groupId: string) {
@@ -13,6 +14,7 @@ export function useLeaderGroupDetail(groupId: string) {
     hasFullRegister,
     getPersonById,
     gatherings,
+    groups,
     tasks,
     assignments,
     getGroupById,
@@ -120,6 +122,12 @@ export function useLeaderGroupDetail(groupId: string) {
       .sort((a, b) => new Date(a.gathering.startsAt).getTime() - new Date(b.gathering.startsAt).getTime());
   }, [group, gatherings, tasks, assignments, getPersonById]);
 
+  // Each person's live tasks by day, for the warning about double bookings
+  const dayLoads = useMemo(
+    () => buildDayLoads({ assignments, tasks, gatherings, groups }),
+    [assignments, tasks, gatherings, groups]
+  );
+
   // Tasks of a shared role that no team has taken yet, and that this group may take: upcoming gatherings only
   const undistributedTasks = useMemo(() => {
     if (!group) return [];
@@ -192,6 +200,7 @@ export function useLeaderGroupDetail(groupId: string) {
     availablePersonsToAdd,
     allPersons,
     groupGatherings,
+    dayLoads,
     messages,
     volunteerRoles,
     updateGroup,
