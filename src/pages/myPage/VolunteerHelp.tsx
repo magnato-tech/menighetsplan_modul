@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { CircleHelp, X } from "lucide-react";
+import { Link } from "react-router-dom";
+import { useFirebase } from "../../context/FirebaseDataContext";
+import { GROUP_LEADER_GUIDE_PATH } from "./GroupLeaderGuidePage";
 import { MIN_SIDE_DIALOG_OVERLAY, MIN_SIDE_DIALOG_PANEL } from "../../utils/minSideFrame";
 
 /**
@@ -11,6 +14,8 @@ import { MIN_SIDE_DIALOG_OVERLAY, MIN_SIDE_DIALOG_PANEL } from "../../utils/minS
  */
 export const VolunteerHelp: React.FC = () => {
   const [open, setOpen] = useState(false);
+  const { currentUser, groups } = useFirebase();
+  const leadsAGroup = groups.some((group) => group.leaderIds.includes(currentUser.id) || group.deputyLeaderIds?.includes(currentUser.id));
 
   useEffect(() => {
     if (!open) return;
@@ -81,6 +86,11 @@ export const VolunteerHelp: React.FC = () => {
                   Dra postene i rekkefølge, endre tittel og varighet, og legg til nye med Ny programpost.
                 </li>
               </ol>
+              {leadsAGroup && (
+                <Link id="link-help-group-leader-guide" to={GROUP_LEADER_GUIDE_PATH} onClick={() => setOpen(false)} className="block text-sm font-bold text-indigo-700 underline underline-offset-2">
+                  Leder du en gruppe? Les veiledningen for gruppeledere
+                </Link>
+              )}
               <button type="button" onClick={() => setOpen(false)} className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-700 text-white text-sm font-bold cursor-pointer">
                 Lukk
               </button>

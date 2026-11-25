@@ -1,4 +1,7 @@
 import React from "react";
+import { Link } from "react-router-dom";
+import { BookOpen } from "lucide-react";
+import { GROUP_LEADER_GUIDE_PATH } from "./GroupLeaderGuidePage";
 import { MIN_SIDE_CARD_GRID } from "../../utils/minSideFrame";
 import { formatChatMessageTime, formatNorwegianDateTime } from "../../utils/dates";
 import { MyPageModel } from "./useMyPage";
@@ -42,6 +45,12 @@ export const MyGroupsSection: React.FC<MyGroupsSectionProps> = ({ page }) => {
 
   return (
     <section id="section-mine-grupper" className="space-y-2">
+      {myGroups.some((group) => group.leaderIds.includes(currentUser.id) || group.deputyLeaderIds?.includes(currentUser.id)) && (
+        <Link id="link-group-leader-guide" to={GROUP_LEADER_GUIDE_PATH} className="inline-flex items-center gap-1.5 text-sm font-bold text-indigo-700 hover:text-indigo-900 underline underline-offset-2">
+          <BookOpen className="w-4 h-4" aria-hidden="true" />
+          Veiledning for gruppeledere
+        </Link>
+      )}
       {myGroups.length > 0 ? (
         <div className={MIN_SIDE_CARD_GRID}>
           {myGroups.map((group) => {

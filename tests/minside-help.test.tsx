@@ -1,14 +1,20 @@
 // @vitest-environment jsdom
 import { readFileSync } from "node:fs";
-import { afterEach, describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+// Kari leads «Lyd»; the help window links the group leaders' guide for those who lead a group
+let leads = false;
+vi.mock("../src/context/FirebaseDataContext", () => ({
+  useFirebase: () => ({ currentUser: { id: "kari" }, groups: [{ id: "lyd", leaderIds: leads ? ["kari"] : [], memberIds: ["kari"] }] }),
+}));
 import { VolunteerHelp } from "../src/pages/myPage/VolunteerHelp";
 
 afterEach(cleanup);
 
 describe("Hjelp på Min side", () => {
   test("veiledningen er et «?» ved overskriften, som åpner et vindu med den samme teksten", () => {
-    render(<VolunteerHelp />);
+    render(<MemoryRouter><VolunteerHelp /></MemoryRouter>);
     expect(screen.queryByText(/Meld forfall/)).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Slik bruker du Min side" }));
     const help = screen.getByRole("dialog", { name: "Slik bruker du Min side" });
@@ -37,5 +43,19 @@ describe("Hjelp på Min side", () => {
     expect(page).toContain("<VolunteerHelp />");
     const adminHelp = readFileSync("src/pages/admin/help/articles.ts", "utf8");
     expect(adminHelp).not.toContain("Slik bruker du Min side");
+  });
+
+  test("den som leder en gruppe, får lenke til veiledningen for gruppeledere", () => {
+    leads = true;
+    render(<MemoryRouter><VolunteerHelp /></MemoryRouter>);
+    fireEvent.click(screen.getByRole("button", { name: "Slik bruker du Min side" }));
+    expect(screen.getByRole("link", { name: /veiledningen for gruppeledere/ }).getAttribute("href")).toBe("/minside/veiledning-gruppeledere");
+    leads = false;
+  });
+
+  test("den som ikke leder en gruppe, får ingen slik lenke", () => {
+    render(<MemoryRouter><VolunteerHelp /></MemoryRouter>);
+    fireEvent.click(screen.getByRole("button", { name: "Slik bruker du Min side" }));
+    expect(screen.queryByRole("link", { name: /veiledningen for gruppeledere/ })).toBeNull();
   });
 });
