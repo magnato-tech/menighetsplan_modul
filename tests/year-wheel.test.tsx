@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { ConfirmProvider } from "../src/components/ConfirmProvider";
+import { answerConfirm } from "./support/confirmDialog";
 import { DEFAULT_YEAR_WHEEL } from "../src/data/defaultYearWheel";
 import { daysIn, withoutYearWheelItem, withYearWheelItem, yearWheelByMonth, yearWheelItemError, yearWheelItemsOf, type YearWheelItem } from "../src/utils/yearWheel";
 
@@ -21,7 +23,12 @@ vi.mock("../src/services/yearWheel", () => ({
 import { YearWheelTab } from "../src/pages/admin/tabs/YearWheelTab";
 
 const showFeedback = vi.fn();
-const show = () => render(<YearWheelTab showFeedback={showFeedback} currentMonth={10} />);
+const show = () =>
+  render(
+    <ConfirmProvider>
+      <YearWheelTab showFeedback={showFeedback} currentMonth={10} />
+    </ConfirmProvider>
+  );
 const month = (name: string) => screen.getByRole("region", { name });
 const saved = () => service.saveYearWheel.mock.calls[0][0] as YearWheelItem[];
 
@@ -116,7 +123,6 @@ describe("Årshjulet i admin", () => {
       { id: "a", month: 3, day: 31, title: "Årsmøte" },
       { id: "b", month: 3, day: 1, title: "Statistikk", note: "Sendes til kirkesamfunnet" },
     ];
-    vi.stubGlobal("confirm", vi.fn(() => true));
     show();
     expect(screen.queryByText(/Dette er standardårshjulet/)).toBeNull();
     expect(within(month("Mars")).getAllByRole("listitem").map((line) => line.textContent)).toEqual(["Statistikk1.Sendes til kirkesamfunnet", "Årsmøte31."]);
@@ -133,13 +139,12 @@ describe("Årshjulet i admin", () => {
 
     service.saveYearWheel.mockClear();
     fireEvent.click(screen.getByRole("button", { name: "Ta ut Statistikk" }));
-    expect(vi.mocked(confirm).mock.calls[0][0]).toBe("Vil du ta «Statistikk» ut av årshjulet?");
-    expect(saved().map((item) => item.id)).toEqual(["a"]);
+    await answerConfirm(/^Vil du ta «Statistikk» ut av årshjulet\?/);
+    await waitFor(() => expect(saved().map((item) => item.id)).toEqual(["a"]));
   });
 
-  test("uten bekreftelse tas ingenting ut, og et tomt årshjul er tomt, ikke standardårshjulet", () => {
+  test("uten bekreftelse tas ingenting ut, og et tomt årshjul er tomt, ikke standardårshjulet", async () => {
     service.stored = [];
-    vi.stubGlobal("confirm", vi.fn(() => false));
     show();
     expect(screen.queryByText(/Dette er standardårshjulet/)).toBeNull();
     expect(screen.getAllByText("Ingen frister")).toHaveLength(12);

@@ -30,6 +30,7 @@ import { useMediaMap } from "../../../hooks/useMediaMap";
 import { resolveMediaUrl } from "../../../utils/media";
 import { lastEditedText } from "../../../utils/lastEdited";
 import { countNewsByFilter, filterNews, newsStatusOf, type NewsFilter } from "../../../utils/newsStatus";
+import { useConfirm } from "../../../components/ConfirmProvider";
 
 /** A day ("2026-10-11") as it is written out: «11. oktober 2026». */
 const writtenDay = (day: string): string =>
@@ -72,6 +73,7 @@ interface NewsTabProps {
 }
 
 export const NewsTab: React.FC<NewsTabProps> = ({ studio, showFeedback, createRequested, onCreateHandled }) => {
+  const confirmInPage = useConfirm();
   const { currentUser, adminGatherings } = studio;
   const { news, saveNews, deleteNews, settings } = useCms();
   const { allPersons } = useFirebase();
@@ -505,7 +507,7 @@ export const NewsTab: React.FC<NewsTabProps> = ({ studio, showFeedback, createRe
                         <button
                           type="button"
                           onClick={async () => {
-                            if (confirm(`Flytte «${item.title}» til papirkurven? Du kan hente den tilbake i 30 dager.`)) {
+                            if (await confirmInPage(`Flytte «${item.title}» til papirkurven? Du kan hente den tilbake i 30 dager.`, { yes: "Flytt til papirkurven", danger: true })) {
                               if (await deleteNews(item.id)) showFeedback("Artikkelen er flyttet til papirkurven");
                             }
                           }}

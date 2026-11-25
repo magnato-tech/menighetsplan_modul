@@ -22,6 +22,7 @@ import { PublicHashScroll } from "./components/public/PublicHashScroll";
 import { ChunkErrorBoundary } from "./components/ChunkErrorBoundary";
 import { SessionGate } from "./components/SessionGate";
 import { DemoFrame } from "./components/DemoStrip";
+import { ConfirmProvider } from "./components/ConfirmProvider";
 
 // Public pages stay static so they never suspend on first paint.
 import { PublicHomePage } from "./pages/public/PublicHomePage";
@@ -362,13 +363,16 @@ function DataProviders({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <BrowserRouter>
-      <DataProviders>
-        {/* In the demo installation a strip stands above everything. Elsewhere this adds nothing. */}
-        <DemoFrame>
-          <AppContent />
-        </DemoFrame>
-        <WriteErrorBanner />
-      </DataProviders>
+      {/* The questions the app asks before it deletes or sends (see components/ConfirmProvider.tsx) */}
+      <ConfirmProvider>
+        <DataProviders>
+          {/* In the demo installation a strip stands above everything. Elsewhere this adds nothing. */}
+          <DemoFrame>
+            <AppContent />
+          </DemoFrame>
+          <WriteErrorBanner />
+        </DataProviders>
+      </ConfirmProvider>
     </BrowserRouter>
   );
 }

@@ -18,6 +18,7 @@ import { CmsMediaPicker } from "../../../components/admin/CmsMediaPicker";
 import { useMediaMap } from "../../../hooks/useMediaMap";
 import { resolveMediaUrl } from "../../../utils/media";
 import { filterSermons, sermonFilterOptions, sermonSpeakerOf } from "../../../utils/sermonFilter";
+import { useConfirm } from "../../../components/ConfirmProvider";
 
 interface SermonsTabProps {
   studio: StudioData;
@@ -49,6 +50,7 @@ const FilterSelect: React.FC<FilterSelectProps> = ({ label, value, onChange, opt
 );
 
 export const SermonsTab: React.FC<SermonsTabProps> = ({ studio, showFeedback }) => {
+  const confirmInPage = useConfirm();
   const { currentUser } = studio;
   const { sermons, saveSermon, deleteSermon } = useCms();
   const mediaById = useMediaMap();
@@ -404,7 +406,7 @@ export const SermonsTab: React.FC<SermonsTabProps> = ({ studio, showFeedback }) 
                       <button
                         type="button"
                         onClick={async () => {
-                          if (confirm(`Flytte «${s.title}» til papirkurven? Du kan hente den tilbake i 30 dager.`)) {
+                          if (await confirmInPage(`Flytte «${s.title}» til papirkurven? Du kan hente den tilbake i 30 dager.`, { yes: "Flytt til papirkurven", danger: true })) {
                             if (await deleteSermon(s.id)) showFeedback("Talen er flyttet til papirkurven");
                           }
                         }}

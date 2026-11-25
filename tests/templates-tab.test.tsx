@@ -2,6 +2,8 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { ConfirmProvider } from "../src/components/ConfirmProvider";
+import { answerConfirm } from "./support/confirmDialog";
 
 // «Maler» in the admin: the congregation's templates for events, the form a template is made and
 // changed in, and the way from a template to a series.
@@ -40,7 +42,9 @@ describe("Siden «Maler»", () => {
   const show = () =>
     render(
       <MemoryRouter>
-        <TemplatesTab studio={studio} showFeedback={showFeedback} />
+        <ConfirmProvider>
+          <TemplatesTab studio={studio} showFeedback={showFeedback} />
+        </ConfirmProvider>
       </MemoryRouter>
     );
 
@@ -87,13 +91,14 @@ describe("Siden «Maler»", () => {
 
   test("en mal slettes først etter bekreftelse", async () => {
     library.templates = [standard];
-    vi.stubGlobal("confirm", vi.fn(() => false));
     show();
     fireEvent.click(screen.getByRole("button", { name: "Slett malen Gudstjeneste" }));
+    await answerConfirm(/^Vil du slette malen «Gudstjeneste»/, false);
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
     expect(service.remove).not.toHaveBeenCalled();
 
-    vi.stubGlobal("confirm", vi.fn(() => true));
     fireEvent.click(screen.getByRole("button", { name: "Slett malen Gudstjeneste" }));
+    await answerConfirm(/^Vil du slette malen «Gudstjeneste»/);
     await waitFor(() => expect(service.remove).toHaveBeenCalledWith("mal-1"));
   });
 });

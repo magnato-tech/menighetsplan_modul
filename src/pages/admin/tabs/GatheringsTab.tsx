@@ -36,7 +36,7 @@ import { useFirebase } from "../../../context/FirebaseDataContext";
 import { useMinSideModules } from "../../../hooks/useMinSideModules";
 import { useMediaQuery } from "../../../hooks/useMediaQuery";
 import { movedRestOfSeries } from "../../../utils/series";
-import { DeleteGatheringDialog, type StaffedTask } from "../DeleteGatheringDialog";
+import { useGatheringDeletion } from "../../../components/gathering/useGatheringDeletion";
 import { MoveSeriesDialog } from "../MoveSeriesDialog";
 import { GatheringsTable } from "./gatherings/GatheringsTable";
 import { GatheringsCalendar, KIND_COLORS } from "./gatherings/GatheringsCalendar";
@@ -148,7 +148,7 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
     onCreateHandled?.();
   }, [createRequested]);
 
-  const { assignments, allPersons, deleteGatheringWithStaffing, getPersonById } = useFirebase();
+  const { assignments, allPersons } = useFirebase();
 
   // The events as a month, a week, cards or a table. The choice is remembered in this browser.
   const [chosenView, setChosenView] = useState<GatheringsView>(() => readStored(VIEW_KEY, "table", isView));
@@ -220,39 +220,15 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
     showFeedback(`${moved.length} ${moved.length === 1 ? "arrangement" : "arrangementer"} i serien ble flyttet`);
   };
 
-  // An event with people on its tasks is deleted through a warning that names them. One press
-  // there takes them all off and deletes the event, so they need not be removed one by one.
-  const [deleting, setDeleting] = useState<AdminGatheringItem | null>(null);
-  const staffedTasksOf = (item: AdminGatheringItem): StaffedTask[] =>
-    item.tasks.flatMap((task) => {
-      const people = assignments
-        .filter((assignment) => assignment.taskId === task.id && (assignment.response === "confirmed" || assignment.response === "pending"))
-        .map((assignment) => ({
-          name: getPersonById(assignment.personId)?.name ?? assignment.personName ?? "Ukjent person",
-          asked: assignment.response === "pending",
-        }));
-      return people.length > 0 ? [{ title: task.title, people }] : [];
-    });
-  const deleteWithStaffing = (item: AdminGatheringItem) => {
-    const res = deleteGatheringWithStaffing(item.gathering.id);
-    setDeleting(null);
-    if (res.success) showFeedback("Arrangementet ble slettet, og alle ble tatt av oppgavene");
-    else showFeedback(res.error || "Kunne ikke slette arrangementet", "error");
-  };
-
-  const handleDeleteGathering = (item: AdminGatheringItem) => {
-    const g = item.gathering;
-    if (staffedTasksOf(item).length > 0) {
-      setDeleting(item);
+  // An event is deleted the same way here and from its own page (see useGatheringDeletion)
+  const { requestDelete, staffedDialog } = useGatheringDeletion((res, withPeople) => {
+    if (!res.success) {
+      showFeedback(res.error || "Kunne ikke slette arrangementet", "error");
       return;
     }
-    if (!confirm(`Vil du slette «${g.title}» (${formatNorwegianDateTime(g.startsAt)})? Program og oppgaver fjernes også.`)) {
-      return;
-    }
-    const res = deleteGatheringWithStaffing(g.id);
-    if (res.success) showFeedback("Arrangementet ble slettet");
-    else showFeedback(res.error || "Kunne ikke slette arrangementet", "error");
-  };
+    showFeedback(withPeople ? "Arrangementet ble slettet, og alle ble tatt av oppgavene" : "Arrangementet ble slettet");
+  });
+  const handleDeleteGathering = (item: AdminGatheringItem) => void requestDelete(item.gathering, item.tasks);
 
   return (
     <>
@@ -551,15 +527,7 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
         <NewGatheringDialog studio={studio} showFeedback={showFeedback} initial={fullForm} onClose={() => setFullForm(null)} />
       )}
 
-      {deleting && (
-        <DeleteGatheringDialog
-          title={deleting.gathering.title}
-          when={formatNorwegianDateTime(deleting.gathering.startsAt)}
-          staffed={staffedTasksOf(deleting)}
-          onConfirm={() => deleteWithStaffing(deleting)}
-          onClose={() => setDeleting(null)}
-        />
-      )}
+      {staffedDialog}
 
       {movingFrom && (
         <MoveSeriesDialog

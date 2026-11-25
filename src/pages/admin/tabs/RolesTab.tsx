@@ -18,6 +18,7 @@ import {
   seedDefaultVolunteerRoles,
 } from "../../../services/volunteerRoles";
 import { StudioData, ShowFeedback } from "../studio";
+import { useConfirm } from "../../../components/ConfirmProvider";
 
 interface RolesTabProps {
   studio: StudioData;
@@ -25,6 +26,7 @@ interface RolesTabProps {
 }
 
 export const RolesTab: React.FC<RolesTabProps> = ({ studio, showFeedback }) => {
+  const confirmInPage = useConfirm();
   const { adminVolunteerRoles, adminGroups } = studio;
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -141,7 +143,7 @@ export const RolesTab: React.FC<RolesTabProps> = ({ studio, showFeedback }) => {
   };
 
   const handleDeleteRole = async (role: VolunteerRole) => {
-    if (!window.confirm(`Slette rollen «${role.name}»? Instruksen går også tapt.`)) return;
+    if (!(await confirmInPage(`Slette rollen «${role.name}»? Instruksen går også tapt.`, { yes: "Slett", danger: true }))) return;
     try {
       await removeVolunteerRole(role.id);
       if (editingRole?.id === role.id) closeInstructionEditor();

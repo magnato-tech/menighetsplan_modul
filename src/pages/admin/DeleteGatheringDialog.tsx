@@ -12,6 +12,8 @@ interface DeleteGatheringDialogProps {
   /** When the event is, as it is read: "Søndag 8. nov. kl. 11:00". */
   when: string;
   staffed: StaffedTask[];
+  /** Set when the event is part of a series: only this one is deleted, the rest of the series stays. */
+  inSeries?: boolean;
   onConfirm: () => void;
   onClose: () => void;
 }
@@ -20,7 +22,7 @@ interface DeleteGatheringDialogProps {
  * The warning before an event with people on its tasks is deleted. It names everyone who is
  * taken off, and one press removes them all and deletes the event. Nothing happens before that.
  */
-export const DeleteGatheringDialog: React.FC<DeleteGatheringDialogProps> = ({ title, when, staffed, onConfirm, onClose }) => {
+export const DeleteGatheringDialog: React.FC<DeleteGatheringDialogProps> = ({ title, when, staffed, inSeries = false, onConfirm, onClose }) => {
   const count = new Set(staffed.flatMap((task) => task.people.map((person) => person.name))).size;
 
   return (
@@ -41,8 +43,9 @@ export const DeleteGatheringDialog: React.FC<DeleteGatheringDialogProps> = ({ ti
         </p>
         <p className="text-xs text-[var(--studio-muted)]">
           {count} {count === 1 ? "person står" : "personer står"} på oppgaver eller er spurt. De blir tatt av, og arrangementet slettes med program og oppgaver.
-          Det kan ikke angres.
+          Dette kan ikke angres.
         </p>
+        {inSeries && <p className="text-xs text-[var(--studio-muted)]">Bare dette arrangementet slettes, ikke resten av serien.</p>}
 
         <section aria-label="De som blir tatt av" className="rounded-xl border border-[var(--studio-border)] bg-[var(--studio-surface)] p-3">
           <ul className="space-y-1.5 text-xs">

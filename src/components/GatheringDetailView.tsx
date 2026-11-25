@@ -43,6 +43,7 @@ import { GatheringActions, type GatheringAction } from "./gathering/GatheringAct
 import { CreateTaskDialog } from "./gathering/CreateTaskDialog";
 import { ApplyTemplateDialog } from "./gathering/ApplyTemplateDialog";
 import { GatheringFormDialog } from "./gathering/GatheringFormDialog";
+import { useGatheringDeletion } from "./gathering/useGatheringDeletion";
 import { useGatheringTemplates } from "../hooks/useGatheringTemplates";
 import { useFirebase } from "../context/FirebaseDataContext";
 import { useLevel } from "../hooks/useLevel";
@@ -98,6 +99,14 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
   const fromRunSheet = searchParams.get("fra") === "kjoreplan";
   const { hash, pathname } = useLocation();
   const navigate = useNavigate();
+  // Deleting the event, as the Kalender list does it. Back on the Kalender, the list says it was deleted.
+  const { requestDelete, staffedDialog } = useGatheringDeletion((res) => {
+    if (!res.success) {
+      showToast(res.error || "Kunne ikke slette arrangementet.");
+      return;
+    }
+    navigate(studioTabUrl("planlegger-samlinger"), { state: { feedback: "Arrangementet ble slettet" } });
+  });
   const canAdminister = isUserAdmin || isExplicitAdminView;
   // A group leader changes the staffing of the groups they lead. The rest reads as it does for everyone.
   const limitToMyGroups = !canAdminister;
@@ -527,6 +536,9 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
           groups={allGroups}
           showGroup={withPlanner}
           calendarLinked={Boolean(gathering.externalCalendarUid)}
+          // Only an administrator deletes an event, and only one that exists (not a new one)
+          onDelete={canAdminister ? () => void requestDelete(gathering, gatheringTasks) : undefined}
+          deleteInSeries={Boolean(gathering.seriesId)}
           onSave={(values) => {
             const result = detail.updateGathering(gathering.id, gatheringUpdatesOf(values, withPlanner));
             if (result.success) showToast("Arrangementet ble oppdatert!");
@@ -535,6 +547,8 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
           onClose={() => setIsEditingGathering(false)}
         />
       )}
+
+      {staffedDialog}
     </div>
   );
 };

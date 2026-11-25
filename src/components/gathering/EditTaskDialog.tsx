@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { X, Trash2 } from "lucide-react";
 import { GatheringDetail, EditableTask } from "./gatheringDetail";
 import { sortVolunteerRoles } from "../../utils/roleStaffing";
+import { useConfirm } from "../ConfirmProvider";
 
 interface EditTaskDialogProps {
   detail: GatheringDetail;
@@ -12,6 +13,7 @@ interface EditTaskDialogProps {
 }
 
 export const EditTaskDialog: React.FC<EditTaskDialogProps> = ({ detail, task, showToast, onClose }) => {
+  const confirmInPage = useConfirm();
   const { allGroups, volunteerRoles, group, updateTask, deleteTask } = detail;
 
   const [editingTask, setEditingTask] = useState<EditableTask>(task);
@@ -61,8 +63,8 @@ export const EditTaskDialog: React.FC<EditTaskDialogProps> = ({ detail, task, sh
     }
   };
 
-  const handleDeleteTask = (taskId: string, taskTitle: string) => {
-    if (window.confirm(`Er du sikker på at du vil fjerne oppgaven «${taskTitle}» fra samlingen?`)) {
+  const handleDeleteTask = async (taskId: string, taskTitle: string) => {
+    if (await confirmInPage(`Er du sikker på at du vil fjerne oppgaven «${taskTitle}» fra samlingen?`, { yes: "Fjern", danger: true })) {
       const res = deleteTask(taskId);
       if (res.success) {
         showToast(`Oppgaven «${taskTitle}» ble slettet.`);

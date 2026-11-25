@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useMemo, useRef, useState } from "react";
-import { AlertCircle, CalendarPlus, Edit3, EyeOff, Globe, Image as ImageIcon, LayoutTemplate, Plus, Repeat, Save, Star, X } from "lucide-react";
+import { AlertCircle, CalendarPlus, Edit3, EyeOff, Globe, Image as ImageIcon, LayoutTemplate, Plus, Repeat, Save, Star, Trash2, X } from "lucide-react";
 import type { GatheringVisibility, VolunteerRole } from "../../types";
 import { gatheringFormError, hasPresentation, type GatheringFormValues } from "../../utils/gatheringForm";
 import { formValuesFromTemplate, type GatheringTemplate } from "../../utils/gatheringTemplates";
@@ -45,6 +45,10 @@ interface GatheringFormDialogProps {
   templateEditor?: GatheringTemplateEditor;
   /** Title, time, place and cancelled follow the congregation's external calendar. */
   calendarLinked?: boolean;
+  /** Set when an existing event is changed by an administrator: the form then offers to delete it. */
+  onDelete?: () => void;
+  /** Part of a series: the delete says that only this event goes. */
+  deleteInSeries?: boolean;
   /** Stores the event, or the events of the series. The form closes itself when it went well. */
   onSave: (values: GatheringFormValues, choices: GatheringFormChoices) => { success: boolean; error?: string };
   onClose: () => void;
@@ -88,6 +92,8 @@ export const GatheringFormDialog: React.FC<GatheringFormDialogProps> = ({
   existing = [],
   templateEditor,
   calendarLinked = false,
+  onDelete,
+  deleteInSeries = false,
   onSave,
   onClose,
 }) => {
@@ -493,6 +499,24 @@ export const GatheringFormDialog: React.FC<GatheringFormDialogProps> = ({
               </section>
             )}
           </div>
+
+          {onDelete && (
+            <section aria-label="Slett arrangementet" className="mx-5 sm:mx-8 mb-6 p-4 rounded-2xl border-2 border-red-300 bg-red-50 space-y-3">
+              <div className="space-y-1">
+                <h3 className="text-sm font-black text-red-800">Slett arrangementet</h3>
+                <p className="text-xs text-red-900">Program og oppgaver slettes sammen med arrangementet.</p>
+                {deleteInSeries && <p className="text-xs text-red-900">Bare dette arrangementet slettes, ikke resten av serien.</p>}
+              </div>
+              <button
+                type="button"
+                onClick={onDelete}
+                className="px-4 py-2.5 rounded-xl bg-red-700 hover:bg-red-600 text-white text-sm font-bold flex items-center gap-2 cursor-pointer"
+              >
+                <Trash2 className="w-4 h-4" aria-hidden="true" />
+                Slett arrangementet …
+              </button>
+            </section>
+          )}
 
           <div className="sticky bottom-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 sm:px-8 py-4 bg-white border-t border-slate-200">
             <p role="alert" className="text-xs font-bold text-red-700 min-h-4">

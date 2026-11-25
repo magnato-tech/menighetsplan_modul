@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 vi.mock("../src/hooks/useMinSideModules", () => ({ useMinSideModules: () => ({ isOn: () => true }) }));
 
@@ -52,6 +52,8 @@ vi.mock("../src/hooks/useExternalCalendarQueue", () => ({
 import { GatheringFormDialog, type GatheringFormChoices } from "../src/components/gathering/GatheringFormDialog";
 import { buildGathering, buildTask, type NewGatheringInput, type NewTaskInput } from "../src/data/newDocuments";
 import { GatheringsTab } from "../src/pages/admin/tabs/GatheringsTab";
+import { ConfirmProvider } from "../src/components/ConfirmProvider";
+import { answerConfirm } from "./support/confirmDialog";
 import type { StudioData } from "../src/pages/admin/studio";
 import { chooseDemoLevel, forgetDemoLevel } from "../src/services/demoLevel";
 import type { Gathering, Task, VolunteerRole } from "../src/types";
@@ -307,7 +309,9 @@ describe("Arrangementer i admin", () => {
     stored.programs = [];
     const view = render(
       <MemoryRouter>
-        <GatheringsTab studio={studioWith(adminGatherings)} showFeedback={showFeedback} />
+        <ConfirmProvider>
+          <GatheringsTab studio={studioWith(adminGatherings)} showFeedback={showFeedback} />
+        </ConfirmProvider>
       </MemoryRouter>
     );
     // The events open as a table (see gathering-list.test.tsx). These tests are of the cards.
@@ -439,39 +443,42 @@ describe("Arrangementer i admin", () => {
     expect(screen.queryByRole("button", { name: /Slett resten/ })).toBeNull();
   });
 
-  test("et arrangement uten folk på oppgavene slettes etter ett spørsmål, med oppgavene", () => {
-    vi.stubGlobal("confirm", vi.fn(() => true));
+  test("et arrangement uten folk på oppgavene slettes etter ett spørsmål, med oppgavene", async () => {
     show([eventOn("a", "2026-10-18")]);
     fireEvent.click(screen.getByRole("button", { name: "Slett" }));
 
-    expect(vi.mocked(confirm).mock.calls[0][0]).toMatch(/^Vil du slette «Gudstjeneste»/);
+    // The question says what goes with it, with the counts, and that it cannot be undone
+    const question = screen.getByRole("alertdialog");
+    expect(question.textContent).toMatch(/^Vil du slette «Gudstjeneste» \(/);
+    expect(question.textContent).toContain("3 oppgaver slettes også. Dette kan ikke angres.");
+    expect(within(question).getByRole("button", { name: "Slett arrangementet" }).className).toContain("bg-red-700");
+    await answerConfirm(/^Vil du slette «Gudstjeneste»/);
+    await waitFor(() => expect(planner.deleteGatheringWithStaffing).toHaveBeenCalledWith("a"));
     expect(screen.queryByRole("alertdialog")).toBeNull();
-    expect(planner.deleteGatheringWithStaffing).toHaveBeenCalledWith("a");
     expect(showFeedback).toHaveBeenCalledWith("Arrangementet ble slettet");
   });
 
-  test("uten bekreftelse slettes ingenting", () => {
-    vi.stubGlobal("confirm", vi.fn(() => false));
+  test("uten bekreftelse slettes ingenting", async () => {
     show([eventOn("a", "2026-10-18")]);
     fireEvent.click(screen.getByRole("button", { name: "Slett" }));
+    await answerConfirm(/^Vil du slette «Gudstjeneste»/, false);
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
     expect(planner.deleteGatheringWithStaffing).not.toHaveBeenCalled();
   });
 
   test("står det folk på oppgavene, kommer en advarsel som sier hvem, og ingenting er slettet ennå", () => {
-    const ask = vi.fn(() => true);
-    vi.stubGlobal("confirm", ask);
     planner.assignments = [on("taler-a", "astri"), on("lovsang-a", "preben", "pending"), on("lovsang-a", "astri"), on("kaffe-a", "ukjent", "confirmed", "Kari Gjest"), on("taler-b", "preben")];
     show([eventOn("a", "2026-10-18"), eventOn("b", "2026-10-25")]);
     fireEvent.click(screen.getAllByRole("button", { name: "Slett" })[0]);
 
     const warning = screen.getByRole("alertdialog", { name: "Slette arrangement med folk på oppgavene?" });
-    expect(ask).not.toHaveBeenCalled();
     expect(planner.deleteGatheringWithStaffing).not.toHaveBeenCalled();
     // Three people, though one of them stands on two tasks. Nobody from the other event.
     expect(warning.textContent).toContain("3 personer står på oppgaver eller er spurt");
     const lines = within(within(warning).getByRole("region", { name: "De som blir tatt av" })).getAllByRole("listitem").map((line) => line.textContent);
     expect(lines).toEqual(["Taler:Astri Berg", "Lovsang:Preben Dahl (spurt), Astri Berg", "Kirkekaffe:Kari Gjest"]);
     expect(warning.textContent).toContain("Løsningen sier ikke fra til dem");
+    expect(warning.textContent).toContain("Dette kan ikke angres.");
   });
 
   test("«Avbryt» lar alt stå, og «Fjern alle og slett arrangementet» gjør begge deler i én sending", () => {
@@ -502,15 +509,15 @@ describe("Arrangementer i admin", () => {
     expect(within(screen.getByRole("alertdialog")).getByText("Astri Berg")).toBeTruthy();
   });
 
-  test("de som har sagt nei eller meldt forfall, står ikke på noe: da er det ingen å advare om", () => {
-    vi.stubGlobal("confirm", vi.fn(() => true));
+  test("de som har sagt nei eller meldt forfall, står ikke på noe: da er det ingen å advare om", async () => {
     planner.assignments = [on("taler-a", "astri", "declined"), on("lovsang-a", "preben", "withdrawn")];
     show([eventOn("a", "2026-10-18")]);
     fireEvent.click(screen.getByRole("button", { name: "Slett" }));
 
-    expect(screen.queryByRole("alertdialog")).toBeNull();
+    // Only the question of the delete itself, no list of people
+    await answerConfirm(/^Vil du slette «Gudstjeneste»/);
     // The same sending takes their old answers along, so nothing is left behind
-    expect(planner.deleteGatheringWithStaffing).toHaveBeenCalledWith("a");
+    await waitFor(() => expect(planner.deleteGatheringWithStaffing).toHaveBeenCalledWith("a"));
   });
 
   test("går sendingen ikke, står det i meldingen", () => {
