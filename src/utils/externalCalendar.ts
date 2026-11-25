@@ -220,21 +220,6 @@ function importableGathering(g: Gathering): boolean {
   return g.type !== "gruppesamling" && g.visibility !== "intern";
 }
 
-/** Arrangements to remove when starting external calendar import over (linked rows and likely duplicates from a bad import). */
-export function gatheringsForImportReset(
-  feed: readonly ExternalCalendarEvent[],
-  gatherings: readonly Gathering[]
-): Gathering[] {
-  const feedDayTitle = new Set(feed.map((e) => `${e.startsAt.slice(0, 10)}|${e.title.trim()}`));
-
-  return gatherings.filter((g) => {
-    if (!importableGathering(g)) return false;
-    if (g.externalCalendarUid) return true;
-    const key = `${g.startsAt.slice(0, 10)}|${g.title.trim()}`;
-    return feedDayTitle.has(key);
-  });
-}
-
 export function diffCalendar(
   feed: readonly ExternalCalendarEvent[],
   gatherings: readonly Gathering[],

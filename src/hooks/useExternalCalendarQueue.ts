@@ -3,7 +3,6 @@ import { useCms } from "../context/CmsContext";
 import {
   dismissExternalEvent,
   dismissExternalUid,
-  clearExternalCalendarImportQueue,
   declineExternalChange,
   keepExternalUid,
   restoreExternalUid,
@@ -14,7 +13,6 @@ import {
   declinedValuesOf,
   diffCalendar,
   formValuesFromExternalEvent,
-  gatheringsForImportReset,
   parseExternalCalendarFeed,
   proposeImport,
   type CalendarDiff,
@@ -45,7 +43,6 @@ import { hasPlanner } from "../utils/level";
 import { useLevel } from "./useLevel";
 import type { Gathering } from "../types";
 import type { ShowFeedback, StudioData } from "../pages/admin/studio";
-import type { ActionResult } from "../context/FirebaseDataContext";
 
 let sharedDiff: CalendarDiff | null = null;
 let sharedListeners = new Set<(diff: CalendarDiff | null) => void>();
@@ -93,7 +90,6 @@ export function useExternalCalendarQueue(studio: StudioData, showFeedback: ShowF
   const [feedRows, setFeedRows] = useState<ExternalCalendarEvent[]>([]);
   const [syncing, setSyncing] = useState(false);
   const [batchWorking, setBatchWorking] = useState(false);
-  const [resetWorking, setResetWorking] = useState(false);
   const [templateByUid, setTemplateByUid] = useState<Record<string, string | "">>({});
   const lastFeedRef = useRef<ExternalCalendarEvent[]>([]);
 
@@ -425,61 +421,6 @@ export function useExternalCalendarQueue(studio: StudioData, showFeedback: ShowF
     setTemplateByUid((prev) => ({ ...prev, [key]: templateId }));
   };
 
-  const importResetCandidateCount = gatheringsForImportReset(lastFeedRef.current, gatherings).length;
-
-  /** Remove imported rows and queue choices, then fetch the feed again (and auto-create when enabled). */
-  const resetImport = useCallback(
-    async (deleteGathering: (gatheringId: string) => ActionResult) => {
-      if (!importOn) return;
-      setResetWorking(true);
-      try {
-        const response = await fetch("/api/kalender-innhold");
-        const text = await response.text();
-        if (!response.ok) throw new Error(text || `Kalenderen svarte ${response.status}`);
-        const feed = parseExternalCalendarFeed(text);
-        lastFeedRef.current = feed;
-        setFeedRows(feed);
-
-        const toRemove = gatheringsForImportReset(feed, gatheringsRef.current);
-        const removedIds = new Set<string>();
-        let deleteFailed = 0;
-        for (const g of toRemove) {
-          const res = deleteGathering(g.id);
-          if (res.success) removedIds.add(g.id);
-          else deleteFailed++;
-        }
-        gatheringsRef.current = gatheringsRef.current.filter((g) => !removedIds.has(g.id));
-
-        await clearExternalCalendarImportQueue();
-        setTemplateByUid({});
-
-        await syncFeed(surfaces.importNewAutomatically, { dismissedUids: [], keptUids: [] });
-
-        const removed = removedIds.size;
-        if (removed === 0 && deleteFailed === 0) {
-          showFeedback("Importkøen er tømt. Kalenderen er hentet på nytt.");
-        } else if (deleteFailed > 0) {
-          showFeedback(
-            `${removed} arrangementer fjernet. ${deleteFailed} kunne ikke slettes — sjekk kalenderen.`,
-            "error"
-          );
-        } else {
-          showFeedback(
-            surfaces.importNewAutomatically
-              ? `${removed} importerte arrangementer fjernet. Nye rader opprettes automatisk fra feeden.`
-              : `${removed} importerte arrangementer fjernet. Gå gjennom køen for å opprette på nytt.`
-          );
-        }
-      } catch (error) {
-        reportWriteError("nullstille kalenderimport", error);
-        showFeedback(error instanceof Error ? error.message : "Kunne ikke nullstille importen", "error");
-      } finally {
-        setResetWorking(false);
-      }
-    },
-    [importOn, showFeedback, surfaces.importNewAutomatically, syncFeed]
-  );
-
   return {
     importOn,
     diff,
@@ -487,9 +428,6 @@ export function useExternalCalendarQueue(studio: StudioData, showFeedback: ShowF
     pending,
     syncing,
     batchWorking,
-    resetWorking,
-    resetImport,
-    importResetCandidateCount,
     sync,
     createFromEvent,
     createAllNew: createAllNewPublic,

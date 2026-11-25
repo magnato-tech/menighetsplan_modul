@@ -11,6 +11,7 @@ import { ANALYTICS_MODULES, hiddenModuleCount, isModuleShown, type AnalyticsModu
 import type { ShowFeedback, StudioTab } from "../studio";
 import { studioSecondaryButton } from "../studioTheme";
 import { KeyFigures } from "./analytics/KeyFigures";
+import { TasksTakenSection } from "./analytics/TasksTakenSection";
 import { AttendanceSection } from "./analytics/AttendanceSection";
 import { StaffingPerGatheringSection } from "./analytics/StaffingPerGatheringSection";
 import { MultiTaskSection } from "./analytics/MultiTaskSection";
@@ -103,6 +104,13 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ showFeedback, onTabC
         </div>
       </div>
 
+      {shown("oppgaver-tatt") && (
+        <TasksTakenSection
+          tasksTaken={analytics.tasksTaken}
+          onOpenFollowUp={() => onTabChange("planlegger-oppgaver")}
+          onHide={hide("oppgaver-tatt")}
+        />
+      )}
       {shown("nokkeltall") && <KeyFigures analytics={analytics} />}
       {ahead && shown("oppmote") && (
         <p className="text-xs text-[var(--studio-muted)]">Oppmøte vises ikke framover: det telles når samlingene er holdt. Velg en periode bakover for å se det.</p>

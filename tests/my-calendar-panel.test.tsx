@@ -104,3 +104,25 @@ describe("Kalenderen på Min side: filtrene", () => {
     expect(screen.queryAllByText("Søndagsgudstjeneste").length).toBe(0);
   });
 });
+
+describe("Abonnement på menighetens kalender på Min side", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2027, 0, 15, 12, 0, 0));
+    state.gatherings = [worship, groupMeeting];
+    state.groups = [];
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.useRealTimers();
+  });
+
+  test("teksten og de tre knappene for kalenderen vises under kalenderen", () => {
+    renderPanel();
+    expect(screen.getByText("Få menighetens kalender i din egen kalender")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Legg til i Google Kalender" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Legg til på iPhone" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Kopier abonnementslenke" })).toBeTruthy();
+  });
+});

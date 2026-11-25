@@ -14,10 +14,8 @@ import {
 } from "../../../utils/modulePresentation";
 import { PresentationSection } from "../PresentationSection";
 import { ChevronLeft, ChevronRight, Clock, LayoutGrid, List, MapPin } from "lucide-react";
-import { DEMO } from "../../../demo";
-import { DEMO_SITE } from "../../../demoSite";
 import { CalendarSubscribeButtons } from "../../public/CalendarSubscribeButtons";
-import { publicCalendarFeedUrl } from "../../../utils/calendarFeed";
+import { congregationFeedUrl } from "../../../utils/congregationFeed";
 
 export { PUBLIC_CALENDAR_FEED_PATH } from "../../../utils/calendarFeed";
 
@@ -141,11 +139,7 @@ export const KalenderModule: React.FC<KalenderModuleProps> = ({
           <CalendarSubscribeButtons
             compact
             tone="primary"
-            resolveFeedUrl={() =>
-              typeof window !== "undefined"
-                ? publicCalendarFeedUrl(window.location.origin, DEMO_SITE, DEMO !== null)
-                : null
-            }
+            resolveFeedUrl={congregationFeedUrl}
           />
         </div>
       </div>

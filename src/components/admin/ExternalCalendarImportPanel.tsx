@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { formatNorwegianDateTime } from "../../hooks/useAppHooks";
-import { RefreshCw, Plus, X, Trash2, Check, ListChecks, RotateCcw } from "lucide-react";
+import { RefreshCw, Plus, X, Trash2, Check, ListChecks } from "lucide-react";
 import { useExternalCalendarQueue } from "../../hooks/useExternalCalendarQueue";
 import {
   bestLink,
@@ -20,7 +20,6 @@ import { useFirebase } from "../../context/FirebaseDataContext";
 import type { AdminGatheringItem } from "../../hooks/useAppHooks";
 import { useGatheringTemplates } from "../../hooks/useGatheringTemplates";
 import { studioCard } from "../../pages/admin/studioTheme";
-import { ConfirmDialog } from "../ConfirmDialog";
 import { rememberDeletedCalendarEvent } from "../gathering/useGatheringDeletion";
 import type { Gathering } from "../../types";
 
@@ -78,7 +77,6 @@ export const ExternalCalendarImportPanel: React.FC<ExternalCalendarImportPanelPr
   const { assignments, getPersonById, deleteGatheringWithStaffing } = useFirebase();
   const [moreOptions, setMoreOptions] = useState<ExternalCalendarEvent | null>(null);
   const [deleting, setDeleting] = useState<AdminGatheringItem | null>(null);
-  const [confirmReset, setConfirmReset] = useState(false);
   const [tab, setTab] = useState<ImportTab>("venter");
   const [chosenByKey, setChosenByKey] = useState<Record<string, string>>({});
   const [review, setReview] = useState<LinkPair[] | null>(null);
@@ -112,55 +110,13 @@ export const ExternalCalendarImportPanel: React.FC<ExternalCalendarImportPanelPr
     else confirmDelete(item);
   };
 
-  const resetImportActions = (
-    <button
-      type="button"
-      onClick={() => setConfirmReset(true)}
-      disabled={queue.syncing || queue.resetWorking || queue.batchWorking}
-      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-red-800/80 text-xs font-bold text-red-200 hover:bg-red-950 hover:text-red-400"
-    >
-      <RotateCcw className={`w-3.5 h-3.5 ${queue.resetWorking ? "animate-spin" : ""}`} aria-hidden="true" />
-      Start import på nytt
-    </button>
-  );
-
-  const resetDialog = confirmReset ? (
-    <ConfirmDialog
-      title="Start kalenderimport på nytt?"
-      tone="danger"
-      confirmLabel="Ja, nullstill import"
-      busy={queue.resetWorking}
-      onCancel={() => setConfirmReset(false)}
-      onConfirm={() => {
-        void queue.resetImport(deleteGatheringWithStaffing).then(() => setConfirmReset(false));
-      }}
-    >
-      <p>
-        {queue.importResetCandidateCount > 0 ? (
-          <>
-            Ca. <span className="font-bold text-[var(--studio-text)]">{queue.importResetCandidateCount}</span>{" "}
-            arrangementer i planleggeren matcher importen og fjernes.
-          </>
-        ) : (
-          <>Ingen importerte arrangementer er funnet ut fra siste feed — importkøen nullstilles likevel.</>
-        )}{" "}
-        Deretter hentes kirkens kalender på nytt
-        {queue.importNewAutomatically ? " og nye rader opprettes automatisk." : ", og du kan opprette på nytt fra køen."}
-      </p>
-    </ConfirmDialog>
-  ) : null;
-
   if (!queue.importOn) return null;
 
   if (!queue.diff) {
     return (
-      <>
-        <div className={`${studioCard} p-4 flex flex-wrap items-center justify-between gap-3`}>
-          <p className="text-xs text-[var(--studio-muted)]">Henter kirkens kalender …</p>
-          {resetImportActions}
-        </div>
-        {resetDialog}
-      </>
+      <div className={`${studioCard} p-4`}>
+        <p className="text-xs text-[var(--studio-muted)]">Henter kirkens kalender …</p>
+      </div>
     );
   }
 
@@ -200,7 +156,7 @@ export const ExternalCalendarImportPanel: React.FC<ExternalCalendarImportPanelPr
       <div>
         <h3 className="text-sm font-black text-[var(--studio-text)]">Fra kirkens kalender</h3>
         <p className="text-xs text-[var(--studio-muted)] mt-1">
-          Hendelser i feeden som ikke er knyttet til planleggeren ennå, eller som er borte fra feeden.
+          Hendelser i kirkens kalender som ikke er knyttet til planleggeren ennå, eller som er borte derfra.
         </p>
       </div>
       <div className="flex flex-wrap items-center gap-2">
@@ -213,7 +169,6 @@ export const ExternalCalendarImportPanel: React.FC<ExternalCalendarImportPanelPr
           <RefreshCw className={`w-3.5 h-3.5 ${queue.syncing ? "animate-spin" : ""}`} aria-hidden="true" />
           Oppdater
         </button>
-        {resetImportActions}
       </div>
     </div>
   );
@@ -679,8 +634,6 @@ export const ExternalCalendarImportPanel: React.FC<ExternalCalendarImportPanelPr
           onClose={() => setDeleting(null)}
         />
       )}
-
-      {resetDialog}
     </section>
   );
 };

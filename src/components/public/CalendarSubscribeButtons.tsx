@@ -1,7 +1,8 @@
 import React from "react";
-import { CalendarPlus, Copy } from "lucide-react";
+import { CalendarPlus, Copy, Smartphone } from "lucide-react";
 import { useTimedMessage } from "../../hooks/useTimedMessage";
 import { googleCalendarSubscribeUrl } from "../../utils/calendarFeed";
+import { webcalUrl } from "../../utils/congregationFeed";
 
 export interface CalendarSubscribeButtonsProps {
   resolveFeedUrl: () => string | null;
@@ -55,6 +56,15 @@ export const CalendarSubscribeButtons: React.FC<CalendarSubscribeButtonsProps> =
     window.open(googleCalendarSubscribeUrl(url), "_blank", "noopener,noreferrer");
   };
 
+  const handleIphone = () => {
+    const url = resolveFeedUrl();
+    if (!url) {
+      showHint(missingMessage);
+      return;
+    }
+    window.location.href = webcalUrl(url);
+  };
+
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap gap-2">
@@ -65,6 +75,14 @@ export const CalendarSubscribeButtons: React.FC<CalendarSubscribeButtonsProps> =
         >
           <CalendarPlus className={compact ? "w-4 h-4" : "w-3.5 h-3.5"} />
           Legg til i Google Kalender
+        </button>
+        <button
+          type="button"
+          onClick={handleIphone}
+          className={`inline-flex items-center gap-1.5 rounded-lg font-bold border cursor-pointer ${textSize} ${pad} ${classes.copy}`}
+        >
+          <Smartphone className={compact ? "w-4 h-4" : "w-3.5 h-3.5"} />
+          Legg til på iPhone
         </button>
         <button
           type="button"

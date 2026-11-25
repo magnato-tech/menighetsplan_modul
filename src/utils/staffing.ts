@@ -176,7 +176,7 @@ export function applyAssignmentChange(taskAssignments: Assignment[], change: Ass
 }
 
 /** When an assignment last said something: the later of its answer and its assignment. A missing date counts as "". */
-function latestStamp(item: Pick<Assignment, "assignedAt" | "respondedAt">): string {
+export function latestStamp(item: Pick<Assignment, "assignedAt" | "respondedAt">): string {
   return [item.respondedAt ?? "", item.assignedAt ?? ""].sort().pop() ?? "";
 }
 

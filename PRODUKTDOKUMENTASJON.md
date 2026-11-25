@@ -180,7 +180,7 @@ Analysebordet er en del av modulen **Analyse**. Det står i menyen under **Analy
 **Prinsipper**
 
 * **Bare det som er lagret.** Hvert tall telles fra databasen. Mangler grunnlaget, vises en strek, aldri null eller et anslag. Feltet **Datagrunnlag** nederst sier hva tallene bygger på og hva som ikke måles.
-* **Perioden styrer alt.** Siste 4 uker, 3 måneder (standard) eller 12 måneder (52 hele uker). Hvert tall sammenlignes med like lang periode rett før. Det som er et øyeblikksbilde (tilhørighet, personregisteret), sammenlignes ikke.
+* **Perioden styrer alt.** Siste 4 uker, 3 måneder (standard) eller 12 måneder (52 hele uker). Hvert tall sammenlignes med like lang periode rett før. Det som er et øyeblikksbilde (tilhørighet, personregisteret), sammenlignes ikke. Unntaket er **Oppgaver tatt** øverst, som alltid regnes fra nå.
 * **Svar er ikke oppmøte.** «Kommer» sier hvem som planla å komme. Oppmøtetallet sier hvem som kom. De vises hver for seg.
 * **Personer navngis bare der administratoren skal handle:** avlastning, ubrukte frivillige, personer uten gruppe og politiattester. Alt annet er tall.
 * **Ingen sporing av besøkende.** Besøk på nettsiden telles anonymt, på et eget bord (kapittel 2.5). Hvem de besøkende er, måles ikke.
@@ -189,6 +189,7 @@ Analysebordet er en del av modulen **Analyse**. Det står i menyen under **Analy
 
 | Del | Innhold | Definisjon |
 |:---|:---|:---|
+| Oppgaver tatt | Oppgaver noen har sagt ja til siste døgn, siste 7 dager og siste 30 dager, og ledige plasser de neste 4 ukene, med lenke til Trenger oppfølging | Regnes alltid fra nå, ikke fra perioden. Tatt: en bekreftet tildeling på en oppgave som ikke er strøket, talt fra det seneste av når den ble satt opp og når personen svarte. Det telles likt om personen tok oppgaven selv, svarte ja på en forespørsel eller ble satt opp av en leder: appen lagrer ikke hvilken måte det var. Forfall etterpå telles ikke. Oppgaver som ble lagt inn på én gang fra et ark, telles den dagen de ble lagt inn. Ledige plasser: samme tall som Bemanning per arrangement med «Neste 4 uker» |
 | Nøkkeltall | Snitt på gudstjeneste, aktive frivillige, bemanningsgrad, andel med i en gruppe | Snittet regnes bare av gudstjenestene som er talt. Aktiv frivillig: har sagt ja til minst én oppgave på en samling som er holdt i perioden. Bemanningsgrad: bekreftede plasser delt på behovet, på holdte samlinger |
 | Oppmøte | Søyle per samling (voksne og barn), snittlinje, liste over samlinger som mangler tall, tabellvisning, CSV | En samling uten tall vises som en lav grå strek, aldri som lavt oppmøte. Gruppesamlinger telles ikke her; de følges med svarene |
 | Bemanning per arrangement | Hvor mange holdte samlinger med oppgaver som var fullt bemannet, for alle og for gudstjenestene, sammenlignet med perioden før, og listen over dem som ikke var det | Fullt bemannet: alle plasser i alle oppgavene var bekreftet. En samling uten oppgaver telles ikke |
@@ -293,14 +294,14 @@ Min side viser så lite som mulig. Overskriften er navnet på fanen som er åpen
 |---|---|
 | **Mine oppgaver** | Knappen «Ta oppgave (68)» når tre eller flere saker venter (forespørsler, innkallinger og ledige oppgaver i egne grupper). Den åpner listen, som kan snevres inn med tagger. Venter én eller to saker, står kortene rett på siden. Under står oppgavene personen har sagt ja til, den nærmeste først |
 | **Mine grupper** | Gruppekortene, med neste samling, siste beskjed og vei inn til gruppa |
-| **Kalender** | Filtrene Alle / Gudstjenester / Mine grupper, og hendelsene under. «Mine grupper» vises bare for den som er med i en gruppe. Viser offentlige arrangementer i menigheten og kommende samlinger i gruppene personen er med i. En leder ser en rød eller gul prikk der gruppen mangler folk |
+| **Kalender** | Filtrene Alle / Gudstjenester / Mine grupper, og hendelsene under. «Mine grupper» vises bare for den som er med i en gruppe. Viser offentlige arrangementer i menigheten og kommende samlinger i gruppene personen er med i. En leder ser en rød eller gul prikk der gruppen mangler folk. Under kalenderen står «Få menighetens kalender i din egen kalender» med «Legg til i Google Kalender», «Legg til på iPhone» og «Kopier abonnementslenke» |
 
 Veiledningen «Slik bruker du Min side» ligger bak et «?» ved overskriften, og åpnes i et vindu.
 
 Ikke bygget i kalenderen:
 
 * Å slå hver kilde (menigheten og hver gruppe) av og på for seg.
-* Personlig kalenderabonnement (iCal): tjenesten som lager filen, kjører ikke der løsningen er satt i drift (se kapittel 13). Abonnement på menighetens offentlige kalender står på nettsiden.
+* Personlig kalenderabonnement (iCal): tjenesten som lager filen, kjører ikke der løsningen er satt i drift (se kapittel 13). Abonnement på menighetens offentlige kalender står under kalenderen her og på nettsiden.
 
 ---
 
@@ -2048,6 +2049,8 @@ git push origin origin/main:stabil
 
 **Sluppet til Lillesand 25. november 2026, delte roller** (`stabil` = `a74ca23`, `main` `1c590bb`): Flere team kan dele en rolle (to lovsangsteam). På gruppekortet i admin: «Del rollen» eller «Flytt hit». Nye oppgaver med en delt rolle blir «Ikke fordelt»; gruppelederen tar dem med «Vi tar denne» og gir dem tilbake med «Gi fra oss». Medlemmer i begge teamene ser ufordelte oppgaver. I samme slipp: personkortet i admin med faner, og «Roller i gruppen» på gruppekortet og på Min side. Databasereglene er endret: en leder eller et medlem av et av teamene kan bare sette team på en ufordelt oppgave. Reglene (`firestore.rules 2026-11-25 (delte roller).txt`) må publiseres; før det blir «Vi tar denne» avvist for ledere.
 
+**Sluppet til Lillesand 25. november 2026, bemanningen** (`stabil` = `026f887`, `main` `07f0b6f`): Oppgaver som ikke er knyttet til programmet (Lyd, Rigging), står uten tekst der klokkeslettet ellers står; «Utenfor programmet» er tatt bort.
+
 **Sluppet til Lillesand 25. november 2026, veiledning for gruppeledere**: egen side på Min side, `/minside/veiledning-gruppeledere`, med rollen, ansvaret for å bemanne semesteret (tjenestegruppene og oppgavene), innlogging, slik spør du om en oppgave, statusene, semesterplanen, forfall og en sjekkliste for samtalen. Lenke fra Mine grupper og fra hjelpen (?) for dem som leder eller er nestleder i en gruppe. Databasereglene er ikke endret.
 
 **Sluppet til Lillesand 24. november 2026** (etter beskjed fra produkteier, som prøvde endringene på localhost først): bare siste status per person og oppgave (forfall vises ikke flere ganger), Gudstjenester-fanen med ˅ og knappene Kjøreplan og Planlegg, tilbakeknappen fra kjøreplanen, tre vertikale prikker for «mer», og infoskjermen trinn 1 (`/skjerm`). Databasereglene er ikke endret.
@@ -2280,6 +2283,36 @@ Bestilt av produkteier: møter i husgruppene skal kunne åpnes og endres i admin
 * **Kalender.** Husgruppemøtene står i Kalender under filteret «Husgrupper», og kan åpnes, flyttes i tid og sted og slettes der, som andre arrangementer. Tallet på menyen, dashbordet, kalenderimporten og sjekken for overlapp er som før: de teller ikke husgruppemøtene.
 * **Gruppesiden i admin.** Hvert møte under «Konkrete samlinger for gruppen» har en «Endre»-lenke og åpner samme side som i Kalender. Teksten «Eksisterende Gathering» er tatt bort.
 * **Husfellesskapet.** «Vis for gruppa» gjør et utkast synlig i kalenderen til alle i gruppa på Min side, og de kan svare om de kommer. Det sendes ingen e-post eller SMS. Knappen står bare på et utkast; et synlig møte viser «Synlig for gruppa». Fanen heter «Samlinger».
+
+### Menighetens kalender i medlemmenes egen kalender *(bygget 25. november 2026, ikke sluppet)*
+
+Bestilt av produkteier: medlemmene skal kunne få menighetens arrangementer inn i sin egen kalender, med riktig tid. Kalenderfilen `/api/offentlig/kalender.ics` fantes, og tidene i den var riktige: hos første menighet sto gudstjenesten kl. 11 både om vinteren og om sommeren. Men knappene sto bare i kalenderen på nettsiden her, og der den nettsiden er av, fant ingen dem.
+
+* **Min side → Kalender.** Under kalenderen står «Få menighetens kalender i din egen kalender», med «Legg til i Google Kalender», «Legg til på iPhone» og «Kopier abonnementslenke». Kalenderen har de samme arrangementene som før: de som er merket offentlige. Gruppenes egne samlinger og den enkeltes oppgaver er ikke med.
+* **Nettsidens kalender** har også fått «Legg til på iPhone».
+* **Admin → Kalender.** Boksen «Kalender for medlemmene» viser adressen med «Kopier», så den kan legges på menighetens egen nettside eller i nyhetsbrevet.
+* **Heldagsarrangementer.** Et arrangement som starter kl. 00:00, og enten er uten slutt eller slutter kl. 00:00, står som heldagsarrangement i medlemmenes kalender. Det står altså ikke kl. 00:00. Datoene regnes i norsk tid.
+* **Lenken i hvert arrangement** er bare med når nettsiden her er på. Ellers ville den ført til innloggingen på Min side.
+* **Databasereglene** er ikke endret. Innstillingen for flatene kunne leses uten innlogging fra før.
+
+### «Start import på nytt» er tatt bort *(bygget 25. november 2026, ikke sluppet)*
+
+Bestilt av produkteier. Knappen i «Fra kirkens kalender» slettet alle arrangementer som var koblet til kirkens kalender, også dem som var laget for hånd og bare koblet, og dem med samme navn og dato som en hendelse i kirkens kalender. Program, oppgaver og bemanning ble slettet med dem. Første menighet lager arrangementene i Menighetsplan og kobler dem bare til kirkens kalender, så knappen hadde ingen nytte der, bare en risiko.
+
+* **Tatt bort:** knappen «Start import på nytt» og vinduet «Start kalenderimport på nytt?». Det som slettet arrangementene og tømte køen, er tatt ut av koden.
+* **Som før:** fanene Venter, Lagt inn, Endret og Avvist og slettet, og knappene der. Et avvist eller slettet arrangement kan fortsatt hentes tilbake med «Ta inn likevel».
+* **Hjelpen** «Kirkens kalender» sier ikke lenger noe om knappen. Under «Pass på» står det nå at et koblet arrangement som slettes, tar med seg oppgavene og bemanningen, mens hendelsen i kirkens kalender blir stående.
+* **Databasereglene** er ikke endret.
+
+### Oppgaver tatt i Analysebordet *(bygget 25. november 2026, ikke sluppet)*
+
+Bestilt av produkteier: se hvor mange oppgaver som er tatt siste døgn, uke og måned, og hvor mange som er igjen.
+
+* **Ny del øverst i Analysebordet, «Oppgaver tatt»:** Siste døgn, Siste 7 dager, Siste 30 dager og Ledige plasser neste 4 uker. Når det er ledige plasser, fører «Se dem i Trenger oppfølging» dit.
+* **Tallene regnes alltid fra nå.** De følger ikke periodevalget. Definisjonene står i kapittel 2.4.
+* **Tallene finnes bakover i tid med en gang.** Appen har lagret når hver tildeling ble satt opp og besvart.
+* **Kan skjules** under «Tilpass bordet», som de andre delene.
+* **Databasereglene** er ikke endret.
 
 ### Åpne produktvalg
 | Valg | Alternativer | Anbefaling |

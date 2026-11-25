@@ -3,6 +3,7 @@
 // The list stores what is hidden rather than what is shown, so a new module appears for everyone.
 
 export const ANALYTICS_MODULES = [
+  { id: "oppgaver-tatt", title: "Oppgaver tatt", description: "Oppgaver noen har sagt ja til siste døgn, 7 dager og 30 dager, og ledige plasser de neste 4 ukene." },
   { id: "nokkeltall", title: "Nøkkeltall", description: "Snitt på gudstjeneste, aktive frivillige, bemanningsgrad og andel med i en gruppe." },
   { id: "oppmote", title: "Oppmøte", description: "Oppmøtetall per samling, samlinger som mangler tall, tabell og CSV." },
   { id: "bemanning", title: "Bemanning per arrangement", description: "Hvor mange samlinger som hadde alle plasser bekreftet, og hvilke som ikke hadde det." },

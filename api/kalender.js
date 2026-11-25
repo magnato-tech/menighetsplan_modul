@@ -91,6 +91,42 @@ function escapeIcal(text2) {
 function formatIcalUtc(d) {
   return d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
 }
+var OSLO_TIME = new Intl.DateTimeFormat("en-GB", {
+  timeZone: "Europe/Oslo",
+  year: "numeric",
+  month: "numeric",
+  day: "numeric",
+  hour: "numeric",
+  minute: "numeric",
+  hourCycle: "h23"
+});
+function osloTimeOf(d) {
+  const parts = {};
+  for (const part of OSLO_TIME.formatToParts(d)) {
+    if (part.type !== "literal") parts[part.type] = Number(part.value);
+  }
+  return { year: parts.year, month: parts.month, day: parts.day, hour: parts.hour, minute: parts.minute };
+}
+var ymd = (year, month, day) => `${year}${String(month).padStart(2, "0")}${String(day).padStart(2, "0")}`;
+var dayOf = (t) => ymd(t.year, t.month, t.day);
+var isMidnight = (t) => t.hour === 0 && t.minute === 0;
+function dayAfter(t) {
+  const next = new Date(Date.UTC(t.year, t.month - 1, t.day + 1));
+  return ymd(next.getUTCFullYear(), next.getUTCMonth() + 1, next.getUTCDate());
+}
+function timeLines(g) {
+  const start = new Date(g.startsAt);
+  const startOslo = osloTimeOf(start);
+  const endsAt = g.endsAt ? new Date(g.endsAt) : void 0;
+  const endOslo = endsAt ? osloTimeOf(endsAt) : void 0;
+  if (isMidnight(startOslo) && (!endOslo || isMidnight(endOslo))) {
+    const startDay = dayOf(startOslo);
+    const endDay = endOslo && dayOf(endOslo) > startDay ? dayOf(endOslo) : dayAfter(startOslo);
+    return [`DTSTART;VALUE=DATE:${startDay}`, `DTEND;VALUE=DATE:${endDay}`];
+  }
+  const end = endsAt ?? new Date(start.getTime() + DEFAULT_DURATION_MS);
+  return [`DTSTART:${formatIcalUtc(start)}`, `DTEND:${formatIcalUtc(end)}`];
+}
 var startOf = (g) => new Date(g.startsAt).getTime();
 function gatheringsForCalendarFeed(gatherings, now = /* @__PURE__ */ new Date()) {
   const from = now.getTime() - FEED_PAST_MS;
@@ -98,16 +134,13 @@ function gatheringsForCalendarFeed(gatherings, now = /* @__PURE__ */ new Date())
   return gatherings.filter((g) => isOpenCommunityGathering(g) && startOf(g) >= from && startOf(g) <= to).sort((a, b) => startOf(a) - startOf(b));
 }
 function eventLines(g, now, siteUrl) {
-  const start = new Date(g.startsAt);
-  const end = g.endsAt ? new Date(g.endsAt) : new Date(start.getTime() + DEFAULT_DURATION_MS);
   const theme = [g.theme, g.bibleText].filter(Boolean).join(" — ");
   const description = [g.summary?.trim(), theme].filter(Boolean).join("\n\n");
   return [
     "BEGIN:VEVENT",
     `UID:${g.id}@menighetsplan`,
     `DTSTAMP:${formatIcalUtc(now)}`,
-    `DTSTART:${formatIcalUtc(start)}`,
-    `DTEND:${formatIcalUtc(end)}`,
+    ...timeLines(g),
     `SUMMARY:${escapeIcal(g.title || "Samling")}`,
     `LOCATION:${escapeIcal(locationOf(g))}`,
     ...description ? [`DESCRIPTION:${escapeIcal(description)}`] : [],
@@ -174,6 +207,85 @@ function validateEvent(data) {
   return data;
 }
 
+// src/data/settingsRecords.ts
+var SURFACES_RECORD = "surfaces";
+
+// src/demo.ts
+var DEMO = readDemoInstallation(import.meta.env ?? {});
+
+// src/utils/surfaces.ts
+var defaultSurfaces = () => ({
+  minSide: true,
+  ownWebsite: true,
+  externalSiteUrl: "",
+  signInBackUrl: "",
+  externalCalendarUrl: "",
+  importNewAutomatically: false,
+  dismissedUids: [],
+  keptUids: [],
+  calendarNotes: {},
+  calendarDeclined: {}
+});
+function parseCalendarDeclined(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const declined = {};
+  for (const [key, raw] of Object.entries(value)) {
+    if (!raw || typeof raw !== "object") continue;
+    const item = raw;
+    declined[key] = {
+      title: typeof item.title === "string" ? item.title : "",
+      startsAt: typeof item.startsAt === "string" ? item.startsAt : "",
+      location: typeof item.location === "string" ? item.location : "",
+      cancelled: item.cancelled === true
+    };
+  }
+  return declined;
+}
+function parseCalendarNotes(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const notes = {};
+  for (const [key, raw] of Object.entries(value)) {
+    if (!raw || typeof raw !== "object") continue;
+    const note = raw;
+    if (note.reason !== "avvist" && note.reason !== "slettet") continue;
+    notes[key] = {
+      reason: note.reason,
+      at: typeof note.at === "string" ? note.at : "",
+      title: typeof note.title === "string" ? note.title : "",
+      startsAt: typeof note.startsAt === "string" ? note.startsAt : ""
+    };
+  }
+  return notes;
+}
+var strings = (value) => Array.isArray(value) ? value.filter((item) => typeof item === "string" && item.trim() !== "") : [];
+function parseSurfaces(data) {
+  const base = defaultSurfaces();
+  if (DEMO) {
+    return {
+      ...base,
+      externalSiteUrl: typeof data?.externalSiteUrl === "string" ? data.externalSiteUrl : "",
+      externalCalendarUrl: typeof data?.externalCalendarUrl === "string" ? data.externalCalendarUrl : "",
+      dismissedUids: strings(data?.dismissedUids),
+      keptUids: strings(data?.keptUids),
+      calendarNotes: parseCalendarNotes(data?.calendarNotes),
+      calendarDeclined: parseCalendarDeclined(data?.calendarDeclined)
+    };
+  }
+  if (data?.recordType !== SURFACES_RECORD) return base;
+  return {
+    minSide: data.minSide === false ? false : true,
+    ownWebsite: data.ownWebsite === false ? false : true,
+    externalSiteUrl: typeof data.externalSiteUrl === "string" ? data.externalSiteUrl : "",
+    signInBackUrl: typeof data.signInBackUrl === "string" ? data.signInBackUrl : "",
+    externalCalendarUrl: typeof data.externalCalendarUrl === "string" ? data.externalCalendarUrl : "",
+    importNewAutomatically: data.importNewAutomatically === true,
+    dismissedUids: strings(data.dismissedUids),
+    keptUids: strings(data.keptUids),
+    calendarNotes: parseCalendarNotes(data.calendarNotes),
+    calendarDeclined: parseCalendarDeclined(data.calendarDeclined)
+  };
+}
+
 // server/firestoreRest.ts
 var FirestoreRestError = class extends Error {
   constructor(message, status) {
@@ -235,6 +347,7 @@ async function readDocument(database, path, ask, headers) {
 // server/publicCalendarFeed.ts
 var GATHERINGS = "gatherings";
 var SETTINGS_DOCUMENT = "cms_settings/global";
+var SURFACES_DOCUMENT = "cms_settings/surfaces";
 var text = (status, body) => ({
   status,
   headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" },
@@ -266,6 +379,8 @@ async function publicCalendarFeed({ env, site, siteUrl, ask, now = /* @__PURE__ 
   }
   const settings = await readDocument(database, prefix + SETTINGS_DOCUMENT, ask).catch(() => null);
   const churchName = typeof settings?.churchName === "string" ? settings.churchName.trim() : "";
+  const surfacesDoc = await readDocument(database, prefix + SURFACES_DOCUMENT, ask).catch(() => null);
+  const surfaces = parseSurfaces(surfacesDoc && surfacesDoc.recordType === SURFACES_RECORD ? surfacesDoc : void 0);
   return {
     status: 200,
     headers: {
@@ -274,7 +389,7 @@ async function publicCalendarFeed({ env, site, siteUrl, ask, now = /* @__PURE__ 
       // Five minutes, also at the hosting's edge: a calendar app asks a few times a day at most
       "Cache-Control": "public, max-age=300, s-maxage=300"
     },
-    body: toIcalendar(gatherings, { calendarName: churchName || "Menighetsplan", now, siteUrl })
+    body: toIcalendar(gatherings, { calendarName: churchName || "Menighetsplan", now, siteUrl: surfaces.ownWebsite ? siteUrl : void 0 })
   };
 }
 

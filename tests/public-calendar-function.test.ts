@@ -42,18 +42,27 @@ const houseGroup = eventDocument("husgruppe-1", {
 });
 const broken = eventDocument("uten-dato", { title: text("Uten dato"), isPublic: { booleanValue: true } });
 
-/** A database that answers the two questions the function asks, and remembers what it was asked. */
-const database = (rows: unknown[], settings: RestFields | null = { churchName: text("Lillesand Misjonskirke") }) => {
+/**
+ * A database that answers the questions the function asks, and remembers what it was asked.
+ * `surfaces` is the cms_settings/surfaces document; null means it is not there.
+ */
+const database = (rows: unknown[], settings: RestFields | null = { churchName: text("Lillesand Misjonskirke") }, surfaces: RestFields | null = null) => {
   const asked: { url: string; body?: unknown }[] = [];
   const ask: Fetch = async (url, init) => {
     asked.push({ url, body: init?.body ? JSON.parse(init.body) : undefined });
     if (url.endsWith(":runQuery")) return { ok: true, status: 200, json: async () => rows };
+    if (url.endsWith("cms_settings/surfaces")) {
+      return surfaces ? { ok: true, status: 200, json: async () => ({ name: `${url}`, fields: surfaces }) } : { ok: false, status: 404, json: async () => ({}) };
+    }
     return settings ? { ok: true, status: 200, json: async () => ({ name: `${url}`, fields: settings }) } : { ok: false, status: 404, json: async () => ({}) };
   };
   return { ask, asked };
 };
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.useRealTimers();
+});
 
 describe("Det databasen svarer med, lest uten Firebase-klienten", () => {
   test("et dokument blir slik appen holder det, med id fra navnet når ingen er lagret", () => {
@@ -99,7 +108,7 @@ describe("Den offentlige kalenderen som abonnement", () => {
     expect(feed.body).toContain("DTSTART:20261025T100000Z");
     expect(feed.body).toContain("LOCATION:Bedehuset");
     expect(feed.body).toContain("URL:https://lillesandmisjonskirke.menighetsplan.no/arrangement/gudstjeneste-1");
-    expect(asked.map((question) => question.url.split("/documents")[1])).toEqual([":runQuery", "/cms_settings/global"]);
+    expect(asked.map((question) => question.url.split("/documents")[1])).toEqual([":runQuery", "/cms_settings/global", "/cms_settings/surfaces"]);
   });
 
   test("uten innstillinger for nettsiden heter kalenderen «Menighetsplan»", async () => {
@@ -144,6 +153,29 @@ describe("Den offentlige kalenderen som abonnement", () => {
     const atChurch = database([service]);
     await publicCalendarFeed({ env, site: "floy", ask: atChurch.ask, now });
     expect((atChurch.asked[0].body as ReturnType<typeof whereTrueQuery>).structuredQuery.from).toEqual([{ collectionId: "gatherings" }]);
+  });
+});
+
+describe("Adressen til hver side i kalenderen følger nettsiden her", () => {
+  const siteUrl = "https://lillesandmisjonskirke.menighetsplan.no";
+  const urlLines = (body: string) => body.split("\r\n").filter((line) => line.startsWith("URL:"));
+  const feedWith = (surfaces: RestFields | null | undefined) =>
+    publicCalendarFeed({ env, ask: database([service], undefined, surfaces).ask, now, siteUrl });
+
+  test("med surfaces-dokumentet borte, og med ownWebsite true, er adressen til arrangementet med", async () => {
+    const missing = await feedWith(undefined);
+    expect(urlLines(missing.body)).toEqual([`URL:${siteUrl}/arrangement/gudstjeneste-1`]);
+
+    const on = await feedWith({ recordType: text("surfaces"), ownWebsite: { booleanValue: true } });
+    expect(urlLines(on.body)).toEqual([`URL:${siteUrl}/arrangement/gudstjeneste-1`]);
+  });
+
+  test("med ownWebsite false og recordType surfaces, er det ingen linje som begynner med URL:, men arrangementet står der", async () => {
+    const off = await feedWith({ recordType: text("surfaces"), ownWebsite: { booleanValue: false } });
+    expect(off.status).toBe(200);
+    expect(urlLines(off.body)).toEqual([]);
+    expect(off.body).toContain("SUMMARY:Gudstjeneste");
+    expect(off.body.match(/BEGIN:VEVENT/g)).toHaveLength(1);
   });
 });
 
@@ -211,6 +243,9 @@ describe("Funksjonen slik Vercel leser den", () => {
   });
 
   test("den pakkede funksjonen svarer med kalenderen, med adressen den ble spurt på", async () => {
+    // The function reads the clock itself: the clock is set, so the event stays in the feed's window
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(now);
     vi.stubGlobal("fetch", database([service]).ask);
     vi.stubGlobal("process", { ...process, env });
     const { default: handler } = (await import(/* @vite-ignore */ pathToFileURL(packedPathOf("kalender")).href)) as {

@@ -7,12 +7,15 @@ import { toIcalendar } from "../src/utils/calendarFeed";
 import { collectionPrefixOf, parseDemoSiteId } from "../src/utils/demoSite";
 import { validateEvent } from "../src/utils/validation";
 import type { Gathering } from "../src/types";
+import { SURFACES_RECORD } from "../src/data/settingsRecords";
+import { parseSurfaces } from "../src/utils/surfaces";
 import { FirestoreRestError, readDocument, readWhereTrue, type Fetch } from "./firestoreRest";
 
 // The names in src/data/collections.ts, written out: that file is the browser's
 // (tests/public-calendar-function.test.ts holds the two together)
 export const GATHERINGS = "gatherings";
 export const SETTINGS_DOCUMENT = "cms_settings/global";
+export const SURFACES_DOCUMENT = "cms_settings/surfaces";
 
 export interface FeedRequest {
   /** The installation's settings: `process.env` where it is hosted. */
@@ -70,6 +73,8 @@ export async function publicCalendarFeed({ env, site, siteUrl, ask, now = new Da
 
   const settings = await readDocument(database, prefix + SETTINGS_DOCUMENT, ask).catch(() => null);
   const churchName = typeof settings?.churchName === "string" ? settings.churchName.trim() : "";
+  const surfacesDoc = await readDocument(database, prefix + SURFACES_DOCUMENT, ask).catch(() => null);
+  const surfaces = parseSurfaces(surfacesDoc && surfacesDoc.recordType === SURFACES_RECORD ? (surfacesDoc as Record<string, unknown>) : undefined);
 
   return {
     status: 200,
@@ -79,6 +84,6 @@ export async function publicCalendarFeed({ env, site, siteUrl, ask, now = new Da
       // Five minutes, also at the hosting's edge: a calendar app asks a few times a day at most
       "Cache-Control": "public, max-age=300, s-maxage=300",
     },
-    body: toIcalendar(gatherings, { calendarName: churchName || "Menighetsplan", now, siteUrl }),
+    body: toIcalendar(gatherings, { calendarName: churchName || "Menighetsplan", now, siteUrl: surfaces.ownWebsite ? siteUrl : undefined }),
   };
 }
