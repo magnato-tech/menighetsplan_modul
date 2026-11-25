@@ -80,6 +80,8 @@ export interface NewGatheringInput {
 export interface NewTaskInput {
   gatheringId: string;
   groupId?: string;
+  /** The teams that share the role, for a task «Ikke fordelt». */
+  teamChoices?: string[];
   volunteerRoleId?: string;
   title: string;
   description?: string;
@@ -184,6 +186,7 @@ export function buildTask(data: NewTaskInput): Task {
     id: newId("task"),
     gatheringId: data.gatheringId,
     groupId: data.groupId,
+    ...(data.teamChoices?.length ? { teamChoices: [...data.teamChoices] } : {}),
     volunteerRoleId: data.volunteerRoleId,
     title: data.title.trim(),
     description: data.description,

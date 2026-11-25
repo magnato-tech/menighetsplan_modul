@@ -356,6 +356,12 @@ export interface Task {
   gatheringId: string;
   /** Team responsible for staffing. Absent for roles without a team (e.g. Taler, Møteleder). */
   groupId?: string;
+  /**
+   * The teams that share the role. While groupId is absent the task is «Ikke fordelt», and a leader
+   * or member of one of these teams takes it by setting groupId (the rules let them write only that).
+   * It stays on the task, so the task can be given back.
+   */
+  teamChoices?: string[];
   /** When set, title and instruction come from the role library. */
   volunteerRoleId?: string;
   title: string;
@@ -394,8 +400,10 @@ export interface VolunteerRole {
   id: string;
   name: string;
   instruction?: string;
-  /** Default tjenesteteam for the role. Absent when the role has no team. */
+  /** Default tjenesteteam for the role. Absent when the role has no team. The first of groupIds when several teams share it. */
   groupId?: string;
+  /** Every team that shares the role, when there are two or more (e.g. two lovsangsteam). Read with roleTeamIds. */
+  groupIds?: string[];
   sortOrder: number;
   updatedAt?: string;
 }

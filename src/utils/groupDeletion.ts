@@ -1,5 +1,6 @@
 import type { Gathering, Group, Task, VolunteerRole } from "../types";
 import { allGroupPersonIds } from "./groups";
+import { roleHasTeam, roleTeamIds } from "./roleTeams";
 
 // What deleting a group means, worked out before anything is deleted.
 //
@@ -13,8 +14,8 @@ export interface GroupDeletion {
   blockedBy: string[];
   /** How many persons are in the group, leaders and deputies counted once. They stay in the register. */
   participants: number;
-  /** The roles that have the group as their team. They lose it and stand without a team. */
-  roles: Pick<VolunteerRole, "id" | "name">[];
+  /** The roles that have the group as a team. They lose it; `remaining` are the teams they keep (none: without a team). */
+  roles: (Pick<VolunteerRole, "id" | "name"> & { remaining: string[] })[];
   /** The templates that name the group as responsible. They lose it. */
   templates: { id: string; name: string }[];
 }
@@ -26,7 +27,7 @@ export function groupDeletion(
   data: {
     gatherings: readonly Pick<Gathering, "groupId">[];
     tasks: readonly Pick<Task, "groupId">[];
-    roles: readonly Pick<VolunteerRole, "id" | "name" | "groupId">[];
+    roles: readonly Pick<VolunteerRole, "id" | "name" | "groupId" | "groupIds">[];
     templates: readonly { id: string; name: string; groupId?: string }[];
   }
 ): GroupDeletion {
@@ -38,7 +39,10 @@ export function groupDeletion(
   return {
     blockedBy,
     participants: allGroupPersonIds(group).length,
-    roles: data.roles.filter((role) => role.groupId === group.id).map(({ id, name }) => ({ id, name })),
+    // A role shared with other teams keeps them; the rest are left without a team
+    roles: data.roles
+      .filter((role) => roleHasTeam(role, group.id))
+      .map((role) => ({ id: role.id, name: role.name, remaining: roleTeamIds(role).filter((id) => id !== group.id) })),
     templates: data.templates.filter((template) => template.groupId === group.id).map(({ id, name }) => ({ id, name })),
   };
 }

@@ -53,7 +53,7 @@ export async function persistVolunteerRole(input: NewVolunteerRoleInput): Promis
 
 export async function patchVolunteerRole(
   roleId: string,
-  updates: Partial<Pick<VolunteerRole, "name" | "instruction" | "groupId" | "sortOrder">>
+  updates: Partial<Pick<VolunteerRole, "name" | "instruction" | "groupId" | "groupIds" | "sortOrder">>
 ): Promise<void> {
   await updateDocument(CMS_COLLECTIONS.SETTINGS, roleId, {
     ...updates,
@@ -71,6 +71,22 @@ export async function moveRoleTasksToTeam(groupId: string | undefined, taskIds: 
     const batch = writeBatch(db);
     for (const taskId of piece) {
       batch.update(doc(db, COLLECTIONS.TASKS, taskId), forUpdate({ groupId }));
+    }
+    await batch.commit();
+  }
+}
+
+/**
+ * Sets the team fields of tasks: the team (groupId) and the teams that may take them (teamChoices).
+ * A field that is undefined is removed from the task. Only the named tasks are written.
+ */
+export async function updateTaskTeams(
+  changes: { taskId: string; groupId?: string; teamChoices?: string[] }[]
+): Promise<void> {
+  for (const piece of chunk(changes, BATCH_SIZE)) {
+    const batch = writeBatch(db);
+    for (const change of piece) {
+      batch.update(doc(db, COLLECTIONS.TASKS, change.taskId), forUpdate({ groupId: change.groupId, teamChoices: change.teamChoices }));
     }
     await batch.commit();
   }

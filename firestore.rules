@@ -313,7 +313,14 @@ service cloud.firestore {
             && resource.data.status != 'cancelled'
             && request.resource.data.status != 'cancelled')
         || leads(resource.data.get('groupId', null))
-        || leadsEvent(resource.data.gatheringId);
+        || leadsEvent(resource.data.gatheringId)
+        // A task of a role several teams share («Ikke fordelt»): a leader or member of one of them
+        // takes it for their team. Only the team is written, and only to one of the teams it may go to.
+        || (isMember()
+            && resource.data.get('groupId', null) == null
+            && changedOnly(['groupId'])
+            && request.resource.data.groupId in resource.data.get('teamChoices', [])
+            && (memberOf(request.resource.data.groupId) || leads(request.resource.data.groupId)));
       allow delete: if isAdmin()
         || leads(resource.data.get('groupId', null))
         || leadsEvent(resource.data.gatheringId);

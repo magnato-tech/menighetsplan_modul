@@ -55,7 +55,7 @@ const taskOf = (id: string, volunteerRoleId?: string, groupId?: string) => ({
 
 /** Opens the instruction editor of the role at the index, chooses the team, and saves. */
 const saveTeam = async (roleIndex: number, team: string) => {
-  fireEvent.click(screen.getAllByRole("button", { name: /^Instruks$/i })[roleIndex]);
+  fireEvent.click(screen.getAllByRole("button", { name: /^Instruks og team/i })[roleIndex]);
   fireEvent.change(within(screen.getByRole("dialog")).getByRole("combobox"), { target: { value: team } });
   fireEvent.click(screen.getByRole("button", { name: /Lagre instruks/i }));
 };
@@ -146,9 +146,15 @@ describe("RolesTab", () => {
     expect(screen.getByRole("button", { name: /Legg inn standardroller/i })).toBeTruthy();
   });
 
+  test("knappen for instruks heter «Instruks og team», fordi teamet redigeres i samme dialog", () => {
+    render(<RolesTab studio={studio} />);
+    expect(screen.getAllByRole("button", { name: /^Instruks og team/i })).toHaveLength(2);
+    expect(screen.queryByRole("button", { name: /^Instruks$/i })).toBeNull();
+  });
+
   test("åpner instruks-dialog for valgt rolle", () => {
     render(<RolesTab studio={studio} />);
-    fireEvent.click(screen.getAllByRole("button", { name: /^Instruks$/i })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: /^Instruks og team/i })[0]);
     expect(screen.getByText("Instruks: Lyd")).toBeTruthy();
     expect(screen.getByDisplayValue("Møt kl. 09:30")).toBeTruthy();
   });
@@ -156,7 +162,7 @@ describe("RolesTab", () => {
   test("lagrer redigert instruks", async () => {
     const showFeedback = vi.fn();
     render(<RolesTab studio={studio} showFeedback={showFeedback} />);
-    fireEvent.click(screen.getAllByRole("button", { name: /^Instruks$/i })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: /^Instruks og team/i })[0]);
     fireEvent.change(screen.getByDisplayValue("Møt kl. 09:30"), {
       target: { value: "Møt kl. 09:45" },
     });

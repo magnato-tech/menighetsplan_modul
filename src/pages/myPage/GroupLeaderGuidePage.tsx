@@ -103,6 +103,11 @@ export const GroupLeaderGuidePage: React.FC = () => (
         <li>Sjekk statusen etter noen dager, og spør en annen hvis svaret er nei.</li>
       </ol>
       <p className={text}>Du kan også ta en ledig oppgave selv: trykk «Se ledige oppgaver» og velg «Ta oppgave».</p>
+      <p className={text}>
+        Deler gruppen en rolle med et annet team, for eksempel to lovsangsteam, står de nye oppgavene under «Ikke fordelt» i gruppen. Trykk «Vi
+        tar denne» på gudstjenestene dere skal ha. Har dere tatt en dere ikke kan likevel, trykker du «Gi fra oss», så kan det andre teamet ta
+        den.
+      </p>
       <table className="w-full border border-slate-200 rounded-xl overflow-hidden">
         <thead className="bg-slate-50">
           <tr>

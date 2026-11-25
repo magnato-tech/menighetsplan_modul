@@ -11,6 +11,7 @@ import {
   type RosterRow,
   type RosterTeamCard,
 } from "../../utils/staffingRoster";
+import { isUndistributed } from "../../utils/roleTeams";
 import { columnCountFor, masonryColumns } from "../../utils/masonry";
 import { StaffingRosterRowCard, type AssignMode } from "./StaffingRosterRowCard";
 import { AssignPersonDialog } from "./AssignPersonDialog";
@@ -261,8 +262,9 @@ export const StaffingView: React.FC<StaffingViewProps> = ({
 
         <div id={contentId} className={`${open ? "block" : "hidden"} print:block border-t border-slate-200`}>
           {shown.map((row) => (
+            <React.Fragment key={row.task.id}>
+            {isUndistributed(row.task) && <p className="px-4 pt-2 text-[11px] text-slate-500">Ikke fordelt</p>}
             <StaffingRosterRowCard
-              key={row.task.id}
               row={row}
               highlighted={row.task.id === highlightTaskId}
               canIntervene={canAdminister || row.isMyGroup}
@@ -298,6 +300,7 @@ export const StaffingView: React.FC<StaffingViewProps> = ({
                 })
               }
             />
+            </React.Fragment>
           ))}
         </div>
       </section>

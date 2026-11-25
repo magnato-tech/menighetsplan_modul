@@ -3,6 +3,7 @@ import { useFirebase } from "../context/FirebaseDataContext";
 import { Person } from "../types";
 import { resolveTaskInstruction } from "../utils/roleStaffing";
 import { countSlots, holdsSlot } from "../utils/staffing";
+import { isUndistributed, takeForTeam, taskTeamIds } from "../utils/roleTeams";
 
 // 1. Hook: useCurrentUser
 export function useCurrentUser() {
@@ -43,10 +44,13 @@ export function useTaskDetail(taskId: string | undefined) {
     updateAssignmentStatus,
     reportAbsence,
     volunteerRoles,
+    updateTask,
   } = useFirebase();
 
   const task = (taskId && getTaskById(taskId)) || null;
-  const group = (task?.groupId && getGroupById(task.groupId)) || null;
+  // The team the user is in that the task is for: its team, or for a task of a shared role not yet given out, the first of its teams the user is in
+  const myTeamOfTask = task ? taskTeamIds(task).find((id) => isPersonInGroup(currentUser.id, id)) : undefined;
+  const group = (task && getGroupById(task.groupId ?? myTeamOfTask ?? "")) || null;
   const gathering = (task && getGatheringById(task.gatheringId)) || null;
   useEffect(() => (gathering ? watchGatheringAssignments(gathering.id) : undefined), [gathering, watchGatheringAssignments]);
 
@@ -63,7 +67,7 @@ export function useTaskDetail(taskId: string | undefined) {
     task !== null &&
     currentUser.globalRole !== "admin" &&
     !myAssignment &&
-    (task.groupId ? !isPersonInGroup(currentUser.id, task.groupId) : true);
+    !myTeamOfTask;
 
   const instruction = task ? resolveTaskInstruction(task, volunteerRoles) : "";
 
@@ -92,11 +96,15 @@ export function useTaskDetail(taskId: string | undefined) {
     canClaim,
     canReportAbsence: isAssignedToMe,
     permissionDenied,
-    /** Taking a task oneself is a yes, so the assignment is confirmed at once. */
-    claimTask: () =>
-      task && canClaim
-        ? assignTaskToPerson(task.id, currentUser.id, "confirmed")
-        : refused("Oppgaven kan ikke tas."),
+    /** Taking a task oneself is a yes, so the assignment is confirmed at once. A task of a shared role goes to the user's team first. */
+    claimTask: () => {
+      if (!task || !canClaim) return refused("Oppgaven kan ikke tas.");
+      if (isUndistributed(task) && myTeamOfTask) {
+        const taken = updateTask(task.id, takeForTeam(myTeamOfTask));
+        if (!taken.success) return taken;
+      }
+      return assignTaskToPerson(task.id, currentUser.id, "confirmed");
+    },
     /** Answers a request from a leader. */
     answerRequest: (accept: boolean) =>
       myAssignment && isAskedOfMe

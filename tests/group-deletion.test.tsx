@@ -50,7 +50,7 @@ describe("Hva det betyr å slette en gruppe", () => {
       roles: [{ id: "r1", name: "Taler", groupId: "gjester" }, { id: "r2", name: "Lyd", groupId: "rigg" }, { id: "r3", name: "Leder" }],
       templates: [{ id: "m1", name: "Gudstjeneste" }, { id: "m2", name: "Temakveld", groupId: "gjester" }],
     });
-    expect(deletion.roles).toEqual([{ id: "r1", name: "Taler" }]);
+    expect(deletion.roles).toEqual([{ id: "r1", name: "Taler", remaining: [] }]);
     expect(deletion.templates).toEqual([{ id: "m2", name: "Temakveld" }]);
   });
 });
@@ -101,5 +101,13 @@ describe("Advarselen før en gruppe slettes", () => {
     traces.read.mockRejectedValueOnce(new Error("ingen forbindelse"));
     show();
     expect(await screen.findByText("Meldingene i gruppen slettes.")).toBeTruthy();
+  });
+  test("en delt rolle beholder de andre teamene", () => {
+    const deletion = groupDeletion(group, {
+      ...nothing,
+      roles: [{ id: "r1", name: "Lovsang", groupId: "gjester", groupIds: ["gjester", "lovsang2"] }],
+      templates: [],
+    });
+    expect(deletion.roles).toEqual([{ id: "r1", name: "Lovsang", remaining: ["lovsang2"] }]);
   });
 });

@@ -1,8 +1,9 @@
 import { useMemo, useCallback } from "react";
 import { useFirebase } from "../context/FirebaseDataContext";
-import { Group, ProgramItem } from "../types";
+import { Group, ProgramItem, Task } from "../types";
 import { calculateTaskStaffingStatus, describeAssignments, getStaffingStatus } from "../utils/staffing";
 import { isInGroup, leadsGroup, allGroupPersonIds } from "../utils/groups";
+import { canGiveBack as canTaskBeGivenBack, giveBack, isUndistributed, roleTeamIds, takeForTeam } from "../utils/roleTeams";
 
 // 14. Hook: useLeaderGroupDetail
 export function useLeaderGroupDetail(groupId: string) {
@@ -23,6 +24,8 @@ export function useLeaderGroupDetail(groupId: string) {
     assignTaskToPerson,
     updateAssignmentStatus,
     removeAssignment,
+    volunteerRoles,
+    updateTask,
   } = useFirebase();
 
   const group = getGroupById(groupId);
@@ -117,6 +120,50 @@ export function useLeaderGroupDetail(groupId: string) {
       .sort((a, b) => new Date(a.gathering.startsAt).getTime() - new Date(b.gathering.startsAt).getTime());
   }, [group, gatherings, tasks, assignments, getPersonById]);
 
+  // Tasks of a shared role that no team has taken yet, and that this group may take: upcoming gatherings only
+  const undistributedTasks = useMemo(() => {
+    if (!group) return [];
+    const now = Date.now();
+    return tasks
+      .filter((task) => isUndistributed(task) && (task.teamChoices ?? []).includes(group.id))
+      .flatMap((task) => {
+        const gathering = gatherings.find((g) => g.id === task.gatheringId);
+        if (!gathering || new Date(gathering.startsAt).getTime() < now) return [];
+        const teamNames = (task.teamChoices ?? []).map((id) => getGroupById(id)?.name ?? "").filter(Boolean);
+        return [{ task, gathering, teamNames }];
+      })
+      .sort((a, b) => new Date(a.gathering.startsAt).getTime() - new Date(b.gathering.startsAt).getTime());
+  }, [group, tasks, gatherings, getGroupById]);
+
+  const roleOfTask = useCallback(
+    (taskId: string) => {
+      const task = tasks.find((t) => t.id === taskId);
+      return task ? volunteerRoles.find((role) => role.id === task.volunteerRoleId) : undefined;
+    },
+    [tasks, volunteerRoles]
+  );
+
+  /** This group takes a task of a shared role: only groupId is written, as the rules allow. */
+  const takeTask = useCallback(
+    (taskId: string) => {
+      if (!group) return { success: false, error: "Ingen gruppe valgt." };
+      return updateTask(taskId, takeForTeam(group.id));
+    },
+    [group, updateTask]
+  );
+
+  /** Gives a task back, so the teams that share its role may take it. */
+  const giveTaskBack = useCallback(
+    (taskId: string) => updateTask(taskId, giveBack(roleTeamIds(roleOfTask(taskId)))),
+    [updateTask, roleOfTask]
+  );
+
+  /** Whether the group may give the task back: it has the task and the role is shared. */
+  const canGiveBack = useCallback(
+    (task: Task) => canTaskBeGivenBack(task, roleTeamIds(volunteerRoles.find((role) => role.id === task.volunteerRoleId))),
+    [volunteerRoles]
+  );
+
   const messages = useMemo(() => {
     if (!group) return [];
     return getGroupMessages(group.id);
@@ -146,6 +193,7 @@ export function useLeaderGroupDetail(groupId: string) {
     allPersons,
     groupGatherings,
     messages,
+    volunteerRoles,
     updateGroup,
     addGroupMember,
     removeGroupMember,
@@ -153,6 +201,10 @@ export function useLeaderGroupDetail(groupId: string) {
     assignTaskToPerson,
     updateAssignmentStatus,
     removeAssignment,
+    undistributedTasks,
+    takeTask,
+    giveTaskBack,
+    canGiveBack,
   };
 }
 
