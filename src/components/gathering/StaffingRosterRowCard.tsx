@@ -84,9 +84,7 @@ export const StaffingRosterRowCard: React.FC<StaffingRosterRowCardProps> = ({
         )}
 
         <div className="flex items-center gap-3 text-[11px] text-slate-600">
-            {!cancelled && row.programTimes.length === 0 && (
-              <span className="text-[11px] text-slate-500">Utenfor programmet</span>
-            )}
+            {/* A role not tied to the programme (Lyd, Rigging) shows no time and no text */}
             {cancelled && (
               <span className="inline-flex items-center gap-1 text-xs font-semibold">
                 <Ban className="w-3.5 h-3.5" aria-hidden />
