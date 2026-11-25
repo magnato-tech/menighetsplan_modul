@@ -684,6 +684,7 @@ const analysebord: HelpArticle = {
   hvor: "Analyse → Analysebord",
   intro: "Menighetens liv i tall over en periode, sammenlignet med perioden før.",
   steg: [
+    "Øverst viser **Oppgaver tatt** hvor mange oppgaver noen har sagt ja til siste døgn, siste 7 dager og siste 30 dager, og hvor mange plasser som er ledige de neste 4 ukene. Disse tallene regnes alltid fra nå.",
     "Velg periode: **Siste 4 uker**, **Siste 3 måneder** eller **Siste 12 måneder**.",
     "Trykk på en søyle under Oppmøte, eller **Registrer**, for å skrive inn hvor mange som var der.",
     "Les hvem som kan trenge avlastning, og hvem som ikke er brukt, før neste vaktliste lages.",

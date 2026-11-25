@@ -4,6 +4,8 @@ import {
   analyticsPeriod,
   buildChurchAnalytics,
   headcountCsv,
+  summarizeFullStaffing,
+  summarizeTasksTaken,
   highLoadThreshold,
   type ChurchData,
 } from "../src/utils/churchAnalytics";
@@ -299,5 +301,82 @@ describe("Analysebord", () => {
   assert(
     formula.includes(`;"'=HYPERLINK(""x"")";`) && formula.endsWith(";'+47 999"),
     "Tekst som ser ut som en formel, åpnes som tekst i regnearket"
+  );
+});
+
+describe("Oppgaver tatt", () => {
+  const now = new Date("2026-10-05T12:00:00.000Z").getTime();
+  const HOUR = 60 * 60 * 1000;
+  const DAY = 24 * HOUR;
+  const at = (ms: number) => new Date(now - ms).toISOString();
+
+  // One task on one gathering, and one assignment on it: what each case changes
+  const takenBy = (assignment: Partial<Assignment>, task: Partial<Task> = {}) =>
+    summarizeTasksTaken(
+      {
+        gatherings: [],
+        tasks: [{ id: "t", gatheringId: "g", title: "Lyd", status: "open", neededCount: 1, ...task }],
+        assignments: [{ id: "a", taskId: "t", personId: "p", response: "confirmed", ...assignment }],
+      },
+      now
+    );
+  const counts = (s: { lastDay: number; lastWeek: number; lastMonth: number }) => `${s.lastDay},${s.lastWeek},${s.lastMonth}`;
+
+  assert(counts(takenBy({ assignedAt: at(2 * HOUR) })) === "1,1,1", "En bekreftet tildeling 2 timer før telles i alle tre");
+  assert(counts(takenBy({ assignedAt: at(3 * DAY) })) === "0,1,1", "3 dager før telles i 7 og 30 dager, ikke i siste døgn");
+  assert(counts(takenBy({ assignedAt: at(20 * DAY) })) === "0,0,1", "20 dager før telles bare i 30 dager");
+  assert(counts(takenBy({ assignedAt: at(40 * DAY) })) === "0,0,0", "40 dager før telles ikke");
+  assert(
+    counts(takenBy({ assignedAt: at(40 * DAY), respondedAt: at(2 * HOUR) })) === "1,1,1",
+    "Det som gjelder er den seneste datoen: svaret, når det er senere enn tildelingen"
+  );
+  assert(
+    counts(takenBy({ response: "withdrawn", assignedAt: at(2 * HOUR), respondedAt: at(HOUR) })) === "0,0,0",
+    "Et forfall telles ikke"
+  );
+  assert(counts(takenBy({ response: "declined", assignedAt: at(2 * HOUR) })) === "0,0,0", "Et avslag telles ikke");
+  assert(counts(takenBy({ response: "pending", assignedAt: at(2 * HOUR) })) === "0,0,0", "En forespørsel som venter på svar telles ikke");
+  assert(counts(takenBy({ assignedAt: at(2 * HOUR) }, { status: "cancelled" })) === "0,0,0", "En oppgave som er avlyst, telles ikke");
+  assert(counts(takenBy({ assignedAt: new Date(now + 2 * HOUR).toISOString() })) === "0,0,0", "En dato etter nå telles ikke");
+  assert(counts(takenBy({})) === "0,0,0", "En tildeling uten dato telles ikke");
+  assert(
+    counts(
+      summarizeTasksTaken(
+        {
+          gatherings: [],
+          tasks: [{ id: "t", gatheringId: "g", title: "Lyd", status: "confirmed", neededCount: 1 }],
+          assignments: [
+            { id: "a-eldst", taskId: "t", personId: "p", response: "confirmed", assignedAt: at(3 * HOUR) },
+            { id: "a-nyest", taskId: "t", personId: "p", response: "confirmed", assignedAt: at(HOUR) },
+          ],
+        },
+        now
+      )
+    ) === "1,1,1",
+    "To tildelinger for samme person og oppgave telles én gang"
+  );
+
+  // The open slots are the same figure as «Bemanning per arrangement» for the next four weeks
+  const upcoming = {
+    gatherings: [{ id: "g", groupId: "g-team", title: "Gudstjeneste", startsAt: new Date(now + 3 * DAY).toISOString(), type: "arrangement" as const, visibility: "offentlig" as const, isGudstjeneste: true }],
+    tasks: [
+      { id: "t1", gatheringId: "g", title: "Lyd", status: "open" as const, neededCount: 2 },
+      { id: "t2", gatheringId: "g", title: "Kirkekaffe", status: "open" as const, neededCount: 1 },
+    ],
+    assignments: [{ id: "a1", taskId: "t1", personId: "p", response: "confirmed" as const, assignedAt: at(2 * HOUR) }],
+  };
+  const openSlots = summarizeTasksTaken(upcoming, now).openSlotsNext4Weeks;
+  assert(openSlots === 2, "Ledige plasser: én av to på første oppgave og en på den andre");
+  assert(
+    openSlots === summarizeFullStaffing(upcoming, analyticsPeriod("next4w", now)).missingSlots,
+    "Ledige plasser neste 4 uker er samme tall som bemanningen for neste 4 uker"
+  );
+  assert(
+    buildChurchAnalytics(
+      { persons: [], groups: [], attendances: [], headcounts: [], messages: [], volunteerRoles: [], pages: [], news: [], sermons: [], ...upcoming },
+      "4w",
+      now
+    ).tasksTaken.lastDay === 1,
+    "Analysen har tallene med seg, og de telles fra nå uansett periode"
   );
 });

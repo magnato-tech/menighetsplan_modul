@@ -174,6 +174,13 @@ describe("Analysebord", () => {
     expect(screen.getByRole("heading", { name: "Frivillighet og bemanning" })).toBeTruthy();
   });
 
+  test("oppgaver tatt vises øverst, med tallet for siste 7 dager", () => {
+    renderTab();
+    expect(screen.getByRole("heading", { name: "Oppgaver tatt" })).toBeTruthy();
+    expect(screen.getByText("Siste 7 dager")).toBeTruthy();
+    expect(screen.getByText("Ledige plasser neste 4 uker")).toBeTruthy();
+  });
+
   test("de nye modulene vises: bemanning per arrangement, flere oppgaver, per måned og hver enkelt", () => {
     renderTab();
     expect(screen.getByRole("heading", { name: "Bemanning per arrangement" })).toBeTruthy();

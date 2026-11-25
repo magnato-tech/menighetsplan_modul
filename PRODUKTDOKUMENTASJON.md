@@ -180,7 +180,7 @@ Analysebordet er en del av modulen **Analyse**. Det står i menyen under **Analy
 **Prinsipper**
 
 * **Bare det som er lagret.** Hvert tall telles fra databasen. Mangler grunnlaget, vises en strek, aldri null eller et anslag. Feltet **Datagrunnlag** nederst sier hva tallene bygger på og hva som ikke måles.
-* **Perioden styrer alt.** Siste 4 uker, 3 måneder (standard) eller 12 måneder (52 hele uker). Hvert tall sammenlignes med like lang periode rett før. Det som er et øyeblikksbilde (tilhørighet, personregisteret), sammenlignes ikke.
+* **Perioden styrer alt.** Siste 4 uker, 3 måneder (standard) eller 12 måneder (52 hele uker). Hvert tall sammenlignes med like lang periode rett før. Det som er et øyeblikksbilde (tilhørighet, personregisteret), sammenlignes ikke. Unntaket er **Oppgaver tatt** øverst, som alltid regnes fra nå.
 * **Svar er ikke oppmøte.** «Kommer» sier hvem som planla å komme. Oppmøtetallet sier hvem som kom. De vises hver for seg.
 * **Personer navngis bare der administratoren skal handle:** avlastning, ubrukte frivillige, personer uten gruppe og politiattester. Alt annet er tall.
 * **Ingen sporing av besøkende.** Besøk på nettsiden telles anonymt, på et eget bord (kapittel 2.5). Hvem de besøkende er, måles ikke.
@@ -189,6 +189,7 @@ Analysebordet er en del av modulen **Analyse**. Det står i menyen under **Analy
 
 | Del | Innhold | Definisjon |
 |:---|:---|:---|
+| Oppgaver tatt | Oppgaver noen har sagt ja til siste døgn, siste 7 dager og siste 30 dager, og ledige plasser de neste 4 ukene, med lenke til Trenger oppfølging | Regnes alltid fra nå, ikke fra perioden. Tatt: en bekreftet tildeling på en oppgave som ikke er strøket, talt fra det seneste av når den ble satt opp og når personen svarte. Det telles likt om personen tok oppgaven selv, svarte ja på en forespørsel eller ble satt opp av en leder: appen lagrer ikke hvilken måte det var. Forfall etterpå telles ikke. Oppgaver som ble lagt inn på én gang fra et ark, telles den dagen de ble lagt inn. Ledige plasser: samme tall som Bemanning per arrangement med «Neste 4 uker» |
 | Nøkkeltall | Snitt på gudstjeneste, aktive frivillige, bemanningsgrad, andel med i en gruppe | Snittet regnes bare av gudstjenestene som er talt. Aktiv frivillig: har sagt ja til minst én oppgave på en samling som er holdt i perioden. Bemanningsgrad: bekreftede plasser delt på behovet, på holdte samlinger |
 | Oppmøte | Søyle per samling (voksne og barn), snittlinje, liste over samlinger som mangler tall, tabellvisning, CSV | En samling uten tall vises som en lav grå strek, aldri som lavt oppmøte. Gruppesamlinger telles ikke her; de følges med svarene |
 | Bemanning per arrangement | Hvor mange holdte samlinger med oppgaver som var fullt bemannet, for alle og for gudstjenestene, sammenlignet med perioden før, og listen over dem som ikke var det | Fullt bemannet: alle plasser i alle oppgavene var bekreftet. En samling uten oppgaver telles ikke |
@@ -2301,6 +2302,16 @@ Bestilt av produkteier. Knappen i «Fra kirkens kalender» slettet alle arrangem
 * **Tatt bort:** knappen «Start import på nytt» og vinduet «Start kalenderimport på nytt?». Det som slettet arrangementene og tømte køen, er tatt ut av koden.
 * **Som før:** fanene Venter, Lagt inn, Endret og Avvist og slettet, og knappene der. Et avvist eller slettet arrangement kan fortsatt hentes tilbake med «Ta inn likevel».
 * **Hjelpen** «Kirkens kalender» sier ikke lenger noe om knappen. Under «Pass på» står det nå at et koblet arrangement som slettes, tar med seg oppgavene og bemanningen, mens hendelsen i kirkens kalender blir stående.
+* **Databasereglene** er ikke endret.
+
+### Oppgaver tatt i Analysebordet *(bygget 25. november 2026, ikke sluppet)*
+
+Bestilt av produkteier: se hvor mange oppgaver som er tatt siste døgn, uke og måned, og hvor mange som er igjen.
+
+* **Ny del øverst i Analysebordet, «Oppgaver tatt»:** Siste døgn, Siste 7 dager, Siste 30 dager og Ledige plasser neste 4 uker. Når det er ledige plasser, fører «Se dem i Trenger oppfølging» dit.
+* **Tallene regnes alltid fra nå.** De følger ikke periodevalget. Definisjonene står i kapittel 2.4.
+* **Tallene finnes bakover i tid med en gang.** Appen har lagret når hver tildeling ble satt opp og besvart.
+* **Kan skjules** under «Tilpass bordet», som de andre delene.
 * **Databasereglene** er ikke endret.
 
 ### Åpne produktvalg

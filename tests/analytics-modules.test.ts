@@ -4,6 +4,7 @@ import { ANALYTICS_MODULES, hiddenModuleCount, isModuleShown } from "../src/util
 
 describe("Modulene på analysebordet", () => {
   const ids = ANALYTICS_MODULES.map((m) => m.id);
+  assert(ids[0] === "oppgaver-tatt", "Oppgaver tatt står først på bordet");
   assert(new Set(ids).size === ids.length, "Hver modul har en unik ID");
   assert(ANALYTICS_MODULES.every((m) => m.title && m.description), "Hver modul har navn og beskrivelse");
   assert(
