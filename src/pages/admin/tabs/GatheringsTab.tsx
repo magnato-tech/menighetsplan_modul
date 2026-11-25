@@ -41,6 +41,7 @@ import { MoveSeriesDialog } from "../MoveSeriesDialog";
 import { GatheringsTable } from "./gatherings/GatheringsTable";
 import { GatheringsCalendar, KIND_COLORS } from "./gatherings/GatheringsCalendar";
 import { ExternalCalendarImportPanel } from "../../../components/admin/ExternalCalendarImportPanel";
+import { MemberCalendarLinkPanel } from "../../../components/admin/MemberCalendarLinkPanel";
 import { CALENDAR_KINDS, filterByKinds, type CalendarKind } from "../../../utils/adminCalendar";
 import { gatheringsInPeriod, nextGatheringSort, type GatheringPeriod, type GatheringSortDirection, type GatheringSortKey } from "../../../utils/gatheringList";
 import { defaultGroupId, newGatheringForm, type GatheringFormValues } from "../../../utils/gatheringForm";
@@ -260,6 +261,8 @@ export const GatheringsTab: React.FC<GatheringsTabProps> = ({ studio, showFeedba
         </div>
 
         <ExternalCalendarImportPanel studio={studio} showFeedback={showFeedback} />
+
+        <MemberCalendarLinkPanel />
 
         {/* The filter buttons, as in many church calendars: none on shows all */}
         <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Vis">

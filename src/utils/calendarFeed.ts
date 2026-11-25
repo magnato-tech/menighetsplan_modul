@@ -18,6 +18,63 @@ function formatIcalUtc(d: Date): string {
   return d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
 }
 
+/** Norwegian time of a moment, whatever the time zone of the machine. */
+const OSLO_TIME = new Intl.DateTimeFormat("en-GB", {
+  timeZone: "Europe/Oslo",
+  year: "numeric",
+  month: "numeric",
+  day: "numeric",
+  hour: "numeric",
+  minute: "numeric",
+  hourCycle: "h23",
+});
+
+interface OsloTime {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+}
+
+function osloTimeOf(d: Date): OsloTime {
+  const parts: Record<string, number> = {};
+  for (const part of OSLO_TIME.formatToParts(d)) {
+    if (part.type !== "literal") parts[part.type] = Number(part.value);
+  }
+  return { year: parts.year, month: parts.month, day: parts.day, hour: parts.hour, minute: parts.minute };
+}
+
+const ymd = (year: number, month: number, day: number) =>
+  `${year}${String(month).padStart(2, "0")}${String(day).padStart(2, "0")}`;
+const dayOf = (t: OsloTime) => ymd(t.year, t.month, t.day);
+const isMidnight = (t: OsloTime) => t.hour === 0 && t.minute === 0;
+
+/** The Norwegian day after the given one. Counted in UTC, so no time zone can move it. */
+function dayAfter(t: OsloTime): string {
+  const next = new Date(Date.UTC(t.year, t.month - 1, t.day + 1));
+  return ymd(next.getUTCFullYear(), next.getUTCMonth() + 1, next.getUTCDate());
+}
+
+/**
+ * DTSTART and DTEND of one event. A whole-day event (starts at 00:00 Norwegian time, and ends at 00:00 or
+ * not at all) is written as dates; every other event is written as moments in UTC.
+ */
+function timeLines(g: Gathering): string[] {
+  const start = new Date(g.startsAt);
+  const startOslo = osloTimeOf(start);
+  const endsAt = g.endsAt ? new Date(g.endsAt) : undefined;
+  const endOslo = endsAt ? osloTimeOf(endsAt) : undefined;
+
+  if (isMidnight(startOslo) && (!endOslo || isMidnight(endOslo))) {
+    const startDay = dayOf(startOslo);
+    const endDay = endOslo && dayOf(endOslo) > startDay ? dayOf(endOslo) : dayAfter(startOslo);
+    return [`DTSTART;VALUE=DATE:${startDay}`, `DTEND;VALUE=DATE:${endDay}`];
+  }
+  const end = endsAt ?? new Date(start.getTime() + DEFAULT_DURATION_MS);
+  return [`DTSTART:${formatIcalUtc(start)}`, `DTEND:${formatIcalUtc(end)}`];
+}
+
 const startOf = (g: Pick<Gathering, "startsAt">) => new Date(g.startsAt).getTime();
 
 /**
@@ -44,8 +101,6 @@ export interface IcalendarOptions {
 
 /** One event as the lines of a calendar entry: the lead first, then the theme and the Bible text. */
 function eventLines(g: Gathering, now: Date, siteUrl?: string): string[] {
-  const start = new Date(g.startsAt);
-  const end = g.endsAt ? new Date(g.endsAt) : new Date(start.getTime() + DEFAULT_DURATION_MS);
   const theme = [g.theme, g.bibleText].filter(Boolean).join(" — ");
   const description = [g.summary?.trim(), theme].filter(Boolean).join("\n\n");
 
@@ -53,8 +108,7 @@ function eventLines(g: Gathering, now: Date, siteUrl?: string): string[] {
     "BEGIN:VEVENT",
     `UID:${g.id}@menighetsplan`,
     `DTSTAMP:${formatIcalUtc(now)}`,
-    `DTSTART:${formatIcalUtc(start)}`,
-    `DTEND:${formatIcalUtc(end)}`,
+    ...timeLines(g),
     `SUMMARY:${escapeIcal(g.title || "Samling")}`,
     `LOCATION:${escapeIcal(locationOf(g))}`,
     ...(description ? [`DESCRIPTION:${escapeIcal(description)}`] : []),

@@ -6,6 +6,8 @@ import { useMinSideModules } from "../../hooks/useMinSideModules";
 import { leadsGroup } from "../../utils/groups";
 import { MyCalendarList } from "./MyCalendarList";
 import { MyCalendarMonth } from "./MyCalendarMonth";
+import { CalendarSubscribeButtons } from "../../components/public/CalendarSubscribeButtons";
+import { congregationFeedUrl } from "../../utils/congregationFeed";
 import {
   filterPersonalCalendarEvents,
   gatheringsNeedingAssignments,
@@ -80,9 +82,9 @@ export const MyCalendarPanel: React.FC = () => {
     [staffingOn, visibleEvents, tasks, assignments, ledGroupIds]
   );
 
-  // No subscription is offered here: the personal calendar file needs a service that reads what
-  // only the person may read, and none runs where the app is hosted (PRODUKTDOKUMENTASJON.md
-  // chapter 13). What it would be made from, is kept in utils/personalCalendar.ts.
+  // The congregation's public calendar is offered here, not a personal one: the personal calendar
+  // file needs a service that reads what only the person may read, and none runs where the app is
+  // hosted (PRODUKTDOKUMENTASJON.md chapter 13). What it would be made from is kept in utils/personalCalendar.ts.
 
   return (
     <section id="section-min-kalender" aria-label="Kalender" className="space-y-3">
@@ -107,6 +109,14 @@ export const MyCalendarPanel: React.FC = () => {
       </div>
       <div className="hidden sm:block">
         <MyCalendarMonth events={visibleEvents} dots={dots} onOpen={openGathering} />
+      </div>
+
+      <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-3 space-y-2">
+        <p className="text-sm font-bold text-emerald-900">Få menighetens kalender i din egen kalender</p>
+        <p className="text-xs text-emerald-900/80">
+          Gudstjenester og andre åpne arrangementer. Kalenderen din oppdaterer seg selv når noe endres, men hos Google kan det ta noen timer.
+        </p>
+        <CalendarSubscribeButtons tone="emerald" compact resolveFeedUrl={congregationFeedUrl} />
       </div>
     </section>
   );

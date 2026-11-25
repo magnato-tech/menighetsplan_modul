@@ -293,14 +293,14 @@ Min side viser så lite som mulig. Overskriften er navnet på fanen som er åpen
 |---|---|
 | **Mine oppgaver** | Knappen «Ta oppgave (68)» når tre eller flere saker venter (forespørsler, innkallinger og ledige oppgaver i egne grupper). Den åpner listen, som kan snevres inn med tagger. Venter én eller to saker, står kortene rett på siden. Under står oppgavene personen har sagt ja til, den nærmeste først |
 | **Mine grupper** | Gruppekortene, med neste samling, siste beskjed og vei inn til gruppa |
-| **Kalender** | Filtrene Alle / Gudstjenester / Mine grupper, og hendelsene under. «Mine grupper» vises bare for den som er med i en gruppe. Viser offentlige arrangementer i menigheten og kommende samlinger i gruppene personen er med i. En leder ser en rød eller gul prikk der gruppen mangler folk |
+| **Kalender** | Filtrene Alle / Gudstjenester / Mine grupper, og hendelsene under. «Mine grupper» vises bare for den som er med i en gruppe. Viser offentlige arrangementer i menigheten og kommende samlinger i gruppene personen er med i. En leder ser en rød eller gul prikk der gruppen mangler folk. Under kalenderen står «Få menighetens kalender i din egen kalender» med «Legg til i Google Kalender», «Legg til på iPhone» og «Kopier abonnementslenke» |
 
 Veiledningen «Slik bruker du Min side» ligger bak et «?» ved overskriften, og åpnes i et vindu.
 
 Ikke bygget i kalenderen:
 
 * Å slå hver kilde (menigheten og hver gruppe) av og på for seg.
-* Personlig kalenderabonnement (iCal): tjenesten som lager filen, kjører ikke der løsningen er satt i drift (se kapittel 13). Abonnement på menighetens offentlige kalender står på nettsiden.
+* Personlig kalenderabonnement (iCal): tjenesten som lager filen, kjører ikke der løsningen er satt i drift (se kapittel 13). Abonnement på menighetens offentlige kalender står under kalenderen her og på nettsiden.
 
 ---
 
@@ -2282,6 +2282,17 @@ Bestilt av produkteier: møter i husgruppene skal kunne åpnes og endres i admin
 * **Kalender.** Husgruppemøtene står i Kalender under filteret «Husgrupper», og kan åpnes, flyttes i tid og sted og slettes der, som andre arrangementer. Tallet på menyen, dashbordet, kalenderimporten og sjekken for overlapp er som før: de teller ikke husgruppemøtene.
 * **Gruppesiden i admin.** Hvert møte under «Konkrete samlinger for gruppen» har en «Endre»-lenke og åpner samme side som i Kalender. Teksten «Eksisterende Gathering» er tatt bort.
 * **Husfellesskapet.** «Vis for gruppa» gjør et utkast synlig i kalenderen til alle i gruppa på Min side, og de kan svare om de kommer. Det sendes ingen e-post eller SMS. Knappen står bare på et utkast; et synlig møte viser «Synlig for gruppa». Fanen heter «Samlinger».
+
+### Menighetens kalender i medlemmenes egen kalender *(bygget 25. november 2026, ikke sluppet)*
+
+Bestilt av produkteier: medlemmene skal kunne få menighetens arrangementer inn i sin egen kalender, med riktig tid. Kalenderfilen `/api/offentlig/kalender.ics` fantes, og tidene i den var riktige: hos første menighet sto gudstjenesten kl. 11 både om vinteren og om sommeren. Men knappene sto bare i kalenderen på nettsiden her, og der den nettsiden er av, fant ingen dem.
+
+* **Min side → Kalender.** Under kalenderen står «Få menighetens kalender i din egen kalender», med «Legg til i Google Kalender», «Legg til på iPhone» og «Kopier abonnementslenke». Kalenderen har de samme arrangementene som før: de som er merket offentlige. Gruppenes egne samlinger og den enkeltes oppgaver er ikke med.
+* **Nettsidens kalender** har også fått «Legg til på iPhone».
+* **Admin → Kalender.** Boksen «Kalender for medlemmene» viser adressen med «Kopier», så den kan legges på menighetens egen nettside eller i nyhetsbrevet.
+* **Heldagsarrangementer.** Et arrangement som starter kl. 00:00, og enten er uten slutt eller slutter kl. 00:00, står som heldagsarrangement i medlemmenes kalender. Det står altså ikke kl. 00:00. Datoene regnes i norsk tid.
+* **Lenken i hvert arrangement** er bare med når nettsiden her er på. Ellers ville den ført til innloggingen på Min side.
+* **Databasereglene** er ikke endret. Innstillingen for flatene kunne leses uten innlogging fra før.
 
 ### Åpne produktvalg
 | Valg | Alternativer | Anbefaling |

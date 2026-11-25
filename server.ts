@@ -20,6 +20,8 @@ import { firebaseOptionsOf, missingInstallationSettings, readInstallationConfig 
 import { isPublicPath } from './src/utils/routes';
 import { type SiteContent, resolvePageSeo, seoForPath } from './src/utils/siteSeo';
 import { toIcalendar, toIcalendarFromGatherings } from './src/utils/calendarFeed';
+import { SURFACES_DOC_ID, SURFACES_RECORD } from './src/data/settingsRecords';
+import { parseSurfaces } from './src/utils/surfaces';
 import { collectionPrefixOf, parseDemoSiteId } from './src/utils/demoSite';
 import { isInGroup } from './src/utils/groups';
 import { personalCalendarGatheringsForFeed } from './src/utils/personalCalendar';
@@ -166,11 +168,20 @@ app.get('/api/offentlig/kalender.ics', async (req: Request, res: Response) => {
       // Default name is fine when settings are unavailable
     }
 
+    // Each event carries the address of its own page on the website, unless the website here is off
+    let siteUrl: string | undefined = `${req.protocol}://${req.get('host')}`;
+    try {
+      const surfacesSnap = await getDoc(doc(db, plannerCollection(CMS_COLLECTIONS.SETTINGS, site), SURFACES_DOC_ID));
+      const data = surfacesSnap.data();
+      if (!parseSurfaces(data && data.recordType === SURFACES_RECORD ? data : undefined).ownWebsite) siteUrl = undefined;
+    } catch {
+      // The address is kept when the surfaces are unavailable
+    }
+
     res.set('Content-Type', 'text/calendar; charset=utf-8');
     res.set('Content-Disposition', 'attachment; filename="kalender.ics"');
     res.set('Cache-Control', 'public, max-age=300');
-    // Each event carries the address of its own page on the website
-    res.send(toIcalendar(gatherings, { calendarName, now, siteUrl: `${req.protocol}://${req.get('host')}` }));
+    res.send(toIcalendar(gatherings, { calendarName, now, siteUrl }));
   } catch (err: any) {
     console.error('Error fetching /api/offentlig/kalender.ics:', err);
     res.status(500).json({ error: 'Kunne ikke hente kalenderabonnement', message: err.message });
