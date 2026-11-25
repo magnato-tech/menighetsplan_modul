@@ -30,4 +30,15 @@ describe("Spørsmålet før et arrangement slettes", () => {
     const lines = gatheringDeleteQuestion({ title: "Kaffe", when, programCount: 0, taskCount: 1, inSeries: true }).split("\n");
     expect(lines[2]).toBe("Bare dette arrangementet slettes, ikke resten av serien.");
   });
+
+  test("et arrangement fra kirkens kalender får linjen om «Avvist og slettet»", () => {
+    const text = gatheringDeleteQuestion({ title: "Kaffe", when, programCount: 0, taskCount: 0, inSeries: false, fromCalendar: true });
+    expect(text.split("\n").at(-1)).toBe(
+      "Arrangementet kom fra kirkens kalender. Det blir ikke hentet inn igjen, men du finner det under «Avvist og slettet»."
+    );
+  });
+
+  test("uten kalender-ID står ingen slik linje", () => {
+    expect(gatheringDeleteQuestion({ title: "Kaffe", when, programCount: 0, taskCount: 0, inSeries: false })).not.toContain("kirkens kalender");
+  });
 });

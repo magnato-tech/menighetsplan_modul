@@ -339,6 +339,11 @@ export const GatheringDetailView: React.FC<GatheringDetailViewProps> = ({
               <MapPin className="w-3.5 h-3.5 text-slate-400" />
               {locationOf(gathering)}
             </span>
+            {gathering.externalCalendarUid && (
+              <span className="inline-flex items-center rounded-full border border-slate-300 bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-600">
+                Fra kirkens kalender
+              </span>
+            )}
           </div>
           {gathering.theme && <p className="text-xs text-slate-500 mt-1">Tema: {gathering.theme}</p>}
           <GatheringRoleHolders gatheringId={gathering.id} tasks={gatheringTasks} assignments={assignments} roles={volunteerRoles} persons={allPersons} />

@@ -75,8 +75,41 @@ var defaultSurfaces = () => ({
   externalCalendarUrl: "",
   importNewAutomatically: false,
   dismissedUids: [],
-  keptUids: []
+  keptUids: [],
+  calendarNotes: {},
+  calendarDeclined: {}
 });
+function parseCalendarDeclined(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const declined = {};
+  for (const [key, raw] of Object.entries(value)) {
+    if (!raw || typeof raw !== "object") continue;
+    const item = raw;
+    declined[key] = {
+      title: typeof item.title === "string" ? item.title : "",
+      startsAt: typeof item.startsAt === "string" ? item.startsAt : "",
+      location: typeof item.location === "string" ? item.location : "",
+      cancelled: item.cancelled === true
+    };
+  }
+  return declined;
+}
+function parseCalendarNotes(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const notes = {};
+  for (const [key, raw] of Object.entries(value)) {
+    if (!raw || typeof raw !== "object") continue;
+    const note = raw;
+    if (note.reason !== "avvist" && note.reason !== "slettet") continue;
+    notes[key] = {
+      reason: note.reason,
+      at: typeof note.at === "string" ? note.at : "",
+      title: typeof note.title === "string" ? note.title : "",
+      startsAt: typeof note.startsAt === "string" ? note.startsAt : ""
+    };
+  }
+  return notes;
+}
 var strings = (value) => Array.isArray(value) ? value.filter((item) => typeof item === "string" && item.trim() !== "") : [];
 function validHttpsUrl(value) {
   const trimmed = String(value || "").trim().replace(/^webcal:\/\//i, "https://");
@@ -116,7 +149,9 @@ function parseSurfaces(data) {
       externalSiteUrl: typeof data?.externalSiteUrl === "string" ? data.externalSiteUrl : "",
       externalCalendarUrl: typeof data?.externalCalendarUrl === "string" ? data.externalCalendarUrl : "",
       dismissedUids: strings(data?.dismissedUids),
-      keptUids: strings(data?.keptUids)
+      keptUids: strings(data?.keptUids),
+      calendarNotes: parseCalendarNotes(data?.calendarNotes),
+      calendarDeclined: parseCalendarDeclined(data?.calendarDeclined)
     };
   }
   if (data?.recordType !== SURFACES_RECORD) return base;
@@ -128,7 +163,9 @@ function parseSurfaces(data) {
     externalCalendarUrl: typeof data.externalCalendarUrl === "string" ? data.externalCalendarUrl : "",
     importNewAutomatically: data.importNewAutomatically === true,
     dismissedUids: strings(data.dismissedUids),
-    keptUids: strings(data.keptUids)
+    keptUids: strings(data.keptUids),
+    calendarNotes: parseCalendarNotes(data.calendarNotes),
+    calendarDeclined: parseCalendarDeclined(data.calendarDeclined)
   };
 }
 

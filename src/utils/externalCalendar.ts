@@ -1,5 +1,6 @@
 import type { Gathering } from "../types";
 import type { GatheringTemplate } from "./gatheringTemplates";
+import type { CalendarDeclined, CalendarNote } from "./surfaces";
 import { combineDateAndTimeToIso, parseIsoToDateAndTime } from "./dates";
 import { newGatheringForm, type GatheringFormValues } from "./gatheringForm";
 
@@ -157,21 +158,49 @@ export function feedHasClockTime(event: ExternalCalendarEvent): boolean {
   return start.time !== "00:00";
 }
 
-/** Fields from the feed that may be written onto a linked gathering. */
-export function feedGatheringPatch(
-  _gathering: Gathering,
-  event: ExternalCalendarEvent
-): Partial<Gathering> {
-  const patch: Partial<Gathering> = {
-    title: event.title,
-    location: event.location || undefined,
-    cancelled: event.cancelled,
-  };
-  if (feedHasClockTime(event)) {
+/** The fields kirkens kalender can change on a linked event. Google's changes are suggestions: the app never writes them alone. */
+export type CalendarField = "title" | "startsAt" | "location" | "cancelled";
+
+/** The fields where a linked planner event and the feed differ, in the order they are shown. */
+export function differingFields(g: Gathering, event: ExternalCalendarEvent): CalendarField[] {
+  const fields: CalendarField[] = [];
+  if (g.title !== event.title) fields.push("title");
+  const timeDiffers =
+    feedHasClockTime(event) &&
+    (g.startsAt !== event.startsAt || (event.endsAt !== undefined && (g.endsAt || "") !== event.endsAt));
+  if (timeDiffers) fields.push("startsAt");
+  if ((g.location || "").trim() !== (event.location || "").trim()) fields.push("location");
+  if (Boolean(g.cancelled) !== event.cancelled) fields.push("cancelled");
+  return fields;
+}
+
+/** The write for the chosen fields only, with Google's values. Nothing else on the planner event is part of it. */
+export function calendarPatch(fields: readonly CalendarField[], event: ExternalCalendarEvent): Partial<Gathering> {
+  const patch: Partial<Gathering> = {};
+  if (fields.includes("title")) patch.title = event.title;
+  if (fields.includes("startsAt")) {
     patch.startsAt = event.startsAt;
-    patch.endsAt = event.endsAt;
+    if (event.endsAt !== undefined) patch.endsAt = event.endsAt;
   }
+  if (fields.includes("location")) patch.location = event.location || undefined;
+  if (fields.includes("cancelled")) patch.cancelled = event.cancelled;
   return patch;
+}
+
+/** True when Google's values are the ones the admin declined. The row stays hidden until Google changes again. */
+export function isDeclined(event: ExternalCalendarEvent, declined: CalendarDeclined | undefined): boolean {
+  if (!declined) return false;
+  return (
+    declined.title === event.title &&
+    declined.startsAt === event.startsAt &&
+    declined.location.trim() === event.location.trim() &&
+    declined.cancelled === event.cancelled
+  );
+}
+
+/** Google's values for an event, as they are kept when the admin declines them. */
+export function declinedValuesOf(event: ExternalCalendarEvent): CalendarDeclined {
+  return { title: event.title, startsAt: event.startsAt, location: event.location, cancelled: event.cancelled };
 }
 
 function gatheringMatchesEvent(g: Gathering, event: ExternalCalendarEvent): boolean {
@@ -206,21 +235,12 @@ export function gatheringsForImportReset(
   });
 }
 
-function fieldsDiffer(g: Gathering, event: ExternalCalendarEvent): boolean {
-  const patch = feedGatheringPatch(g, event);
-  if (g.title !== patch.title) return true;
-  if ((g.location || "").trim() !== (patch.location || "").trim()) return true;
-  if (Boolean(g.cancelled) !== patch.cancelled) return true;
-  if (patch.startsAt !== undefined && g.startsAt !== patch.startsAt) return true;
-  if (patch.endsAt !== undefined && (g.endsAt || "") !== (patch.endsAt || "")) return true;
-  return false;
-}
-
 export function diffCalendar(
   feed: readonly ExternalCalendarEvent[],
   gatherings: readonly Gathering[],
   dismissedUids: readonly string[],
-  keptUids: readonly string[]
+  keptUids: readonly string[],
+  declinedFor: (uid: string) => CalendarDeclined | undefined = () => undefined
 ): CalendarDiff {
   const dismissed = new Set(dismissedUids);
   const kept = new Set(keptUids);
@@ -234,7 +254,9 @@ export function diffCalendar(
     if (event.uid && dismissed.has(event.uid)) continue;
     const existing = linkedGathering(gatherings, event);
     if (existing) {
-      if (importableGathering(existing) && existing.externalCalendarUid && fieldsDiffer(existing, event)) {
+      const changed = differingFields(existing, event).length > 0;
+      const declined = event.uid ? isDeclined(event, declinedFor(event.uid)) : false;
+      if (importableGathering(existing) && existing.externalCalendarUid && changed && !declined) {
         updated.push({ gathering: existing, event });
       }
       continue;
@@ -253,6 +275,99 @@ export function diffCalendar(
   }
 
   return { newEvents, updated, gone };
+}
+
+/** The Norwegian calendar day of a moment, as yyyy-mm-dd. Empty when the text is not a moment. */
+function osloDay(iso: string): string {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString("sv-SE", { timeZone: "Europe/Oslo" });
+}
+
+function wordsOf(title: string): string[] {
+  return title
+    .toLowerCase()
+    .split(/[^\p{L}\p{N}]+/u)
+    .filter((word) => word.length >= 3);
+}
+
+function sharedWordCount(feedTitle: string, gatheringTitle: string): number {
+  const words = new Set(wordsOf(gatheringTitle));
+  return new Set(wordsOf(feedTitle).filter((word) => words.has(word))).size;
+}
+
+/** How clearly a planner title names the feed event: 2 when the titles are the same, 1 when it has the feed's main word, else 0. */
+function titleClearness(gatheringTitle: string, feedTitle: string): number {
+  if (gatheringTitle.trim().toLowerCase() === feedTitle.trim().toLowerCase()) return 2;
+  const mainWord = wordsOf(feedTitle)[0];
+  return mainWord !== undefined && gatheringTitle.toLowerCase().includes(mainWord) ? 1 : 0;
+}
+
+/**
+ * Planner events that may be the same as a feed event: no feed link yet, not cancelled, not a group
+ * meeting, and on the same Norwegian day. The best title match comes first, then shared words, then
+ * the nearest start time.
+ */
+export function linkCandidates(event: ExternalCalendarEvent, gatherings: readonly Gathering[]): Gathering[] {
+  const day = osloDay(event.startsAt);
+  if (!day) return [];
+  const start = new Date(event.startsAt).getTime();
+  return gatherings
+    .filter((g) => !g.externalCalendarUid && !g.cancelled && g.type !== "gruppesamling" && osloDay(g.startsAt) === day)
+    .map((g) => ({
+      g,
+      clearness: titleClearness(g.title, event.title),
+      shared: sharedWordCount(event.title, g.title),
+      distance: Math.abs(new Date(g.startsAt).getTime() - start),
+    }))
+    .sort((a, b) => b.clearness - a.clearness || b.shared - a.shared || a.distance - b.distance)
+    .map((row) => row.g);
+}
+
+/**
+ * The one planner event to link without asking: the only candidate, or the candidate whose title
+ * names the feed event clearly when no other candidate does as well. Otherwise null: the admin chooses.
+ */
+export function bestLink(event: ExternalCalendarEvent, gatherings: readonly Gathering[]): Gathering | null {
+  const candidates = linkCandidates(event, gatherings);
+  if (candidates.length === 0) return null;
+  if (candidates.length === 1) return candidates[0];
+  const scores = candidates.map((g) => titleClearness(g.title, event.title));
+  const top = Math.max(...scores);
+  if (top === 0 || scores.filter((score) => score === top).length > 1) return null;
+  return candidates[scores.indexOf(top)];
+}
+
+/** Feed events that are linked to a planner event by their uid, with that event. */
+export function linkedFeedRows(
+  feed: readonly ExternalCalendarEvent[],
+  gatherings: readonly Gathering[]
+): { event: ExternalCalendarEvent; gathering: Gathering }[] {
+  return feed.flatMap((event) => {
+    if (!event.uid) return [];
+    const gathering = gatherings.find((g) => g.externalCalendarUid === event.uid);
+    return gathering ? [{ event, gathering }] : [];
+  });
+}
+
+export interface DismissedFeedRow {
+  uid: string;
+  title: string;
+  startsAt: string;
+  note?: CalendarNote;
+}
+
+/** Dismissed feed uids that are still in the feed, or have a note (deleted or turned away). */
+export function dismissedFeedRows(
+  feed: readonly ExternalCalendarEvent[],
+  dismissedUids: readonly string[],
+  noteFor: (uid: string) => CalendarNote | undefined
+): DismissedFeedRow[] {
+  return dismissedUids.flatMap((uid) => {
+    const event = feed.find((e) => e.uid === uid);
+    const note = noteFor(uid);
+    if (!event && !note) return [];
+    return [{ uid, title: event?.title ?? note?.title ?? "", startsAt: event?.startsAt ?? note?.startsAt ?? "", note }];
+  });
 }
 
 /** Form values for creating an event from a feed row. */

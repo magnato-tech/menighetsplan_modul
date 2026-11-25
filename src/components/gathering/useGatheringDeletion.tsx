@@ -4,6 +4,8 @@ import { formatNorwegianDateTime } from "../../utils/dates";
 import type { Assignment, Gathering, Task } from "../../types";
 import { useConfirm } from "../ConfirmProvider";
 import { DeleteGatheringDialog, type StaffedTask } from "../../pages/admin/DeleteGatheringDialog";
+import { dismissExternalEvent } from "../../services/surfaces";
+import { reportWriteError } from "../../services/writeErrors";
 
 export interface GatheringDeleteQuestion {
   title: string;
@@ -11,6 +13,8 @@ export interface GatheringDeleteQuestion {
   programCount: number;
   taskCount: number;
   inSeries: boolean;
+  /** The event came from kirkens kalender (it has an externalCalendarUid). */
+  fromCalendar?: boolean;
 }
 
 const counted = (count: number, one: string, many: string): string => `${count} ${count === 1 ? one : many}`;
@@ -19,7 +23,7 @@ const counted = (count: number, one: string, many: string): string => `${count} 
  * The question before an event is deleted, as the Kalender list and the event page both ask it. It
  * says what goes with the event, with the real counts, and that it cannot be undone.
  */
-export function gatheringDeleteQuestion({ title, when, programCount, taskCount, inSeries }: GatheringDeleteQuestion): string {
+export function gatheringDeleteQuestion({ title, when, programCount, taskCount, inSeries, fromCalendar }: GatheringDeleteQuestion): string {
   const lines = [`Vil du slette «${title}» (${when})?`];
   const gone =
     programCount > 0 && taskCount > 0
@@ -31,7 +35,24 @@ export function gatheringDeleteQuestion({ title, when, programCount, taskCount, 
           : "";
   lines.push([gone, "Dette kan ikke angres."].filter(Boolean).join(" "));
   if (inSeries) lines.push("Bare dette arrangementet slettes, ikke resten av serien.");
+  if (fromCalendar) {
+    lines.push("Arrangementet kom fra kirkens kalender. Det blir ikke hentet inn igjen, men du finner det under «Avvist og slettet».");
+  }
   return lines.join("\n");
+}
+
+/**
+ * Remembers a deleted event that came from kirkens kalender, so the feed does not bring it back.
+ * Shown under «Avvist og slettet» in the import panel. Events without a calendar uid are left alone.
+ */
+export function rememberDeletedCalendarEvent(gathering: Gathering): void {
+  if (!gathering.externalCalendarUid) return;
+  dismissExternalEvent(gathering.externalCalendarUid, {
+    reason: "slettet",
+    at: new Date().toISOString(),
+    title: gathering.title,
+    startsAt: gathering.startsAt,
+  }).catch((error: unknown) => reportWriteError("huske slettet arrangement fra kalenderen", error));
 }
 
 /** The people on an event's tasks: confirmed, and those who are asked. Nobody else. */
@@ -58,7 +79,9 @@ export function useGatheringDeletion(onDone: (result: { success: boolean; error?
   const [staffedEvent, setStaffedEvent] = useState<{ gathering: Gathering; staffed: StaffedTask[] } | null>(null);
 
   const deleteNow = (gathering: Gathering, withPeople: boolean) => {
-    onDone(deleteGatheringWithStaffing(gathering.id), withPeople);
+    const result = deleteGatheringWithStaffing(gathering.id);
+    if (result.success) rememberDeletedCalendarEvent(gathering);
+    onDone(result, withPeople);
   };
 
   const requestDelete = async (gathering: Gathering, tasks: Task[]) => {
@@ -75,6 +98,7 @@ export function useGatheringDeletion(onDone: (result: { success: boolean; error?
         programCount: gathering.programSchedule?.length ?? 0,
         taskCount: tasks.length,
         inSeries: Boolean(gathering.seriesId),
+        fromCalendar: Boolean(gathering.externalCalendarUid),
       }),
       { yes: "Slett arrangementet", danger: true }
     );
@@ -87,6 +111,7 @@ export function useGatheringDeletion(onDone: (result: { success: boolean; error?
       when={formatNorwegianDateTime(staffedEvent.gathering.startsAt)}
       staffed={staffedEvent.staffed}
       inSeries={Boolean(staffedEvent.gathering.seriesId)}
+      fromCalendar={Boolean(staffedEvent.gathering.externalCalendarUid)}
       onConfirm={() => {
         const { gathering } = staffedEvent;
         setStaffedEvent(null);
