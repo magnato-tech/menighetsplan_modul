@@ -21,7 +21,6 @@ const { cms, firebase, services } = vi.hoisted(() => ({
     restoreExternalUid: vi.fn(async (_uid: string) => {}),
     dismissExternalUid: vi.fn(async (_uid: string) => {}),
     keepExternalUid: vi.fn(async (_uid: string) => {}),
-    clearExternalCalendarImportQueue: vi.fn(async () => {}),
     declineExternalChange: vi.fn(async (_uid: string, _values: unknown) => {}),
   },
 }));
@@ -328,5 +327,17 @@ describe("Fra kirkens kalender: endringer er forslag", () => {
     await waitFor(() => expect(updateGathering).toHaveBeenCalledTimes(1));
     expect(updateGathering.mock.calls[0]).toStrictEqual(["g1", { title: "Gudstjeneste" }]);
     expect(screen.queryByRole("region", { name: "Oppdater alle" })).toBeNull();
+  });
+});
+
+// Start import på nytt er tatt bort: knappen finnes ikke, verken i køen eller ved henting.
+describe("Fra kirkens kalender: ingen nullstilling", () => {
+  test("«Start import på nytt» finnes ikke når panelet viser køen", async () => {
+    feedText = icsOf([{ uid: "uid-n", title: "Kaffe", start: "20261110T100000" }]);
+    renderPanel();
+
+    await tab(/Venter \(1\)/);
+    expect(screen.queryByText("Start import på nytt")).toBeNull();
+    expect(screen.queryByRole("button", { name: /Start import på nytt/ })).toBeNull();
   });
 });

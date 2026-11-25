@@ -82,14 +82,6 @@ export async function keepExternalUid(uid: string): Promise<void> {
   await setDoc(surfacesRef(), { recordType: SURFACES_RECORD, keptUids: arrayUnion(uid) }, { merge: true });
 }
 
-export async function clearExternalCalendarImportQueue(): Promise<void> {
-  await setDoc(
-    surfacesRef(),
-    { recordType: SURFACES_RECORD, dismissedUids: [], keptUids: [], calendarNotes: deleteField(), calendarDeclined: deleteField() },
-    { merge: true }
-  );
-}
-
 export async function unkeepExternalUid(uid: string): Promise<void> {
   await setDoc(surfacesRef(), { recordType: SURFACES_RECORD, keptUids: arrayRemove(uid) }, { merge: true });
 }

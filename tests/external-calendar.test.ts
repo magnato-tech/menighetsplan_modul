@@ -3,7 +3,6 @@ import type { Gathering } from "../src/types";
 import {
   diffCalendar,
   fixEredaktorDateStart,
-  gatheringsForImportReset,
   parseExternalCalendarFeed,
   proposeImport,
 } from "../src/utils/externalCalendar";
@@ -143,31 +142,4 @@ END:VCALENDAR`;
     expect(diffCalendar([], [linked], [], [linked.externalCalendarUid!]).gone).toHaveLength(0);
   });
 
-  test("gatheringsForImportReset finner knyttede og duplikater uten uid", () => {
-    const feed = parseExternalCalendarFeed(icsSample);
-    const linked: Gathering = {
-      id: "g1",
-      groupId: "grp",
-      title: "Gudstjeneste",
-      startsAt: feed[0].startsAt,
-      visibility: "offentlig",
-      externalCalendarUid: feed[0].uid,
-    };
-    const duplicate: Gathering = {
-      id: "g-dup",
-      groupId: "grp",
-      title: feed[0].title,
-      startsAt: feed[0].startsAt,
-      visibility: "offentlig",
-    };
-    const manual: Gathering = {
-      id: "g-man",
-      groupId: "grp",
-      title: "Eget møte",
-      startsAt: "2026-12-01T19:00:00+01:00",
-      visibility: "offentlig",
-    };
-    const reset = gatheringsForImportReset(feed, [linked, duplicate, manual]);
-    expect(reset.map((g) => g.id).sort()).toEqual(["g-dup", "g1"]);
-  });
 });

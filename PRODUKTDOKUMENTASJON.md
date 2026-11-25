@@ -2294,6 +2294,15 @@ Bestilt av produkteier: medlemmene skal kunne få menighetens arrangementer inn 
 * **Lenken i hvert arrangement** er bare med når nettsiden her er på. Ellers ville den ført til innloggingen på Min side.
 * **Databasereglene** er ikke endret. Innstillingen for flatene kunne leses uten innlogging fra før.
 
+### «Start import på nytt» er tatt bort *(bygget 25. november 2026, ikke sluppet)*
+
+Bestilt av produkteier. Knappen i «Fra kirkens kalender» slettet alle arrangementer som var koblet til kirkens kalender, også dem som var laget for hånd og bare koblet, og dem med samme navn og dato som en hendelse i kirkens kalender. Program, oppgaver og bemanning ble slettet med dem. Første menighet lager arrangementene i Menighetsplan og kobler dem bare til kirkens kalender, så knappen hadde ingen nytte der, bare en risiko.
+
+* **Tatt bort:** knappen «Start import på nytt» og vinduet «Start kalenderimport på nytt?». Det som slettet arrangementene og tømte køen, er tatt ut av koden.
+* **Som før:** fanene Venter, Lagt inn, Endret og Avvist og slettet, og knappene der. Et avvist eller slettet arrangement kan fortsatt hentes tilbake med «Ta inn likevel».
+* **Hjelpen** «Kirkens kalender» sier ikke lenger noe om knappen. Under «Pass på» står det nå at et koblet arrangement som slettes, tar med seg oppgavene og bemanningen, mens hendelsen i kirkens kalender blir stående.
+* **Databasereglene** er ikke endret.
+
 ### Åpne produktvalg
 | Valg | Alternativer | Anbefaling |
 |:---|:---|:---|
