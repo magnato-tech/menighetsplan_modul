@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+vi.mock("../src/hooks/useMinSideModules", () => ({ useMinSideModules: () => ({ isOn: () => true }) }));
 
 // The admin calendar on a phone (below 768 px) and on a PC. The phone shows the coming events only, the
 // month (compact) and the cards, and the card puts the theme and the speaker on lines of their own.

@@ -37,6 +37,29 @@ export function describeAssignments(
   });
 }
 
+export interface AnswerTally {
+  /** Said yes */
+  confirmed: number;
+  /** Asked, and has not answered */
+  pending: number;
+  /** Said no, or pulled out */
+  declined: number;
+}
+
+/**
+ * How the people asked have answered: what a group leader reads to see who has said yes. Counts people,
+ * not slots, so someone who pulled out is counted as such and not as a free place.
+ */
+export function tallyAnswers(assignments: readonly Pick<Assignment, "response">[]): AnswerTally {
+  const tally: AnswerTally = { confirmed: 0, pending: 0, declined: 0 };
+  for (const { response } of assignments) {
+    if (response === "confirmed") tally.confirmed += 1;
+    else if (response === "pending") tally.pending += 1;
+    else tally.declined += 1;
+  }
+  return tally;
+}
+
 export interface TaskSlots {
   needed: number;
   confirmed: number;

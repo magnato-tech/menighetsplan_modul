@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useCms } from "../../../../context/CmsContext";
-import { isMinSideModuleOn, MIN_SIDE_MODULE_IDS, MIN_SIDE_MODULE_REQUIRES, type MinSideModuleId } from "../../../../utils/minSideModules";
-import { MIN_SIDE_MODULE_TEXT, requiresText } from "../../minSideModules";
+import { groupAudienceOf, GROUP_AUDIENCES, isMinSideModuleOn, MIN_SIDE_MODULE_IDS, MIN_SIDE_MODULE_REQUIRES, type GroupAudience, type MinSideModuleId } from "../../../../utils/minSideModules";
+import { GROUP_AUDIENCE_TEXT, MIN_SIDE_MODULE_TEXT, requiresText } from "../../minSideModules";
 import { studioCard } from "../../studioTheme";
 import type { ShowFeedback } from "../../studio";
 import { AddonSwitch } from "./AddonSwitch";
@@ -15,7 +15,7 @@ interface MinSideModulesProps {
  * its switch disabled, and its state is the one that counts (a part of a switched off group is off).
  */
 export const MinSideModules: React.FC<MinSideModulesProps> = ({ showFeedback }) => {
-  const { minSideModules, setMinSideModule } = useCms();
+  const { minSideModules, setMinSideModule, setGroupAudience } = useCms();
   const [saving, setSaving] = useState<MinSideModuleId | null>(null);
 
   const toggle = async (id: MinSideModuleId, on: boolean) => {
@@ -27,6 +27,21 @@ export const MinSideModules: React.FC<MinSideModulesProps> = ({ showFeedback }) 
     if (!saved) return;
     showFeedback(on ? `«${name}» er slått på.` : `«${name}» er slått av. Ingenting er slettet.`);
   };
+
+  const chooseAudience = async (audience: GroupAudience) => {
+    setSaving("grupper");
+    const saved = await setGroupAudience(audience);
+    setSaving(null);
+    if (!saved) return;
+    showFeedback(
+      audience === "alle"
+        ? "Gruppene vises for alle."
+        : audience === "ledere"
+        ? "Gruppene vises nå bare for gruppeledere. Ingenting er slettet."
+        : "Gruppene vises ikke på Min side. Ingenting er slettet."
+    );
+  };
+  const audience = groupAudienceOf(minSideModules);
 
   return (
     <section aria-label="Min side" className="space-y-3">
@@ -44,16 +59,41 @@ export const MinSideModules: React.FC<MinSideModulesProps> = ({ showFeedback }) 
                   <h3 className="text-sm font-black text-[var(--studio-text)]">{text.name}</h3>
                   <p className="text-xs text-[var(--studio-muted)] mt-1">{text.summary}</p>
                 </div>
-                <AddonSwitch
-                  on={on}
-                  label={text.name}
-                  disabled={saving === id || !requiredOn}
-                  onChange={(next) => toggle(id, next)}
-                />
+                {id !== "grupper" && (
+                  <AddonSwitch
+                    on={on}
+                    label={text.name}
+                    disabled={saving === id || !requiredOn}
+                    onChange={(next) => toggle(id, next)}
+                  />
+                )}
               </div>
+              {id === "grupper" && (
+                <div role="radiogroup" aria-label="Hvem gruppene vises for" className="flex flex-wrap gap-1.5">
+                  {GROUP_AUDIENCES.map((choice) => (
+                    <button
+                      key={choice}
+                      type="button"
+                      role="radio"
+                      aria-checked={audience === choice}
+                      disabled={saving === id}
+                      onClick={() => audience !== choice && chooseAudience(choice)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold border cursor-pointer transition-colors disabled:opacity-60 ${
+                        audience === choice
+                          ? "bg-indigo-600 text-white border-indigo-600"
+                          : "bg-[var(--studio-surface,white)] text-[var(--studio-text)] border-[var(--studio-border)] hover:bg-slate-50"
+                      }`}
+                    >
+                      {GROUP_AUDIENCE_TEXT[choice].label}
+                    </button>
+                  ))}
+                </div>
+              )}
               <div className="mt-auto pt-3 border-t border-[var(--studio-border)] space-y-1">
                 {!requiredOn && <p className="text-[11px] font-bold text-[var(--studio-text)]">{requiresText(id)}</p>}
-                <p className="text-[11px] text-[var(--studio-muted)]">{on ? "På." : text.whenOff}</p>
+                <p className="text-[11px] text-[var(--studio-muted)]">
+                  {id === "grupper" ? GROUP_AUDIENCE_TEXT[audience].description : on ? "På." : text.whenOff}
+                </p>
               </div>
             </li>
           );

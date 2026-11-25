@@ -6,6 +6,7 @@ import { EmailTab } from "../src/pages/admin/tabs/EmailTab";
 import type { Group, Person } from "../src/types";
 import type { EmailOutcome, EmailRecord } from "../src/utils/emailOutcome";
 import { EPOST_HANDOVER_KEY, LISTS_NOT_PUBLISHED, type EmailList } from "../src/utils/emailLists";
+vi.mock("../src/hooks/useMinSideModules", () => ({ useMinSideModules: () => ({ isOn: () => true }) }));
 
 // «Send e-post» with lists of persons: the handover from Personer, the view «Lister», and what the lists
 // reach. Everyone here is made up.

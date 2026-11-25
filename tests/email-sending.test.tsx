@@ -18,6 +18,7 @@ import type { Group, Person } from "../src/types";
 import { TEST_UNSUBSCRIBE_TOKEN } from "../src/utils/newsletter";
 import { joinedLabel, audienceChip, personChip, recipientSuggestions, resolveChips } from "../src/pages/admin/tabs/email/chips";
 import { MemoryRouter, useLocation } from "react-router-dom";
+vi.mock("../src/hooks/useMinSideModules", () => ({ useMinSideModules: () => ({ isOn: () => true }) }));
 
 // E-mail from the administration to leaders and volunteers. Every person here is made up.
 

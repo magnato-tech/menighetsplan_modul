@@ -33,6 +33,7 @@ import { PublicLeadershipPage } from "./pages/public/PublicLeadershipPage";
 import { PublicEventPage } from "./pages/public/PublicEventPage";
 import { useFirebase } from "./context/FirebaseDataContext";
 import { useMinSideModules } from "./hooks/useMinSideModules";
+import { useGroupAccess } from "./hooks/useGroupAccess";
 import { useMinSideOpenCount } from "./hooks/useMinSideOpenCount";
 
 const AdminStudio = lazy(() =>
@@ -90,11 +91,26 @@ function MinSideOpenCount() {
   return null;
 }
 
+/**
+ * The page of one group. Who may open it is the administrator's choice on «Moduler» (see utils/minSideModules.ts):
+ * everyone in the group, only its leader and deputy, or nobody. Anyone else is sent to Min side.
+ */
+function GroupPageRoute({ children }: { children: (groupId: string) => React.ReactNode }) {
+  const { groupId = "" } = useParams<{ groupId: string }>();
+  const { getGroupById } = useFirebase();
+  const { audience, mayOpen } = useGroupAccess();
+  const group = getGroupById(groupId);
+  if (audience === "ingen" || (group && !mayOpen(group))) return <Navigate to="/minside" replace />;
+  return <>{children(groupId)}</>;
+}
+
 /** A house group's page: the house group view while Husfellesskap is on, else the group's page. */
 function HusfellesskapGroupRoute() {
   const { groupId } = useParams<{ groupId: string }>();
   const { isOn } = useMinSideModules();
-  if (isOn("husfellesskap")) return <HusfellesskapPage />;
+  if (isOn("husfellesskap")) {
+    return <GroupPageRoute>{() => <HusfellesskapPage />}</GroupPageRoute>;
+  }
   return <Navigate to={isOn("grupper") ? `/gruppe/${groupId}` : "/minside"} replace />;
 }
 
@@ -142,6 +158,7 @@ function AppContent() {
   const { session, currentUser } = useFirebase();
   // Parts of Min side that an admin can switch off (see utils/minSideModules.ts). Off, their addresses go to Min side.
   const { isOn } = useMinSideModules();
+  const { audience } = useGroupAccess();
   const themeVariables = useMemo(() => getThemeCssVariables(settings?.theme), [settings?.theme]);
   useSiteSeo(location.pathname);
   // Visits to the public website are counted, anonymously. Min side and admin are not counted.
@@ -247,12 +264,12 @@ function AppContent() {
                 <Route path="/leder/gruppe/:groupId" element={<OldLeaderGroupRoute />} />
                 <Route path="/leder/samling/:gatheringId" element={<LeaderGatheringDetailPage />} />
                 <Route path="/oppgave/:taskId" element={isOn("tjeneste") ? <TaskDetailPage /> : <Navigate to="/minside" replace />} />
-                <Route path="/gruppe/:groupId" element={isOn("grupper") ? <LeaderGroupDetailPage /> : <Navigate to="/minside" replace />} />
+                <Route path="/gruppe/:groupId" element={<GroupPageRoute>{() => <LeaderGroupDetailPage />}</GroupPageRoute>} />
                 <Route path="/samling/:gatheringId" element={<GatheringRunSheetPage />} />
                 {/* Without a group, the house groups are in the groups tab */}
                 <Route
                   path="/husfellesskap"
-                  element={isOn("husfellesskap") ? <HusfellesskapPage /> : <Navigate to="/minside?view=grupper" replace />}
+                  element={isOn("husfellesskap") && audience === "alle" ? <HusfellesskapPage /> : <Navigate to="/minside?view=grupper" replace />}
                 />
                 <Route path="/husfellesskap/:groupId" element={<HusfellesskapGroupRoute />} />
                 {/* The address stays in Min side: the messages it used to show are in the groups */}

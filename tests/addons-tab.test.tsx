@@ -9,6 +9,7 @@ const { cms } = vi.hoisted(() => ({
     setAddon: vi.fn(async (_id: string, _on: boolean) => true),
     minSideModules: {} as Record<string, boolean>,
     setMinSideModule: vi.fn(async (_id: string, _on: boolean) => true),
+    setGroupAudience: vi.fn(async (_audience: string) => true),
   },
 }));
 vi.mock("../src/context/CmsContext", () => ({ useCms: () => cms }));
@@ -131,9 +132,12 @@ describe("Siden Moduler", () => {
 
     expect(screen.queryByRole("region", { name: "Moduler under arbeid" })).toBeNull();
     const minSide = within(screen.getByRole("region", { name: "Min side" }));
-    for (const name of ["Grupper", "Gruppechat", "Husfellesskap", "Tjeneste og bemanning", "Semesterplan", "Kalender"]) {
+    for (const name of ["Gruppechat", "Husfellesskap", "Tjeneste og bemanning", "Semesterplan", "Kalender"]) {
       expect(minSide.getByRole("switch", { name }).getAttribute("aria-checked")).toBe("true");
     }
+    // The groups are not a switch: the administrator chooses who they are shown to, and «Alle» stands until then
+    expect(minSide.queryByRole("switch", { name: "Grupper" })).toBeNull();
+    expect(minSide.getByRole("radio", { name: "Alle" }).getAttribute("aria-checked")).toBe("true");
     // The count of add-ons is not changed by them
     expect(screen.getByText("0 av 2 er på")).toBeTruthy();
   });
@@ -149,9 +153,35 @@ describe("Siden Moduler", () => {
     expect(chat.getAttribute("aria-checked")).toBe("false");
     expect(minSide.getAllByText("Krever Grupper")).toHaveLength(2);
 
-    fireEvent.click(minSide.getByRole("switch", { name: "Grupper" }));
-    expect(cms.setMinSideModule).toHaveBeenCalledWith("grupper", true);
-    await waitFor(() => expect(showFeedback).toHaveBeenCalledWith("«Grupper» er slått på."));
+    expect(minSide.getByRole("radio", { name: "Ingen" }).getAttribute("aria-checked")).toBe("true");
+    fireEvent.click(minSide.getByRole("radio", { name: "Alle" }));
+    expect(cms.setGroupAudience).toHaveBeenCalledWith("alle");
+    await waitFor(() => expect(showFeedback).toHaveBeenCalledWith("Gruppene vises for alle."));
+  });
+
+  test("administratoren velger hvem gruppene vises for: bare gruppeledere, alle eller ingen", async () => {
+    cms.minSideModules = {};
+    renderTab();
+    const minSide = within(screen.getByRole("region", { name: "Min side" }));
+
+    fireEvent.click(minSide.getByRole("radio", { name: "Bare gruppeledere" }));
+    expect(cms.setGroupAudience).toHaveBeenCalledWith("ledere");
+    await waitFor(() => expect(showFeedback).toHaveBeenCalledWith("Gruppene vises nå bare for gruppeledere. Ingenting er slettet."));
+
+    fireEvent.click(minSide.getByRole("radio", { name: "Ingen" }));
+    expect(cms.setGroupAudience).toHaveBeenCalledWith("ingen");
+    // The choice that stands («Alle», until the stored choice changes) is not saved again
+    cms.setGroupAudience.mockClear();
+    fireEvent.click(minSide.getByRole("radio", { name: "Alle" }));
+    expect(cms.setGroupAudience).not.toHaveBeenCalled();
+  });
+
+  test("viser hvem gruppene vises for når det er bare lederne", () => {
+    cms.minSideModules = { groupsFor: "ledere" } as unknown as Record<string, boolean>;
+    renderTab();
+    const minSide = within(screen.getByRole("region", { name: "Min side" }));
+    expect(minSide.getByRole("radio", { name: "Bare gruppeledere" }).getAttribute("aria-checked")).toBe("true");
+    expect(minSide.getByText(/Medlemmene ser ikke gruppene/)).toBeTruthy();
   });
 
   test("en Min side-modul som slås av, sier at ingenting er slettet", async () => {
