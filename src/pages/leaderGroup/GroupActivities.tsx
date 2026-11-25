@@ -3,8 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { formatNorwegianDateTime, monthKeyOf, monthOptionsOf } from "../../utils/dates";
 import { LeaderGroupDetail } from "./leaderGroupDetail";
 import { tallyAnswers } from "../../utils/staffing";
+import { otherLoadsSameDay } from "../../utils/sameDayLoads";
+import { parseIsoToDateAndTime } from "../../utils/dates";
 import { useConfirm } from "../../components/ConfirmProvider";
 import {
+  AlertTriangle,
   Calendar,
   Clock,
   MapPin,
@@ -22,15 +25,49 @@ interface GroupActivitiesProps {
 }
 
 export const GroupActivities: React.FC<GroupActivitiesProps> = ({ detail, showToast }) => {
-  const { hasLeaderAccess, members, groupGatherings, assignTaskToPerson, undistributedTasks, takeTask, giveTaskBack, canGiveBack, volunteerRoles } = detail;
+  const { hasLeaderAccess, members, group, groupGatherings, dayLoads, assignTaskToPerson, undistributedTasks, takeTask, giveTaskBack, canGiveBack, volunteerRoles } = detail;
   const navigate = useNavigate();
   const confirm = useConfirm();
 
   const [selectedMonth, setSelectedMonth] = useState<string>("all");
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<"all" | "red" | "yellow" | "green">("all");
   const [viewMode, setViewMode] = useState<"kort" | "tabell">("kort");
-  const [expandedGatheringId, setExpandedGatheringId] = useState<string | null>(null);
+  // Several gatherings can be open at once in the cards view
+  const [openGatheringIds, setOpenGatheringIds] = useState<ReadonlySet<string>>(() => new Set());
   const [quickAssignTaskId, setQuickAssignTaskId] = useState<string | null>(null);
+  // Only the gatherings with a double booking, when the conflict counter is pressed
+  const [showConflictsOnly, setShowConflictsOnly] = useState(false);
+
+  // The other live tasks a person has on the same day, for the warnings
+  const sameDayOf = (personId: string, startsAt: string, taskId: string) => otherLoadsSameDay(dayLoads, personId, startsAt, taskId);
+
+  // Text for those tasks, e.g. "Lyd kl. 11:00", with the group name when it is another group
+  const sameDayTexts = (loads: ReturnType<typeof sameDayOf>) =>
+    loads.map((load) => {
+      const time = parseIsoToDateAndTime(load.startsAt).time;
+      const otherGroup = load.groupId !== group?.id && load.groupName ? ` – ${load.groupName}` : "";
+      return `${load.taskTitle} kl. ${time}${otherGroup}`;
+    });
+
+  const toggleGathering = (gatheringId: string) => {
+    setOpenGatheringIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(gatheringId)) next.delete(gatheringId);
+      else next.add(gatheringId);
+      return next;
+    });
+  };
+
+  // Give the task to a member: at once (confirmed), or as a request they answer (pending)
+  const quickAssign = (taskId: string, personId: string, personName: string, response: "confirmed" | "pending") => {
+    const res = assignTaskToPerson(taskId, personId, response);
+    if (res.success) {
+      setQuickAssignTaskId(null);
+      showToast(response === "confirmed" ? `Oppgaven ble direkte tildelt ${personName}!` : `${personName} er forespurt.`);
+    } else {
+      showToast(res.error || "Kunne ikke tildele oppgaven.");
+    }
+  };
 
   // The months the group has activities in
   const monthOptions = useMemo(
@@ -41,6 +78,26 @@ export const GroupActivities: React.FC<GroupActivitiesProps> = ({ detail, showTo
     [groupGatherings]
   );
 
+  // Per gathering, the people with a double booking on it: one pair per person and gathering
+  const conflictPairs = useMemo(() => {
+    const pairs = new Map<string, Set<string>>();
+    for (const item of groupGatherings) {
+      for (const { task, assignedPersons } of item.taskItems) {
+        for (const { person, response } of assignedPersons) {
+          if (!person || (response !== "pending" && response !== "confirmed")) continue;
+          if (otherLoadsSameDay(dayLoads, person.id, item.gathering.startsAt, task.id).length === 0) continue;
+          const people = pairs.get(item.gathering.id) ?? new Set<string>();
+          people.add(person.id);
+          pairs.set(item.gathering.id, people);
+        }
+      }
+    }
+    return pairs;
+  }, [groupGatherings, dayLoads]);
+  const conflictCount = Array.from(conflictPairs.values()).reduce((acc, people) => acc + people.size, 0);
+  // Ignored when no conflict is left, so the list never stays empty by a stale filter
+  const conflictsOnly = showConflictsOnly && conflictCount > 0;
+
   // Filtered gatherings for this group
   const filteredGroupGatherings = useMemo(() => {
     return groupGatherings.filter((item) => {
@@ -50,9 +107,10 @@ export const GroupActivities: React.FC<GroupActivitiesProps> = ({ detail, showTo
       if (selectedStatusFilter !== "all") {
         if (item.staffing.color !== selectedStatusFilter) return false;
       }
+      if (conflictsOnly && !conflictPairs.has(item.gathering.id)) return false;
       return true;
     });
-  }, [groupGatherings, selectedMonth, selectedStatusFilter]);
+  }, [groupGatherings, selectedMonth, selectedStatusFilter, conflictsOnly, conflictPairs]);
 
   // Flattened table rows for fast tabular overview across all semester activities
   const tableRows = useMemo(() => {
@@ -342,6 +400,41 @@ export const GroupActivities: React.FC<GroupActivitiesProps> = ({ detail, showTo
       {/* VISNING 1: KORTVISNING */}
       {viewMode === "kort" && (
         <div>
+          {/* Open or close all the gatherings in the list at once */}
+          <div className="flex items-center justify-end gap-1.5 pb-2">
+            {conflictCount > 0 && (
+              <button
+                type="button"
+                id="btn-group-filter-conflicts"
+                onClick={() => setShowConflictsOnly((prev) => !prev)}
+                className="text-xs font-bold text-amber-800 hover:text-amber-950 bg-amber-100 hover:bg-amber-200 border border-amber-200 px-2.5 py-1 rounded-xl transition-colors cursor-pointer mr-auto"
+              >
+                {conflictsOnly
+                  ? "Vis alle"
+                  : `${conflictCount} ${conflictCount === 1 ? "mulig konflikt" : "mulige konflikter"}`}
+              </button>
+            )}
+            <button
+              type="button"
+              id="btn-group-expand-all"
+              onClick={() => {
+                const ids = filteredGroupGatherings.filter((item) => item.tasks.length > 0).map((item) => item.gathering.id);
+                setOpenGatheringIds((prev) => new Set([...Array.from(prev), ...ids]));
+              }}
+              className="text-xs font-bold text-slate-700 hover:text-slate-900 bg-white border border-slate-200 hover:bg-slate-50 px-2.5 py-1 rounded-xl transition-colors cursor-pointer"
+            >
+              Fold ut alle
+            </button>
+            <button
+              type="button"
+              id="btn-group-collapse-all"
+              onClick={() => setOpenGatheringIds(new Set())}
+              className="text-xs font-bold text-slate-700 hover:text-slate-900 bg-white border border-slate-200 hover:bg-slate-50 px-2.5 py-1 rounded-xl transition-colors cursor-pointer"
+            >
+              Fold sammen alle
+            </button>
+          </div>
+
           {filteredGroupGatherings.length === 0 ? (
             <div className="p-6 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200 text-xs text-slate-400">
               Ingen aktiviteter matcher valgt måned eller filter for denne gruppen.
@@ -351,7 +444,7 @@ export const GroupActivities: React.FC<GroupActivitiesProps> = ({ detail, showTo
               {filteredGroupGatherings.map((item) => {
                 const { gathering, tasks: gTasks, taskItems, totalNeeded, totalConfirmed, staffing } = item;
                 const isArrangement = gathering.type === "arrangement" || !gathering.type;
-                const isExpanded = expandedGatheringId === gathering.id;
+                const isExpanded = openGatheringIds.has(gathering.id);
 
                 return (
                   <div
@@ -422,7 +515,7 @@ export const GroupActivities: React.FC<GroupActivitiesProps> = ({ detail, showTo
                       <button
                         type="button"
                         id={`btn-toggle-tasks-${gathering.id}`}
-                        onClick={() => setExpandedGatheringId(isExpanded ? null : gathering.id)}
+                        onClick={() => toggleGathering(gathering.id)}
                         className="text-xs font-semibold text-slate-700 hover:text-slate-900 flex items-center gap-1 cursor-pointer"
                       >
                         <span>{gTasks.length} {gTasks.length === 1 ? "oppgave" : "oppgaver"}</span>
@@ -489,6 +582,17 @@ export const GroupActivities: React.FC<GroupActivitiesProps> = ({ detail, showTo
                                         ({response === "withdrawn" ? "Forfall" : response === "declined" ? "Avslått" : "Forespurt"})
                                       </span>
                                     )}
+                                    {person && (response === "pending" || response === "confirmed") && sameDayOf(person.id, gathering.startsAt, task.id).length > 0 && (
+                                      <span
+                                        id={`warn-double-${task.id}-${person.id}`}
+                                        role="img"
+                                        title={`Har også: ${sameDayTexts(sameDayOf(person.id, gathering.startsAt, task.id)).join(", ")}`}
+                                        aria-label={`Har også: ${sameDayTexts(sameDayOf(person.id, gathering.startsAt, task.id)).join(", ")}`}
+                                        className="inline-flex"
+                                      >
+                                        <AlertTriangle className="w-3 h-3 text-amber-600" />
+                                      </span>
+                                    )}
                                   </span>
                                 ))
                               ) : (
@@ -539,27 +643,45 @@ export const GroupActivities: React.FC<GroupActivitiesProps> = ({ detail, showTo
                                   Velg deltaker for direkte tildeling:
                                 </span>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
-                                  {members.map((m) => (
-                                    <button
+                                  {members.map((m) => {
+                                    const others = sameDayOf(m.id, gathering.startsAt, task.id);
+                                    const first = others[0];
+                                    return (
+                                    <div
                                       key={m.id}
-                                      type="button"
-                                      id={`btn-do-quick-assign-${task.id}-${m.id}`}
-                                      onClick={() => {
-                                        // A direct assignment: the leader has already agreed it with the person
-                                        const res = assignTaskToPerson(task.id, m.id, "confirmed");
-                                        if (res.success) {
-                                          setQuickAssignTaskId(null);
-                                          showToast(`Oppgaven ble direkte tildelt ${m.name}!`);
-                                        } else {
-                                          showToast(res.error || "Kunne ikke tildele oppgaven.");
-                                        }
-                                      }}
-                                      className="p-1.5 bg-slate-800 hover:bg-slate-700 text-left rounded-lg text-xs font-medium text-slate-200 flex items-center justify-between cursor-pointer"
+                                      className="p-1.5 bg-slate-800 rounded-lg text-xs font-medium text-slate-200 flex items-center justify-between gap-2"
                                     >
-                                      <span>{m.name}</span>
-                                      <UserPlus className="w-3 h-3 text-emerald-400" />
-                                    </button>
-                                  ))}
+                                      <div className="min-w-0">
+                                        <span>{m.name}</span>
+                                        {first && (
+                                          <span className="block text-[10px] font-semibold text-amber-400">
+                                            {`har allerede ${first.taskTitle} denne dagen${others.length > 1 ? ` +${others.length - 1} til` : ""}`}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div className="flex items-center gap-1 shrink-0">
+                                        {/* Tildel: the leader has already agreed it with the person */}
+                                        <button
+                                          type="button"
+                                          id={`btn-do-quick-assign-${task.id}-${m.id}`}
+                                          onClick={() => quickAssign(task.id, m.id, m.name, "confirmed")}
+                                          className="px-2 py-0.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-[10px] font-bold text-white cursor-pointer"
+                                        >
+                                          Tildel
+                                        </button>
+                                        {/* Forespør: the person answers yes or no */}
+                                        <button
+                                          type="button"
+                                          id={`btn-do-quick-ask-${task.id}-${m.id}`}
+                                          onClick={() => quickAssign(task.id, m.id, m.name, "pending")}
+                                          className="px-2 py-0.5 rounded-md bg-slate-700 hover:bg-slate-600 text-[10px] font-bold text-slate-100 cursor-pointer"
+                                        >
+                                          Forespør
+                                        </button>
+                                      </div>
+                                    </div>
+                                    );
+                                  })}
                                 </div>
                               </div>
                             )}
@@ -670,7 +792,7 @@ export const GroupActivities: React.FC<GroupActivitiesProps> = ({ detail, showTo
                               <button
                                 type="button"
                                 onClick={() => {
-                                  setExpandedGatheringId(row.gatheringId);
+                                  setOpenGatheringIds((prev) => new Set(prev).add(row.gatheringId));
                                   setQuickAssignTaskId(row.taskId);
                                   setViewMode("kort");
                                 }}

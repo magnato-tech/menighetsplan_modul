@@ -63,6 +63,7 @@ function setFirebase(overrides: Record<string, unknown> = {}, tasks: Task[] = [u
     gatherings,
     tasks,
     assignments,
+    groups,
     getGroupById: (id: string) => groups.find((g) => g.id === id),
     getGroupMessages: () => [],
     getGatheringById: (id: string) => gatherings.find((g) => g.id === id),
