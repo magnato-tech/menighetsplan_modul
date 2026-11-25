@@ -13,10 +13,10 @@ const activity = (id: string, color: "red" | "yellow" | "green", tasks: { status
   taskItems: [],
   staffing: { color, badgeText: color === "red" ? "Mangler 1" : color === "yellow" ? "Venter på svar" : "Dekket" },
 });
-const show = (activities: ReturnType<typeof activity>[]) =>
+const show = (activities: ReturnType<typeof activity>[], isAdmin = false) =>
   render(
     <MemoryRouter>
-      <GroupActivities detail={{ hasLeaderAccess: true, members: [], groupGatherings: activities, assignTaskToPerson: () => ({ success: true }) } as unknown as LeaderGroupDetail} showToast={() => {}} />
+      <GroupActivities detail={{ hasLeaderAccess: true, isAdmin, members: [], groupGatherings: activities, assignTaskToPerson: () => ({ success: true }) } as unknown as LeaderGroupDetail} showToast={() => {}} />
     </MemoryRouter>
   );
 const filter = () => (document.getElementById("select-group-filter-status") as HTMLSelectElement).value;
@@ -40,9 +40,25 @@ describe("Statuslinjen hos gruppelederen", () => {
   });
 
   test("er alt dekket, er linjen grønn", () => {
-    show([activity("a", "green"), activity("b", "green")]);
+    show([activity("a", "green", [{ status: "confirmed" }]), activity("b", "green", [{ status: "confirmed" }])]);
     expect(screen.getByText("Alle oppgaver er dekket for planlagte aktiviteter")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Vis dem →" })).toBeNull();
+    expect(screen.queryByText("Gruppen har ingen oppgaver ennå.")).toBeNull();
+  });
+
+  test("har ingen aktivitet oppgaver, sier den at gruppen ingen oppgaver har, og ikke at alt er dekket", () => {
+    show([activity("a", "green"), activity("b", "green")]);
+    expect(screen.getByText("Gruppen har ingen oppgaver ennå.")).toBeTruthy();
+    expect(screen.getByText("Oppgaver kommer hit når en rolle er knyttet til gruppen.")).toBeTruthy();
+    expect(screen.queryByText("Alle oppgaver er dekket for planlagte aktiviteter")).toBeNull();
+    // Only an administrator is told where the team is set
+    expect(screen.queryByText("Det gjøres i Admin → Roller → Team.")).toBeNull();
+  });
+
+  test("administratoren får også vite hvor teamet settes", () => {
+    show([], true);
+    expect(screen.getByText("Gruppen har ingen oppgaver ennå.")).toBeTruthy();
+    expect(screen.getByText("Det gjøres i Admin → Roller → Team.")).toBeTruthy();
   });
 
   test("har noen meldt forfall, er det det linjen sier, som før", () => {

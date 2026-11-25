@@ -104,7 +104,7 @@ const askedText = async (): Promise<string | null> => {
   return document.getElementById(box.getAttribute("aria-labelledby") ?? "")?.textContent ?? null;
 };
 /** Answers the question in the page with the button of that name, once it is shown. */
-const answer = async (name: "Send" | "Avbryt" | "Slett") => {
+const answer = async (name: "Ja, send nå" | "Avbryt" | "Slett") => {
   const box = await screen.findByRole("alertdialog");
   fireEvent.click(within(box).getByRole("button", { name }));
 };
@@ -139,7 +139,7 @@ describe("Utvalget fra Personer i «Til»", () => {
     expect(screen.queryByRole("button", { name: "Fjern Ledere og nestledere i tjenestegruppene" })).toBeNull();
     expect(document.getElementById("email-recipient-count")?.textContent).toBe("2 personer");
     fireEvent.click(screen.getByRole("button", { name: "Send til 2 personer" }));
-    await answer("Send");
+    await answer("Ja, send nå");
     await vi.waitFor(() => expect(service.requestEmail).toHaveBeenCalledTimes(1));
     expect(service.requestEmail).toHaveBeenCalledWith(expect.objectContaining({ mode: "send", audience: { kind: "persons" }, onlyPersonIds: ["hanne", "frida"] }));
   });

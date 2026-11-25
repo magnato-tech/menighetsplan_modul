@@ -137,6 +137,8 @@ export const GroupActivities: React.FC<GroupActivitiesProps> = ({ detail, showTo
   // Activities that lack people, and those where everybody is asked and not all have answered
   const lackingCount = groupGatherings.filter((item) => item.staffing.color === "red").length;
   const waitingCount = groupGatherings.filter((item) => item.staffing.color === "yellow").length;
+  // No activity has a task at all: «all covered» would then say nothing about the group
+  const hasAnyTasks = groupGatherings.some((item) => item.tasks.length > 0);
 
   return (
     <section
@@ -195,6 +197,12 @@ export const GroupActivities: React.FC<GroupActivitiesProps> = ({ detail, showTo
           >
             Vis dem →
           </button>
+        </div>
+      ) : !hasAnyTasks ? (
+        <div id="group-status-no-tasks" className="px-3.5 py-2.5 bg-slate-50 rounded-xl border border-slate-200 shadow-2xs space-y-0.5">
+          <p className="text-xs font-semibold text-slate-800">Gruppen har ingen oppgaver ennå.</p>
+          <p className="text-[11px] text-slate-500">Oppgaver kommer hit når en rolle er knyttet til gruppen.</p>
+          {detail.isAdmin && <p className="text-[11px] text-slate-500">Det gjøres i Admin → Roller → Team.</p>}
         </div>
       ) : (
         <div className="px-3.5 py-2 bg-emerald-50 rounded-xl border border-emerald-200/80 flex items-center justify-between gap-2 shadow-2xs">

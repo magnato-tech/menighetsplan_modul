@@ -1,11 +1,11 @@
 import { collection, doc, onSnapshot, query, where, writeBatch } from "firebase/firestore";
 import { db, handleFirestoreError, OperationType } from "../firebase";
-import { CMS_COLLECTIONS } from "../data/collections";
+import { CMS_COLLECTIONS, COLLECTIONS } from "../data/collections";
 import { buildInitialVolunteerRoles } from "../data/defaultVolunteerRoles";
 import { buildVolunteerRole, type NewVolunteerRoleInput } from "../data/newDocuments";
 import { VolunteerRole } from "../types";
 import { createDocument, deleteDocument, updateDocument } from "./firestore";
-import { sanitizeForFirestore } from "../utils/firestoreData";
+import { forUpdate, sanitizeForFirestore } from "../utils/firestoreData";
 import { chunk } from "../utils/chunk";
 import { VOLUNTEER_ROLE_RECORD, volunteerRoleFields } from "../data/settingsRecords";
 
@@ -60,6 +60,20 @@ export async function patchVolunteerRole(
     recordType: VOLUNTEER_ROLE_RECORD,
     updatedAt: new Date().toISOString(),
   });
+}
+
+/**
+ * Sets the team of existing tasks, in as few writes as possible. A team of undefined removes the
+ * field, so the tasks are «Uten team». The caller names the tasks; nothing else is touched.
+ */
+export async function moveRoleTasksToTeam(groupId: string | undefined, taskIds: readonly string[]): Promise<void> {
+  for (const piece of chunk([...taskIds], BATCH_SIZE)) {
+    const batch = writeBatch(db);
+    for (const taskId of piece) {
+      batch.update(doc(db, COLLECTIONS.TASKS, taskId), forUpdate({ groupId }));
+    }
+    await batch.commit();
+  }
 }
 
 export async function removeVolunteerRole(roleId: string): Promise<void> {

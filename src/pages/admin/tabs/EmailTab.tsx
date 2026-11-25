@@ -359,9 +359,11 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
     if (wrong) return;
     const to = sendingNow.label;
     const subject = sendingNow.draft.subject.trim();
-    const before = recentSameSending(record.log, audienceKey, sendingNow.audience, sendingNow.draft.subject, now());
-    if (before && !(await ask(`Denne e-posten ble sendt til «${to}» ${formatNorwegianDateTime(before.sentAt)}. Vil du sende den en gang til?`))) return;
-    if (!(await ask(`Du sender «${subject}» til ${people(personCount)}${addressNote} (${to}). Vil du sende?`))) return;
+    const before = recentSameSending(record.log, audienceKey, sendingNow.audience, sendingNow.draft.subject, now(), sendingNow.onlyPersonIds);
+    // One question, with the duplicate named on a third line when there is one
+    const lines = [`Send «${subject}» til ${people(personCount)}${addressNote}?`, to];
+    if (before) lines.push(`Den samme e-posten ble sendt til ${to} ${formatNorwegianDateTime(before.sentAt)}.`);
+    if (!(await ask(lines.join("\n"), "Ja, send nå"))) return;
 
     setSending(true);
     setResult(null);
@@ -384,6 +386,7 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
         withoutEmail: outcome.withoutEmail,
         stopped: outcome.stopped,
         remainingPersonIds: outcome.remainingPersonIds,
+        ...(sendingNow.onlyPersonIds ? { onlyPersonIds: sendingNow.onlyPersonIds } : {}),
       };
       saveEmailLog(withLogEntry(record.log, entry)).catch(() => showFeedback("E-posten er sendt, men loggen kunne ikke lagres.", "error"));
     }
@@ -421,7 +424,7 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
     const wrong = preflight(source, withLoginLinks);
     setError(wrong);
     if (wrong) return;
-    if (!(await ask(`Du sender «${source.subject.trim()}» til ${people(entry.remainingPersonIds.length)} som gjenstår (${entry.audienceLabel}). Teksten er den som står i skjemaet nå. Vil du sende?`))) return;
+    if (!(await ask(`Send «${source.subject.trim()}» til ${people(entry.remainingPersonIds.length)} som gjenstår?\n${entry.audienceLabel}. Teksten er den som står i skjemaet nå.`, "Ja, send nå"))) return;
     setSending(true);
     setResult(null);
     const outcome = await requestEmail({
@@ -490,7 +493,7 @@ export const EmailTab: React.FC<EmailTabProps> = ({ studio, showFeedback, canSen
 
           {question && (
             <div ref={questionBox} role="alertdialog" aria-labelledby="email-question" onKeyDown={(event) => event.key === "Escape" && question.answer(false)} className="p-3 rounded-xl border border-amber-500/40 bg-amber-500/10 space-y-3">
-              <p id="email-question" className="text-xs font-bold text-[var(--studio-text)]">
+              <p id="email-question" className="text-xs font-bold text-[var(--studio-text)] whitespace-pre-line">
                 {question.text}
               </p>
               <div className="flex flex-wrap gap-2">
