@@ -8,6 +8,7 @@ import {
   Edit2,
   Trash2,
 } from "lucide-react";
+import { useConfirm } from "../ConfirmProvider";
 
 interface EditMeetingDialogProps {
   model: HusfellesskapModel;
@@ -56,9 +57,10 @@ export const EditMeetingDialog: React.FC<EditMeetingDialogProps> = ({ model, act
     }
   };
 
+  const confirmInPage = useConfirm();
   const handleDeleteMeeting = async () => {
     if (!activeMeeting) return;
-    if (window.confirm("Er du sikker på at du vil slette dette møtet?")) {
+    if (await confirmInPage("Er du sikker på at du vil slette dette møtet?", { yes: "Slett", danger: true })) {
       const res = await deleteMeeting(activeMeeting.id);
       if (res.success) {
         onClose();
@@ -69,7 +71,7 @@ export const EditMeetingDialog: React.FC<EditMeetingDialogProps> = ({ model, act
 
   const handleDeleteRest = async () => {
     if (!activeMeeting) return;
-    if (!window.confirm("Vil du slette denne samlingen og alle senere i samme plan? Samlinger noen har svart på, blir stående.")) return;
+    if (!(await confirmInPage("Vil du slette denne samlingen og alle senere i samme plan? Samlinger noen har svart på, blir stående.", { yes: "Slett", danger: true }))) return;
     const res = await deleteRestOfPlan(activeMeeting.id);
     if (res.success) {
       onClose();

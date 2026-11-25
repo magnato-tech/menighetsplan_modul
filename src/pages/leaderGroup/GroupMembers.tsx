@@ -17,6 +17,7 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
+import { useConfirm } from "../../components/ConfirmProvider";
 
 interface GroupMembersProps {
   detail: LeaderGroupDetail;
@@ -25,6 +26,7 @@ interface GroupMembersProps {
 }
 
 export const GroupMembers: React.FC<GroupMembersProps> = ({ detail, group, showToast }) => {
+  const confirmInPage = useConfirm();
   const { hasLeaderAccess, isAdmin, currentUser, members, availablePersonsToAdd, addGroupMember, removeGroupMember } = detail;
   const canPropose = leadsGroup(group, currentUser.id);
   const proposals = useGroupProposals(group.id, canPropose || isAdmin);
@@ -43,8 +45,8 @@ export const GroupMembers: React.FC<GroupMembersProps> = ({ detail, group, showT
   };
 
   // Handle Remove Member
-  const handleRemoveMember = (personId: string, personName: string) => {
-    if (confirm(`Er du sikker på at du vil fjerne ${personName} fra gruppen?`)) {
+  const handleRemoveMember = async (personId: string, personName: string) => {
+    if (await confirmInPage(`Er du sikker på at du vil fjerne ${personName} fra gruppen?`, { yes: "Fjern", danger: true })) {
       const res = removeGroupMember(group.id, personId);
       if (res.success) {
         showToast(`${personName} ble fjernet fra gruppen.`);

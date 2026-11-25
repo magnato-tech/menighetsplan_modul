@@ -11,9 +11,9 @@ import {
   reorderPages as reorderPagesInFirestore,
 } from "../services/firestore";
 import { reportWriteError } from "../services/writeErrors";
-import { saveAddonChoice, saveMinSideModule, subscribeAddons, subscribeMinSideModules } from "../services/addons";
+import { saveAddonChoice, saveGroupAudience, saveMinSideModule, subscribeAddons, subscribeMinSideModules } from "../services/addons";
 import { DEMO } from "../demo";
-import { ALL_MIN_SIDE_MODULES_ON, type MinSideModuleChoices, type MinSideModuleId } from "../utils/minSideModules";
+import { ALL_MIN_SIDE_MODULES_ON, type GroupAudience, type MinSideModuleChoices, type MinSideModuleId } from "../utils/minSideModules";
 import { saveSurfaces, subscribeSurfaces, type SurfacesPatch } from "../services/surfaces";
 import type { AddonChoices, AddonId } from "../utils/addons";
 import { defaultSurfaces, type InstallationSurfaces } from "../utils/surfaces";
@@ -64,6 +64,8 @@ interface CmsContextValue {
   saveSurfaces: (patch: SurfacesPatch) => Promise<boolean>;
   setAddon: (id: AddonId, on: boolean) => Promise<boolean>;
   setMinSideModule: (id: MinSideModuleId, on: boolean) => Promise<boolean>;
+  /** Chooses who the groups are shown to on Min side (see utils/minSideModules.ts). */
+  setGroupAudience: (audience: GroupAudience) => Promise<boolean>;
   // Every write resolves to whether it reached Firestore. A failure is already shown to the user.
   savePage: (page: Partial<CmsPage> & { id?: string }) => Promise<boolean>;
   deletePage: (pageId: string) => Promise<boolean>;
@@ -289,6 +291,8 @@ const writes = {
     attempt(on ? "slå på modulen" : "slå av modulen", () => saveAddonChoice(id, on)),
   setMinSideModule: (id: MinSideModuleId, on: boolean) =>
     attempt(on ? "slå på modulen" : "slå av modulen", () => saveMinSideModule(id, on)),
+  setGroupAudience: (audience: GroupAudience) =>
+    attempt("lagre hvem gruppene vises for", () => saveGroupAudience(audience)),
   savePage: (pageData: Partial<CmsPage> & { id?: string }, editorId?: string) => {
     const page = buildPageRecord(pageData, new Date(), () => newId("page"), editorId);
     return attempt("lagre siden", () => createDocument(CMS_COLLECTIONS.PAGES, page));

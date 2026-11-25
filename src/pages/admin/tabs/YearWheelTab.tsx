@@ -16,6 +16,7 @@ import {
 } from "../../../utils/yearWheel";
 import type { ShowFeedback } from "../studio";
 import { studioInputFull, studioPrimaryButton, studioSecondaryButton } from "../studioTheme";
+import { useConfirm } from "../../../components/ConfirmProvider";
 
 interface YearWheelTabProps {
   showFeedback: ShowFeedback;
@@ -29,6 +30,7 @@ const iconButton =
 
 /** The congregation's annual wheel: deadlines and what comes back every year, month by month. */
 export const YearWheelTab: React.FC<YearWheelTabProps> = ({ showFeedback, currentMonth = new Date().getMonth() + 1 }) => {
+  const confirmInPage = useConfirm();
   // undefined while the stored wheel is being read; null when none is stored
   const [stored, setStored] = useState<YearWheelItem[] | null | undefined>(undefined);
   const [editing, setEditing] = useState<YearWheelItem | null>(null);
@@ -64,8 +66,8 @@ export const YearWheelTab: React.FC<YearWheelTabProps> = ({ showFeedback, curren
     setEditing(null);
   };
 
-  const remove = (item: YearWheelItem) => {
-    if (!confirm(`Vil du ta «${item.title}» ut av årshjulet?`)) return;
+  const remove = async (item: YearWheelItem) => {
+    if (!(await confirmInPage(`Vil du ta «${item.title}» ut av årshjulet?`, { yes: "Ta ut", danger: true }))) return;
     store(withoutYearWheelItem(items, item.id), "Fristen er tatt ut av årshjulet.");
   };
 

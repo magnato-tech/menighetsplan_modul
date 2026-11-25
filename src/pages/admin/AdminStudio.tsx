@@ -411,6 +411,15 @@ function AdminStudioContent() {
 
   const showFeedback: ShowFeedback = (text, type = "success") => setFeedback({ text, type });
 
+  // A message a page left behind before it sent the editor here, such as «Arrangementet ble slettet»
+  const handedFeedback = (location.state as { feedback?: string } | null)?.feedback;
+  useEffect(() => {
+    if (!handedFeedback) return;
+    setFeedback({ text: handedFeedback, type: "success" });
+    navigate(`${location.pathname}${location.search}`, { replace: true, state: null });
+    // Only the message that came with this arrival is shown
+  }, [handedFeedback, location.key]);
+
   // Editors with changes not saved: marked in the side menu, and asked about before one leaves the studio
   const { entries: unsavedEntries, registry: unsavedRegistry } = useUnsavedRegistry();
   const [pendingExit, setPendingExit] = useState<(() => void) | null>(null);

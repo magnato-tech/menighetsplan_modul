@@ -1,4 +1,4 @@
-import { MIN_SIDE_MODULE_REQUIRES, type MinSideModuleId } from "../../utils/minSideModules";
+import { MIN_SIDE_MODULE_REQUIRES, type GroupAudience, type MinSideModuleId } from "../../utils/minSideModules";
 import type { StudioTab } from "./studio";
 
 // What each module of Min side is called on the page «Moduler», and what being off means. Keyed by
@@ -15,8 +15,8 @@ export interface MinSideModuleText {
 export const MIN_SIDE_MODULE_TEXT: Record<MinSideModuleId, MinSideModuleText> = {
   grupper: {
     name: "Grupper",
-    summary: "Fanen Mine grupper og gruppesidene på Min side.",
-    whenOff: "Av: fanen og gruppesidene vises ikke på Min side. Gruppene finnes fortsatt i admin og på nettsiden.",
+    summary: "Fanen Mine grupper og gruppesidene på Min side. Du velger hvem de vises for.",
+    whenOff: "Ingen: fanen og gruppesidene vises ikke på Min side. Gruppene finnes fortsatt i admin og på nettsiden.",
   },
   gruppechat: {
     name: "Gruppechat",
@@ -59,4 +59,21 @@ export function requiresText(id: MinSideModuleId): string | undefined {
 /** The admin tabs a Min side module is in. A tab of a module that is off is not drawn (MinSideModuleGate.tsx). */
 export const MIN_SIDE_ADMIN_TABS: Partial<Record<StudioTab, MinSideModuleId>> = {
   "planlegger-semesterplan": "semesterplan",
+};
+
+/** The choices for who the groups are shown to, with what each means. */
+export const GROUP_AUDIENCE_TEXT: Record<GroupAudience, { label: string; description: string }> = {
+  alle: {
+    label: "Alle",
+    description: "Alle ser gruppene de er med i, og gruppelederne ser det de skal følge opp.",
+  },
+  ledere: {
+    label: "Bare gruppeledere",
+    description:
+      "Gruppelederne (leder og nestleder) ser gruppene sine og hva medlemmene har sagt ja til. Medlemmene ser ikke gruppene, og chat og husfellesskap er bare for lederne.",
+  },
+  ingen: {
+    label: "Ingen",
+    description: "Ingen ser gruppene på Min side. De finnes fortsatt i admin og på nettsiden.",
+  },
 };

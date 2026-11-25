@@ -2,6 +2,7 @@ import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { formatNorwegianDateTime, monthKeyOf, monthOptionsOf } from "../../utils/dates";
 import { LeaderGroupDetail } from "./leaderGroupDetail";
+import { tallyAnswers } from "../../utils/staffing";
 import {
   Calendar,
   Clock,
@@ -127,6 +128,12 @@ export const GroupActivities: React.FC<GroupActivitiesProps> = ({ detail, showTo
     }, 0);
   }, [groupGatherings]);
 
+  // What the people asked have answered, over all the activities of the group
+  const answers = useMemo(
+    () => tallyAnswers(groupGatherings.flatMap((item) => item.taskItems.flatMap((taskItem) => taskItem.assignedPersons.map(({ assignment }) => assignment)))),
+    [groupGatherings]
+  );
+
   // Activities that lack people, and those where everybody is asked and not all have answered
   const lackingCount = groupGatherings.filter((item) => item.staffing.color === "red").length;
   const waitingCount = groupGatherings.filter((item) => item.staffing.color === "yellow").length;
@@ -201,6 +208,15 @@ export const GroupActivities: React.FC<GroupActivitiesProps> = ({ detail, showTo
             🟢 I rute
           </span>
         </div>
+      )}
+
+      {/* What the members have said yes to: a leader reads it here whether or not the groups are shown to the members */}
+      {answers.confirmed + answers.pending + answers.declined > 0 && (
+        <p id="group-answers-summary" className="flex items-center gap-2 flex-wrap text-[11px] font-bold">
+          <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800">{answers.confirmed} har sagt ja</span>
+          {answers.pending > 0 && <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-800">{answers.pending} venter på svar</span>}
+          {answers.declined > 0 && <span className="px-2 py-0.5 rounded-md bg-red-100 text-red-700">{answers.declined} kan ikke</span>}
+        </p>
       )}
 
       {/* 1 Kompakt Kontrollrad: Filter + Visningsvalg */}

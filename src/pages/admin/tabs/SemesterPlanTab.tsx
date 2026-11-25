@@ -17,6 +17,7 @@ import { parseIsoToDateAndTime } from "../../../utils/dates";
 import { SemesterPlanFormCard } from "../SemesterPlanFormCard";
 import { studioTabUrl, type ShowFeedback, type StudioData } from "../studio";
 import { studioCardPadded, studioPrimaryButton, studioSecondaryButton } from "../studioTheme";
+import { useConfirm } from "../../../components/ConfirmProvider";
 
 interface SemesterPlanTabProps {
   studio: StudioData;
@@ -41,6 +42,7 @@ function formatOpens(opensAt: string): string {
  * events one at a time (see utils/semesterPlan.ts).
  */
 export const SemesterPlanTab: React.FC<SemesterPlanTabProps> = ({ studio, showFeedback }) => {
+  const confirmInPage = useConfirm();
   const { adminGatherings, adminTasks, adminGroups } = studio;
   const gatherings = useMemo(() => adminGatherings.map((item) => item.gathering), [adminGatherings]);
   const tasks = useMemo(() => adminTasks.map((item) => item.task), [adminTasks]);
@@ -64,7 +66,7 @@ export const SemesterPlanTab: React.FC<SemesterPlanTabProps> = ({ studio, showFe
   };
 
   const remove = async (plan: SemesterPlan) => {
-    if (!confirm(`Vil du slette semesterplanen «${plan.name}»? Svarene til de frivillige slettes også. Oppgavene de har tatt, blir stående.`)) return;
+    if (!(await confirmInPage(`Vil du slette semesterplanen «${plan.name}»? Svarene til de frivillige slettes også. Oppgavene de har tatt, blir stående.`, { yes: "Slett", danger: true }))) return;
     if (await deleteSemesterPlan(plan.id)) showFeedback("Semesterplanen ble slettet");
   };
 

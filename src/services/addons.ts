@@ -2,7 +2,7 @@ import { doc, onSnapshot, setDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { CMS_COLLECTIONS } from "../data/collections";
 import { ADDONS_DOC_ID, ADDONS_RECORD, parseAddonChoices, type AddonChoices, type AddonId } from "../utils/addons";
-import { parseMinSideModules, type MinSideModuleChoices, type MinSideModuleId } from "../utils/minSideModules";
+import { parseMinSideModules, type GroupAudience, type MinSideModuleChoices, type MinSideModuleId } from "../utils/minSideModules";
 
 /**
  * Where it is stored which add-ons are on (see utils/addons.ts): one marked document in
@@ -59,4 +59,16 @@ export function subscribeMinSideModules(
 /** Turns one Min side module on or off. Only that module's field is written. */
 export async function saveMinSideModule(id: MinSideModuleId, on: boolean): Promise<void> {
   await setDoc(addonsRef(), { recordType: ADDONS_RECORD, minSide: { [id]: on } }, { merge: true });
+}
+
+/**
+ * Chooses who the groups are shown to. «Ingen» is written as the module being off, as before, so
+ * a browser that still runs older code reads the same choice; «ledere» is the extra field.
+ */
+export async function saveGroupAudience(audience: GroupAudience): Promise<void> {
+  await setDoc(
+    addonsRef(),
+    { recordType: ADDONS_RECORD, minSide: { grupper: audience !== "ingen" }, groupAudience: audience },
+    { merge: true }
+  );
 }

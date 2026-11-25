@@ -4,6 +4,7 @@ import { formatChatMessageTime, formatNorwegianDateTime } from "../../utils/date
 import { MyPageModel } from "./useMyPage";
 import { allGroupPersonIds } from "../../utils/groups";
 import { useMinSideModules } from "../../hooks/useMinSideModules";
+import { useGroupAccess } from "../../hooks/useGroupAccess";
 import {
   ChevronRight,
   Clock,
@@ -25,7 +26,7 @@ interface MyGroupsSectionProps {
 export const MyGroupsSection: React.FC<MyGroupsSectionProps> = ({ page }) => {
   const {
     currentUser,
-    myGroups,
+    myGroups: allMyGroups,
     getGroupNextActivity,
     getLedActivity,
     handleOpenGatheringPlanning,
@@ -36,6 +37,8 @@ export const MyGroupsSection: React.FC<MyGroupsSectionProps> = ({ page }) => {
   const { isOn } = useMinSideModules();
   const chatOn = isOn("gruppechat");
   const husfellesskapOn = isOn("husfellesskap");
+  // With the groups shown to leaders alone, a group one is only a member of is not listed
+  const myGroups = useGroupAccess().listed(allMyGroups);
 
   return (
     <section id="section-mine-grupper" className="space-y-2">

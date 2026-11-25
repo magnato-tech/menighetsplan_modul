@@ -12,6 +12,7 @@ import { audienceKey, type EmailAudience } from "../../utils/emailRecipients";
 import { mailPeopleOf, mailSubjectOf } from "../../utils/gatheringMail";
 import { newId } from "../../utils/id";
 import type { Assignment, Gathering, Person, Task } from "../../types";
+import { useConfirm } from "../ConfirmProvider";
 
 interface GatheringMailDialogProps {
   gathering: Gathering;
@@ -63,14 +64,15 @@ export const GatheringMailDialog: React.FC<GatheringMailDialogProps> = ({ gather
   const reachable = everyone.filter((person) => person.address !== null).length;
   const canSend = DEMO === null && record !== undefined && record !== null && record.replyTo !== "";
 
+  const confirmInPage = useConfirm();
   const send = async () => {
     if (!canSend || !record || busy) return;
     const wrong = emailDraftError({ subject, text, link: "minside" }) ?? (reachable === 0 ? "Ingen av dem har en e-postadresse." : null);
     setError(wrong);
     if (wrong) return;
     const before = recentSameSending(record.log, audienceKey, AUDIENCE, subject, now());
-    if (before && !confirm(`Denne e-posten ble sendt til «${before.audienceLabel}» ${formatNorwegianDateTime(before.sentAt)}. Vil du sende den en gang til?`)) return;
-    if (!confirm(`Du sender «${subject.trim()}» til ${people(reachable)}. Vil du sende?`)) return;
+    if (before && !(await confirmInPage(`Denne e-posten ble sendt til «${before.audienceLabel}» ${formatNorwegianDateTime(before.sentAt)}. Vil du sende den en gang til?`, { yes: "Send" }))) return;
+    if (!(await confirmInPage(`Du sender «${subject.trim()}» til ${people(reachable)}. Vil du sende?`, { yes: "Send" }))) return;
 
     setBusy(true);
     setError(null);

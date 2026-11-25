@@ -11,6 +11,7 @@ import { hasPlanner } from "../../../utils/level";
 import { NewGatheringDialog } from "../NewGatheringDialog";
 import { ShowFeedback, StudioData } from "../studio";
 import { studioCard } from "../studioTheme";
+import { useConfirm } from "../../../components/ConfirmProvider";
 
 interface TemplatesTabProps {
   studio: StudioData;
@@ -34,6 +35,7 @@ const emptyTemplate = (): GatheringTemplate => ({
  * is made here, or of an event that is already set up, and a series is planned from one.
  */
 export const TemplatesTab: React.FC<TemplatesTabProps> = ({ studio, showFeedback }) => {
+  const confirmInPage = useConfirm();
   const { adminGroups, adminVolunteerRoles } = studio;
   const { templates, ready } = useGatheringTemplates();
   const withPlanner = hasPlanner(useLevel());
@@ -46,7 +48,7 @@ export const TemplatesTab: React.FC<TemplatesTabProps> = ({ studio, showFeedback
     if (await saveGatheringTemplate(standardServiceTemplate(adminVolunteerRoles))) showFeedback("Standardmalen for gudstjeneste er lagt inn. Tilpass den til deres egen gudstjeneste.");
   };
   const remove = async (template: GatheringTemplate) => {
-    if (!confirm(`Vil du slette malen «${template.name}»? Arrangementer som er laget fra den, blir stående.`)) return;
+    if (!(await confirmInPage(`Vil du slette malen «${template.name}»? Arrangementer som er laget fra den, blir stående.`, { yes: "Slett", danger: true }))) return;
     if (await deleteGatheringTemplate(template.id)) showFeedback("Malen ble slettet");
   };
 
