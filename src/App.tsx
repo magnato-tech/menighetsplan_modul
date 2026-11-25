@@ -36,6 +36,7 @@ import { useFirebase } from "./context/FirebaseDataContext";
 import { useMinSideModules } from "./hooks/useMinSideModules";
 import { useGroupAccess } from "./hooks/useGroupAccess";
 import { useMinSideOpenCount } from "./hooks/useMinSideOpenCount";
+import { GROUP_LEADER_GUIDE_PATH, GroupLeaderGuidePage } from "./pages/myPage/GroupLeaderGuidePage";
 
 const AdminStudio = lazy(() =>
   import("./pages/admin/AdminStudio").then((m) => ({ default: m.AdminStudio }))
@@ -255,6 +256,7 @@ function AppContent() {
               <Routes>
                 <Route path="/minside" element={<MyPage />} />
                 <Route path="/minside/medlemskap" element={<MyMembershipPage />} />
+                <Route path={GROUP_LEADER_GUIDE_PATH} element={<GroupLeaderGuidePage />} />
                 <Route path="/minside/medlemskap/soknad-menighet" element={<CongregationMembershipApplyPage />} />
                 <Route path="/minside/medlemskap/innmelding-kirkesamfunn" element={<DenominationAdultEnrollPage />} />
                 <Route path="/minside/medlemskap/innmelding-kirkesamfunn/barn" element={<DenominationChildEnrollPage />} />
