@@ -287,12 +287,12 @@ describe("Foldes per team", () => {
     expect(scroll).toHaveBeenCalledTimes(2);
   });
 
-  test("en rolle uten programtid står med «Utenfor programmet»", () => {
+  test("en rolle uten programtid står uten klokkeslett og uten «Utenfor programmet»", () => {
     const schedule = [{ time: "10:00", title: "Preken", taskId: "Taler" }];
     renderView(buildStaffingRoster(schedule, details));
 
-    expect(within(roleBlock("Lovsang")).getByText("Utenfor programmet")).toBeTruthy();
-    expect(within(roleBlock("Taler")).queryByText("Utenfor programmet")).toBeNull();
+    expect(within(roleBlock("Lovsang")).queryByText("Utenfor programmet")).toBeNull();
+    expect(within(roleBlock("Taler")).getByText("10:00")).toBeTruthy();
   });
 
   test("et valgt fra programmet vises selv om «må ordnes»-filteret skjuler den, og filteret slås av", () => {
