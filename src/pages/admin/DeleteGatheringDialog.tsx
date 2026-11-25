@@ -14,6 +14,8 @@ interface DeleteGatheringDialogProps {
   staffed: StaffedTask[];
   /** Set when the event is part of a series: only this one is deleted, the rest of the series stays. */
   inSeries?: boolean;
+  /** Set when the event came from kirkens kalender: it is remembered under «Avvist og slettet», not taken in again. */
+  fromCalendar?: boolean;
   onConfirm: () => void;
   onClose: () => void;
 }
@@ -22,7 +24,7 @@ interface DeleteGatheringDialogProps {
  * The warning before an event with people on its tasks is deleted. It names everyone who is
  * taken off, and one press removes them all and deletes the event. Nothing happens before that.
  */
-export const DeleteGatheringDialog: React.FC<DeleteGatheringDialogProps> = ({ title, when, staffed, inSeries = false, onConfirm, onClose }) => {
+export const DeleteGatheringDialog: React.FC<DeleteGatheringDialogProps> = ({ title, when, staffed, inSeries = false, fromCalendar = false, onConfirm, onClose }) => {
   const count = new Set(staffed.flatMap((task) => task.people.map((person) => person.name))).size;
 
   return (
@@ -46,6 +48,11 @@ export const DeleteGatheringDialog: React.FC<DeleteGatheringDialogProps> = ({ ti
           Dette kan ikke angres.
         </p>
         {inSeries && <p className="text-xs text-[var(--studio-muted)]">Bare dette arrangementet slettes, ikke resten av serien.</p>}
+        {fromCalendar && (
+          <p className="text-xs text-[var(--studio-muted)]">
+            Arrangementet kom fra kirkens kalender. Det blir ikke hentet inn igjen, men du finner det under «Avvist og slettet».
+          </p>
+        )}
 
         <section aria-label="De som blir tatt av" className="rounded-xl border border-[var(--studio-border)] bg-[var(--studio-surface)] p-3">
           <ul className="space-y-1.5 text-xs">

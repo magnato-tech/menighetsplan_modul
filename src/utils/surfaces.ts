@@ -2,6 +2,23 @@ import { DEMO } from "../demo";
 import { SURFACES_RECORD } from "../data/settingsRecords";
 import { isPublicPath } from "./routes";
 
+/** Why an event from the congregation's calendar is not in the planner any more, and what it was called. */
+export interface CalendarNote {
+  reason: "avvist" | "slettet";
+  /** ISO moment it was turned away or deleted. */
+  at: string;
+  title: string;
+  startsAt: string;
+}
+
+/** The values from kirkens kalender that the admin chose to keep in the app («La være»). */
+export interface CalendarDeclined {
+  title: string;
+  startsAt: string;
+  location: string;
+  cancelled: boolean;
+}
+
 /** Which flat surfaces are on, and URLs for the congregation's own site and iCal feed. */
 export interface InstallationSurfaces {
   minSide: boolean;
@@ -14,6 +31,10 @@ export interface InstallationSurfaces {
   importNewAutomatically: boolean;
   dismissedUids: string[];
   keptUids: string[];
+  /** Notes on turned away and deleted feed events, keyed by `calendarNoteKey(uid)`. */
+  calendarNotes?: Record<string, CalendarNote>;
+  /** Google values the admin declined for a linked event, keyed by `calendarNoteKey(uid)`. */
+  calendarDeclined?: Record<string, CalendarDeclined>;
 }
 
 export const defaultSurfaces = (): InstallationSurfaces => ({
@@ -25,7 +46,60 @@ export const defaultSurfaces = (): InstallationSurfaces => ({
   importNewAutomatically: false,
   dismissedUids: [],
   keptUids: [],
+  calendarNotes: {},
+  calendarDeclined: {},
 });
+
+/**
+ * The key a feed uid's note is stored under. Uids hold «@» and «.», and a dot would be read as a
+ * nested field path, so the uid is encoded and the dots are encoded too.
+ */
+export function calendarNoteKey(uid: string): string {
+  return encodeURIComponent(uid).replace(/\./g, "%2E");
+}
+
+/** The note kept for a feed uid, when there is one. */
+export function calendarNoteFor(surfaces: Pick<InstallationSurfaces, "calendarNotes">, uid: string): CalendarNote | undefined {
+  return surfaces.calendarNotes?.[calendarNoteKey(uid)];
+}
+
+/** The Google values declined for a feed uid, when there are any. */
+export function calendarDeclinedFor(surfaces: Pick<InstallationSurfaces, "calendarDeclined">, uid: string): CalendarDeclined | undefined {
+  return surfaces.calendarDeclined?.[calendarNoteKey(uid)];
+}
+
+function parseCalendarDeclined(value: unknown): Record<string, CalendarDeclined> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const declined: Record<string, CalendarDeclined> = {};
+  for (const [key, raw] of Object.entries(value as Record<string, unknown>)) {
+    if (!raw || typeof raw !== "object") continue;
+    const item = raw as Record<string, unknown>;
+    declined[key] = {
+      title: typeof item.title === "string" ? item.title : "",
+      startsAt: typeof item.startsAt === "string" ? item.startsAt : "",
+      location: typeof item.location === "string" ? item.location : "",
+      cancelled: item.cancelled === true,
+    };
+  }
+  return declined;
+}
+
+function parseCalendarNotes(value: unknown): Record<string, CalendarNote> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const notes: Record<string, CalendarNote> = {};
+  for (const [key, raw] of Object.entries(value as Record<string, unknown>)) {
+    if (!raw || typeof raw !== "object") continue;
+    const note = raw as Record<string, unknown>;
+    if (note.reason !== "avvist" && note.reason !== "slettet") continue;
+    notes[key] = {
+      reason: note.reason,
+      at: typeof note.at === "string" ? note.at : "",
+      title: typeof note.title === "string" ? note.title : "",
+      startsAt: typeof note.startsAt === "string" ? note.startsAt : "",
+    };
+  }
+  return notes;
+}
 
 const strings = (value: unknown): string[] =>
   Array.isArray(value) ? value.filter((item): item is string => typeof item === "string" && item.trim() !== "") : [];
@@ -99,6 +173,8 @@ export function parseSurfaces(data: Record<string, unknown> | undefined): Instal
       externalCalendarUrl: typeof data?.externalCalendarUrl === "string" ? data.externalCalendarUrl : "",
       dismissedUids: strings(data?.dismissedUids),
       keptUids: strings(data?.keptUids),
+      calendarNotes: parseCalendarNotes(data?.calendarNotes),
+      calendarDeclined: parseCalendarDeclined(data?.calendarDeclined),
     };
   }
   if (data?.recordType !== SURFACES_RECORD) return base;
@@ -111,6 +187,8 @@ export function parseSurfaces(data: Record<string, unknown> | undefined): Instal
     importNewAutomatically: data.importNewAutomatically === true,
     dismissedUids: strings(data.dismissedUids),
     keptUids: strings(data.keptUids),
+    calendarNotes: parseCalendarNotes(data.calendarNotes),
+    calendarDeclined: parseCalendarDeclined(data.calendarDeclined),
   };
 }
 

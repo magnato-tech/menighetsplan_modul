@@ -1,18 +1,36 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useCms } from "../context/CmsContext";
-import { dismissExternalUid, clearExternalCalendarImportQueue, keepExternalUid } from "../services/surfaces";
+import {
+  dismissExternalEvent,
+  dismissExternalUid,
+  clearExternalCalendarImportQueue,
+  declineExternalChange,
+  keepExternalUid,
+  restoreExternalUid,
+} from "../services/surfaces";
 import { reportWriteError } from "../services/writeErrors";
 import {
+  calendarPatch,
+  declinedValuesOf,
   diffCalendar,
-  feedGatheringPatch,
   formValuesFromExternalEvent,
   gatheringsForImportReset,
   parseExternalCalendarFeed,
   proposeImport,
   type CalendarDiff,
+  type CalendarField,
   type ExternalCalendarEvent,
 } from "../utils/externalCalendar";
-import { icalImportOn } from "../utils/surfaces";
+import {
+  calendarDeclinedFor,
+  calendarNoteFor,
+  calendarNoteKey,
+  icalImportOn,
+  type CalendarDeclined,
+  type CalendarNote,
+  type InstallationSurfaces,
+} from "../utils/surfaces";
+import { formatNorwegianDateTime } from "../utils/dates";
 import { useGatheringTemplates } from "./useGatheringTemplates";
 import { defaultGroupId, type GatheringFormValues } from "../utils/gatheringForm";
 import {
@@ -56,6 +74,11 @@ function alreadyLinked(event: ExternalCalendarEvent, known: readonly Gathering[]
   );
 }
 
+/** What the queue asks the admin to deal with: new rows, events gone from the feed, and changed rows. */
+function pendingCount(diff: CalendarDiff | null): number {
+  return (diff?.newEvents.length ?? 0) + (diff?.gone.length ?? 0) + (diff?.updated.length ?? 0);
+}
+
 /** Pending rows in the iCal import queue (shared between Kalender-fanen and menyen). */
 export function useExternalCalendarQueue(studio: StudioData, showFeedback: ShowFeedback) {
   const { surfaces } = useCms();
@@ -67,6 +90,7 @@ export function useExternalCalendarQueue(studio: StudioData, showFeedback: ShowF
   gatheringsRef.current = gatherings;
 
   const [diff, setDiff] = useState<CalendarDiff | null>(sharedDiff);
+  const [feedRows, setFeedRows] = useState<ExternalCalendarEvent[]>([]);
   const [syncing, setSyncing] = useState(false);
   const [batchWorking, setBatchWorking] = useState(false);
   const [resetWorking, setResetWorking] = useState(false);
@@ -87,12 +111,13 @@ export function useExternalCalendarQueue(studio: StudioData, showFeedback: ShowF
   );
 
   const refreshQueue = useCallback(
-    (knownGatherings: readonly Gathering[]) => {
-      const next = diffCalendar(lastFeedRef.current, knownGatherings, surfaces.dismissedUids, surfaces.keptUids);
+    (knownGatherings: readonly Gathering[], declined: InstallationSurfaces["calendarDeclined"] = surfaces.calendarDeclined) => {
+      const declinedFor = (uid: string) => calendarDeclinedFor({ calendarDeclined: declined }, uid);
+      const next = diffCalendar(lastFeedRef.current, knownGatherings, surfaces.dismissedUids, surfaces.keptUids, declinedFor);
       setSharedDiff(next);
       return next;
     },
-    [surfaces.dismissedUids, surfaces.keptUids]
+    [surfaces.calendarDeclined, surfaces.dismissedUids, surfaces.keptUids]
   );
 
   const createOne = useCallback(
@@ -144,17 +169,7 @@ export function useExternalCalendarQueue(studio: StudioData, showFeedback: ShowF
     [createOne, refreshQueue, templates]
   );
 
-  const applyAutoUpdates = useCallback(
-    (next: CalendarDiff) => {
-      for (const { gathering, event } of next.updated) {
-        if (!gathering.externalCalendarUid) continue;
-        studio.updateGathering(gathering.id, feedGatheringPatch(gathering, event));
-      }
-    },
-    [studio]
-  );
-
-  /** Hent feed og oppdater køen. Oppretter bare nye rader når `runImport` er true (batch eller innstilling under Database). */
+  /** Hent feed og oppdater køen. Oppretter bare nye rader når `runImport` er true (batch eller innstilling under Database). Endringer fra kalenderen skrives aldri av seg selv. */
   const syncFeed = useCallback(
     async (
       runImport: boolean,
@@ -168,13 +183,14 @@ export function useExternalCalendarQueue(studio: StudioData, showFeedback: ShowF
         if (!response.ok) throw new Error(text || `Kalenderen svarte ${response.status}`);
         const feed = parseExternalCalendarFeed(text);
         lastFeedRef.current = feed;
+        setFeedRows(feed);
 
         const dismissedUids = queueOverrides?.dismissedUids ?? surfaces.dismissedUids;
         const keptUids = queueOverrides?.keptUids ?? surfaces.keptUids;
 
-        let known = gatheringsRef.current;
-        let next = diffCalendar(feed, known, dismissedUids, keptUids);
-        applyAutoUpdates(next);
+        const known = gatheringsRef.current;
+        const declinedFor = (uid: string) => calendarDeclinedFor(surfaces, uid);
+        const next = diffCalendar(feed, known, dismissedUids, keptUids, declinedFor);
 
         const overrides: Record<string, string | ""> = { ...templateByUid };
         for (const event of next.newEvents) {
@@ -205,11 +221,11 @@ export function useExternalCalendarQueue(studio: StudioData, showFeedback: ShowF
       }
     },
     [
-      applyAutoUpdates,
       groupId,
       importNewEvents,
       importOn,
       showFeedback,
+      surfaces,
       surfaces.dismissedUids,
       surfaces.importNewAutomatically,
       surfaces.keptUids,
@@ -256,7 +272,7 @@ export function useExternalCalendarQueue(studio: StudioData, showFeedback: ShowF
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [importOn, surfaces.externalCalendarUrl, surfaces.ownWebsite]);
 
-  const pending = (diff?.newEvents.length ?? 0) + (diff?.gone.length ?? 0);
+  const pending = pendingCount(diff);
 
   const createFromEvent = (event: ExternalCalendarEvent, templateId: string | null) => {
     if (!groupId) {
@@ -283,14 +299,109 @@ export function useExternalCalendarQueue(studio: StudioData, showFeedback: ShowF
     refreshQueue(gatheringsRef.current);
   };
 
-  const dismiss = async (uid: string) => {
-    await dismissExternalUid(uid);
-    void syncFeed(false);
+  /** «Avvis»: the row is hidden, and a note is kept so the planner never takes it in again by itself. */
+  const dismiss = async (event: ExternalCalendarEvent) => {
+    const note: CalendarNote = { reason: "avvist", at: new Date().toISOString(), title: event.title, startsAt: event.startsAt };
+    if (event.uid) await dismissExternalEvent(event.uid, note);
+    else await dismissExternalUid(`${event.startsAt}|${event.title}`);
+    void syncFeed(false, { dismissedUids: [...surfaces.dismissedUids, event.uid || `${event.startsAt}|${event.title}`] });
+  };
+
+  /** «Ta inn likevel»: the feed event is no longer dismissed, and it is shown as a new row again. */
+  const restore = async (uid: string) => {
+    await restoreExternalUid(uid);
+    void syncFeed(false, { dismissedUids: surfaces.dismissedUids.filter((item) => item !== uid) });
   };
 
   const keep = async (uid: string) => {
     await keepExternalUid(uid);
     void syncFeed(false);
+  };
+
+  /** Links one feed event to a planner event, by its uid. Nothing else on the planner event changes. */
+  const linkEvent = (event: ExternalCalendarEvent, gatheringId: string): boolean => {
+    if (!event.uid) {
+      showFeedback("Kan ikke kobles: hendelsen mangler ID i kalenderen.", "error");
+      return false;
+    }
+    const result = studio.updateGathering(gatheringId, { externalCalendarUid: event.uid });
+    if (!result.success) {
+      showFeedback(result.error || "Kunne ikke koble arrangementet", "error");
+      return false;
+    }
+    gatheringsRef.current = gatheringsRef.current.map((g) =>
+      g.id === gatheringId ? { ...g, externalCalendarUid: event.uid } : g
+    );
+    refreshQueue(gatheringsRef.current);
+    showFeedback(`Koblet: ${event.title} ${formatNorwegianDateTime(event.startsAt)}.`);
+    return true;
+  };
+
+  /** «Koble alle forslag»: each pair is linked once; a planner event already taken by another row is left alone. */
+  const linkAll = (pairs: readonly { event: ExternalCalendarEvent; gatheringId: string }[]) => {
+    const taken = new Set<string>();
+    let linked = 0;
+    let failed = 0;
+    for (const { event, gatheringId } of pairs) {
+      if (!event.uid || taken.has(gatheringId)) {
+        failed++;
+        continue;
+      }
+      const result = studio.updateGathering(gatheringId, { externalCalendarUid: event.uid });
+      if (!result.success) {
+        failed++;
+        continue;
+      }
+      taken.add(gatheringId);
+      linked++;
+      gatheringsRef.current = gatheringsRef.current.map((g) =>
+        g.id === gatheringId ? { ...g, externalCalendarUid: event.uid } : g
+      );
+    }
+    refreshQueue(gatheringsRef.current);
+    if (linked === 0 && failed === 0) return { linked, failed };
+    showFeedback(
+      failed > 0 ? `${linked} arrangementer koblet. ${failed} kunne ikke kobles.` : `${linked} arrangementer koblet.`,
+      linked === 0 ? "error" : undefined
+    );
+    return { linked, failed };
+  };
+
+  /**
+   * «Oppdater», «Oppdater alle» and «Avlys her også»: writes only the chosen Google fields onto linked events.
+   * Nothing else on the planner event (program, tasks, staffing, answers, theme, notes) is part of the write.
+   */
+  const applyCalendarChanges = (items: readonly { gathering: Gathering; event: ExternalCalendarEvent; fields: readonly CalendarField[] }[]) => {
+    let updated = 0;
+    let failed = 0;
+    for (const { gathering, event, fields } of items) {
+      if (fields.length === 0) continue;
+      const patch = calendarPatch(fields, event);
+      const result = studio.updateGathering(gathering.id, patch);
+      if (!result.success) {
+        failed++;
+        continue;
+      }
+      updated++;
+      gatheringsRef.current = gatheringsRef.current.map((g) => (g.id === gathering.id ? { ...g, ...patch } : g));
+    }
+    refreshQueue(gatheringsRef.current);
+    if (updated === 0 && failed === 0) return { updated, failed };
+    showFeedback(
+      failed > 0
+        ? `${updated} arrangementer oppdatert fra kirkens kalender. ${failed} kunne ikke oppdateres.`
+        : `${updated} arrangementer oppdatert fra kirkens kalender.`,
+      updated === 0 ? "error" : undefined
+    );
+    return { updated, failed };
+  };
+
+  /** «La være»: the app keeps its values. The row is hidden until Google changes again. */
+  const declineChanges = async (event: ExternalCalendarEvent) => {
+    if (!event.uid) return;
+    const values: CalendarDeclined = declinedValuesOf(event);
+    await declineExternalChange(event.uid, values);
+    refreshQueue(gatheringsRef.current, { ...surfaces.calendarDeclined, [calendarNoteKey(event.uid)]: values });
   };
 
   const templateIdFor = (event: ExternalCalendarEvent): string | undefined => {
@@ -327,6 +438,7 @@ export function useExternalCalendarQueue(studio: StudioData, showFeedback: ShowF
         if (!response.ok) throw new Error(text || `Kalenderen svarte ${response.status}`);
         const feed = parseExternalCalendarFeed(text);
         lastFeedRef.current = feed;
+        setFeedRows(feed);
 
         const toRemove = gatheringsForImportReset(feed, gatheringsRef.current);
         const removedIds = new Set<string>();
@@ -371,6 +483,7 @@ export function useExternalCalendarQueue(studio: StudioData, showFeedback: ShowF
   return {
     importOn,
     diff,
+    feed: feedRows,
     pending,
     syncing,
     batchWorking,
@@ -382,7 +495,14 @@ export function useExternalCalendarQueue(studio: StudioData, showFeedback: ShowF
     createAllNew: createAllNewPublic,
     afterFormCreate,
     dismiss,
+    restore,
     keep,
+    linkEvent,
+    linkAll,
+    applyCalendarChanges,
+    declineChanges,
+    dismissedUids: surfaces.dismissedUids,
+    noteFor: (uid: string) => calendarNoteFor(surfaces, uid),
     formInitialFor,
     templateIdFor,
     setTemplateFor,
@@ -395,8 +515,7 @@ export function useExternalCalendarQueue(studio: StudioData, showFeedback: ShowF
 export function useExternalCalendarPending(): number {
   const [pending, setPending] = useState(0);
   useEffect(() => {
-    const listener = (diff: CalendarDiff | null) =>
-      setPending((diff?.newEvents.length ?? 0) + (diff?.gone.length ?? 0));
+    const listener = (diff: CalendarDiff | null) => setPending(pendingCount(diff));
     sharedListeners.add(listener);
     listener(sharedDiff);
     return () => {
