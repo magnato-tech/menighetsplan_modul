@@ -2046,6 +2046,8 @@ git push origin origin/main:stabil
 
 **Sluppet til Lillesand 25. november 2026, kalenderimporten** (`stabil` = `ce42255`, `main` `3d080a8`): «Fra kirkens kalender» har fanene Venter, Lagt inn, Endret og Avvist og slettet. «Koble» og «Koble alle forslag» knytter Google-hendelser til arrangementer laget for hånd samme dag (bare Google-ID-en settes; program, oppgaver og bemanning røres ikke). Endringer fra Google skrives aldri av seg selv: «Oppdater» (bare feltene som er ulike), «La være» (huskes til Google endrer seg igjen), «Avlys her også». Sletting av et importert arrangement huskes under Avvist og slettet. Merket «Fra kirkens kalender» på koblede arrangementer. Databasereglene er ikke endret.
 
+**Sluppet til Lillesand 25. november 2026, veiledning for gruppeledere**: egen side på Min side, `/minside/veiledning-gruppeledere`, med rollen, ansvaret for å bemanne semesteret (tjenestegruppene og oppgavene), innlogging, slik spør du om en oppgave, statusene, semesterplanen, forfall og en sjekkliste for samtalen. Lenke fra Mine grupper og fra hjelpen (?) for dem som leder eller er nestleder i en gruppe. Databasereglene er ikke endret.
+
 **Sluppet til Lillesand 24. november 2026** (etter beskjed fra produkteier, som prøvde endringene på localhost først): bare siste status per person og oppgave (forfall vises ikke flere ganger), Gudstjenester-fanen med ˅ og knappene Kjøreplan og Planlegg, tilbakeknappen fra kjøreplanen, tre vertikale prikker for «mer», og infoskjermen trinn 1 (`/skjerm`). Databasereglene er ikke endret.
 
 **Sluppet til Lillesand 24. november 2026, andre gang** (etter beskjed fra produkteier): testboksen for e-postutsendingen på «Send e-post». Databasereglene er ikke endret.
