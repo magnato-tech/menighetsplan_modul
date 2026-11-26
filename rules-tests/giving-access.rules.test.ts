@@ -791,7 +791,8 @@ describe("Givertjeneste: historikken", () => {
     const db = treasurer();
     await refused(
       "updatedBy er anna",
-      saveRecord(db, "gift", "vipps-123", nextFields(VIPPS_123, "kari", { updatedBy: "anna" }), "kari"),
+      // nextFields stamps the writer, so the other person is put in afterwards
+      saveRecord(db, "gift", "vipps-123", { ...nextFields(VIPPS_123, "kari", { amountOre: 51000 }), updatedBy: "anna" }, "kari"),
     );
     await allowed("updatedBy er kari", saveRecord(db, "gift", "vipps-123", nextFields(VIPPS_123, "kari", { amountOre: 51000 }), "kari"));
   });
@@ -1221,9 +1222,15 @@ describe("Givertjeneste: å ta tilgangen i bruk", () => {
     for (const [own, other] of pairs) {
       for (const db of [session(own), session(own, "custom"), google(own)]) {
         await allowed(`${own} ser sitt eget`, getDoc(doc(db, `givingAccess/${own}`)));
+      }
+      for (const db of [session(own), session(own, "custom")]) {
         await refused(`${own} ser ${other}`, getDoc(doc(db, `givingAccess/${other}`)));
       }
     }
+    await refused("kari med Google ser oda", getDoc(doc(google(KARI), `givingAccess/${ODA}`)));
+    await refused("oda med Google ser kari", getDoc(doc(google(ODA), `givingAccess/${KARI}`)));
+    // The holder of «Tilganger», signed in with Google, is the one who sees the others
+    await allowed("styret med Google ser kari", getDoc(doc(manager(), `givingAccess/${KARI}`)));
   });
 });
 
