@@ -10,6 +10,7 @@ import {
 } from "firebase/auth";
 import { auth } from "../firebase";
 import { isLoginCounted } from "../utils/countedVisit";
+import type { GoogleSignIn } from "../utils/giving/access";
 import type { LoginCountId } from "../utils/siteTraffic";
 import type { AccountState } from "../utils/session";
 import { recordLoginCount } from "./siteTraffic";
@@ -158,6 +159,21 @@ export async function signInWithLoginLink(customToken: string): Promise<void> {
 
 export async function signOut(): Promise<void> {
   await firebaseSignOut(auth);
+}
+
+/**
+ * How the account signed in right now is signed in: with Google or not, and with which Google account (the
+ * id Google gives it). Read from the sign-in token, so it is the sign-in of this session. Nothing is signed in
+ * when there is no account, and then it is not Google either.
+ */
+export async function readGoogleSignIn(): Promise<GoogleSignIn> {
+  const user = auth.currentUser;
+  if (!user) return { withGoogle: false, googleId: null };
+  const token = await user.getIdTokenResult();
+  const identities = (token.claims.firebase as { identities?: Record<string, unknown> } | undefined)?.identities;
+  const googleIds = identities?.["google.com"];
+  const googleId = Array.isArray(googleIds) && typeof googleIds[0] === "string" ? googleIds[0] : null;
+  return { withGoogle: token.signInProvider === "google.com", googleId };
 }
 
 /** What went wrong at sign-in, said so that the one signing in knows what to do. */

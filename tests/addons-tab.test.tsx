@@ -4,7 +4,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 
 const { cms } = vi.hoisted(() => ({
   cms: {
-    addons: {} as { analysebord?: boolean; nettsidebesok?: boolean },
+    addons: {} as { analysebord?: boolean; nettsidebesok?: boolean; givertjeneste?: boolean },
     addonsState: "ready" as "loading" | "ready" | "failed",
     setAddon: vi.fn(async (_id: string, _on: boolean) => true),
     minSideModules: {} as Record<string, boolean>,
@@ -37,9 +37,13 @@ describe("Siden Moduler", () => {
     renderTab();
 
     expect(screen.getByRole("heading", { name: "Moduler" })).toBeTruthy();
-    expect(screen.getByText("0 av 2 er på")).toBeTruthy();
+    expect(screen.getByText("0 av 3 er på")).toBeTruthy();
     const analyse = within(screen.getByRole("region", { name: "Analyse" }));
     expect(analyse.getAllByRole("article")).toHaveLength(2);
+    // Givertjeneste is a module with a switch of its own, not a planned name
+    const giving = within(screen.getByRole("region", { name: "Givertjeneste" }));
+    expect(giving.getByRole("switch", { name: "Givertjeneste" }).getAttribute("aria-checked")).toBe("false");
+    expect(card("Givertjeneste").getByText("Av: Gaveformål og Gaveinnstillinger vises ikke. Det som er lagt inn, blir stående.")).toBeTruthy();
 
     for (const name of ["Analysebord", "Besøk på nettsiden"]) {
       const part = card(name);
@@ -65,7 +69,7 @@ describe("Siden Moduler", () => {
     cms.addons = { nettsidebesok: true };
     renderTab();
 
-    expect(screen.getByText("1 av 2 er på")).toBeTruthy();
+    expect(screen.getByText("1 av 3 er på")).toBeTruthy();
     const visits = card("Besøk på nettsiden");
     expect(visits.getByRole("switch", { name: "Besøk på nettsiden" }).getAttribute("aria-checked")).toBe("true");
     expect(visits.getByText("På: ligger i menyen under Analyse.")).toBeTruthy();
@@ -115,7 +119,6 @@ describe("Siden Moduler", () => {
 
     const planned = within(screen.getByRole("region", { name: "Planlagte moduler" }));
     expect(planned.getAllByRole("listitem").map((item) => item.textContent)).toEqual([
-      "Givertjeneste",
       "Utleie",
       "Arrangement",
       "Kommunikasjon",
@@ -139,7 +142,7 @@ describe("Siden Moduler", () => {
     expect(minSide.queryByRole("switch", { name: "Grupper" })).toBeNull();
     expect(minSide.getByRole("radio", { name: "Alle" }).getAttribute("aria-checked")).toBe("true");
     // The count of add-ons is not changed by them
-    expect(screen.getByText("0 av 2 er på")).toBeTruthy();
+    expect(screen.getByText("0 av 3 er på")).toBeTruthy();
   });
 
   test("slår en Min side-modul av, og en modul som krever Grupper er låst mens Grupper er av", async () => {

@@ -18,6 +18,7 @@ import type { CmsMedia, CmsMediaVariants } from "./cmsData";
 import { newId } from "../utils/id";
 import { visibilityFields } from "../utils/visibility";
 import { isWorshipService } from "../utils/gatherings";
+import { cleanPurposeName, type GivingPurpose, type GivingPurposeUsage } from "../utils/giving/purposes";
 import { headcountIdFor, type HeadcountInput } from "../utils/headcount";
 import { proposalName } from "../utils/memberProposals";
 
@@ -271,6 +272,23 @@ export function buildVolunteerRole(data: NewVolunteerRoleInput): VolunteerRole {
     instruction: data.instruction?.trim() || "",
     groupId: data.groupId,
     sortOrder: data.sortOrder ?? 0,
+  };
+}
+
+/** A new gift purpose, active from the start. The name is stored as cleanPurposeName leaves it. */
+export function buildGivingPurpose(
+  input: { name: string; usage: GivingPurposeUsage },
+  personId: string,
+  now: Date = new Date()
+): GivingPurpose {
+  return {
+    id: newId("purpose"),
+    name: cleanPurposeName(input.name),
+    usage: input.usage,
+    active: true,
+    createdAt: now.toISOString(),
+    updatedAt: now.toISOString(),
+    updatedBy: personId,
   };
 }
 

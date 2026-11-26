@@ -32,7 +32,9 @@ import {
   ClipboardList,
   KeyRound,
 } from "lucide-react";
-import { countAddonsOn } from "../../utils/addons";
+import { countAddonsOn, isAddonOn } from "../../utils/addons";
+import { isAdministrator } from "../../utils/session";
+import { isTabInDemo } from "./demoTabs";
 import { hasPlanner } from "../../utils/level";
 import { useLevel } from "../../hooks/useLevel";
 import { DEMO } from "../../demo";
@@ -77,6 +79,10 @@ interface StudioSidebarProps {
   webEditor?: boolean;
   /** Protokollansvarlig: only Personer and help, not the rest of admin. */
   membershipClerkOnly?: boolean;
+  /** Someone whose only way into the admin is a right in givertjeneste: the menu is only the page for the rights, and help. */
+  givingOnly?: boolean;
+  /** Holds a right in givertjeneste: the page for the rights is in the menu. */
+  givingRight?: boolean;
   /** The menu folds to icons on a larger screen (while a page is edited). The names stay for screen readers. */
   compact?: boolean;
   /** Shows the button that folds the menu and opens it again. Only on a larger screen. */
@@ -114,6 +120,8 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
   onLeaveStudio = (action) => action(),
   webEditor = false,
   membershipClerkOnly = false,
+  givingOnly = false,
+  givingRight = false,
   compact = false,
   onToggleCompact,
   topBarExtra,
@@ -136,9 +144,19 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
   // The media library shows the images that come with the app next to the uploaded ones
   const mediaCount = media.filter((item) => item.status === "ready").length + useStockImageCount();
   // The add-ons that are on, each in the part its tab belongs to
-  const addonEntries = (inDemo ? [] : addonMenuSections(addons))
+  // The page for the rights is not in its part: it is in the menu for everyone with a right (see below). The gift
+  // purposes are for the administrator alone. In the demo, only the add-ons the demo has (see demoTabs.ts).
+  const addonEntries = addonMenuSections(addons)
     .flatMap((section) => section.entries)
+    .filter((entry) => entry.tab !== "giver-innstillinger")
+    .filter((entry) => entry.tab !== "gaveformal" || isAdministrator(currentUser))
+    .filter((entry) => !inDemo || isTabInDemo(entry.tab))
     .filter((entry) => areaOfTab(entry.tab) === area && (!webEditor || webEditorMayOpen(entry.tab)));
+  // The page for the rights: for everyone with a right in givertjeneste, in every part of the menu
+  const giverEntry = addonMenuSections(addons)
+    .flatMap((section) => section.entries)
+    .find((entry) => entry.tab === "giver-innstillinger");
+  const giverShown = giverEntry !== undefined && givingRight && isAddonOn(addons, "givertjeneste");
   const waitingProposals = [...usePendingProposalCounts(hasPlanner(level)).values()].reduce((sum, count) => sum + count, 0);
   const manageMembership = canManageMembershipApplications(currentUser);
   // The board counts its open tasks, and the open applications that have no task of their own
@@ -238,7 +256,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
           </div>
 
           {/* The two parts of the admin. Only this menu and the overview follow the choice. */}
-          {!webEditor && !membershipClerkOnly && surfaces.ownWebsite && (
+          {!webEditor && !membershipClerkOnly && !givingOnly && surfaces.ownWebsite && (
           <div role="tablist" aria-label="Del av admin" className="sidebar-hide grid grid-cols-2 gap-1 p-1 rounded-xl bg-[var(--studio-surface)]">
             {STUDIO_AREAS.map((choice) => (
               <button
@@ -259,7 +277,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
           </div>
           )}
 
-          {membershipClerkOnly ? (
+          {givingOnly ? null : membershipClerkOnly ? (
             <div className="space-y-1">
                 <button
                   type="button"
@@ -762,6 +780,22 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
 
           {/* In both parts */}
           <div className="space-y-1 pt-2 border-t border-[var(--studio-border)]">
+            {giverShown && giverEntry && (
+              <button
+                type="button"
+                title={giverEntry.label}
+                {...tabPrefetchHandlers(giverEntry.tab)}
+                onClick={() => onTabChange(giverEntry.tab)}
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
+                  activeTab === giverEntry.tab
+                    ? "bg-indigo-600 text-white shadow-sm"
+                    : "text-[var(--studio-muted)] hover:text-[var(--studio-text)] hover:bg-[var(--studio-bg)]"
+                }`}
+              >
+                <giverEntry.icon className="w-4 h-4 text-[var(--studio-icon)]" />
+                <span className="sidebar-text">{giverEntry.label}</span>
+              </button>
+            )}
             <button
               type="button"
               title="Hjelp"
@@ -779,7 +813,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
           </div>
 
           {/* Nav Section: System & Database. Not for a web editor */}
-          {!inDemo && !webEditor && !membershipClerkOnly && (
+          {!inDemo && !webEditor && !membershipClerkOnly && !givingOnly && (
           <div className="space-y-1">
             <div className="sidebar-hide text-[10px] font-black uppercase tracking-wider text-[var(--studio-muted)] px-3 py-1">
               System & Database

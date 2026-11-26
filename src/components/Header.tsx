@@ -8,14 +8,18 @@ import { Flag, Shield } from "lucide-react";
 import { useMySemesterPlans } from "../hooks/useSemesterPlans";
 import { useMinSideModules } from "../hooks/useMinSideModules";
 import { logoOf } from "../utils/logo";
+import { hasAnyRight } from "../utils/giving/access";
 import { mayEnterAdmin } from "../utils/session";
+import { useGivingAccess } from "../hooks/useGivingAccess";
 
 export const Header: React.FC = () => {
   const { settings, surfaces } = useCms();
   const location = useLocation();
   const { currentUser } = useFirebase();
+  // Someone with a right in givertjeneste gets into the admin too (see SessionGate)
+  const giving = useGivingAccess();
 
-  const isAdmin = mayEnterAdmin(currentUser);
+  const isAdmin = mayEnterAdmin(currentUser) || hasAnyRight(giving.access);
 
   const isAdminPath = location.pathname.startsWith("/admin");
   const isMyPagePath = location.pathname === "/minside" || location.pathname.startsWith("/minside/") || location.pathname === "/";

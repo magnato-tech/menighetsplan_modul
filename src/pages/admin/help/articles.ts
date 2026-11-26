@@ -23,7 +23,7 @@ export interface HelpArticle {
   /** The admin tabs whose help opens on this article. */
   tabs?: StudioTab[];
   /** Shown only while this add-on module is on, as its tab is. */
-  addon?: "analysebord" | "nettsidebesok";
+  addon?: "analysebord" | "nettsidebesok" | "givertjeneste";
   /** Without a picture: the tab is not in the demo, where the pictures are taken. */
   utenBilde?: boolean;
 }
@@ -705,12 +705,48 @@ const moduler: HelpArticle = {
     "Under **Min side** står delene frivillige og ledere ser: Grupper, Gruppechat, Husfellesskap, Tjeneste og bemanning, Semesterplan, Gudstjenesteplan og Kalender. Alle er på til noen slår dem av.",
     "Slå av en del med bryteren. Fanen eller knappen forsvinner fra Min side med en gang.",
     "Noen deler bygger på en annen: Gruppechat og Husfellesskap krever Grupper, og Gudstjenesteplan krever Tjeneste og bemanning. Bryteren er låst til den andre er på.",
-    "Tilleggene i admin, Analysebord og Besøk på nettsiden, slås på med bryteren. Fanen dukker opp i menyen.",
+    "Tilleggene i admin, Analysebord, Besøk på nettsiden og Gaveformål under Givertjeneste, slås på med bryteren. Fanen dukker opp i menyen.",
     "Slå av igjen når noe ikke trengs. Ingenting slettes, og alt er der når det slås på igjen.",
   ],
   godt: "Det som står under Planlagt, er ikke laget ennå. Min side slås av og på under Flater i løsningen, der også menighetens hjemmeside velges.",
   seOgsa: ["losningen", "min-side", "analysebord", "besok", "flater"],
   tabs: ["moduler"],
+  utenBilde: true,
+};
+
+const gaveformal: HelpArticle = {
+  id: "gaveformal",
+  title: "Gaveformål",
+  hvor: "Planlegging → Gaveformål",
+  intro: "Hva en gave kan gis til, med ordinær drift og øremerkede gaver holdt fra hverandre.",
+  steg: [
+    "Skriv navnet under **Navn**, og velg **Ordinær drift** eller **Øremerket**. Ingen er valgt fra start.",
+    "Trykk **Legg til**. Formålet står i listen med en gang.",
+    "Trykk **Endre navn** for å rette navnet, og **Lagre** når det er riktig.",
+    "Trykk **Ta ut av bruk** når et formål ikke gjelder lenger, og **Ta i bruk igjen** for å sette det i bruk på nytt.",
+  ],
+  godt: "Gaveformål vises når Givertjeneste er slått på under Moduler. Å være administrator gir ikke tilgang til givere og gaver: det gis for seg.",
+  seOgsa: ["moduler"],
+  tabs: ["gaveformal"],
+  addon: "givertjeneste",
+  utenBilde: true,
+};
+
+const gaveinnstillinger: HelpArticle = {
+  id: "gaveinnstillinger",
+  title: "Gaveinnstillinger",
+  hvor: "Planlegging → Gaveinnstillinger",
+  intro: "Hvem som har tilgang til givertjenesten, og hva den enkelte kan se og gjøre.",
+  steg: [
+    "Den første tilgangen gis av den som eier løsningen. Den som har **Tilganger**, gir tilgang til andre under **Hvem har tilgang**.",
+    "Skriv e-postadressen og navnet under **Gi tilgang**, og kryss av det som skal gis. Ingenting er valgt fra start.",
+    "Personen tar tilgangen i bruk under **Din tilgang**, med Google-kontoen sin: **Ta i bruk tilgangen**.",
+    "Trykk **Endre** for å endre hva en person kan, og **Fjern all tilgang** for å ta alt fra vedkommende. Personen blir stående i listen.",
+  ],
+  godt: "Å være administrator gir ikke tilgang til givere og gaver. Den som har **Tilganger**, kan ikke endre sin egen tilgang. Trykk **Tilbakestill Google-konto** når tilgangen skal tas i bruk med en annen konto.",
+  seOgsa: ["gaveformal", "moduler"],
+  tabs: ["giver-innstillinger"],
+  addon: "givertjeneste",
   utenBilde: true,
 };
 
@@ -788,6 +824,8 @@ export const helpSections: HelpSection[] = [
     items: [
       { kind: "article", article: analysebord },
       { kind: "article", article: moduler },
+      { kind: "article", article: gaveformal },
+      { kind: "article", article: gaveinnstillinger },
       { kind: "article", article: flater },
     ],
   },

@@ -30,6 +30,8 @@ export const STUDIO_TABS = [
   "moduler",
   "analyse",
   "nettsidebesok",
+  "gaveformal",
+  "giver-innstillinger",
   "demo-oppsett",
 ] as const;
 

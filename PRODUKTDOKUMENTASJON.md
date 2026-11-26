@@ -104,7 +104,7 @@ Demoen er appen installert én gang til, med egen database og egen adresse, og m
 * **CMS-et står under «Administrator»**, og er nevnt først i teksten på valget: «Redigerer nettsiden (CMS), planlegger arrangementer og holder personregisteret». Det hadde sin egen vei inn 9. oktober, og den ble tatt ut samme dag: den førte til samme administrator i samme admin, bare med en annen startside.
 * **Bytte rolle.** Den som er inne, har «Bytt rolle» i stripen, som fører til de samme valgene. «Logg ut» gjør det samme.
 * **Hvem man går inn som**, følger av registeret: av dem som har rollen, den som er med i flest grupper. Innholdet i demoen kan dermed byttes uten at noe annet må endres.
-* **Det demoen er uten** *(levert 9. oktober)*. «Database og Testdata» og «Moduler» står ikke i menyen, og tilleggsmodulene vises ikke, heller ikke om en skulle være slått på i databasen. Skrives adressen til en slik fane inn, sier siden at den ikke er med i demoen. Alt som tømmer databasen, nekter i demoen, uansett hvor det kalles fra.
+* **Det demoen er uten** *(levert 9. oktober)*. «Database og Testdata» og «Moduler» står ikke i menyen, og tilleggsmodulene vises ikke, heller ikke om en skulle være slått på i databasen. Skrives adressen til en slik fane inn, sier siden at den ikke er med i demoen. Alt som tømmer databasen, nekter i demoen, uansett hvor det kalles fra. **Unntaket er Givertjeneste** *(26. november 2026, produkteier)*: Gaveformål og Gaveinnstillinger vises for alle i demoen, med oppdiktede eksempler som nattens nullstilling legger inn på nytt.
 * **Nivåvelgeren** *(levert 8. oktober, tatt ut av stripen 14. oktober)* hadde to valg, Menighetsplattform og Menighetsplan. Produkteier tok den bort inntil videre: nivåene skiller seg foreløpig bare i deler av admin, så velgeren så ut som en knapp som ikke virket. Demoen viser hele produktet (Menighetsplan), og et nivå en besøkende valgte før, glemmes. Nivåene er fortsatt i koden og settes tilbake når trinn 3c bygges, den dagen en menighet vil ha bare nettside.
 * **Bare i demoen.** En menighets installasjon tegner aldri stripen, og spør aldri nettleseren om nivået.
 * **Forhåndsvisningen i admin** viser nettsiden uten stripe.
@@ -248,7 +248,8 @@ En **modul** er en del av produktet som en menighet enten har eller ikke har. Fa
 | Modul | Status |
 |:---|:---|
 | **Analyse** | **Levert** som to deler med hver sin bryter: **Analysebord** (kapittel 2.4) og **Besøk på nettsiden** (kapittel 2.5) |
-| Givertjeneste, Utleie, Arrangement, Kommunikasjon, Skjemaer, AI-assistent | **Planlagt.** Står bare som navn på siden. Ingenting er bygget, og ingenting bygges før produkteier ber om det |
+| **Givertjeneste** | **Under arbeid.** Leveranse 1 av 4 er bygget: bryteren, gaveformål og tilgang (kapittel 2.7) |
+| Utleie, Arrangement, Kommunikasjon, Skjemaer, AI-assistent | **Planlagt.** Står bare som navn på siden. Ingenting er bygget, og ingenting bygges før produkteier ber om det |
 
 Regnskap er ikke en egen modul. Givertjeneste og Utleie skal registrere inntekter og transaksjoner slik at de senere kan rapporteres og eksporteres til regnskap.
 
@@ -267,6 +268,22 @@ Regnskap er ikke en egen modul. Givertjeneste og Utleie skal registrere inntekte
 
 * **Tilgang.** Siden skiller ikke mellom hva en menighet *har fått* og hva den *har slått på*: alle delene som finnes, kan slås på av den som er i admin. Tildeling av moduler og nivå per menighet er trinn 4 (kapittel 14), og krever publiserte databaseregler. Nivåene selv står i kapittel 1.3.
 * **Flatene.** Moduler styrer i dag faner i admin og tellingen på nettsiden. Min side og den offentlige nettsiden har ingen deler som styres av en modul.
+
+### 2.7 Givertjeneste *(leveranse 1, 26. november 2026)*
+
+Et verktøy for økonomiansvarlig. Menighetsplan erstatter ikke regnskapet. Bare grunnmuren er bygget.
+
+| Del | Slik virker den |
+|:---|:---|
+| **Bryteren** | **Moduler → Givertjeneste**. Av til den er valgt |
+| **Gaveformål** (administrator) | Navn, og «Ordinær drift» eller «Øremerket». Typen velges én gang. Et formål slettes ikke, men tas ut av bruk |
+| **Gaveinnstillinger** | Din tilgang, hvem som har tilgang, og betalingsinformasjonen fra nettside-innstillingene |
+| **Fire tilganger** | Oversikt, Budsjett, Givere og Tilganger, gitt til én og én person. Ingen rolle gir dem, heller ikke administrator. Ingen kan endre sine egne |
+| **Google** | Tilgangen tas i bruk med Google, og virker bare med den Google-kontoen. Innloggingslenker på e-post åpner den ikke |
+| **Sporbarhet** | Hver tildeling og endring skrives i en logg som ikke kan endres |
+| **Demoen** | Alle ser sidene, med oppdiktede eksempler. Der er ingenting stengt |
+
+Første tilgang legges inn for hånd i Firebase Console (`docs/givertjeneste-oppsett.md`). Den som eier Firebase- og Vercel-prosjektet, kan teknisk se alle data.
 
 ---
 
@@ -1865,6 +1882,8 @@ Bestilt av produkteier. Ikke sluppet.
 
 ## 13. Kjente mangler
 
+*Givertjeneste: bare grunnmuren er bygget. Giverliste, gaver, import, oversikt og budsjett finnes ikke ennå (kapittel 14).*
+
 Sortert etter hvor mye de betyr for en menighet som skal ta løsningen i bruk.
 
 | # | Mangel | Løses i |
@@ -1935,7 +1954,7 @@ Trinnene tas i rekkefølge. Et trinn er ferdig når det er prøvd, testene er gr
 
 **Slik er demoen bestemt**
 
-* **To nivåer, ikke tre valg.** Menighetsplan inneholder alt i Menighetsplattform. Tilleggsmodulene er ikke med i demoen.
+* **To nivåer, ikke tre valg.** Menighetsplan inneholder alt i Menighetsplattform. Tilleggsmodulene er ikke med i demoen, unntatt Givertjeneste (kapittel 2.7).
 * **Velgeren finnes bare i demoen**, og valget ligger i nettleseren til den som ser på. Hos en menighet bestemmer leverandøren nivået (trinn 4), og ingen velger det i nettleseren.
 * **Én felles demodatabase**, i sitt eget Firebase-prosjekt. Et nei til en oppgave på telefonen synes da på lederens skjerm med en gang. Databasen nullstilles hver natt, og det som tømmer den, er stengt.
 * **Den besøkende kan se en ekte menighets nettside** (bestemt 9. oktober 2026). Demoen har eksempelmenigheten og én kopi for hver menighet det er laget sett av. Valget er den besøkendes eget, og står øverst i stripen. Alle kopiene ligger i den ene demodatabasen, under hver sine samlinger. Eieren av demoen bestemmer hvilke menigheter som står i lista, og slår en menighet på når den har sagt ja. Bilder av de ansatte vises ikke.
@@ -1946,6 +1965,17 @@ Trinnene tas i rekkefølge. Et trinn er ferdig når det er prøvd, testene er gr
 * **Menighetsplattform tilbys etter invitasjon.** Det er gratis for menigheten, men oppsett og drift koster leverandøren per menighet.
 
 Trinn 2 og 4 er det samme som fase 1 under. Fase 2–4 fortsetter som før når trinnene er på plass.
+
+### Givertjeneste *(plan godkjent 26. november 2026, pågår)*
+
+Planen står i `docs/menighetsplan-givertjeneste-mvp-v1.md`. Hver leveranse planlegges, prøves og godkjennes før neste. Ingen ekte gaveopplysninger før personvernet i planens kapittel 3.5 er avklart.
+
+| Leveranse | Hva | Status |
+|:---:|:---|:---|
+| 1 | **Grunnmur og tilgang:** bryter under Moduler, gaveformål, tilgang per person, databaseregler for givere, avtaler og gaver, regeltester på GitHub | **Bygget 26. november**, ikke sluppet til Lillesand |
+| 2 | Givere og avtaler, manuell gaveregistrering og historikk | |
+| 3 | Innbetalinger: CSV-import og -eksport | |
+| 4 | Oversikt og gavebudsjett | |
 
 ### Infoskjerm i vestibylen *(avtalt 23. november 2026, pågår)*
 

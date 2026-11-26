@@ -15,7 +15,7 @@ import { saveAddonChoice, saveGroupAudience, saveMinSideModule, subscribeAddons,
 import { DEMO } from "../demo";
 import { ALL_MIN_SIDE_MODULES_ON, type GroupAudience, type MinSideModuleChoices, type MinSideModuleId } from "../utils/minSideModules";
 import { saveSurfaces, subscribeSurfaces, type SurfacesPatch } from "../services/surfaces";
-import type { AddonChoices, AddonId } from "../utils/addons";
+import { addonsAsShown, type AddonChoices, type AddonId } from "../utils/addons";
 import { defaultSurfaces, type InstallationSurfaces } from "../utils/surfaces";
 import { newId } from "../utils/id";
 import { buildPageRecord } from "../utils/pageRecord";
@@ -377,7 +377,9 @@ export const CmsProvider: React.FC<{ children: React.ReactNode; publicPagesOnly?
     (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
   );
   const settings = useCmsSettings();
-  const { addons, addonsState } = useCmsAddons();
+  const { addons: storedAddons, addonsState } = useCmsAddons();
+  // The demo shows its own add-ons as on, though nothing is stored for them (see utils/addons.ts)
+  const addons = useMemo(() => addonsAsShown(storedAddons, DEMO !== null), [storedAddons]);
   const storedMinSideModules = useCmsMinSideModules();
   // The demo is one database shared by everyone who looks at it, and its Min side is whole
   const minSideModules = DEMO ? ALL_MIN_SIDE_MODULES_ON : storedMinSideModules;

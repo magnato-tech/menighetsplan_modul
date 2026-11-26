@@ -167,6 +167,75 @@ service cloud.firestore {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(fields);
     }
 
+    // ---------- Givertjeneste: who may see givers and gifts ----------
+    //
+    // No role gives this, administrator included. Each right is given to one person, in
+    // givingAccess/<address>, and counts only while ALL of this holds: the person is in the
+    // register under that address, is signed in with Google in this session, with the Google
+    // account the right was taken into use with, and the module is on. Google keeps out the
+    // sign-in links sent by e-mail; the stored Google id keeps out another Google account that
+    // someone has tied to the same user.
+
+    function signedInWithGoogle() {
+      return signedIn() && request.auth.token.firebase.sign_in_provider == 'google.com';
+    }
+
+    function givingAccessPath(address) {
+      return /databases/$(database)/documents/givingAccess/$(address);
+    }
+
+    function myGivingAccess() {
+      return get(givingAccessPath(request.auth.token.email.lower())).data;
+    }
+
+    function givingOn() {
+      return get(/databases/$(database)/documents/cms_settings/addons).data.get('on', {}).get('givertjeneste', false) == true;
+    }
+
+    function givingMay(right) {
+      return signedInWithGoogle()
+        && isMember()
+        && exists(givingAccessPath(request.auth.token.email.lower()))
+        && myGivingAccess().personId == me()
+        && myGivingAccess().get('googleId', '') in request.auth.token.firebase.identities.get('google.com', [])
+        && myGivingAccess().get(right, false) == true
+        && givingOn();
+    }
+
+    // Givers, agreements and gifts carry who made them and when, and a version that counts up
+    function isStamped(data) {
+      return data.keys().hasAll(['version', 'createdAt', 'createdBy', 'updatedAt', 'updatedBy'])
+        && data.version is int
+        && data.createdAt is string
+        && data.createdBy is string
+        && data.updatedAt is string
+        && data.updatedBy == me();
+    }
+
+    function isFirstVersion() {
+      return request.resource.data.version == 1 && request.resource.data.createdBy == me();
+    }
+
+    function isNextVersion() {
+      return request.resource.data.version == resource.data.version + 1
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.createdBy == resource.data.createdBy;
+    }
+
+    // The change is written in the history in the same sending: a new entry, holding what the document became
+    function historyEntry(kind, docId) {
+      return /databases/$(database)/documents/givingEvents/$(kind + '_' + docId + '_' + string(request.resource.data.version));
+    }
+
+    function keepsHistory(kind, docId) {
+      return !exists(historyEntry(kind, docId))
+        && getAfter(historyEntry(kind, docId)).data.data == request.resource.data;
+    }
+
+    function isDay(value) {
+      return value is string && value.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
+    }
+
     // ---------- Beside the register ----------
 
     // The app asks for this document to see whether the database answers
@@ -176,7 +245,8 @@ service cloud.firestore {
 
     // Who may sign in. Someone signing in reads their own, to learn which person they are.
     match /logins/{address} {
-      allow get: if (signedIn() && request.auth.token.email.lower() == address) || isAdmin();
+      // The one with «Tilganger» in givertjeneste looks up one address, to know which person it is
+      allow get: if (signedIn() && request.auth.token.email.lower() == address) || isAdmin() || givingMay('manage');
       allow list: if isAdmin();
       allow write: if isAdmin();
     }
@@ -197,8 +267,9 @@ service cloud.firestore {
     // ---------- The register and the planning ----------
 
     match /persons/{personId} {
-      allow get: if isAdmin() || isMembershipClerk() || (isMember() && personId == me());
-      allow list: if isAdmin() || isMembershipClerk();
+      // The one with «Givere» reads the register to tie a giver to a person
+      allow get: if isAdmin() || isMembershipClerk() || (isMember() && personId == me()) || givingMay('individual');
+      allow list: if isAdmin() || isMembershipClerk() || givingMay('individual');
       allow create, delete: if isAdmin();
       // A member changes nothing about themselves but how their own analysis board is laid out,
       // and the key to their own calendar subscription (src/services/personalCalendarFeed.ts)
@@ -269,6 +340,275 @@ service cloud.firestore {
     // persons on a fixed list. Only an administrator reads or writes them.
     match /emailLists/{listId} {
       allow read, write: if isAdmin();
+    }
+
+    // Givertjeneste: what a gift can be given to (src/services/giving/purposes.ts). Not personal
+    // data. An administrator keeps the list. Nothing is ever deleted, and what a purpose is used
+    // for (ordinary running or earmarked) stands as it was made, so old figures do not move.
+    match /givingPurposes/{purposeId} {
+      function validPurpose(data) {
+        return data.keys().hasOnly(['name', 'usage', 'active', 'createdAt', 'updatedAt', 'updatedBy'])
+          && data.keys().hasAll(['name', 'usage', 'active', 'createdAt', 'updatedAt', 'updatedBy'])
+          && data.name is string && data.name.size() > 0 && data.name.size() <= 80
+          && data.usage in ['drift', 'oremerket']
+          && data.active is bool
+          && data.createdAt is string && data.updatedAt is string
+          && data.updatedBy == me();
+      }
+      allow read: if isAdmin() || givingMay('individual') || givingMay('overview') || givingMay('budget');
+      allow create: if isAdmin() && validPurpose(request.resource.data);
+      allow update: if isAdmin() && validPurpose(request.resource.data)
+        && request.resource.data.usage == resource.data.usage
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if false;
+    }
+
+    // ---------- Givertjeneste: access, givers and gifts ----------
+
+    // Who holds a right in givertjeneste. One document for each address that has been given one.
+    // Never deleted: a right is taken away by setting it to false.
+    match /givingAccess/{address} {
+      // The one signed in with the address, whatever the way in, so the app can say what is missing
+      function isOwnAddress() {
+        return signedIn() && request.auth.token.email.lower() == address;
+      }
+
+      // Every change is written in the log in the same sending: a new entry, holding what the document became
+      function logEntry() {
+        return /databases/$(database)/documents/givingLog/$('access_' + address + '_' + string(request.resource.data.version));
+      }
+
+      function isLogged() {
+        return !exists(logEntry()) && getAfter(logEntry()).data.access == request.resource.data;
+      }
+
+      function validAccess(data) {
+        return data.keys().hasOnly(['personId', 'name', 'overview', 'budget', 'individual', 'manage', 'googleId', 'version', 'updatedAt', 'updatedBy'])
+          && data.keys().hasAll(['personId', 'name', 'overview', 'budget', 'individual', 'manage', 'version', 'updatedAt', 'updatedBy'])
+          && data.personId is string && data.personId.size() > 0
+          && data.name is string && data.name.size() <= 120
+          && data.overview is bool && data.budget is bool && data.individual is bool && data.manage is bool
+          && data.version is int
+          && data.updatedAt is string
+          && data.updatedBy == me();
+      }
+
+      function hasNoRight(data) {
+        return data.overview == false && data.budget == false && data.individual == false && data.manage == false;
+      }
+
+      // The address signs in as that person. Not asked for when every right is taken away, so that
+      // can be done for someone who is no longer in the register.
+      function addressIsThePerson() {
+        return get(/databases/$(database)/documents/logins/$(address)).data.personId == request.resource.data.personId;
+      }
+
+      allow get: if isOwnAddress() || givingMay('manage');
+      allow list: if givingMay('manage');
+
+      // The holder of «Tilganger» gives rights to others: never under their own address, and never
+      // to their own person under another one
+      allow create: if givingMay('manage')
+        && address != request.auth.token.email.lower()
+        && address == address.lower()
+        && validAccess(request.resource.data)
+        && request.resource.data.version == 1
+        && request.resource.data.personId != me()
+        && !('googleId' in request.resource.data)
+        && addressIsThePerson()
+        && isLogged();
+
+      allow update: if (givingMay('manage')
+            && address != request.auth.token.email.lower()
+            && validAccess(request.resource.data)
+            && resource.data.personId != me()
+            && request.resource.data.personId != me()
+            && request.resource.data.version == resource.data.version + 1
+            // The Google account is never chosen for someone: it stays with the same person, or is
+            // taken away so the person takes the rights into use again
+            && (!('googleId' in request.resource.data)
+                || (request.resource.data.googleId == resource.data.get('googleId', '')
+                    && request.resource.data.personId == resource.data.personId))
+            && ((hasNoRight(request.resource.data) && request.resource.data.personId == resource.data.personId)
+                || addressIsThePerson())
+            && isLogged())
+        // Taking the rights into use: the person themselves, signed in with Google, once
+        || (isOwnAddress()
+            && signedInWithGoogle()
+            && isMember()
+            && resource.data.personId == me()
+            && !('googleId' in resource.data)
+            && validAccess(request.resource.data)
+            && changedOnly(['googleId', 'name', 'version', 'updatedAt', 'updatedBy'])
+            && request.resource.data.googleId == request.auth.token.firebase.identities['google.com'][0]
+            && request.resource.data.name == get(/databases/$(database)/documents/persons/$(me())).data.name
+            && request.resource.data.version == resource.data.version + 1
+            && isLogged());
+
+      allow delete: if false;
+    }
+
+    // The log of who was given what. Written only beside the change itself, never changed or removed.
+    match /givingLog/{entryId} {
+      allow read: if givingMay('manage');
+      allow create: if signedInWithGoogle()
+        && isMember()
+        && request.resource.data.keys().hasOnly(['action', 'target', 'version', 'at', 'by', 'access'])
+        && request.resource.data.keys().hasAll(['action', 'target', 'version', 'at', 'by', 'access'])
+        && request.resource.data.action in ['grant', 'change', 'activate']
+        && request.resource.data.at == request.time
+        && request.resource.data.by == me()
+        && entryId == 'access_' + request.resource.data.target + '_' + string(request.resource.data.version)
+        && request.resource.data.access.version == request.resource.data.version
+        && getAfter(givingAccessPath(request.resource.data.target)).data == request.resource.data.access
+        // The access document is really changed in this sending, which its own rule has to allow,
+        // and the entry says which kind of change it was
+        && (!exists(givingAccessPath(request.resource.data.target))
+            ? request.resource.data.action == 'grant'
+            : (get(givingAccessPath(request.resource.data.target)).data.version != request.resource.data.version
+               && request.resource.data.action
+                    == (('googleId' in request.resource.data.access
+                          && !('googleId' in get(givingAccessPath(request.resource.data.target)).data))
+                        ? 'activate' : 'change')));
+      allow update, delete: if false;
+    }
+
+    // Who gives. A giver who is in the register has the person's id, so nobody is entered twice.
+    match /givers/{giverId} {
+      function validGiver(data) {
+        return data.keys().hasOnly(['personId', 'name', 'email', 'phone', 'active', 'version', 'createdAt', 'createdBy', 'updatedAt', 'updatedBy'])
+          && data.keys().hasAll(['name', 'active'])
+          && isStamped(data)
+          && data.name is string && data.name.size() > 0 && data.name.size() <= 120
+          && data.active is bool
+          // The contact details of someone in the register are there, and nowhere else
+          && (!('personId' in data) || (data.personId is string && !('email' in data) && !('phone' in data)))
+          && data.get('email', '') is string
+          && data.get('phone', '') is string;
+      }
+
+      allow read: if givingMay('individual');
+      allow create: if givingMay('individual')
+        && validGiver(request.resource.data)
+        && isFirstVersion()
+        && (!('personId' in request.resource.data)
+            || (request.resource.data.personId == giverId
+                && exists(/databases/$(database)/documents/persons/$(giverId))))
+        && keepsHistory('giver', giverId);
+      // The tie to the register is made once, and then stands, also when the person is deleted there.
+      // A giver tied to a person later keeps its id, but not when that person already is a giver.
+      allow update: if givingMay('individual')
+        && validGiver(request.resource.data)
+        && isNextVersion()
+        && (('personId' in resource.data)
+            ? request.resource.data.get('personId', '') == resource.data.personId
+            : (!('personId' in request.resource.data)
+                || (exists(/databases/$(database)/documents/persons/$(request.resource.data.personId))
+                    && !exists(/databases/$(database)/documents/givers/$(request.resource.data.personId)))))
+        && keepsHistory('giver', giverId);
+      allow delete: if false;
+    }
+
+    // What a giver has said they will give. An intention, not a payment agreement with anyone.
+    match /giftAgreements/{agreementId} {
+      function validAgreement(data) {
+        return data.keys().hasOnly(['giverId', 'purposeId', 'amountOre', 'frequency', 'startDate', 'endDate', 'method', 'status', 'externalRef', 'version', 'createdAt', 'createdBy', 'updatedAt', 'updatedBy'])
+          && data.keys().hasAll(['giverId', 'purposeId', 'amountOre', 'frequency', 'startDate', 'method', 'status'])
+          && isStamped(data)
+          && data.amountOre is int && data.amountOre > 0
+          && data.frequency in ['maned', 'kvartal', 'ar']
+          && isDay(data.startDate)
+          && (!('endDate' in data) || (isDay(data.endDate) && data.endDate >= data.startDate))
+          && data.method in ['vipps', 'bank', 'kontant', 'annet']
+          && data.status in ['aktiv', 'pause', 'avsluttet']
+          && data.get('externalRef', '') is string
+          && existsAfter(/databases/$(database)/documents/givers/$(data.giverId))
+          && exists(/databases/$(database)/documents/givingPurposes/$(data.purposeId));
+      }
+
+      allow read: if givingMay('individual');
+      allow create: if givingMay('individual')
+        && validAgreement(request.resource.data)
+        && isFirstVersion()
+        && keepsHistory('agreement', agreementId);
+      allow update: if givingMay('individual')
+        && validAgreement(request.resource.data)
+        && isNextVersion()
+        && request.resource.data.giverId == resource.data.giverId
+        && keepsHistory('agreement', agreementId);
+      allow delete: if false;
+    }
+
+    // Money received. Amounts are whole øre. Never deleted: a wrong gift is corrected, or marked as
+    // cancelled with the reason, and then stands. An imported gift has the id of its transaction, so
+    // the same transaction cannot be entered twice.
+    match /gifts/{giftId} {
+      function validGift(data) {
+        return data.keys().hasOnly(['date', 'year', 'amountOre', 'purposeId', 'type', 'source', 'identification', 'giverId', 'agreementId', 'gatheringId', 'externalRef', 'settlementRef', 'payerText', 'importId', 'status', 'voidReason', 'version', 'createdAt', 'createdBy', 'updatedAt', 'updatedBy'])
+          && data.keys().hasAll(['date', 'year', 'amountOre', 'purposeId', 'type', 'source', 'identification', 'status'])
+          && isStamped(data)
+          && isDay(data.date)
+          && data.year is int && data.date.split('-')[0] == string(data.year)
+          && data.amountOre is int && data.amountOre > 0
+          && data.type in ['fast', 'enkeltgave', 'kollekt']
+          && data.source in ['vipps', 'bank', 'kontant', 'annet']
+          && data.identification in ['kjent', 'anonym', 'uidentifisert']
+          // A gift has a giver exactly when the giver is known
+          && (data.identification == 'kjent') == ('giverId' in data)
+          && (!('giverId' in data) || existsAfter(/databases/$(database)/documents/givers/$(data.giverId)))
+          && (!('agreementId' in data)
+              || ('giverId' in data
+                  && getAfter(/databases/$(database)/documents/giftAgreements/$(data.agreementId)).data.giverId == data.giverId))
+          && data.get('gatheringId', '') is string
+          && data.get('externalRef', '') is string
+          && data.get('settlementRef', '') is string
+          && data.get('payerText', '') is string
+          && data.get('importId', '') is string
+          && data.status in ['gyldig', 'annullert']
+          && (data.status == 'annullert') == ('voidReason' in data)
+          && (!('voidReason' in data) || (data.voidReason is string && data.voidReason.size() > 0))
+          && exists(/databases/$(database)/documents/givingPurposes/$(data.purposeId));
+      }
+
+      allow read: if givingMay('individual');
+      allow create: if givingMay('individual')
+        && validGift(request.resource.data)
+        && isFirstVersion()
+        && request.resource.data.status == 'gyldig'
+        && keepsHistory('gift', giftId);
+      // Where it came from stands. A cancelled gift is not changed again.
+      allow update: if givingMay('individual')
+        && validGift(request.resource.data)
+        && isNextVersion()
+        && resource.data.status == 'gyldig'
+        && request.resource.data.source == resource.data.source
+        && request.resource.data.get('externalRef', '') == resource.data.get('externalRef', '')
+        && request.resource.data.get('importId', '') == resource.data.get('importId', '')
+        && keepsHistory('gift', giftId);
+      allow delete: if false;
+    }
+
+    // The history of givers, agreements and gifts: one entry for every version, holding the document
+    // as it became. Written only beside the change itself, never changed or removed.
+    match /givingEvents/{entryId} {
+      function changed() {
+        let kind = request.resource.data.kind;
+        let name = kind == 'giver' ? 'givers' : (kind == 'agreement' ? 'giftAgreements' : 'gifts');
+        return /databases/$(database)/documents/$(name)/$(request.resource.data.docId);
+      }
+
+      allow read: if givingMay('individual');
+      allow create: if givingMay('individual')
+        && request.resource.data.keys().hasOnly(['kind', 'docId', 'version', 'at', 'by', 'data'])
+        && request.resource.data.keys().hasAll(['kind', 'docId', 'version', 'at', 'by', 'data'])
+        && request.resource.data.kind in ['giver', 'agreement', 'gift']
+        && entryId == request.resource.data.kind + '_' + request.resource.data.docId + '_' + string(request.resource.data.version)
+        && request.resource.data.data.version == request.resource.data.version
+        && request.resource.data.at == request.time
+        && request.resource.data.by == me()
+        && getAfter(changed()).data == request.resource.data.data
+        && (!exists(changed()) || get(changed()).data.version != request.resource.data.version);
+      allow update, delete: if false;
     }
 
     match /groups/{groupId} {

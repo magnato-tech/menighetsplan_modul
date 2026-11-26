@@ -199,8 +199,9 @@ describe("Reglene i databasen", () => {
   });
 
   test("registeret og planleggingen leses bare av dem som står i registeret", () => {
-    expect(blockOf("persons")).toContain("allow get: if isAdmin() || isMembershipClerk() || (isMember() && personId == me());");
-    expect(blockOf("persons")).toContain("allow list: if isAdmin() || isMembershipClerk();");
+    // Besides these, only the one with «Givere» in givertjeneste (see rules-tests/giving-access.rules.test.ts)
+    expect(blockOf("persons")).toContain("allow get: if isAdmin() || isMembershipClerk() || (isMember() && personId == me()) || givingMay('individual');");
+    expect(blockOf("persons")).toContain("allow list: if isAdmin() || isMembershipClerk() || givingMay('individual');");
     expect(blockOf("persons")).not.toContain("if true");
     for (const name of ["tasks", "assignments", "groupMessages", "gatheringAttendances"]) {
       expect(blockOf(name)).toContain("allow read");

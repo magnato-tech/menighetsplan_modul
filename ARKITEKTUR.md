@@ -150,6 +150,12 @@ Det finnes ennå ikke noe skjermbilde for å redigere programmet; bare demodatae
 - **Det et tillegg styrer utenfor admin**, spør samme sted: nettsiden teller besøk bare når `visitCounting(addons, settings)` sier `"counted"` (`src/utils/siteTraffic.ts`).
 - **Tilgang kommer oppå valget.** I dag er alt som finnes, tilgjengelig. Når en menighet skal ha noen moduler og ikke andre, legges det til ett lag: hva menigheten *har* (satt av leverandøren), i tillegg til hva den *har slått på*. `CmsProvider` gir da bare videre det som er både tildelt og valgt, så menyen, sperren og tellingen følger med uten endring. Laget krever innlogging, og regler som lar bare leverandøren skrive tildelingen.
 
+### Givertjeneste
+- **Egne rettigheter.** Rollene på personen gir ingenting. `givingAccess/<e-postadresse>` sier hvem som har Oversikt, Budsjett, Givere og Tilganger. Reglene (`givingMay`) krever dessuten at kontoen står i `logins` for samme person, at økten er innlogget med Google, at Google-id-en er den tilgangen ble tatt i bruk med, og at modulen er på. En administrator kan stenge en tilgang (slette personen eller innloggingen, slå av modulen), men ikke åpne en.
+- **Historikk håndhevet av reglene.** En giver, avtale eller gave har en `version`, og skrivingen avvises uten en ny post i `givingEvents` med dokumentet slik det ble. Tilganger har samme ordning i `givingLog`. Ingenting av dette kan endres eller slettes. Reglene tåler få oppslag per sending, så hver gave lagres for seg.
+- **Utenfor resten.** Samlingene er ikke i `ALL_COLLECTIONS`, datasett eller testdata. Demoen har dem under hver menighet, og nullstillingen fyller dem (`src/data/demoGiving.ts`).
+- **Regeltestene** kjøres på GitHub (`.github/workflows/sjekk.yml`, jobben `regler`).
+
 ### Testing av datalaget
 `tests/data-provider.test.tsx` og `tests/cms-provider.test.tsx` kjører `FirebaseDataProvider` og `CmsProvider` mot den ekte Firestore-klienten, koblet fra nettet (`tests/support/offlineFirestore.ts`). `tests/member-flow.test.tsx` gjør det samme med det et medlem ser og gjør: ta en oppgave, svare på en forespørsel, melde forfall. Testene ser dermed det samme som appen: en skriving når listene gjennom lytterne. Ingenting sendes til en server.
 

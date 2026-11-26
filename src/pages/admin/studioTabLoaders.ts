@@ -38,6 +38,8 @@ const TAB_LOADERS: Record<StudioTab, TabLoader> = {
   moduler: namedTab(() => import("./tabs/AddonsTab"), "AddonsTab"),
   analyse: namedTab(() => import("./tabs/AnalyticsTab"), "AnalyticsTab"),
   nettsidebesok: namedTab(() => import("./tabs/SiteTrafficTab"), "SiteTrafficTab"),
+  gaveformal: namedTab(() => import("./tabs/GivingPurposesTab"), "GivingPurposesTab"),
+  "giver-innstillinger": namedTab(() => import("./tabs/GivingSettingsTab"), "GivingSettingsTab"),
   "demo-oppsett": namedTab(() => import("./tabs/DemoSetupTab"), "DemoSetupTab"),
 };
 
@@ -71,4 +73,6 @@ export const LazyDatabaseTab = lazy(TAB_LOADERS["database-admin"]);
 export const LazyAddonsTab = lazy(TAB_LOADERS.moduler);
 export const LazyAnalyticsTab = lazy(TAB_LOADERS.analyse);
 export const LazySiteTrafficTab = lazy(TAB_LOADERS.nettsidebesok);
+export const LazyGivingPurposesTab = lazy(TAB_LOADERS.gaveformal);
+export const LazyGivingSettingsTab = lazy(TAB_LOADERS["giver-innstillinger"]);
 export const LazyDemoSetupTab = lazy(TAB_LOADERS["demo-oppsett"]);

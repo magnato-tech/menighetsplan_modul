@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import path from "node:path";
 import { readDemoSets, resetDemo, type DemoSet } from "../scripts/reset-demo";
 import { demoSemesterPlanDocument, demoTemplateDocument } from "../src/data/mockDocuments";
+import { demoGivingDocuments } from "../src/data/demoGiving";
 import { CMS_COLLECTIONS, CMS_SETTINGS_DOC_ID, COLLECTIONS, PLAIN_COLLECTIONS } from "../src/data/collections";
 import { FULL_DEMO_COUNTS, getCustomMockDocuments, storedFormOf, type MockDocument } from "../src/data/mockDocuments";
 import { HEADCOUNT_RECORD, OPERATING_MODE_DOC_ID, OPERATING_MODE_RECORD, VOLUNTEER_ROLE_RECORD } from "../src/data/settingsRecords";
@@ -372,7 +373,8 @@ describe("Semesterplanen i demoen", () => {
 
 describe("Nullstillingen av demoen", () => {
   // The demo content, and the template for a worship service and the semester plan that the reset puts in beside it
-  const wanted = planReset([{ site: null, documents: [...getCustomMockDocuments(FULL_DEMO_COUNTS, NOW), demoTemplateDocument(), demoSemesterPlanDocument(NOW)] }], []).write;
+  const mockDocuments = getCustomMockDocuments(FULL_DEMO_COUNTS, NOW);
+  const wanted = planReset([{ site: null, documents: [...mockDocuments, demoTemplateDocument(), demoSemesterPlanDocument(NOW), ...demoGivingDocuments(mockDocuments, NOW)] }], []).write;
 
   test("en tom database fylles med hele demoinnholdet", async () => {
     const db = database();

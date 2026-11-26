@@ -1,4 +1,4 @@
-import { ChartColumnBig, MousePointerClick, type LucideIcon } from "lucide-react";
+import { ChartColumnBig, HandCoins, KeyRound, MousePointerClick, type LucideIcon } from "lucide-react";
 import { ADDON_IDS, isAddonOn, type AddonChoices, type AddonId } from "../../utils/addons";
 import type { StudioTab } from "./studio";
 
@@ -13,10 +13,10 @@ import type { StudioTab } from "./studio";
 // studioTabLoaders.ts and AdminStudio.tsx like any other tab.
 
 /**
- * The add-on modules of the product, as the product owner named them on 7 October 2026. Only
- * «Analyse» is built. The others are names and nothing more: they stand here so that the
- * structure is made, and tested, for a product with several modules that are turned on without
- * regard to each other. Accounting is deliberately not one of them.
+ * The modules of the product, as the product owner named them on 7 October 2026. «Analyse» and
+ * «Givertjeneste» are built, or being built. The others are names and nothing more: they stand
+ * here so that the structure is made, and tested, for a product with several modules that are
+ * turned on without regard to each other. Accounting is deliberately not one of them.
  */
 export const PRODUCT_MODULE_IDS = [
   "analyse",
@@ -89,6 +89,21 @@ const DESCRIPTIONS: Record<AddonId, Omit<StudioAddon, "id">> = {
     whenOff: "Av: nettsiden teller ingen besøk. Tall som alt er telt, blir stående.",
     icon: MousePointerClick,
     menu: [{ tab: "nettsidebesok", label: "Besøk på nettsiden", icon: MousePointerClick }],
+  },
+  givertjeneste: {
+    module: "givertjeneste",
+    name: "Givertjeneste",
+    summary: "Gaver til menigheten. Under arbeid: foreløpig gaveformål og hvem som har tilgang.",
+    gives: [
+      "Gaveformål, skilt i ordinær drift og øremerkede gaver",
+      "Tilgang som gis til én og én person, uavhengig av andre roller",
+    ],
+    whenOff: "Av: Gaveformål og Gaveinnstillinger vises ikke. Det som er lagt inn, blir stående.",
+    icon: HandCoins,
+    menu: [
+      { tab: "gaveformal", label: "Gaveformål", icon: HandCoins },
+      { tab: "giver-innstillinger", label: "Gaveinnstillinger", icon: KeyRound },
+    ],
   },
 };
 

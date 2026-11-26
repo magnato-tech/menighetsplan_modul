@@ -2,7 +2,8 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { loadEnv } from 'vite';
-import { CMS_COLLECTIONS, PLAIN_COLLECTIONS } from '../src/data/collections';
+import { CMS_COLLECTIONS, GIVING_PLAIN_COLLECTIONS, PLAIN_COLLECTIONS } from '../src/data/collections';
+import { demoGivingDocuments } from '../src/data/demoGiving';
 import { DEMO_CONTENT_WEEK, FULL_DEMO_COUNTS, demoSemesterPlanDocument, demoTemplateDocument, getCustomMockDocuments } from '../src/data/mockDocuments';
 import { OPERATING_MODE_DOC_ID, operatingModeOf } from '../src/data/settingsRecords';
 import { chunk } from '../src/utils/chunk';
@@ -87,12 +88,15 @@ async function readCollection(fetchFn: Fetch, target: ResetTarget, collection: s
 /** "persons/person-1" from the full name the database gives a document. */
 const pathInDatabase = (name: string) => name.slice(name.indexOf('/documents/') + '/documents/'.length);
 
+// Every collection a congregation has in the demo: the planner and the website, and givertjeneste
+const RESET_COLLECTIONS = [...PLAIN_COLLECTIONS, ...Object.values(GIVING_PLAIN_COLLECTIONS)];
+
 /** Everything the congregations hold: each one's collections, a congregation at a time. */
 async function readAll(fetchFn: Fetch, target: ResetTarget, sites: readonly (string | null)[]): Promise<StoredDocument[]> {
   const all: StoredDocument[] = [];
   for (const site of sites) {
     const perCollection = await Promise.all(
-      PLAIN_COLLECTIONS.map((collection) => readCollection(fetchFn, target, collectionPrefixOf(site) + collection))
+      RESET_COLLECTIONS.map((collection) => readCollection(fetchFn, target, collectionPrefixOf(site) + collection))
     );
     all.push(...perCollection.flat());
   }
@@ -116,8 +120,10 @@ export async function resetDemo(target: ResetTarget, now: number, fetchFn: Fetch
 
   // Made before anything is touched: content that cannot be stored stops the reset here
   // With the template for a worship service, which every congregation in the demo gets (see siteDocuments),
-  // and an open semester plan, which only the example congregation gets
-  const example = [...getCustomMockDocuments(FULL_DEMO_COUNTS, now), demoTemplateDocument(), demoSemesterPlanDocument(now)];
+  // and an open semester plan, which only the example congregation gets. The gift purposes and the access
+  // are kept by siteDocuments for a congregation with its own website, so every congregation has them
+  const mockDocuments = getCustomMockDocuments(FULL_DEMO_COUNTS, now);
+  const example = [...mockDocuments, demoTemplateDocument(), demoSemesterPlanDocument(now), ...demoGivingDocuments(mockDocuments, now)];
   const sites: SiteContent[] = [
     { site: null, documents: example },
     ...sets.map(({ id, set }) => ({ site: id, documents: siteDocuments(example, set, now) })),

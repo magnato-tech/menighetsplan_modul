@@ -23,6 +23,8 @@ export const authModuleMock = {
     tell();
   }),
   signInWithGoogle: vi.fn(async () => {}),
+  // Signed in with an e-mail link unless a test says otherwise: no Google account (see hooks/useGivingAccess.ts)
+  readGoogleSignIn: vi.fn(async () => ({ withGoogle: false, googleId: null })),
   sendSignInLink: vi.fn(async (_email: string, _returnTo: string) => {}),
   isSignInLink: vi.fn((_url: string) => false),
   completeSignInLink: vi.fn(async (_url: string, _email?: string): Promise<"signedIn" | "needsEmail"> => "signedIn"),

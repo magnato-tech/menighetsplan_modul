@@ -38,7 +38,10 @@ describe("Demoen kan ikke tømmes fra appen", () => {
   });
 
   test("fanene som tømmer eller bytter ut databasen, og tilleggsmodulene, er ikke med i demoen", () => {
+    // The givertjeneste tabs are in the demo on purpose (DEMO_ADDON_IDS); the other add-on tabs are not
     expect([...NOT_IN_DEMO].sort()).toEqual(["analyse", "database-admin", "moduler", "nettsidebesok"]);
+    expect(isTabInDemo("gaveformal")).toBe(true);
+    expect(isTabInDemo("giver-innstillinger")).toBe(true);
     expect(STUDIO_TABS.filter((tab) => !isTabInDemo(tab)).sort()).toEqual([...NOT_IN_DEMO].sort());
     for (const tab of ["dashboard", "cms-sider", "planlegger-samlinger", "planlegger-personer", "planlegger-grupper"] as const) {
       expect(isTabInDemo(tab)).toBe(true);

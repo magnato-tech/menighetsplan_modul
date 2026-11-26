@@ -13,7 +13,7 @@ const { cms } = vi.hoisted(() => ({
     media: [{ status: "ready" }, { status: "ready" }, { status: "archived" }],
     settings: { churchName: "Lillesand Misjonskirke" },
     // No module is on until a test turns one on
-    addons: {} as { analysebord?: boolean; nettsidebesok?: boolean },
+    addons: {} as { analysebord?: boolean; nettsidebesok?: boolean; givertjeneste?: boolean },
     surfaces: { minSide: true, ownWebsite: true, externalSiteUrl: "", externalCalendarUrl: "", dismissedUids: [] as string[], keptUids: [] as string[] },
     surfacesState: "ready" as const,
   },
@@ -154,7 +154,7 @@ describe("Menyen i admin", () => {
     expect(menu.queryByRole("button", { name: "Besøk på nettsiden" })).toBeNull();
 
     const modules = menu.getByRole("button", { name: /Moduler/ });
-    expect(modules.textContent).toBe("Moduler0 av 2 på");
+    expect(modules.textContent).toBe("Moduler0 av 3 på");
     fireEvent.click(modules);
     expect(onTabChange).toHaveBeenCalledWith("moduler");
   });
@@ -167,7 +167,7 @@ describe("Menyen i admin", () => {
     expect(menu.queryByRole("button", { name: "Analysebord" })).toBeNull();
     fireEvent.click(menu.getByRole("button", { name: "Besøk på nettsiden" }));
     expect(onTabChange).toHaveBeenCalledWith("nettsidebesok");
-    expect(menu.getByRole("button", { name: /Moduler/ }).textContent).toBe("Moduler1 av 2 på");
+    expect(menu.getByRole("button", { name: /Moduler/ }).textContent).toBe("Moduler1 av 3 på");
   });
 
   test("med begge modulene på står Analysebord under Planlegging og besøkene under Nettside", () => {

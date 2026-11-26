@@ -1,6 +1,8 @@
 import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useFirebase } from "../context/FirebaseDataContext";
+import { useGivingAccess } from "../hooks/useGivingAccess";
+import { hasAnyRight } from "../utils/giving/access";
 import { mayEnterAdmin, signInUrl } from "../utils/session";
 import { AdminAccessRequired } from "./AdminAccessRequired";
 
@@ -22,6 +24,17 @@ export const SessionGate: React.FC<SessionGateProps> = ({ requireAdmin = false, 
 
   if (session.status === "loading") return <p className="p-6 text-sm text-slate-500">Laster …</p>;
   if (session.status !== "member") return <Navigate to={signInUrl(location.pathname + location.search)} replace />;
-  if (requireAdmin && !mayEnterAdmin(session.person)) return <AdminAccessRequired target="administrasjonen" />;
+  if (requireAdmin && !mayEnterAdmin(session.person)) return <GivingAdminEntry>{children}</GivingAdminEntry>;
+  return <>{children}</>;
+};
+
+/**
+ * Someone who is not an administrator, web editor or membership clerk gets into the admin only with a right in
+ * givertjeneste. Until that is known, nothing is decided. Only this person's own rights are read, and only here.
+ */
+const GivingAdminEntry: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const giving = useGivingAccess();
+  if (giving.loading) return <p className="p-6 text-sm text-slate-500">Laster …</p>;
+  if (!hasAnyRight(giving.access)) return <AdminAccessRequired target="administrasjonen" />;
   return <>{children}</>;
 };

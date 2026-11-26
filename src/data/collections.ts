@@ -95,6 +95,24 @@ export const CMS_COLLECTIONS = forThisSite(CMS_NAMES);
 // cms_settings holds a single document
 export const CMS_SETTINGS_DOC_ID = "global";
 
+/**
+ * Givertjeneste (see utils/giving/): the gift purposes an administrator keeps, who has been given which right,
+ * and the log of those changes. Not content: not part of ALL_COLLECTIONS or PLAIN_COLLECTIONS and not in a
+ * dataset, so emptying or fetching a database never touches them. The demo has them too, each congregation its
+ * own, and its nightly reset fills them (see utils/demoReset.ts).
+ */
+export const GIVING_PLAIN_COLLECTIONS = {
+  PURPOSES: "givingPurposes",
+  ACCESS: "givingAccess",
+  LOG: "givingLog",
+} as const;
+
+const GIVING_COLLECTIONS = forThisSite(GIVING_PLAIN_COLLECTIONS);
+
+export const GIVING_PURPOSES_COLLECTION = GIVING_COLLECTIONS.PURPOSES;
+export const GIVING_ACCESS_COLLECTION = GIVING_COLLECTIONS.ACCESS;
+export const GIVING_LOG_COLLECTION = GIVING_COLLECTIONS.LOG;
+
 export const ALL_COLLECTIONS: readonly string[] = [
   ...Object.values(COLLECTIONS),
   ...Object.values(CMS_COLLECTIONS),

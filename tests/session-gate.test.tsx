@@ -20,6 +20,8 @@ const { app } = vi.hoisted(() => ({
   },
 }));
 vi.mock("../src/context/FirebaseDataContext", () => ({ useFirebase: () => app }));
+// No add-on is on, so nobody has a right in givertjeneste here (see useGivingAccess)
+vi.mock("../src/context/CmsContext", () => ({ useCms: () => ({ addons: {}, addonsState: "ready" }) }));
 
 import { AccountMenu } from "../src/components/AccountMenu";
 import { SessionGate } from "../src/components/SessionGate";

@@ -19,3 +19,24 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run build
+
+  # Kjører databasereglene mot de lokale emulatorene (npm run test:rules, CLAUDE.md kapittel 2).
+  regler:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            rules-tests/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm ci
+      - run: npm ci
+        working-directory: rules-tests
+      - run: npm run test:rules

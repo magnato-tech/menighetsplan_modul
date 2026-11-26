@@ -44,6 +44,8 @@ const TAB_AREAS: Record<StudioTab, StudioArea | null> = {
   moduler: null,
   analyse: "planlegging",
   nettsidebesok: "nettside",
+  gaveformal: "planlegging",
+  "giver-innstillinger": "planlegging",
   "demo-oppsett": null,
 };
 

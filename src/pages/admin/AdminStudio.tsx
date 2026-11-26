@@ -21,9 +21,10 @@ import { useStudioMenuFold } from "./studioMenuFold";
 import { UnsavedChangesContext, useUnsavedRegistry } from "../../hooks/useUnsavedChanges";
 import { UnsavedChangesDialog } from "./tabs/pages/UnsavedChangesDialog";
 import { helpArticleIdForTab } from "./help/articles";
-import { clerkOnlyInAdmin, isWebEditor } from "../../utils/session";
-import { membershipClerkMayOpen } from "./membershipClerk";
-import { webEditorMayOpen } from "./webEditor";
+import { clerkOnlyInAdmin, isAdministrator, isWebEditor } from "../../utils/session";
+import { hasAnyRight } from "../../utils/giving/access";
+import { useGivingAccess } from "../../hooks/useGivingAccess";
+import { mayOpenTab, type TabWho } from "./tabAccess";
 
 import { AddonGate } from "./AddonGate";
 import { MinSideModuleGate } from "./MinSideModuleGate";
@@ -51,6 +52,8 @@ import {
 
   LazyAnalyticsTab,
   LazySiteTrafficTab,
+  LazyGivingPurposesTab,
+  LazyGivingSettingsTab,
   LazyTrashTab,
 
   LazyDemoSetupTab,
@@ -254,10 +257,18 @@ function AdminStudioContent() {
   // A web editor has the website part of the admin only (see webEditor.ts)
   const webEditor = isWebEditor(studio.currentUser);
   const membershipClerkOnly = clerkOnlyInAdmin(studio.currentUser);
+  // Someone with a right in givertjeneste is let in even without being an administrator, web editor or clerk
+  // (see SessionGate). With nothing else of the admin, that person has only the page for the rights (see tabAccess.ts).
+  const admin = isAdministrator(studio.currentUser);
+  const giving = useGivingAccess();
+  const givingRight = hasAnyRight(giving.access);
+  const givingOnly = !admin && !webEditor && !membershipClerkOnly && givingRight;
+  const givingLoading = !admin && !webEditor && !membershipClerkOnly && giving.loading;
+  const who: TabWho = { isAdmin: admin, webEditor, clerk: membershipClerkOnly, giving: givingRight };
 
 
 
-  const tabParam = toStudioTab(searchParams.get("tab"));
+  const tabParam = searchParams.has("tab") ? toStudioTab(searchParams.get("tab")) : givingOnly ? "giver-innstillinger" : "dashboard";
 
   const [activeTab, setActiveTab] = useState<StudioTab>(tabParam);
 
@@ -270,12 +281,9 @@ function AdminStudioContent() {
 
   // While a page is edited, the side menu folds to icons so the editor gets room (see useStudioMenuFold)
   const [pageEditorOpen, setPageEditorOpen] = useState(false);
-  // The sign-ins are the administrator's alone, whatever part of the admin someone else may use
-  const mayShow = (tab: StudioTab) =>
-    visitedTabs.includes(tab) &&
-    (tab !== "innlogging" || studio.currentUser.globalRole === "admin") &&
-    (!webEditor || webEditorMayOpen(tab)) &&
-    (!membershipClerkOnly || membershipClerkMayOpen(tab));
+  // Which tabs each person may open (see tabAccess.ts). Nothing is shown while the rights of someone who is not an
+  // administrator, web editor or clerk are not known yet.
+  const mayShow = (tab: StudioTab) => visitedTabs.includes(tab) && !givingLoading && mayOpenTab(tab, who);
 
 
 
@@ -358,7 +366,7 @@ function AdminStudioContent() {
   const editingPageShown = pageEditorOpen && shownTab === "cms-sider";
   const { folded: menuFolded, toggle: toggleMenu } = useStudioMenuFold(editingPageShown);
 
-  const area: StudioArea = membershipClerkOnly
+  const area: StudioArea = membershipClerkOnly || givingOnly
     ? "planlegging"
     : webEditor && surfaces.ownWebsite
       ? "nettside"
@@ -366,18 +374,19 @@ function AdminStudioContent() {
         ? areaToShow(shownTab, chosenArea, level)
         : "planlegging";
 
-  // Any other tab, or a page of the register or the planning, sends a web editor to the overview
-  const outsideWebEditor = webEditor && (Boolean(detailRoute) || !webEditorMayOpen(activeTab));
-  const outsideMembershipClerk =
-    membershipClerkOnly &&
-    ((detailRoute !== null &&
-      detailRoute.kind !== "person" &&
-      detailRoute.kind !== "membershipApplication") ||
-      !membershipClerkMayOpen(activeTab));
+  // A page of a person in the register is for administrators, and for a membership clerk the page of a person or an
+  // application. Anything else sends a web editor or a clerk to the overview, and someone with a giving right alone to
+  // the page for the rights.
+  const detailShown =
+    detailRoute !== null &&
+    !webEditor &&
+    !givingOnly &&
+    (!membershipClerkOnly || detailRoute.kind === "person" || detailRoute.kind === "membershipApplication");
+  const outsideTabs = !givingLoading && (!mayOpenTab(activeTab, who) || (detailRoute !== null && !detailShown));
   useEffect(() => {
-    if (outsideWebEditor || outsideMembershipClerk) navigate(studioTabUrl("dashboard"), { replace: true });
+    if (outsideTabs) navigate(studioTabUrl(givingOnly ? "giver-innstillinger" : "dashboard"), { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [outsideWebEditor, outsideMembershipClerk]);
+  }, [outsideTabs]);
 
   useEffect(() => {
 
@@ -502,7 +511,9 @@ function AdminStudioContent() {
         membershipClerkOnly={membershipClerkOnly}
 
         onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-        topBarExtra={<WeekBell studio={studio} onTabChange={handleTabChange} />}
+        givingOnly={givingOnly}
+        givingRight={givingRight}
+        topBarExtra={givingOnly ? undefined : <WeekBell studio={studio} onTabChange={handleTabChange} />}
 
       />
 
@@ -520,11 +531,9 @@ function AdminStudioContent() {
 
 
 
-        {detailRoute &&
-        !webEditor &&
-        (!membershipClerkOnly ||
-          detailRoute.kind === "person" ||
-          detailRoute.kind === "membershipApplication") ? (
+        {givingLoading && <p className="text-sm text-[var(--studio-muted)] p-2">Laster …</p>}
+
+        {detailShown && detailRoute ? (
 
           <LevelGate tab={detailRoute.backTab}>
 
@@ -748,6 +757,14 @@ function AdminStudioContent() {
 
           <LazySiteTrafficTab showFeedback={showFeedback} />
 
+        </StudioTabPanel>
+
+        <StudioTabPanel tab="gaveformal" activeTab={activeTab} visited={mayShow("gaveformal")}>
+          <LazyGivingPurposesTab showFeedback={showFeedback} />
+        </StudioTabPanel>
+
+        <StudioTabPanel tab="giver-innstillinger" activeTab={activeTab} visited={mayShow("giver-innstillinger")}>
+          <LazyGivingSettingsTab showFeedback={showFeedback} />
         </StudioTabPanel>
 
         <StudioTabPanel tab="cms-papirkurv" activeTab={activeTab} visited={mayShow("cms-papirkurv")}>
